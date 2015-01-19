@@ -2,12 +2,16 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/pivotal-golang/lager"
 )
 
 type RoutesHandler struct {
 	maxTTL int
+	logger lager.Logger
 }
 
 type RouteDeclaration struct {
@@ -18,12 +22,17 @@ type RouteDeclaration struct {
 	LogGuid string `json:"log_guid"`
 }
 
-func NewRoutesHandler(maxTTL int) *RoutesHandler {
-	return &RoutesHandler{maxTTL: maxTTL}
+func NewRoutesHandler(maxTTL int, logger lager.Logger) *RoutesHandler {
+	return &RoutesHandler{
+		maxTTL: maxTTL,
+		logger: logger,
+	}
 }
 
 func (h *RoutesHandler) Routes(w http.ResponseWriter, req *http.Request) {
+	log := h.logger.Session("create-route")
 	decoder := json.NewDecoder(req.Body)
+
 	var t RouteDeclaration
 	err := decoder.Decode(&t)
 	if err != nil {
@@ -31,33 +40,34 @@ func (h *RoutesHandler) Routes(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	log.Info("request", lager.Data{"route_declaration": t})
+
+	var apiErr error
+
 	if t.Route == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Request requires a route"))
-		return
+		apiErr = errors.New("Request requires a route")
 	}
 
 	if t.Port <= 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Request requires a port greater than 0"))
-		return
+		apiErr = errors.New("Request requires a port greater than 0")
 	}
 
 	if t.IP == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Request requires a valid ip"))
-		return
+		apiErr = errors.New("Request requires a valid ip")
 	}
 
 	if t.TTL <= 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Request requires a ttl greater than 0"))
-		return
+		apiErr = errors.New("Request requires a ttl greater than 0")
 	}
 
 	if t.TTL > h.maxTTL {
+		apiErr = errors.New(fmt.Sprintf("Max ttl is %d", h.maxTTL))
+	}
+
+	if apiErr != nil {
+		log.Error("error", apiErr)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Max ttl is %d", h.maxTTL)))
+		w.Write([]byte(apiErr.Error()))
 		return
 	}
 

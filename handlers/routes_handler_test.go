@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/pivotal-cf-experimental/routing-api/handlers"
+	"github.com/pivotal-golang/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -38,10 +39,12 @@ var _ = Describe("RoutesHandler", func() {
 		routesHandler    *handlers.RoutesHandler
 		request          *http.Request
 		responseRecorder *httptest.ResponseRecorder
+		logger           *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
-		routesHandler = handlers.NewRoutesHandler(50)
+		logger = lagertest.NewTestLogger("routing-api-test")
+		routesHandler = handlers.NewRoutesHandler(50, logger)
 		responseRecorder = httptest.NewRecorder()
 	})
 
@@ -60,15 +63,39 @@ var _ = Describe("RoutesHandler", func() {
 				}
 			})
 
-			It("Returns an http status ok", func() {
+			It("logs the route declaration", func() {
+				request = newTestRequest(routeDeclaration)
+				routesHandler.Routes(responseRecorder, request)
+
+				Expect(logger.Logs()[0].Message).To(ContainSubstring("request"))
+				Expect(logger.Logs()[0].Data["route_declaration"]).To(Equal(map[string]interface{}{
+					"ip":       "1.2.3.4",
+					"log_guid": "",
+					"port":     float64(7000),
+					"route":    "/post_here",
+					"ttl":      float64(50),
+				}))
+			})
+
+			It("returns an http status created", func() {
 				request = newTestRequest(routeDeclaration)
 				routesHandler.Routes(responseRecorder, request)
 
 				Expect(responseRecorder.Code).Should(Equal(http.StatusCreated))
 			})
 
+			It("logs the error", func() {
+				routeDeclaration.Route = ""
+
+				request = newTestRequest(routeDeclaration)
+				routesHandler.Routes(responseRecorder, request)
+
+				Expect(logger.Logs()[1].Message).To(ContainSubstring("error"))
+				Expect(logger.Logs()[1].Data["error"]).To(Equal("Request requires a route"))
+			})
+
 			It("rejects if too high of a ttl", func() {
-				routesHandler = handlers.NewRoutesHandler(47)
+				routesHandler = handlers.NewRoutesHandler(47, logger)
 				request = newTestRequest(handlers.RouteDeclaration{
 					Route: "/post_here",
 					TTL:   49,

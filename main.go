@@ -6,7 +6,9 @@ import (
 	"strconv"
 
 	"github.com/pivotal-cf-experimental/routing-api/handlers"
+	"github.com/pivotal-golang/lager"
 
+	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/tedsuo/rata"
 )
 
@@ -30,7 +32,8 @@ func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 func main() {
 	flag.Parse()
 
-	routesHandler := handlers.NewRoutesHandler(*maxTTL)
+	logger := cf_lager.New("routing-api")
+	routesHandler := handlers.NewRoutesHandler(*maxTTL, logger)
 
 	actions := rata.Handlers{
 		"Routes": route(routesHandler.Routes),
@@ -41,6 +44,9 @@ func main() {
 		panic("unable to create router: " + err.Error())
 	}
 
+	handler = handlers.LogWrap(handler, logger)
+
+	logger.Info("starting", lager.Data{"port": *port})
 	err = http.ListenAndServe(":"+strconv.Itoa(*port), handler)
 	if err != nil {
 		panic(err)
