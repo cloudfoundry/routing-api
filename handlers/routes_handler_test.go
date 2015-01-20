@@ -28,7 +28,7 @@ func newTestRequest(body interface{}) *http.Request {
 		reader = bytes.NewReader(body)
 	default:
 		jsonBytes, err := json.Marshal(body)
-		Ω(err).ShouldNot(HaveOccurred())
+		Ω(err).ToNot(HaveOccurred())
 		reader = bytes.NewReader(jsonBytes)
 	}
 
@@ -73,7 +73,7 @@ var _ = Describe("RoutesHandler", func() {
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
 
-					Expect(responseRecorder.Code).Should(Equal(http.StatusCreated))
+					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 				})
 
 				It("logs the route declaration", func() {
@@ -119,6 +119,7 @@ var _ = Describe("RoutesHandler", func() {
 						routesHandler.Routes(responseRecorder, request)
 
 						Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+						Expect(responseRecorder.Body.String()).To(ContainSubstring("stuff broke"))
 					})
 				})
 			})
@@ -154,8 +155,8 @@ var _ = Describe("RoutesHandler", func() {
 
 					routesHandler.Routes(responseRecorder, request)
 
-					Expect(responseRecorder.Code).Should(Equal(http.StatusBadRequest))
-					Expect(string(responseRecorder.Body.String())).Should(Equal("Max ttl is 47"))
+					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("Max ttl is 47"))
 				})
 
 				It("returns invalid request if there is no route in the body", func() {
@@ -164,8 +165,8 @@ var _ = Describe("RoutesHandler", func() {
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
 
-					Expect(responseRecorder.Code).Should(Equal(http.StatusBadRequest))
-					Expect(string(responseRecorder.Body.String())).Should(Equal("Request requires a route"))
+					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("Request requires a route"))
 				})
 
 				It("returns invalid request if the port is less than 1", func() {
@@ -174,8 +175,8 @@ var _ = Describe("RoutesHandler", func() {
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
 
-					Expect(responseRecorder.Code).Should(Equal(http.StatusBadRequest))
-					Expect(string(responseRecorder.Body.String())).Should(Equal("Request requires a port greater than 0"))
+					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("Request requires a port greater than 0"))
 				})
 
 				It("returns invalid request if there is no IP in the body", func() {
@@ -184,8 +185,8 @@ var _ = Describe("RoutesHandler", func() {
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
 
-					Expect(responseRecorder.Code).Should(Equal(http.StatusBadRequest))
-					Expect(string(responseRecorder.Body.String())).Should(Equal("Request requires a valid ip"))
+					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("Request requires a valid ip"))
 				})
 
 				It("returns invalid request if the ttl is less than 1 in the body", func() {
@@ -194,8 +195,8 @@ var _ = Describe("RoutesHandler", func() {
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
 
-					Expect(responseRecorder.Code).Should(Equal(http.StatusBadRequest))
-					Expect(string(responseRecorder.Body.String())).Should(Equal("Request requires a ttl greater than 0"))
+					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("Request requires a ttl greater than 0"))
 				})
 			})
 		})

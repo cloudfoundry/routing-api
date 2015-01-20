@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -37,40 +36,46 @@ func (h *RoutesHandler) Routes(w http.ResponseWriter, req *http.Request) {
 
 	log.Info("request", lager.Data{"route_declaration": route})
 
-	var apiErr error
+	var apiErr *Error
 
 	if route.Route == "" {
-		apiErr = errors.New("Request requires a route")
+		apiErr = &Error{RouteInvalidError, "Request requires a route"}
 	}
 
 	if route.Port <= 0 {
-		apiErr = errors.New("Request requires a port greater than 0")
+		apiErr = &Error{RouteInvalidError, "Request requires a port greater than 0"}
 	}
 
 	if route.IP == "" {
-		apiErr = errors.New("Request requires a valid ip")
+		apiErr = &Error{RouteInvalidError, "Request requires a valid ip"}
 	}
 
 	if route.TTL <= 0 {
-		apiErr = errors.New("Request requires a ttl greater than 0")
+		apiErr = &Error{RouteInvalidError, "Request requires a ttl greater than 0"}
 	}
 
 	if route.TTL > h.maxTTL {
-		apiErr = errors.New(fmt.Sprintf("Max ttl is %d", h.maxTTL))
+		apiErr = &Error{RouteInvalidError, fmt.Sprintf("Max ttl is %d", h.maxTTL)}
 	}
 
 	if apiErr != nil {
 		log.Error("error", apiErr)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(apiErr.Error()))
+
+		retErr, _ := json.Marshal(apiErr)
+
+		w.Write(retErr)
 		return
 	}
 
 	err = h.db.SaveRoute(route)
 	if err != nil {
 		log.Error("error", err)
+
+		retErr, _ := json.Marshal(Error{DBCommunicationError, err.Error()})
+
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
+		w.Write(retErr)
 		return
 	}
 
