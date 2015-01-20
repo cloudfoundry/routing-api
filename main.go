@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/pivotal-cf-experimental/routing-api/db"
 	"github.com/pivotal-cf-experimental/routing-api/handlers"
 	"github.com/pivotal-golang/lager"
 
@@ -32,8 +33,10 @@ func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 func main() {
 	flag.Parse()
 
+	database := db.NewETCD(flag.Args())
+
 	logger := cf_lager.New("routing-api")
-	routesHandler := handlers.NewRoutesHandler(*maxTTL, logger)
+	routesHandler := handlers.NewRoutesHandler(*maxTTL, database, logger)
 
 	actions := rata.Handlers{
 		"Routes": route(routesHandler.Routes),
