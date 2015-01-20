@@ -1,0 +1,44 @@
+{
+	"ImportPath": "github.com/pivotal-cf-experimental/routing-api",
+	"GoVersion": "go1.4.1",
+	"Deps": [
+		{
+			"ImportPath": "code.google.com/p/gogoprotobuf/proto",
+			"Rev": "6c980277330804e94257ac7ef70a3adbe1641059"
+		},
+		{
+			"ImportPath": "github.com/bmizerany/pat",
+			"Rev": "b8a35001b773c267eb260a691f4e5499a3531600"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry-incubator/cf-lager",
+			"Rev": "ddeb0ea40763e3e81aa65919b9d9fc6d0ecc75d6"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry/dropsonde",
+			"Rev": "d8399b690bf4b541b1a530ca1ca7305b4f3444c2"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry/gosteno",
+			"Comment": "scotty_09012012-41-g5c1406e",
+			"Rev": "5c1406e9ea0ab919f92e1b194169565def41147b"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-etcd/etcd",
+			"Comment": "v0.2.0-rc1-120-g23142f6",
+			"Rev": "23142f6773a676cc2cae8dd0cb90b2ea761c853f"
+		},
+		{
+			"ImportPath": "github.com/nu7hatch/gouuid",
+			"Rev": "179d4d0c4d8d407a32af483c2354df1d2c91e6c3"
+		},
+		{
+			"ImportPath": "github.com/pivotal-golang/lager",
+			"Rev": "a106931abed5afe3043eae8851be8b33a4bdfa3f"
+		},
+		{
+			"ImportPath": "github.com/tedsuo/rata",
+			"Rev": "6197c97c67a03bfd4d6977a3b6060d6c6b3d581f"
+		}
+	]
+}
