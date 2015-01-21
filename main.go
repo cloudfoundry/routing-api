@@ -15,6 +15,7 @@ import (
 
 var Routes = rata.Routes{
 	{Path: "/v1/routes", Method: "POST", Name: "Routes"},
+	{Path: "/v1/routes", Method: "DELETE", Name: "Delete"},
 }
 
 var maxTTL = flag.Int("maxTTL", 120, "Maximum TTL on the route")
@@ -35,6 +36,7 @@ func main() {
 
 	actions := rata.Handlers{
 		"Routes": route(routesHandler.Routes),
+		"Delete": route(routesHandler.Delete),
 	}
 
 	handler, err := rata.NewRouter(Routes, actions)
