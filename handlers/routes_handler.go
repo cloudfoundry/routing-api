@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/pivotal-cf-experimental/routing-api/db"
@@ -10,16 +9,18 @@ import (
 )
 
 type RoutesHandler struct {
-	maxTTL int
-	db     db.DB
-	logger lager.Logger
+	maxTTL    int
+	validator RouteValidator
+	db        db.DB
+	logger    lager.Logger
 }
 
-func NewRoutesHandler(maxTTL int, database db.DB, logger lager.Logger) *RoutesHandler {
+func NewRoutesHandler(maxTTL int, validator RouteValidator, database db.DB, logger lager.Logger) *RoutesHandler {
 	return &RoutesHandler{
-		maxTTL: maxTTL,
-		db:     database,
-		logger: logger,
+		maxTTL:    maxTTL,
+		validator: validator,
+		db:        database,
+		logger:    logger,
 	}
 }
 
@@ -34,22 +35,12 @@ func (h *RoutesHandler) Routes(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	for _, route := range routes {
-		log.Info("request", lager.Data{"route_declaration": route})
-		apiErr := routeValidator(route)
+	log.Info("request", lager.Data{"route_creation": routes})
 
-		if route.TTL <= 0 {
-			apiErr = &Error{RouteInvalidError, "Request requires a ttl greater than 0"}
-		}
-
-		if route.TTL > h.maxTTL {
-			apiErr = &Error{RouteInvalidError, fmt.Sprintf("Max ttl is %d", h.maxTTL)}
-		}
-
-		if apiErr != nil {
-			handleApiError(w, apiErr, log)
-			return
-		}
+	apiErr := h.validator.ValidateCreate(routes, h.maxTTL)
+	if apiErr != nil {
+		handleApiError(w, apiErr, log)
+		return
 	}
 
 	for _, route := range routes {
@@ -74,15 +65,12 @@ func (h *RoutesHandler) Delete(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	for _, route := range routes {
-		log.Info("request", lager.Data{"route_deletion": route})
+	log.Info("request", lager.Data{"route_deletion": routes})
 
-		apiErr := routeValidator(route)
-
-		if apiErr != nil {
-			handleApiError(w, apiErr, log)
-			return
-		}
+	apiErr := h.validator.ValidateDelete(routes)
+	if apiErr != nil {
+		handleApiError(w, apiErr, log)
+		return
 	}
 
 	for _, route := range routes {
@@ -103,24 +91,6 @@ func handleProcessRequestError(w http.ResponseWriter, procErr error, log lager.L
 
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write(retErr)
-}
-
-func routeValidator(route db.Route) *Error {
-	var apiErr *Error
-
-	if route.Route == "" {
-		apiErr = &Error{RouteInvalidError, "Request requires a route"}
-	}
-
-	if route.Port <= 0 {
-		apiErr = &Error{RouteInvalidError, "Request requires a port greater than 0"}
-	}
-
-	if route.IP == "" {
-		apiErr = &Error{RouteInvalidError, "Request requires a valid ip"}
-	}
-
-	return apiErr
 }
 
 func handleApiError(w http.ResponseWriter, apiErr *Error, log lager.Logger) {

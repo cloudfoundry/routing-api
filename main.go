@@ -32,7 +32,9 @@ func main() {
 	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
 	database := db.NewETCD(flag.Args())
 
-	routesHandler := handlers.NewRoutesHandler(*maxTTL, database, logger)
+	validator := handlers.NewValidator()
+
+	routesHandler := handlers.NewRoutesHandler(*maxTTL, validator, database, logger)
 
 	actions := rata.Handlers{
 		"Routes": route(routesHandler.Routes),

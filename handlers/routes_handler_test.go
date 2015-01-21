@@ -10,8 +10,9 @@ import (
 	"strings"
 
 	"github.com/pivotal-cf-experimental/routing-api/db"
-	"github.com/pivotal-cf-experimental/routing-api/db/fakes"
+	fake_db "github.com/pivotal-cf-experimental/routing-api/db/fakes"
 	"github.com/pivotal-cf-experimental/routing-api/handlers"
+	fake_validator "github.com/pivotal-cf-experimental/routing-api/handlers/fakes"
 	"github.com/pivotal-golang/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
@@ -42,14 +43,16 @@ var _ = Describe("RoutesHandler", func() {
 		routesHandler    *handlers.RoutesHandler
 		request          *http.Request
 		responseRecorder *httptest.ResponseRecorder
-		database         *fakes.FakeDB
+		database         *fake_db.FakeDB
 		logger           *lagertest.TestLogger
+		validator        *fake_validator.FakeRouteValidator
 	)
 
 	BeforeEach(func() {
-		database = &fakes.FakeDB{}
+		database = &fake_db.FakeDB{}
+		validator = &fake_validator.FakeRouteValidator{}
 		logger = lagertest.NewTestLogger("routing-api-test")
-		routesHandler = handlers.NewRoutesHandler(50, database, logger)
+		routesHandler = handlers.NewRoutesHandler(50, validator, database, logger)
 		responseRecorder = httptest.NewRecorder()
 	})
 
@@ -96,14 +99,17 @@ var _ = Describe("RoutesHandler", func() {
 				request = newTestRequest(route)
 				routesHandler.Delete(responseRecorder, request)
 
-				Expect(logger.Logs()[0].Message).To(ContainSubstring("request"))
-				Expect(logger.Logs()[0].Data["route_deletion"]).To(Equal(map[string]interface{}{
+				data := map[string]interface{}{
 					"ip":       "1.2.3.4",
 					"log_guid": "",
 					"port":     float64(7000),
 					"route":    "post_here",
 					"ttl":      float64(0),
-				}))
+				}
+				log_data := map[string][]interface{}{"route_deletion": []interface{}{data}}
+
+				Expect(logger.Logs()[0].Message).To(ContainSubstring("request"))
+				Expect(logger.Logs()[0].Data["route_deletion"]).To(Equal(log_data["route_deletion"]))
 			})
 
 			Context("when the database deletion fails", func() {
@@ -130,40 +136,6 @@ var _ = Describe("RoutesHandler", func() {
 				Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
 				Expect(responseRecorder.Body.String()).To(ContainSubstring("Cannot process request"))
 			})
-
-			It("returns invalid request if there is no route in the body", func() {
-				route[0].Route = ""
-
-				request = newTestRequest(route)
-				routesHandler.Delete(responseRecorder, request)
-
-				Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-				Expect(responseRecorder.Body.String()).To(ContainSubstring("Request requires a route"))
-				Expect(database.DeleteRouteCallCount()).To(Equal(0))
-			})
-
-			It("returns invalid request if the port is less than 1", func() {
-				route[0].Port = 0
-
-				request = newTestRequest(route)
-				routesHandler.Delete(responseRecorder, request)
-
-				Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-				Expect(responseRecorder.Body.String()).To(ContainSubstring("Request requires a port greater than 0"))
-				Expect(database.DeleteRouteCallCount()).To(Equal(0))
-			})
-
-			It("returns invalid request if there is no IP in the body", func() {
-				route[0].IP = ""
-
-				request = newTestRequest(route)
-				routesHandler.Delete(responseRecorder, request)
-
-				Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-				Expect(responseRecorder.Body.String()).To(ContainSubstring("Request requires a valid ip"))
-				Expect(database.DeleteRouteCallCount()).To(Equal(0))
-			})
-
 		})
 	})
 
@@ -209,14 +181,17 @@ var _ = Describe("RoutesHandler", func() {
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
 
-					Expect(logger.Logs()[0].Message).To(ContainSubstring("request"))
-					Expect(logger.Logs()[0].Data["route_declaration"]).To(Equal(map[string]interface{}{
+					data := map[string]interface{}{
 						"ip":       "1.2.3.4",
 						"log_guid": "",
 						"port":     float64(7000),
 						"route":    "post_here",
 						"ttl":      float64(50),
-					}))
+					}
+					log_data := map[string][]interface{}{"route_creation": []interface{}{data}}
+
+					Expect(logger.Logs()[0].Message).To(ContainSubstring("request"))
+					Expect(logger.Logs()[0].Data["route_creation"]).To(Equal(log_data["route_creation"]))
 				})
 
 				It("does not require log guid on the request", func() {
@@ -254,9 +229,11 @@ var _ = Describe("RoutesHandler", func() {
 			})
 
 			Context("when there are errors with the input", func() {
-				It("does not write to the key-value store backend", func() {
-					route[0].Route = ""
+				BeforeEach(func() {
+					validator.ValidateCreateReturns(&handlers.Error{"a type", "error message"})
+				})
 
+				It("does not write to the key-value store backend", func() {
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
 
@@ -264,65 +241,11 @@ var _ = Describe("RoutesHandler", func() {
 				})
 
 				It("logs the error", func() {
-					route[0].Route = ""
-
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
 
 					Expect(logger.Logs()[1].Message).To(ContainSubstring("error"))
-					Expect(logger.Logs()[1].Data["error"]).To(Equal("Request requires a route"))
-				})
-
-				It("rejects if too high of a ttl", func() {
-					route[0].TTL = 49
-
-					routesHandler = handlers.NewRoutesHandler(47, database, logger)
-					request = newTestRequest(route)
-
-					routesHandler.Routes(responseRecorder, request)
-
-					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("Max ttl is 47"))
-				})
-
-				It("returns invalid request if there is no route in the body", func() {
-					route[0].Route = ""
-
-					request = newTestRequest(route)
-					routesHandler.Routes(responseRecorder, request)
-
-					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("Request requires a route"))
-				})
-
-				It("returns invalid request if the port is less than 1", func() {
-					route[0].Port = 0
-
-					request = newTestRequest(route)
-					routesHandler.Routes(responseRecorder, request)
-
-					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("Request requires a port greater than 0"))
-				})
-
-				It("returns invalid request if there is no IP in the body", func() {
-					route[0].IP = ""
-
-					request = newTestRequest(route)
-					routesHandler.Routes(responseRecorder, request)
-
-					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("Request requires a valid ip"))
-				})
-
-				It("returns invalid request if the ttl is less than 1 in the body", func() {
-					route[0].TTL = 0
-
-					request = newTestRequest(route)
-					routesHandler.Routes(responseRecorder, request)
-
-					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("Request requires a ttl greater than 0"))
+					Expect(logger.Logs()[1].Data["error"]).To(Equal("error message"))
 				})
 			})
 		})
