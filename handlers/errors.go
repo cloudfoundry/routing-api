@@ -10,6 +10,7 @@ func (err Error) Error() string {
 }
 
 const (
+	ProcessRequestError  = "ProcessRequestError"
 	RouteInvalidError    = "RouteInvalidError"
 	DBCommunicationError = "DBCommunicationError"
 )
