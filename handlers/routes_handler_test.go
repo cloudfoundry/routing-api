@@ -55,14 +55,16 @@ var _ = Describe("RoutesHandler", func() {
 
 	Describe(".DeleteRoute", func() {
 		var (
-			route db.Route
+			route []db.Route
 		)
 
 		BeforeEach(func() {
-			route = db.Route{
-				Route: "post_here",
-				IP:    "1.2.3.4",
-				Port:  7000,
+			route = []db.Route{
+				{
+					Route: "post_here",
+					IP:    "1.2.3.4",
+					Port:  7000,
+				},
 			}
 		})
 
@@ -74,7 +76,20 @@ var _ = Describe("RoutesHandler", func() {
 
 				Expect(responseRecorder.Code).To(Equal(http.StatusNoContent))
 				Expect(database.DeleteRouteCallCount()).To(Equal(1))
-				Expect(database.DeleteRouteArgsForCall(0)).To(Equal(route))
+				Expect(database.DeleteRouteArgsForCall(0)).To(Equal(route[0]))
+			})
+
+			It("accepts an array of routes in the body", func() {
+				route = append(route, route[0])
+				route[1].IP = "5.4.3.2"
+
+				request = newTestRequest(route)
+				routesHandler.Delete(responseRecorder, request)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusNoContent))
+				Expect(database.DeleteRouteCallCount()).To(Equal(2))
+				Expect(database.DeleteRouteArgsForCall(0)).To(Equal(route[0]))
+				Expect(database.DeleteRouteArgsForCall(1)).To(Equal(route[1]))
 			})
 
 			It("logs the route deletion", func() {
@@ -117,7 +132,7 @@ var _ = Describe("RoutesHandler", func() {
 			})
 
 			It("returns invalid request if there is no route in the body", func() {
-				route.Route = ""
+				route[0].Route = ""
 
 				request = newTestRequest(route)
 				routesHandler.Delete(responseRecorder, request)
@@ -128,7 +143,7 @@ var _ = Describe("RoutesHandler", func() {
 			})
 
 			It("returns invalid request if the port is less than 1", func() {
-				route.Port = 0
+				route[0].Port = 0
 
 				request = newTestRequest(route)
 				routesHandler.Delete(responseRecorder, request)
@@ -139,7 +154,7 @@ var _ = Describe("RoutesHandler", func() {
 			})
 
 			It("returns invalid request if there is no IP in the body", func() {
-				route.IP = ""
+				route[0].IP = ""
 
 				request = newTestRequest(route)
 				routesHandler.Delete(responseRecorder, request)
@@ -155,15 +170,17 @@ var _ = Describe("RoutesHandler", func() {
 	Describe(".Routes", func() {
 		Context("POST", func() {
 			var (
-				route db.Route
+				route []db.Route
 			)
 
 			BeforeEach(func() {
-				route = db.Route{
-					Route: "post_here",
-					IP:    "1.2.3.4",
-					Port:  7000,
-					TTL:   50,
+				route = []db.Route{
+					{
+						Route: "post_here",
+						IP:    "1.2.3.4",
+						Port:  7000,
+						TTL:   50,
+					},
 				}
 			})
 
@@ -173,6 +190,19 @@ var _ = Describe("RoutesHandler", func() {
 					routesHandler.Routes(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+				})
+
+				It("accepts a list of routes in the body", func() {
+					route = append(route, route[0])
+					route[1].IP = "5.4.3.2"
+
+					request = newTestRequest(route)
+					routesHandler.Routes(responseRecorder, request)
+
+					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+					Expect(database.SaveRouteCallCount()).To(Equal(2))
+					Expect(database.SaveRouteArgsForCall(0)).To(Equal(route[0]))
+					Expect(database.SaveRouteArgsForCall(1)).To(Equal(route[1]))
 				})
 
 				It("logs the route declaration", func() {
@@ -190,7 +220,7 @@ var _ = Describe("RoutesHandler", func() {
 				})
 
 				It("does not require log guid on the request", func() {
-					route.LogGuid = ""
+					route[0].LogGuid = ""
 
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
@@ -199,13 +229,13 @@ var _ = Describe("RoutesHandler", func() {
 				})
 
 				It("writes to database backend", func() {
-					route.LogGuid = "my-guid"
+					route[0].LogGuid = "my-guid"
 
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
 
 					Expect(database.SaveRouteCallCount()).To(Equal(1))
-					Expect(database.SaveRouteArgsForCall(0)).To(Equal(route))
+					Expect(database.SaveRouteArgsForCall(0)).To(Equal(route[0]))
 				})
 
 				Context("when database fails to save", func() {
@@ -225,7 +255,7 @@ var _ = Describe("RoutesHandler", func() {
 
 			Context("when there are errors with the input", func() {
 				It("does not write to the key-value store backend", func() {
-					route.Route = ""
+					route[0].Route = ""
 
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
@@ -234,7 +264,7 @@ var _ = Describe("RoutesHandler", func() {
 				})
 
 				It("logs the error", func() {
-					route.Route = ""
+					route[0].Route = ""
 
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
@@ -244,13 +274,10 @@ var _ = Describe("RoutesHandler", func() {
 				})
 
 				It("rejects if too high of a ttl", func() {
+					route[0].TTL = 49
+
 					routesHandler = handlers.NewRoutesHandler(47, database, logger)
-					request = newTestRequest(db.Route{
-						Route: "post_here",
-						IP:    "1.2.3.4",
-						Port:  7000,
-						TTL:   49,
-					})
+					request = newTestRequest(route)
 
 					routesHandler.Routes(responseRecorder, request)
 
@@ -259,7 +286,7 @@ var _ = Describe("RoutesHandler", func() {
 				})
 
 				It("returns invalid request if there is no route in the body", func() {
-					route.Route = ""
+					route[0].Route = ""
 
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
@@ -269,7 +296,7 @@ var _ = Describe("RoutesHandler", func() {
 				})
 
 				It("returns invalid request if the port is less than 1", func() {
-					route.Port = 0
+					route[0].Port = 0
 
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
@@ -279,7 +306,7 @@ var _ = Describe("RoutesHandler", func() {
 				})
 
 				It("returns invalid request if there is no IP in the body", func() {
-					route.IP = ""
+					route[0].IP = ""
 
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)
@@ -289,7 +316,7 @@ var _ = Describe("RoutesHandler", func() {
 				})
 
 				It("returns invalid request if the ttl is less than 1 in the body", func() {
-					route.TTL = 0
+					route[0].TTL = 0
 
 					request = newTestRequest(route)
 					routesHandler.Routes(responseRecorder, request)

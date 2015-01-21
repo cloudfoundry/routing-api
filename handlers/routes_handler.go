@@ -27,33 +27,37 @@ func (h *RoutesHandler) Routes(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("create-route")
 	decoder := json.NewDecoder(req.Body)
 
-	var route db.Route
-	err := decoder.Decode(&route)
+	var routes []db.Route
+	err := decoder.Decode(&routes)
 	if err != nil {
 		handleProcessRequestError(w, err, log)
 		return
 	}
 
-	log.Info("request", lager.Data{"route_declaration": route})
-	apiErr := routeValidator(route)
+	for _, route := range routes {
+		log.Info("request", lager.Data{"route_declaration": route})
+		apiErr := routeValidator(route)
 
-	if route.TTL <= 0 {
-		apiErr = &Error{RouteInvalidError, "Request requires a ttl greater than 0"}
+		if route.TTL <= 0 {
+			apiErr = &Error{RouteInvalidError, "Request requires a ttl greater than 0"}
+		}
+
+		if route.TTL > h.maxTTL {
+			apiErr = &Error{RouteInvalidError, fmt.Sprintf("Max ttl is %d", h.maxTTL)}
+		}
+
+		if apiErr != nil {
+			handleApiError(w, apiErr, log)
+			return
+		}
 	}
 
-	if route.TTL > h.maxTTL {
-		apiErr = &Error{RouteInvalidError, fmt.Sprintf("Max ttl is %d", h.maxTTL)}
-	}
-
-	if apiErr != nil {
-		handleApiError(w, apiErr, log)
-		return
-	}
-
-	err = h.db.SaveRoute(route)
-	if err != nil {
-		handleDBError(w, err, log)
-		return
+	for _, route := range routes {
+		err = h.db.SaveRoute(route)
+		if err != nil {
+			handleDBError(w, err, log)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusCreated)
@@ -63,26 +67,30 @@ func (h *RoutesHandler) Delete(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("delete-route")
 	decoder := json.NewDecoder(req.Body)
 
-	var route db.Route
-	err := decoder.Decode(&route)
+	var routes []db.Route
+	err := decoder.Decode(&routes)
 	if err != nil {
 		handleProcessRequestError(w, err, log)
 		return
 	}
 
-	log.Info("request", lager.Data{"route_deletion": route})
+	for _, route := range routes {
+		log.Info("request", lager.Data{"route_deletion": route})
 
-	apiErr := routeValidator(route)
+		apiErr := routeValidator(route)
 
-	if apiErr != nil {
-		handleApiError(w, apiErr, log)
-		return
+		if apiErr != nil {
+			handleApiError(w, apiErr, log)
+			return
+		}
 	}
 
-	err = h.db.DeleteRoute(route)
-	if err != nil {
-		handleDBError(w, err, log)
-		return
+	for _, route := range routes {
+		err = h.db.DeleteRoute(route)
+		if err != nil {
+			handleDBError(w, err, log)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)
