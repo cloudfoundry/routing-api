@@ -10,6 +10,7 @@ import (
 //go:generate counterfeiter -o fakes/fake_db.go . DB
 type DB interface {
 	SaveRoute(route Route) error
+	DeleteRoute(route Route) error
 }
 
 type Route struct {
@@ -31,9 +32,19 @@ func NewETCD(nodeURLs []string) etcd {
 }
 
 func (e etcd) SaveRoute(route Route) error {
-	key := fmt.Sprintf("/routes/%s,%s:%d", route.Route, route.IP, route.Port)
+	key := generateKey(route)
 	routeJSON, _ := json.Marshal(route)
 	_, err := e.client.Set(key, string(routeJSON), uint64(route.TTL))
 
 	return err
+}
+
+func (e etcd) DeleteRoute(route Route) error {
+	key := generateKey(route)
+	_, err := e.client.Delete(key, false)
+	return err
+}
+
+func generateKey(route Route) string {
+	return fmt.Sprintf("/routes/%s,%s:%d", route.Route, route.IP, route.Port)
 }

@@ -78,5 +78,26 @@ var _ = Describe("DB", func() {
 				})
 			})
 		})
+
+		Describe(".DeleteRoute", func() {
+			Context("when a route exists", func() {
+				BeforeEach(func() {
+					err := etcd.SaveRoute(route)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("Deletes the route", func() {
+					err := etcd.DeleteRoute(route)
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
+			Context("when deleting a route returns an error", func() {
+				It("returns a key not found error if the key does not exists", func() {
+					err := etcd.DeleteRoute(route)
+					Expect(err).To(HaveOccurred())
+				})
+			})
+		})
 	})
 })

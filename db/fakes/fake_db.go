@@ -16,6 +16,14 @@ type FakeDB struct {
 	saveRouteReturns struct {
 		result1 error
 	}
+	DeleteRouteStub        func(route db.Route) error
+	deleteRouteMutex       sync.RWMutex
+	deleteRouteArgsForCall []struct {
+		route db.Route
+	}
+	deleteRouteReturns struct {
+		result1 error
+	}
 }
 
 func (fake *FakeDB) SaveRoute(route db.Route) error {
@@ -46,6 +54,38 @@ func (fake *FakeDB) SaveRouteArgsForCall(i int) db.Route {
 func (fake *FakeDB) SaveRouteReturns(result1 error) {
 	fake.SaveRouteStub = nil
 	fake.saveRouteReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeDB) DeleteRoute(route db.Route) error {
+	fake.deleteRouteMutex.Lock()
+	fake.deleteRouteArgsForCall = append(fake.deleteRouteArgsForCall, struct {
+		route db.Route
+	}{route})
+	fake.deleteRouteMutex.Unlock()
+	if fake.DeleteRouteStub != nil {
+		return fake.DeleteRouteStub(route)
+	} else {
+		return fake.deleteRouteReturns.result1
+	}
+}
+
+func (fake *FakeDB) DeleteRouteCallCount() int {
+	fake.deleteRouteMutex.RLock()
+	defer fake.deleteRouteMutex.RUnlock()
+	return len(fake.deleteRouteArgsForCall)
+}
+
+func (fake *FakeDB) DeleteRouteArgsForCall(i int) db.Route {
+	fake.deleteRouteMutex.RLock()
+	defer fake.deleteRouteMutex.RUnlock()
+	return fake.deleteRouteArgsForCall[i].route
+}
+
+func (fake *FakeDB) DeleteRouteReturns(result1 error) {
+	fake.DeleteRouteStub = nil
+	fake.deleteRouteReturns = struct {
 		result1 error
 	}{result1}
 }
