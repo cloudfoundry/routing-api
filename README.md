@@ -1,5 +1,18 @@
 # CF Routing API
 
+## Installing this repo
+
+To clone this repo you will need to have godeps installed. You can install godeps
+by running the command `go get github.com/tools/godep`.
+
+To then install this repo you can run the following commands.
+
+```sh
+go get github.com/pivotal-cf-experimental/routing-api
+cd $GOPATH/src/github.com/pivotal-cf-experimental/routing-api
+godep restore
+```
+
 ## Development
 
 To run the tests you need a running etcd cluster on version 0.4.6. To get that do:
