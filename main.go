@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/pivotal-cf-experimental/routing-api/authentication"
 	"github.com/pivotal-cf-experimental/routing-api/db"
 	"github.com/pivotal-cf-experimental/routing-api/handlers"
 	"github.com/pivotal-golang/lager"
@@ -20,6 +21,7 @@ var Routes = rata.Routes{
 
 var maxTTL = flag.Int("maxTTL", 120, "Maximum TTL on the route")
 var port = flag.Int("port", 8080, "Port to run rounting-api server on")
+var ccEndpoint = flag.String("cc", "", "Url of the cloud controller")
 
 func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 	return http.HandlerFunc(f)
@@ -31,6 +33,11 @@ func main() {
 	flag.Parse()
 	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
 	database := db.NewETCD(flag.Args())
+
+	ccApi := authentication.NewCCApi(*ccEndpoint, logger)
+	uaa := authentication.NewUAA(ccApi)
+
+	uaa.GetVerificationToken()
 
 	validator := handlers.NewValidator()
 
