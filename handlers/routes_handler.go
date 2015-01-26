@@ -4,19 +4,22 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/pivotal-cf-experimental/routing-api/authentication"
 	"github.com/pivotal-cf-experimental/routing-api/db"
 	"github.com/pivotal-golang/lager"
 )
 
 type RoutesHandler struct {
+	token     authentication.Token
 	maxTTL    int
 	validator RouteValidator
 	db        db.DB
 	logger    lager.Logger
 }
 
-func NewRoutesHandler(maxTTL int, validator RouteValidator, database db.DB, logger lager.Logger) *RoutesHandler {
+func NewRoutesHandler(token authentication.Token, maxTTL int, validator RouteValidator, database db.DB, logger lager.Logger) *RoutesHandler {
 	return &RoutesHandler{
+		token:     token,
 		maxTTL:    maxTTL,
 		validator: validator,
 		db:        database,
@@ -36,6 +39,8 @@ func (h *RoutesHandler) Routes(w http.ResponseWriter, req *http.Request) {
 	}
 
 	log.Info("request", lager.Data{"route_creation": routes})
+
+	h.token.DecodeToken(req.Header.Get("Authorization"))
 
 	apiErr := h.validator.ValidateCreate(routes, h.maxTTL)
 	if apiErr != nil {

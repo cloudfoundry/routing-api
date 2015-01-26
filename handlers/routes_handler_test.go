@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 
+	fake_token "github.com/pivotal-cf-experimental/routing-api/authentication/fakes"
 	"github.com/pivotal-cf-experimental/routing-api/db"
 	fake_db "github.com/pivotal-cf-experimental/routing-api/db/fakes"
 	"github.com/pivotal-cf-experimental/routing-api/handlers"
@@ -46,13 +47,15 @@ var _ = Describe("RoutesHandler", func() {
 		database         *fake_db.FakeDB
 		logger           *lagertest.TestLogger
 		validator        *fake_validator.FakeRouteValidator
+		token            *fake_token.FakeToken
 	)
 
 	BeforeEach(func() {
 		database = &fake_db.FakeDB{}
 		validator = &fake_validator.FakeRouteValidator{}
+		token = &fake_token.FakeToken{}
 		logger = lagertest.NewTestLogger("routing-api-test")
-		routesHandler = handlers.NewRoutesHandler(50, validator, database, logger)
+		routesHandler = handlers.NewRoutesHandler(token, 50, validator, database, logger)
 		responseRecorder = httptest.NewRecorder()
 	})
 
