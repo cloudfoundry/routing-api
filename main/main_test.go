@@ -13,6 +13,11 @@ var _ = Describe("Main", func() {
 		session := RoutingApi()
 		Eventually(session).Should(Exit(1))
 	})
+
+	It("exits 1 if the uaa_verification_key is not a valid PEM format", func() {
+		session := RoutingApi("-config=../example_config/bad_uaa_verification_key.yml")
+		Eventually(session).Should(Exit(1))
+	})
 })
 
 func RoutingApi(args ...string) *Session {

@@ -1,6 +1,7 @@
 package authentication
 
 import (
+	"encoding/pem"
 	"errors"
 
 	"github.com/dgrijalva/jwt-go"
@@ -9,10 +10,11 @@ import (
 //go:generate counterfeiter -o fakes/fake_token.go . Token
 type Token interface {
 	DecodeToken(userToken string) error
+	CheckPublicToken() error
 }
 
 type accessToken struct {
-	uaaPublicKey string `json:"value"`
+	uaaPublicKey string
 }
 
 func NewAccessToken(uaaPublicKey string) accessToken {
@@ -49,6 +51,15 @@ func (accessToken accessToken) DecodeToken(userToken string) error {
 	if !hasPermission {
 		err = errors.New("Token does not have 'route.advertise' scope")
 		return err
+	}
+
+	return nil
+}
+
+func (accessToken accessToken) CheckPublicToken() error {
+	var block *pem.Block
+	if block, _ = pem.Decode([]byte(accessToken.uaaPublicKey)); block == nil {
+		return errors.New("Public uaa token must be PEM encoded")
 	}
 
 	return nil

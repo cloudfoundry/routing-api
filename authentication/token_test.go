@@ -45,9 +45,6 @@ var _ = Describe("Token", func() {
 		Context("when the token is valid", func() {
 			BeforeEach(func() {
 				claims := map[string]interface{}{
-					// "jti":       "c5f6a266-5cf0-4ae2-9647-2615e7d28fa1",
-					// "client_id": "mister-client",
-					// "cid":       "mister-client",
 					"exp":   3404281214,
 					"scope": []string{"route.advertise"},
 				}
@@ -63,12 +60,12 @@ var _ = Describe("Token", func() {
 			})
 		})
 
-		Context("when the token is not valid", func() {
+		Context("when a token is not valid", func() {
 			BeforeEach(func() {
 				err = accessToken.DecodeToken("not a signed key")
 			})
 
-			It("returns an error if the token is malformed", func() {
+			It("returns an error if the user token is malformed", func() {
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -77,7 +74,6 @@ var _ = Describe("Token", func() {
 			BeforeEach(func() {
 				claims := map[string]interface{}{
 					"exp": time.Now().Unix() - 5,
-					// "exp": time.Now(),
 				}
 				token.Claims = claims
 
@@ -110,6 +106,16 @@ var _ = Describe("Token", func() {
 				Expect(err.Error()).To(Equal("Token does not have 'route.advertise' scope"))
 			})
 		})
+	})
 
+	Describe(".CheckPublicToken", func() {
+		BeforeEach(func() {
+			accessToken = authentication.NewAccessToken("not a valid pem string")
+		})
+
+		It("returns an error if the public token is malformed", func() {
+			err = accessToken.CheckPublicToken()
+			Expect(err).To(HaveOccurred())
+		})
 	})
 })

@@ -16,6 +16,12 @@ type FakeToken struct {
 	decodeTokenReturns struct {
 		result1 error
 	}
+	CheckPublicTokenStub        func() error
+	checkPublicTokenMutex       sync.RWMutex
+	checkPublicTokenArgsForCall []struct{}
+	checkPublicTokenReturns struct {
+		result1 error
+	}
 }
 
 func (fake *FakeToken) DecodeToken(userToken string) error {
@@ -46,6 +52,30 @@ func (fake *FakeToken) DecodeTokenArgsForCall(i int) string {
 func (fake *FakeToken) DecodeTokenReturns(result1 error) {
 	fake.DecodeTokenStub = nil
 	fake.decodeTokenReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeToken) CheckPublicToken() error {
+	fake.checkPublicTokenMutex.Lock()
+	fake.checkPublicTokenArgsForCall = append(fake.checkPublicTokenArgsForCall, struct{}{})
+	fake.checkPublicTokenMutex.Unlock()
+	if fake.CheckPublicTokenStub != nil {
+		return fake.CheckPublicTokenStub()
+	} else {
+		return fake.checkPublicTokenReturns.result1
+	}
+}
+
+func (fake *FakeToken) CheckPublicTokenCallCount() int {
+	fake.checkPublicTokenMutex.RLock()
+	defer fake.checkPublicTokenMutex.RUnlock()
+	return len(fake.checkPublicTokenArgsForCall)
+}
+
+func (fake *FakeToken) CheckPublicTokenReturns(result1 error) {
+	fake.CheckPublicTokenStub = nil
+	fake.checkPublicTokenReturns = struct {
 		result1 error
 	}{result1}
 }

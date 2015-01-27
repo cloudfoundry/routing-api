@@ -49,6 +49,11 @@ func main() {
 	database := db.NewETCD(flag.Args())
 
 	token := authentication.NewAccessToken(cfg.UAAPublicKey)
+	err = token.CheckPublicToken()
+	if err != nil {
+		logger.Error("starting", err)
+		os.Exit(1)
+	}
 
 	validator := handlers.NewValidator()
 
