@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/pivotal-golang/lager"
 )
 
 //go:generate counterfeiter -o fakes/fake_token.go . Token
@@ -14,13 +13,11 @@ type Token interface {
 
 type accessToken struct {
 	uaaPublicKey string `json:"value"`
-	logger       lager.Logger
 }
 
-func NewAccessToken(uaaPublicKey string, logger lager.Logger) accessToken {
+func NewAccessToken(uaaPublicKey string) accessToken {
 	return accessToken{
 		uaaPublicKey: uaaPublicKey,
-		logger:       logger,
 	}
 }
 
@@ -34,7 +31,6 @@ func (accessToken accessToken) DecodeToken(userToken string) error {
 	})
 
 	if err != nil {
-		accessToken.logger.Error("error", err)
 		return err
 	}
 
@@ -51,7 +47,8 @@ func (accessToken accessToken) DecodeToken(userToken string) error {
 	}
 
 	if !hasPermission {
-		return errors.New("route.advertise permissions missing")
+		err = errors.New("Token does not have 'route.advertise' scope")
+		return err
 	}
 
 	return nil

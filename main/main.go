@@ -1,12 +1,14 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"net/http"
 	"os"
 	"strconv"
 
 	"github.com/pivotal-cf-experimental/routing-api/authentication"
+	"github.com/pivotal-cf-experimental/routing-api/config"
 	"github.com/pivotal-cf-experimental/routing-api/db"
 	"github.com/pivotal-cf-experimental/routing-api/handlers"
 	"github.com/pivotal-golang/lager"
@@ -16,13 +18,13 @@ import (
 )
 
 var Routes = rata.Routes{
-	{Path: "/v1/routes", Method: "POST", Name: "Routes"},
+	{Path: "/v1/routes", Method: "POST", Name: "Upsert"},
 	{Path: "/v1/routes", Method: "DELETE", Name: "Delete"},
 }
 
 var maxTTL = flag.Int("maxTTL", 120, "Maximum TTL on the route")
 var port = flag.Int("port", 8080, "Port to run rounting-api server on")
-var uaaPublicKey = flag.String("uaa-public-key", "", "Public jwt key for uaa")
+var cfg_flag = flag.String("config", "", "Configuration for routing-api")
 
 func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 	return http.HandlerFunc(f)
@@ -32,21 +34,28 @@ func main() {
 	logger := cf_lager.New("routing-api")
 
 	flag.Parse()
-	if *uaaPublicKey == "" {
+	if *cfg_flag == "" {
+		logger.Error("starting", errors.New("No configuration file provided"))
+		os.Exit(1)
+	}
+
+	cfg, err := config.NewConfigFromFile(*cfg_flag)
+	if err != nil {
+		logger.Error("starting", err)
 		os.Exit(1)
 	}
 
 	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
 	database := db.NewETCD(flag.Args())
 
-	token := authentication.NewAccessToken(*uaaPublicKey, logger)
+	token := authentication.NewAccessToken(cfg.UAAPublicKey)
 
 	validator := handlers.NewValidator()
 
 	routesHandler := handlers.NewRoutesHandler(token, *maxTTL, validator, database, logger)
 
 	actions := rata.Handlers{
-		"Routes": route(routesHandler.Routes),
+		"Upsert": route(routesHandler.Upsert),
 		"Delete": route(routesHandler.Delete),
 	}
 

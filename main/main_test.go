@@ -9,7 +9,7 @@ import (
 )
 
 var _ = Describe("Main", func() {
-	It("exits 1 if no uaa-public-key is provided", func() {
+	It("exits 1 if no config file is provided", func() {
 		session := RoutingApi()
 		Eventually(session).Should(Exit(1))
 	})

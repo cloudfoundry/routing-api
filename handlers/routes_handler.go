@@ -27,7 +27,7 @@ func NewRoutesHandler(token authentication.Token, maxTTL int, validator RouteVal
 	}
 }
 
-func (h *RoutesHandler) Routes(w http.ResponseWriter, req *http.Request) {
+func (h *RoutesHandler) Upsert(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("create-route")
 	decoder := json.NewDecoder(req.Body)
 
@@ -40,7 +40,11 @@ func (h *RoutesHandler) Routes(w http.ResponseWriter, req *http.Request) {
 
 	log.Info("request", lager.Data{"route_creation": routes})
 
-	h.token.DecodeToken(req.Header.Get("Authorization"))
+	err = h.token.DecodeToken(req.Header.Get("Authorization"))
+	if err != nil {
+		handleUnauthorizedError(w, err, log)
+		return
+	}
 
 	apiErr := h.validator.ValidateCreate(routes, h.maxTTL)
 	if apiErr != nil {
@@ -71,6 +75,12 @@ func (h *RoutesHandler) Delete(w http.ResponseWriter, req *http.Request) {
 	}
 
 	log.Info("request", lager.Data{"route_deletion": routes})
+
+	err = h.token.DecodeToken(req.Header.Get("Authorization"))
+	if err != nil {
+		handleUnauthorizedError(w, err, log)
+		return
+	}
 
 	apiErr := h.validator.ValidateDelete(routes)
 	if apiErr != nil {
@@ -113,5 +123,14 @@ func handleDBError(w http.ResponseWriter, err error, log lager.Logger) {
 	retErr, _ := json.Marshal(Error{DBCommunicationError, err.Error()})
 
 	w.WriteHeader(http.StatusInternalServerError)
+	w.Write(retErr)
+}
+
+func handleUnauthorizedError(w http.ResponseWriter, err error, log lager.Logger) {
+	log.Error("error", err)
+
+	retErr, _ := json.Marshal(Error{UnauthorizedError, err.Error()})
+
+	w.WriteHeader(http.StatusUnauthorized)
 	w.Write(retErr)
 }

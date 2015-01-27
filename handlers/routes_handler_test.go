@@ -140,9 +140,22 @@ var _ = Describe("RoutesHandler", func() {
 				Expect(responseRecorder.Body.String()).To(ContainSubstring("Cannot process request"))
 			})
 		})
+
+		Context("when the UAA token is not valid", func() {
+			BeforeEach(func() {
+				token.DecodeTokenReturns(errors.New("Not valid"))
+			})
+
+			It("returns an Unauthorized status code", func() {
+				request = newTestRequest(route)
+				routesHandler.Delete(responseRecorder, request)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
+			})
+		})
 	})
 
-	Describe(".Routes", func() {
+	Describe(".Upsert", func() {
 		Context("POST", func() {
 			var (
 				route []db.Route
@@ -162,7 +175,7 @@ var _ = Describe("RoutesHandler", func() {
 			Context("when all inputs are present and correct", func() {
 				It("returns an http status created", func() {
 					request = newTestRequest(route)
-					routesHandler.Routes(responseRecorder, request)
+					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 				})
@@ -172,7 +185,7 @@ var _ = Describe("RoutesHandler", func() {
 					route[1].IP = "5.4.3.2"
 
 					request = newTestRequest(route)
-					routesHandler.Routes(responseRecorder, request)
+					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 					Expect(database.SaveRouteCallCount()).To(Equal(2))
@@ -182,7 +195,7 @@ var _ = Describe("RoutesHandler", func() {
 
 				It("logs the route declaration", func() {
 					request = newTestRequest(route)
-					routesHandler.Routes(responseRecorder, request)
+					routesHandler.Upsert(responseRecorder, request)
 
 					data := map[string]interface{}{
 						"ip":       "1.2.3.4",
@@ -201,7 +214,7 @@ var _ = Describe("RoutesHandler", func() {
 					route[0].LogGuid = ""
 
 					request = newTestRequest(route)
-					routesHandler.Routes(responseRecorder, request)
+					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 				})
@@ -210,7 +223,7 @@ var _ = Describe("RoutesHandler", func() {
 					route[0].LogGuid = "my-guid"
 
 					request = newTestRequest(route)
-					routesHandler.Routes(responseRecorder, request)
+					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(database.SaveRouteCallCount()).To(Equal(1))
 					Expect(database.SaveRouteArgsForCall(0)).To(Equal(route[0]))
@@ -223,7 +236,7 @@ var _ = Describe("RoutesHandler", func() {
 
 					It("responds with a server error", func() {
 						request = newTestRequest(route)
-						routesHandler.Routes(responseRecorder, request)
+						routesHandler.Upsert(responseRecorder, request)
 
 						Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
 						Expect(responseRecorder.Body.String()).To(ContainSubstring("stuff broke"))
@@ -238,17 +251,30 @@ var _ = Describe("RoutesHandler", func() {
 
 				It("does not write to the key-value store backend", func() {
 					request = newTestRequest(route)
-					routesHandler.Routes(responseRecorder, request)
+					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 				})
 
 				It("logs the error", func() {
 					request = newTestRequest(route)
-					routesHandler.Routes(responseRecorder, request)
+					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(logger.Logs()[1].Message).To(ContainSubstring("error"))
 					Expect(logger.Logs()[1].Data["error"]).To(Equal("error message"))
+				})
+			})
+
+			Context("when the UAA token is not valid", func() {
+				BeforeEach(func() {
+					token.DecodeTokenReturns(errors.New("Not valid"))
+				})
+
+				It("returns an Unauthorized status code", func() {
+					request = newTestRequest(route)
+					routesHandler.Upsert(responseRecorder, request)
+
+					Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
 				})
 			})
 		})

@@ -13,4 +13,5 @@ const (
 	ProcessRequestError  = "ProcessRequestError"
 	RouteInvalidError    = "RouteInvalidError"
 	DBCommunicationError = "DBCommunicationError"
+	UnauthorizedError    = "UnauthorizedError"
 )
