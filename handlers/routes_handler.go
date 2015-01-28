@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/pivotal-cf-experimental/routing-api/authentication"
 	"github.com/pivotal-cf-experimental/routing-api/db"
@@ -90,7 +91,7 @@ func (h *RoutesHandler) Delete(w http.ResponseWriter, req *http.Request) {
 
 	for _, route := range routes {
 		err = h.db.DeleteRoute(route)
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "Key not found") {
 			handleDBError(w, err, log)
 			return
 		}

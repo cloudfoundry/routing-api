@@ -116,11 +116,18 @@ var _ = Describe("RoutesHandler", func() {
 			})
 
 			Context("when the database deletion fails", func() {
-				BeforeEach(func() {
-					database.DeleteRouteReturns(errors.New("stuff broke"))
+				It("returns a 204 if the key was not found", func() {
+					database.DeleteRouteReturns(errors.New("Key not found"))
+
+					request = newTestRequest(route)
+					routesHandler.Delete(responseRecorder, request)
+
+					Expect(responseRecorder.Code).To(Equal(http.StatusNoContent))
 				})
 
 				It("responds with a server error", func() {
+					database.DeleteRouteReturns(errors.New("stuff broke"))
+
 					request = newTestRequest(route)
 					routesHandler.Delete(responseRecorder, request)
 
