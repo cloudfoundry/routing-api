@@ -1,6 +1,6 @@
 # CF Routing API
 
-## Installing this repo
+## Installing this Repo
 
 To clone this repo you will need to have godeps installed. You can install godeps
 by running the command `go get github.com/tools/godep`.
@@ -14,6 +14,8 @@ godep restore
 ```
 
 ## Development
+
+#### etcd
 
 To run the tests you need a running etcd cluster on version 0.4.6. To get that do:
 
@@ -38,14 +40,71 @@ Note that this will run an etcd server and create a new directory at that locati
 where it stores all of the records. This directory can be removed afterwards, or 
 you can simply run etcd in a temporary directory.
 
+#### Authorization Token
+
+To easily generate a token with the `route.advertise` scope, you will need to
+install the `uaac` CLI tool (`gem install cf-uaac`) and follow these steps:
+
+```bash
+uaac target uaa.10.244.0.34.xip.io
+uaac token client get admin # You will need to provide the client_secret, found in your CF manifest.
+uaac client add route --authorities "route.advertise" --authorized_grant_type "client_credentials"
+uaac token client get route
+uaac context
+```
+
+The last command will show you the client's token, which can then be used to
+curl the Routing API as a Authorization header.
+
+## API Server Configuration
+
+To run the routing-api server, a configuration file with the public uaa jwt token must be provided.
+This configuration file can then be passed in with the flag `-config [path_to_config]`.
+An example of the configuration file can be found under `example_config/example.yml` for bosh-lite.
+
+To generate your own config file, you must provide a `uaa_verification_key` in pem format, such as the following:
+
+```
+uaa_verification_key: "-----BEGIN PUBLIC KEY-----
+
+      MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDHFr+KICms+tuT1OXJwhCUtR2d
+
+      KVy7psa8xzElSyzqx7oJyfJ1JZyOzToj9T5SfTIq396agbHJWVfYphNahvZ/7uMX
+
+      qHxf+ZH9BL1gk9Y6kCnbM5R60gfwjyW1/dQPjOzn9N394zd2FJoFHwdq9Qs0wBug
+
+      spULZVNRxq7veq/fzwIDAQAB
+
+      -----END PUBLIC KEY-----"
+```
+
+This can be found in your Cloud Foundry manifest under `uaa.jwt.verification_key`
+
+## UAA Scope
+
+To interact with the Routing API server, you must provide a authorization token
+with the `route.advertise` scope enabled. Any client that wishes to register
+routes with the Routing API should have the `authorities: route.advertise`
+specified in the CF manifest.
+
+E.g:
+```
+uaa:
+   clients:
+      route_advertise_client:
+         authorities: route.advertise
+         authorized_grant_type: client_credentials
+         secret: route_secret
+```
+
 ## Usage
 
-To run the API server you need to provide all the urls for the etcd cluster, plus some optional flags.
+To run the API server you need to provide all the urls for the etcd cluster, a configuration file containg the public uaa jwt key, plus some optional flags.
 
 Example 1:
 
 ```sh
-routing-api -port 3000 -maxTTL 60 http://etcd.127.0.0.1.xip.io:4001
+routing-api -config example_config/example.yml -port 3000 -maxTTL 60 http://etcd.127.0.0.1.xip.io:4001
 ```
 
 Where `http://etcd.127.0.0.1.xip.io:4001` is the single etcd member.
