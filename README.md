@@ -13,6 +13,16 @@ cd $GOPATH/src/github.com/pivotal-cf-experimental/routing-api
 godep restore
 ```
 
+To install the server binary you can do
+
+```sh
+cd $GOPATH/src/github.com/pivotal-cf-experimental/routing-api
+go install ./cmd/routing-api
+
+# OR
+go get github.com/pivotal-cf-experimental/routing-api/cmd/routing-api
+```
+
 ## Development
 
 #### etcd

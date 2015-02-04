@@ -21,7 +21,7 @@ var _ = Describe("Main", func() {
 })
 
 func RoutingApi(args ...string) *Session {
-	path, err := Build("github.com/pivotal-cf-experimental/routing-api/main")
+	path, err := Build("github.com/pivotal-cf-experimental/routing-api/cmd/routing-api")
 	Expect(err).NotTo(HaveOccurred())
 
 	session, err := Start(exec.Command(path, args...), GinkgoWriter, GinkgoWriter)
