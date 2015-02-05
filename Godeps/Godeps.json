@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/pivotal-cf-experimental/routing-api",
+	"ImportPath": "github.com/cloudfoundry-incubator/routing-api",
 	"GoVersion": "go1.4.1",
 	"Packages": [
 		"./..."

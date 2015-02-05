@@ -8,19 +8,19 @@ by running the command `go get github.com/tools/godep`.
 To then install this repo you can run the following commands.
 
 ```sh
-go get github.com/pivotal-cf-experimental/routing-api
-cd $GOPATH/src/github.com/pivotal-cf-experimental/routing-api
+go get github.com/cloudfoundry-incubator/routing-api
+cd $GOPATH/src/github.com/cloudfoundry-incubator/routing-api
 godep restore
 ```
 
 To install the server binary you can do
 
 ```sh
-cd $GOPATH/src/github.com/pivotal-cf-experimental/routing-api
+cd $GOPATH/src/github.com/cloudfoundry-incubator/routing-api
 go install ./cmd/routing-api
 
 # OR
-go get github.com/pivotal-cf-experimental/routing-api/cmd/routing-api
+go get github.com/cloudfoundry-incubator/routing-api/cmd/routing-api
 ```
 
 ## Development

@@ -1,7 +1,7 @@
 package config_test
 
 import (
-	"github.com/pivotal-cf-experimental/routing-api/config"
+	"github.com/cloudfoundry-incubator/routing-api/config"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

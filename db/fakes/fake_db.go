@@ -4,7 +4,7 @@ package fakes
 import (
 	"sync"
 
-	"github.com/pivotal-cf-experimental/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/db"
 )
 
 type FakeDB struct {

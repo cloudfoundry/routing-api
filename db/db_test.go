@@ -1,7 +1,7 @@
 package db_test
 
 import (
-	"github.com/pivotal-cf-experimental/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/db"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

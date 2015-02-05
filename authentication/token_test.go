@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/pivotal-cf-experimental/routing-api/authentication"
-	"github.com/pivotal-cf-experimental/routing-api/authentication/fakes"
+	"github.com/cloudfoundry-incubator/routing-api/authentication"
+	"github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -3,7 +3,7 @@ package handlers
 import (
 	"fmt"
 
-	"github.com/pivotal-cf-experimental/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/db"
 )
 
 //go:generate counterfeiter -o fakes/fake_validator.go . RouteValidator

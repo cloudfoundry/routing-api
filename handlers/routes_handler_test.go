@@ -9,11 +9,11 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	fake_token "github.com/pivotal-cf-experimental/routing-api/authentication/fakes"
-	"github.com/pivotal-cf-experimental/routing-api/db"
-	fake_db "github.com/pivotal-cf-experimental/routing-api/db/fakes"
-	"github.com/pivotal-cf-experimental/routing-api/handlers"
-	fake_validator "github.com/pivotal-cf-experimental/routing-api/handlers/fakes"
+	fake_token "github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
+	"github.com/cloudfoundry-incubator/routing-api/db"
+	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
+	"github.com/cloudfoundry-incubator/routing-api/handlers"
+	fake_validator "github.com/cloudfoundry-incubator/routing-api/handlers/fakes"
 	"github.com/pivotal-golang/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"

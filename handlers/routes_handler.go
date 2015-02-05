@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pivotal-cf-experimental/routing-api/authentication"
-	"github.com/pivotal-cf-experimental/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/authentication"
+	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/pivotal-golang/lager"
 )
 

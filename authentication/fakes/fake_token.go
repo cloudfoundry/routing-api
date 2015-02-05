@@ -4,7 +4,7 @@ package fakes
 import (
 	"sync"
 
-	"github.com/pivotal-cf-experimental/routing-api/authentication"
+	"github.com/cloudfoundry-incubator/routing-api/authentication"
 )
 
 type FakeToken struct {

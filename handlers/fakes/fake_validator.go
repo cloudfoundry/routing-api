@@ -4,8 +4,8 @@ package fakes
 import (
 	"sync"
 
-	"github.com/pivotal-cf-experimental/routing-api/db"
-	"github.com/pivotal-cf-experimental/routing-api/handlers"
+	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/handlers"
 )
 
 type FakeRouteValidator struct {

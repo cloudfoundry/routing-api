@@ -3,8 +3,8 @@ package handlers_test
 import (
 	"fmt"
 
-	"github.com/pivotal-cf-experimental/routing-api/db"
-	"github.com/pivotal-cf-experimental/routing-api/handlers"
+	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/handlers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

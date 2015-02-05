@@ -7,10 +7,10 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/pivotal-cf-experimental/routing-api/authentication"
-	"github.com/pivotal-cf-experimental/routing-api/config"
-	"github.com/pivotal-cf-experimental/routing-api/db"
-	"github.com/pivotal-cf-experimental/routing-api/handlers"
+	"github.com/cloudfoundry-incubator/routing-api/authentication"
+	"github.com/cloudfoundry-incubator/routing-api/config"
+	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/handlers"
 	"github.com/pivotal-golang/lager"
 
 	cf_lager "github.com/cloudfoundry-incubator/cf-lager"

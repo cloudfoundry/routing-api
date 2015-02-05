@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf-experimental/routing-api/db/etcdrunner"
+	"github.com/cloudfoundry-incubator/routing-api/db/etcdrunner"
 
 	"testing"
 )
