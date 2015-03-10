@@ -9,11 +9,12 @@ import (
 
 type MetronConfig struct {
 	Address string
-	Port string
+	Port    string
 }
 
 type Config struct {
-	UAAPublicKey string `yaml:"uaa_verification_key"`
+	UAAPublicKey string       `yaml:"uaa_verification_key"`
+	LogGuid      string       `yaml:"log_guid"`
 	MetronConfig MetronConfig `yaml:"metron_config"`
 }
 
