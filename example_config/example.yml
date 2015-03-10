@@ -9,3 +9,6 @@ uaa_verification_key: "-----BEGIN PUBLIC KEY-----
       spULZVNRxq7veq/fzwIDAQAB
 
       -----END PUBLIC KEY-----"
+metron_config:
+  address: "1.2.3.4"
+  port: "4567"

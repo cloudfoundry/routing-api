@@ -7,18 +7,24 @@ import (
 	"github.com/cloudfoundry-incubator/candiedyaml"
 )
 
-type Config struct {
-	UAAPublicKey string `yaml:"uaa_verification_key"`
+type MetronConfig struct {
+	Address string
+	Port string
 }
 
-func NewConfigFromFile(configFile string) (*Config, error) {
+type Config struct {
+	UAAPublicKey string `yaml:"uaa_verification_key"`
+	MetronConfig MetronConfig `yaml:"metron_config"`
+}
+
+func NewConfigFromFile(configFile string) (Config, error) {
 	c, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		return nil, err
+		return Config{}, err
 	}
 
 	// Init things
-	config := &Config{}
+	config := Config{}
 	config.Initialize(c)
 
 	return config, nil

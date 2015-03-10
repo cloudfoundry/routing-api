@@ -12,9 +12,12 @@ var _ = Describe("Config", func() {
 		Context("when the file exists", func() {
 			It("returns a valid Config struct", func() {
 				cfg_file := "../example_config/example.yml"
-				_, err := config.NewConfigFromFile(cfg_file)
+				cfg, err := config.NewConfigFromFile(cfg_file)
 
 				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.MetronConfig.Address).To(Equal("1.2.3.4"))
+				Expect(cfg.MetronConfig.Port).To(Equal("4567"))
+
 			})
 		})
 

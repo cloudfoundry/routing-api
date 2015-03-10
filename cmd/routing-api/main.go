@@ -12,6 +12,7 @@ import (
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
 	"github.com/pivotal-golang/lager"
+	"github.com/cloudfoundry/dropsonde"
 
 	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/tedsuo/rata"
@@ -31,7 +32,14 @@ func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 }
 
 func main() {
+	cfg, err := config.NewConfigFromFile(*cfg_flag)
 	logger := cf_lager.New("routing-api")
+
+	err = dropsonde.Initialize(cfg.MetronConfig.Address + ":" + cfg.MetronConfig.Port, "routing_api_z1_0")
+	if err != nil {
+		logger.Error("Dropsonde failed to initialize:", err)
+		os.Exit(1)
+	}
 
 	flag.Parse()
 	if *cfg_flag == "" {
@@ -39,7 +47,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	cfg, err := config.NewConfigFromFile(*cfg_flag)
 	if err != nil {
 		logger.Error("starting", err)
 		os.Exit(1)
