@@ -59,6 +59,152 @@ var _ = Describe("RoutesHandler", func() {
 		responseRecorder = httptest.NewRecorder()
 	})
 
+	Describe(".List", func() {
+		It("response with a 200 OK", func() {
+			request = newTestRequest("")
+
+			routesHandler.List(responseRecorder, request)
+
+			Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+		})
+
+		It("checks for route.read scope", func() {
+			request = newTestRequest("")
+
+			routesHandler.List(responseRecorder, request)
+			_, permission := token.DecodeTokenArgsForCall(0)
+			Expect(permission).To(Equal(handlers.ReadRoutesScope))
+		})
+
+		Context("when the UAA token is not valid", func() {
+			BeforeEach(func() {
+				token.DecodeTokenReturns(errors.New("Not valid"))
+			})
+
+			It("returns an Unauthorized status code", func() {
+				request = newTestRequest("")
+				routesHandler.List(responseRecorder, request)
+				Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
+			})
+		})
+
+		Context("when the database is empty", func() {
+			var (
+				routes []db.Route
+			)
+
+			BeforeEach(func() {
+				routes = []db.Route{}
+
+				database.ReadRoutesReturns(routes, nil)
+			})
+
+			It("returns an empty set", func() {
+				request = newTestRequest("")
+
+				routesHandler.List(responseRecorder, request)
+
+				Expect(responseRecorder.Body.String()).To(MatchJSON("[]"))
+			})
+		})
+
+		Context("when the database has one route", func() {
+			var (
+				routes []db.Route
+			)
+
+			BeforeEach(func() {
+				routes = []db.Route{
+					{
+						Route: "post_here",
+						IP:    "1.2.3.4",
+						Port:  7000,
+					},
+				}
+
+				database.ReadRoutesReturns(routes, nil)
+			})
+
+			It("returns a single route", func() {
+				request = newTestRequest("")
+
+				routesHandler.List(responseRecorder, request)
+
+				Expect(responseRecorder.Body.String()).To(MatchJSON(`[
+							{
+								"route": "post_here",
+								"port": 7000,
+								"ip": "1.2.3.4",
+								"ttl": 0,
+								"log_guid": ""
+							}
+						]`))
+			})
+		})
+
+		Context("when the database has many routes", func() {
+			var (
+				routes []db.Route
+			)
+
+			BeforeEach(func() {
+				routes = []db.Route{
+					{
+						Route: "post_here",
+						IP:    "1.2.3.4",
+						Port:  7000,
+					},
+					{
+						Route:   "post_there",
+						IP:      "1.2.3.5",
+						Port:    2000,
+						TTL:     23,
+						LogGuid: "Something",
+					},
+				}
+
+				database.ReadRoutesReturns(routes, nil)
+			})
+
+			It("returns a single route", func() {
+				request = newTestRequest("")
+
+				routesHandler.List(responseRecorder, request)
+
+				Expect(responseRecorder.Body.String()).To(MatchJSON(`[
+							{
+								"route": "post_here",
+								"port": 7000,
+								"ip": "1.2.3.4",
+								"ttl": 0,
+								"log_guid": ""
+							},
+							{
+								"route": "post_there",
+								"port": 2000,
+								"ip": "1.2.3.5",
+								"ttl": 23,
+								"log_guid": "Something"
+							}
+						]`))
+			})
+		})
+
+		Context("when the database errors out", func() {
+			BeforeEach(func() {
+				database.ReadRoutesReturns(nil, errors.New("some bad thing happened"))
+			})
+
+			It("returns a 500 Internal Server Error", func() {
+				request = newTestRequest("")
+
+				routesHandler.List(responseRecorder, request)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+			})
+		})
+	})
+
 	Describe(".DeleteRoute", func() {
 		var (
 			route []db.Route
@@ -72,6 +218,15 @@ var _ = Describe("RoutesHandler", func() {
 					Port:  7000,
 				},
 			}
+		})
+
+		It("checks for route.advertise scope", func() {
+			request = newTestRequest(route)
+
+			routesHandler.Delete(responseRecorder, request)
+
+			_, permission := token.DecodeTokenArgsForCall(0)
+			Expect(permission).To(Equal(handlers.AdvertiseRouteScope))
 		})
 
 		Context("when all inputs are present and correct", func() {
@@ -177,6 +332,15 @@ var _ = Describe("RoutesHandler", func() {
 						TTL:   50,
 					},
 				}
+			})
+
+			It("checks for route.advertise scope", func() {
+				request = newTestRequest(route)
+
+				routesHandler.Upsert(responseRecorder, request)
+
+				_, permission := token.DecodeTokenArgsForCall(0)
+				Expect(permission).To(Equal(handlers.AdvertiseRouteScope))
 			})
 
 			Context("when all inputs are present and correct", func() {

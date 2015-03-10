@@ -8,10 +8,11 @@ import (
 )
 
 type FakeToken struct {
-	DecodeTokenStub        func(userToken string) error
+	DecodeTokenStub        func(userToken, desiredPermission string) error
 	decodeTokenMutex       sync.RWMutex
 	decodeTokenArgsForCall []struct {
-		userToken string
+		userToken         string
+		desiredPermission string
 	}
 	decodeTokenReturns struct {
 		result1 error
@@ -19,19 +20,20 @@ type FakeToken struct {
 	CheckPublicTokenStub        func() error
 	checkPublicTokenMutex       sync.RWMutex
 	checkPublicTokenArgsForCall []struct{}
-	checkPublicTokenReturns struct {
+	checkPublicTokenReturns     struct {
 		result1 error
 	}
 }
 
-func (fake *FakeToken) DecodeToken(userToken string) error {
+func (fake *FakeToken) DecodeToken(userToken string, desiredPermission string) error {
 	fake.decodeTokenMutex.Lock()
 	fake.decodeTokenArgsForCall = append(fake.decodeTokenArgsForCall, struct {
-		userToken string
-	}{userToken})
+		userToken         string
+		desiredPermission string
+	}{userToken, desiredPermission})
 	fake.decodeTokenMutex.Unlock()
 	if fake.DecodeTokenStub != nil {
-		return fake.DecodeTokenStub(userToken)
+		return fake.DecodeTokenStub(userToken, desiredPermission)
 	} else {
 		return fake.decodeTokenReturns.result1
 	}
@@ -43,10 +45,10 @@ func (fake *FakeToken) DecodeTokenCallCount() int {
 	return len(fake.decodeTokenArgsForCall)
 }
 
-func (fake *FakeToken) DecodeTokenArgsForCall(i int) string {
+func (fake *FakeToken) DecodeTokenArgsForCall(i int) (string, string) {
 	fake.decodeTokenMutex.RLock()
 	defer fake.decodeTokenMutex.RUnlock()
-	return fake.decodeTokenArgsForCall[i].userToken
+	return fake.decodeTokenArgsForCall[i].userToken, fake.decodeTokenArgsForCall[i].desiredPermission
 }
 
 func (fake *FakeToken) DecodeTokenReturns(result1 error) {

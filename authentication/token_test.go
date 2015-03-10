@@ -3,9 +3,9 @@ package authentication_test
 import (
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/cloudfoundry-incubator/routing-api/authentication"
 	"github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
+	"github.com/dgrijalva/jwt-go"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -55,14 +55,14 @@ var _ = Describe("Token", func() {
 			})
 
 			It("does not return an error", func() {
-				err := accessToken.DecodeToken(signedKey)
+				err := accessToken.DecodeToken(signedKey, "route.advertise")
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 
 		Context("when a token is not valid", func() {
 			BeforeEach(func() {
-				err = accessToken.DecodeToken("not a signed key")
+				err = accessToken.DecodeToken("not a signed key", "not a permission")
 			})
 
 			It("returns an error if the user token is malformed", func() {
@@ -82,7 +82,7 @@ var _ = Describe("Token", func() {
 			})
 
 			It("returns an error if the token is expired", func() {
-				err = accessToken.DecodeToken(signedKey)
+				err = accessToken.DecodeToken(signedKey, "route.advertise")
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal("token is expired"))
 			})
@@ -100,10 +100,10 @@ var _ = Describe("Token", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("returns an error if the the user does not have route.advertise permissions", func() {
-				err = accessToken.DecodeToken(signedKey)
+			It("returns an error if the the user does not have requested permissions", func() {
+				err = accessToken.DecodeToken(signedKey, "route.my-permissions")
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("Token does not have 'route.advertise' scope"))
+				Expect(err.Error()).To(Equal("Token does not have 'route.my-permissions' scope"))
 			})
 		})
 	})

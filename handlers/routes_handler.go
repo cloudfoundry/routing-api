@@ -10,6 +10,11 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
+const (
+	ReadRoutesScope     = "route.read"
+	AdvertiseRouteScope = "route.advertise"
+)
+
 type RoutesHandler struct {
 	token     authentication.Token
 	maxTTL    int
@@ -28,6 +33,23 @@ func NewRoutesHandler(token authentication.Token, maxTTL int, validator RouteVal
 	}
 }
 
+func (h *RoutesHandler) List(w http.ResponseWriter, req *http.Request) {
+	log := h.logger.Session("list-routes")
+
+	err := h.token.DecodeToken(req.Header.Get("Authorization"), ReadRoutesScope)
+	if err != nil {
+		handleUnauthorizedError(w, err, log)
+		return
+	}
+	route, err := h.db.ReadRoutes()
+	if err != nil {
+		handleDBError(w, err, log)
+		return
+	}
+	encoder := json.NewEncoder(w)
+	encoder.Encode(route)
+}
+
 func (h *RoutesHandler) Upsert(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("create-route")
 	decoder := json.NewDecoder(req.Body)
@@ -41,7 +63,7 @@ func (h *RoutesHandler) Upsert(w http.ResponseWriter, req *http.Request) {
 
 	log.Info("request", lager.Data{"route_creation": routes})
 
-	err = h.token.DecodeToken(req.Header.Get("Authorization"))
+	err = h.token.DecodeToken(req.Header.Get("Authorization"), AdvertiseRouteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -77,7 +99,7 @@ func (h *RoutesHandler) Delete(w http.ResponseWriter, req *http.Request) {
 
 	log.Info("request", lager.Data{"route_deletion": routes})
 
-	err = h.token.DecodeToken(req.Header.Get("Authorization"))
+	err = h.token.DecodeToken(req.Header.Get("Authorization"), AdvertiseRouteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return

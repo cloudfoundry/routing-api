@@ -25,6 +25,65 @@ var _ = Describe("DB", func() {
 			}
 		})
 
+		Describe(".ReadRoutes", func() {
+			It("Returns a empty list of routes", func() {
+				routes, err := etcd.ReadRoutes()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(routes).To(Equal([]db.Route{}))
+			})
+
+			Context("when only one entry is present", func() {
+				BeforeEach(func() {
+					route.Route = "next-route"
+					route.IP = "9.8.7.6"
+					route.Port = 12345
+
+					err := etcd.SaveRoute(route)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("Returns a list with one route", func() {
+					routes, err := etcd.ReadRoutes()
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(routes).To(ContainElement(route))
+				})
+			})
+
+			Context("when multiple entries present", func() {
+				var (
+					route2 db.Route
+				)
+
+				BeforeEach(func() {
+					route.Route = "next-route"
+					route.IP = "9.8.7.6"
+					route.Port = 12345
+
+					err := etcd.SaveRoute(route)
+					Expect(err).NotTo(HaveOccurred())
+
+					route2 = db.Route{
+						Route:   "some-route",
+						Port:    5500,
+						IP:      "3.1.5.7",
+						TTL:     1000,
+						LogGuid: "your-guid",
+					}
+					err = etcd.SaveRoute(route2)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("Returns a list with one route", func() {
+					routes, err := etcd.ReadRoutes()
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(routes).To(ContainElement(route))
+					Expect(routes).To(ContainElement(route2))
+				})
+			})
+		})
+
 		Describe(".SaveRoute", func() {
 			It("Creates a route if none exist", func() {
 				err := etcd.SaveRoute(route)

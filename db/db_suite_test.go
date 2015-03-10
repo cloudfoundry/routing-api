@@ -1,11 +1,11 @@
 package db_test
 
 import (
+	"github.com/cloudfoundry-incubator/routing-api/db/etcdrunner"
 	"github.com/coreos/go-etcd/etcd"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
-	"github.com/cloudfoundry-incubator/routing-api/db/etcdrunner"
 
 	"testing"
 )

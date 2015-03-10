@@ -8,6 +8,13 @@ import (
 )
 
 type FakeDB struct {
+	ReadRoutesStub        func() ([]db.Route, error)
+	readRoutesMutex       sync.RWMutex
+	readRoutesArgsForCall []struct{}
+	readRoutesReturns     struct {
+		result1 []db.Route
+		result2 error
+	}
 	SaveRouteStub        func(route db.Route) error
 	saveRouteMutex       sync.RWMutex
 	saveRouteArgsForCall []struct {
@@ -24,6 +31,31 @@ type FakeDB struct {
 	deleteRouteReturns struct {
 		result1 error
 	}
+}
+
+func (fake *FakeDB) ReadRoutes() ([]db.Route, error) {
+	fake.readRoutesMutex.Lock()
+	fake.readRoutesArgsForCall = append(fake.readRoutesArgsForCall, struct{}{})
+	fake.readRoutesMutex.Unlock()
+	if fake.ReadRoutesStub != nil {
+		return fake.ReadRoutesStub()
+	} else {
+		return fake.readRoutesReturns.result1, fake.readRoutesReturns.result2
+	}
+}
+
+func (fake *FakeDB) ReadRoutesCallCount() int {
+	fake.readRoutesMutex.RLock()
+	defer fake.readRoutesMutex.RUnlock()
+	return len(fake.readRoutesArgsForCall)
+}
+
+func (fake *FakeDB) ReadRoutesReturns(result1 []db.Route, result2 error) {
+	fake.ReadRoutesStub = nil
+	fake.readRoutesReturns = struct {
+		result1 []db.Route
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeDB) SaveRoute(route db.Route) error {

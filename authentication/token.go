@@ -9,7 +9,7 @@ import (
 
 //go:generate counterfeiter -o fakes/fake_token.go . Token
 type Token interface {
-	DecodeToken(userToken string) error
+	DecodeToken(userToken, desiredPermission string) error
 	CheckPublicToken() error
 }
 
@@ -27,7 +27,7 @@ type p struct {
 	uaaPublicKey string `json:"value"`
 }
 
-func (accessToken accessToken) DecodeToken(userToken string) error {
+func (accessToken accessToken) DecodeToken(userToken, desiredPermission string) error {
 	token, err := jwt.Parse(userToken, func(t *jwt.Token) (interface{}, error) {
 		return []byte(accessToken.uaaPublicKey), nil
 	})
@@ -42,14 +42,14 @@ func (accessToken accessToken) DecodeToken(userToken string) error {
 	a := permissions.([]interface{})
 
 	for _, permission := range a {
-		if permission.(string) == "route.advertise" {
+		if permission.(string) == desiredPermission {
 			hasPermission = true
 			break
 		}
 	}
 
 	if !hasPermission {
-		err = errors.New("Token does not have 'route.advertise' scope")
+		err = errors.New("Token does not have '" + desiredPermission + "' scope")
 		return err
 	}
 

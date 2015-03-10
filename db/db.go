@@ -9,6 +9,7 @@ import (
 
 //go:generate counterfeiter -o fakes/fake_db.go . DB
 type DB interface {
+	ReadRoutes() ([]Route, error)
 	SaveRoute(route Route) error
 	DeleteRoute(route Route) error
 }
@@ -29,6 +30,20 @@ func NewETCD(nodeURLs []string) etcd {
 	return etcd{
 		client: etcdclient.NewClient(nodeURLs),
 	}
+}
+
+func (e etcd) ReadRoutes() ([]Route, error) {
+	routes, err := e.client.Get("/routes", false, false)
+	if err != nil {
+		return []Route{}, nil
+	}
+	var route Route
+	listRoutes := []Route{}
+	for _, node := range routes.Node.Nodes {
+		json.Unmarshal([]byte(node.Value), &route)
+		listRoutes = append(listRoutes, route)
+	}
+	return listRoutes, nil
 }
 
 func (e etcd) SaveRoute(route Route) error {
