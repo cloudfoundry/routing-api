@@ -8,11 +8,11 @@ import (
 )
 
 type FakeToken struct {
-	DecodeTokenStub        func(userToken, desiredPermission string) error
+	DecodeTokenStub        func(userToken string, desiredPermissions ...string) error
 	decodeTokenMutex       sync.RWMutex
 	decodeTokenArgsForCall []struct {
-		userToken         string
-		desiredPermission string
+		userToken          string
+		desiredPermissions []string
 	}
 	decodeTokenReturns struct {
 		result1 error
@@ -20,20 +20,20 @@ type FakeToken struct {
 	CheckPublicTokenStub        func() error
 	checkPublicTokenMutex       sync.RWMutex
 	checkPublicTokenArgsForCall []struct{}
-	checkPublicTokenReturns     struct {
+	checkPublicTokenReturns struct {
 		result1 error
 	}
 }
 
-func (fake *FakeToken) DecodeToken(userToken string, desiredPermission string) error {
+func (fake *FakeToken) DecodeToken(userToken string, desiredPermissions ...string) error {
 	fake.decodeTokenMutex.Lock()
 	fake.decodeTokenArgsForCall = append(fake.decodeTokenArgsForCall, struct {
-		userToken         string
-		desiredPermission string
-	}{userToken, desiredPermission})
+		userToken          string
+		desiredPermissions []string
+	}{userToken, desiredPermissions})
 	fake.decodeTokenMutex.Unlock()
 	if fake.DecodeTokenStub != nil {
-		return fake.DecodeTokenStub(userToken, desiredPermission)
+		return fake.DecodeTokenStub(userToken, desiredPermissions...)
 	} else {
 		return fake.decodeTokenReturns.result1
 	}
@@ -45,10 +45,10 @@ func (fake *FakeToken) DecodeTokenCallCount() int {
 	return len(fake.decodeTokenArgsForCall)
 }
 
-func (fake *FakeToken) DecodeTokenArgsForCall(i int) (string, string) {
+func (fake *FakeToken) DecodeTokenArgsForCall(i int) (string, []string) {
 	fake.decodeTokenMutex.RLock()
 	defer fake.decodeTokenMutex.RUnlock()
-	return fake.decodeTokenArgsForCall[i].userToken, fake.decodeTokenArgsForCall[i].desiredPermission
+	return fake.decodeTokenArgsForCall[i].userToken, fake.decodeTokenArgsForCall[i].desiredPermissions
 }
 
 func (fake *FakeToken) DecodeTokenReturns(result1 error) {

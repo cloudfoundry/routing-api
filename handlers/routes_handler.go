@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ReadRoutesScope     = "route.read"
+	AdminRouteScope     = "route.admin"
 	AdvertiseRouteScope = "route.advertise"
 )
 
@@ -36,7 +36,7 @@ func NewRoutesHandler(token authentication.Token, maxTTL int, validator RouteVal
 func (h *RoutesHandler) List(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("list-routes")
 
-	err := h.token.DecodeToken(req.Header.Get("Authorization"), ReadRoutesScope)
+	err := h.token.DecodeToken(req.Header.Get("Authorization"), AdminRouteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -63,7 +63,7 @@ func (h *RoutesHandler) Upsert(w http.ResponseWriter, req *http.Request) {
 
 	log.Info("request", lager.Data{"route_creation": routes})
 
-	err = h.token.DecodeToken(req.Header.Get("Authorization"), AdvertiseRouteScope)
+	err = h.token.DecodeToken(req.Header.Get("Authorization"), AdvertiseRouteScope, AdminRouteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -99,7 +99,7 @@ func (h *RoutesHandler) Delete(w http.ResponseWriter, req *http.Request) {
 
 	log.Info("request", lager.Data{"route_deletion": routes})
 
-	err = h.token.DecodeToken(req.Header.Get("Authorization"), AdvertiseRouteScope)
+	err = h.token.DecodeToken(req.Header.Get("Authorization"), AdvertiseRouteScope, AdminRouteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return

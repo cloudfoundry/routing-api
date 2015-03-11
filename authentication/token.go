@@ -3,13 +3,14 @@ package authentication
 import (
 	"encoding/pem"
 	"errors"
+	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 )
 
 //go:generate counterfeiter -o fakes/fake_token.go . Token
 type Token interface {
-	DecodeToken(userToken, desiredPermission string) error
+	DecodeToken(userToken string, desiredPermissions ...string) error
 	CheckPublicToken() error
 }
 
@@ -27,7 +28,7 @@ type p struct {
 	uaaPublicKey string `json:"value"`
 }
 
-func (accessToken accessToken) DecodeToken(userToken, desiredPermission string) error {
+func (accessToken accessToken) DecodeToken(userToken string, desiredPermissions ...string) error {
 	token, err := jwt.Parse(userToken, func(t *jwt.Token) (interface{}, error) {
 		return []byte(accessToken.uaaPublicKey), nil
 	})
@@ -42,14 +43,16 @@ func (accessToken accessToken) DecodeToken(userToken, desiredPermission string) 
 	a := permissions.([]interface{})
 
 	for _, permission := range a {
-		if permission.(string) == desiredPermission {
-			hasPermission = true
-			break
+		for _, desiredPermission := range desiredPermissions {
+			if permission.(string) == desiredPermission {
+				hasPermission = true
+				break
+			}
 		}
 	}
 
 	if !hasPermission {
-		err = errors.New("Token does not have '" + desiredPermission + "' scope")
+		err = errors.New("Token does not have '" + strings.Join(desiredPermissions, "', '") + "' scope")
 		return err
 	}
 

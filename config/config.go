@@ -37,6 +37,10 @@ func (cfg *Config) Initialize(file []byte) error {
 		return err
 	}
 
+	if cfg.LogGuid == "" {
+		return errors.New("No log_guid specified")
+	}
+
 	if cfg.UAAPublicKey == "" {
 		return errors.New("No uaa_verification_key specified")
 	}

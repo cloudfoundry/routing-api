@@ -68,12 +68,12 @@ var _ = Describe("RoutesHandler", func() {
 			Expect(responseRecorder.Code).To(Equal(http.StatusOK))
 		})
 
-		It("checks for route.read scope", func() {
+		It("checks for route.admin scope", func() {
 			request = newTestRequest("")
 
 			routesHandler.List(responseRecorder, request)
 			_, permission := token.DecodeTokenArgsForCall(0)
-			Expect(permission).To(Equal(handlers.ReadRoutesScope))
+			Expect(permission).To(ConsistOf(handlers.AdminRouteScope))
 		})
 
 		Context("when the UAA token is not valid", func() {
@@ -220,13 +220,13 @@ var _ = Describe("RoutesHandler", func() {
 			}
 		})
 
-		It("checks for route.advertise scope", func() {
+		It("checks for route.advertise & route.admin scope", func() {
 			request = newTestRequest(route)
 
 			routesHandler.Delete(responseRecorder, request)
 
 			_, permission := token.DecodeTokenArgsForCall(0)
-			Expect(permission).To(Equal(handlers.AdvertiseRouteScope))
+			Expect(permission).To(ConsistOf(handlers.AdvertiseRouteScope, handlers.AdminRouteScope))
 		})
 
 		Context("when all inputs are present and correct", func() {
@@ -334,13 +334,13 @@ var _ = Describe("RoutesHandler", func() {
 				}
 			})
 
-			It("checks for route.advertise scope", func() {
+			It("checks for route.advertise & route.admin scope", func() {
 				request = newTestRequest(route)
 
 				routesHandler.Upsert(responseRecorder, request)
 
 				_, permission := token.DecodeTokenArgsForCall(0)
-				Expect(permission).To(Equal(handlers.AdvertiseRouteScope))
+				Expect(permission).To(ConsistOf(handlers.AdvertiseRouteScope, handlers.AdminRouteScope))
 			})
 
 			Context("when all inputs are present and correct", func() {

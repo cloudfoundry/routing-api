@@ -101,9 +101,9 @@ var _ = Describe("Token", func() {
 			})
 
 			It("returns an error if the the user does not have requested permissions", func() {
-				err = accessToken.DecodeToken(signedKey, "route.my-permissions")
+				err = accessToken.DecodeToken(signedKey, "route.my-permissions", "some.other.scope")
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("Token does not have 'route.my-permissions' scope"))
+				Expect(err.Error()).To(Equal("Token does not have 'route.my-permissions', 'some.other.scope' scope"))
 			})
 		})
 	})

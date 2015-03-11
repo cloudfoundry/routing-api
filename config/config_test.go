@@ -15,6 +15,7 @@ var _ = Describe("Config", func() {
 				cfg, err := config.NewConfigFromFile(cfg_file)
 
 				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.LogGuid).To(Equal("my_logs"))
 				Expect(cfg.MetronConfig.Address).To(Equal("1.2.3.4"))
 				Expect(cfg.MetronConfig.Port).To(Equal("4567"))
 
@@ -41,7 +42,8 @@ var _ = Describe("Config", func() {
 		})
 
 		Context("With a proper yml file", func() {
-			test_config := `uaa_verification_key: "public_key"`
+			test_config := `uaa_verification_key: "public_key"
+log_guid: "some-guid"`
 
 			It("sets the UaaPublicKey", func() {
 				err := cfg.Initialize([]byte(test_config))

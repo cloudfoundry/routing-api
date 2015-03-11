@@ -11,7 +11,7 @@ type FakeDB struct {
 	ReadRoutesStub        func() ([]db.Route, error)
 	readRoutesMutex       sync.RWMutex
 	readRoutesArgsForCall []struct{}
-	readRoutesReturns     struct {
+	readRoutesReturns struct {
 		result1 []db.Route
 		result2 error
 	}
