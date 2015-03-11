@@ -132,13 +132,13 @@ Note that flags have to come before the etcd addresses.
 To add a route to the API server:
 
 ```sh
-curl -vvv -H "Authorization: [token with uaa route.advertise scope]" -X POST http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
+curl -vvv -H "Authorization: bearer [token with uaa route.advertise scope]" -X POST http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
 ```
 
 To delete a route:
 
 ```sh
-curl -vvv -H "Authorization: [token with uaa route.advertise scope]" -X DELETE http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
+curl -vvv -H "Authorization: bearer [token with uaa route.advertise scope]" -X DELETE http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
 ```
 
 ## Known issues

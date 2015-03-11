@@ -52,6 +52,8 @@ var _ = Describe("Token", func() {
 
 				signedKey, err = token.SignedString([]byte(UserPrivateKey))
 				Expect(err).NotTo(HaveOccurred())
+
+				signedKey = "bearer " + signedKey
 			})
 
 			It("does not return an error", func() {
@@ -61,12 +63,23 @@ var _ = Describe("Token", func() {
 		})
 
 		Context("when a token is not valid", func() {
-			BeforeEach(func() {
-				err = accessToken.DecodeToken("not a signed key", "not a permission")
+			It("returns an error if the user token is not signed", func() {
+				err = accessToken.DecodeToken("bearer not-a-signed-key", "not a permission")
+				Expect(err).To(HaveOccurred())
 			})
 
-			It("returns an error if the user token is malformed", func() {
+			It("returns an invalid token format when there is no token type", func() {
+				err = accessToken.DecodeToken("has-no-token-type", "not a permission")
+
 				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("Invalid token format"))
+			})
+
+			It("returns an invalid token type when type is not bearer", func() {
+				err = accessToken.DecodeToken("basic some-auth", "not a permission")
+
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("Invalid token type: basic"))
 			})
 		})
 
@@ -79,6 +92,8 @@ var _ = Describe("Token", func() {
 
 				signedKey, err = token.SignedString([]byte(UserPrivateKey))
 				Expect(err).NotTo(HaveOccurred())
+
+				signedKey = "bearer " + signedKey
 			})
 
 			It("returns an error if the token is expired", func() {
@@ -98,6 +113,8 @@ var _ = Describe("Token", func() {
 
 				signedKey, err = token.SignedString([]byte(UserPrivateKey))
 				Expect(err).NotTo(HaveOccurred())
+
+				signedKey = "bearer " + signedKey
 			})
 
 			It("returns an error if the the user does not have requested permissions", func() {

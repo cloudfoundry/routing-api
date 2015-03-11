@@ -24,11 +24,12 @@ func NewAccessToken(uaaPublicKey string) accessToken {
 	}
 }
 
-type p struct {
-	uaaPublicKey string `json:"value"`
-}
-
 func (accessToken accessToken) DecodeToken(userToken string, desiredPermissions ...string) error {
+	userToken, err := checkTokenFormat(userToken)
+	if err != nil {
+		return err
+	}
+
 	token, err := jwt.Parse(userToken, func(t *jwt.Token) (interface{}, error) {
 		return []byte(accessToken.uaaPublicKey), nil
 	})
@@ -66,4 +67,18 @@ func (accessToken accessToken) CheckPublicToken() error {
 	}
 
 	return nil
+}
+
+func checkTokenFormat(token string) (string, error) {
+	tokenParts := strings.Split(token, " ")
+	if len(tokenParts) != 2 {
+		return "", errors.New("Invalid token format")
+	}
+
+	tokenType, userToken := tokenParts[0], tokenParts[1]
+	if tokenType != "bearer" {
+		return "", errors.New("Invalid token type: " + tokenType)
+	}
+
+	return userToken, nil
 }
