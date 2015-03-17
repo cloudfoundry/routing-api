@@ -40,16 +40,16 @@ func main() {
 		logger.Error("starting", errors.New("No configuration file provided"))
 		os.Exit(1)
 	}
+
 	cfg, err := config.NewConfigFromFile(*cfg_flag)
+	if err != nil {
+		logger.Error("starting", err)
+		os.Exit(1)
+	}
 
 	err = dropsonde.Initialize(cfg.MetronConfig.Address+":"+cfg.MetronConfig.Port, cfg.LogGuid)
 	if err != nil {
 		logger.Error("Dropsonde failed to initialize:", err)
-		os.Exit(1)
-	}
-
-	if err != nil {
-		logger.Error("starting", err)
 		os.Exit(1)
 	}
 
