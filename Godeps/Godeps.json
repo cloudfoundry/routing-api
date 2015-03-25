@@ -31,6 +31,14 @@
 			"Rev": "5c1406e9ea0ab919f92e1b194169565def41147b"
 		},
 		{
+			"ImportPath": "github.com/cloudfoundry/gunk/workpool",
+			"Rev": "de79b69f590594db2b9771018784c55251d5e7e7"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry/storeadapter",
+			"Rev": "dff7a18fad3c03aae624a5ae0bce53d142d72971"
+		},
+		{
 			"ImportPath": "github.com/coreos/go-etcd/etcd",
 			"Comment": "v0.2.0-rc1-120-g23142f6",
 			"Rev": "23142f6773a676cc2cae8dd0cb90b2ea761c853f"
@@ -61,6 +69,10 @@
 		{
 			"ImportPath": "github.com/tedsuo/rata",
 			"Rev": "6197c97c67a03bfd4d6977a3b6060d6c6b3d581f"
+		},
+		{
+			"ImportPath": "github.com/vito/go-sse/sse",
+			"Rev": "bfb56c5590376a59535cd0edb3f5aa3447dbbe65"
 		}
 	]
 }

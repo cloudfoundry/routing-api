@@ -1,7 +1,10 @@
 package db_test
 
 import (
+	"time"
+
 	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/cloudfoundry/storeadapter"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,6 +26,11 @@ var _ = Describe("DB", func() {
 				TTL:     50,
 				LogGuid: "my-guid",
 			}
+			etcd.Connect()
+		})
+
+		AfterEach(func() {
+			etcd.Disconnect()
 		})
 
 		Describe(".ReadRoutes", func() {
@@ -134,6 +142,51 @@ var _ = Describe("DB", func() {
 						"ttl": 47,
 						"log_guid": "new-guid"
 					}`))
+				})
+			})
+		})
+
+		Describe(".WatchRouteChanges", func() {
+			Context("when a route is upserted", func() {
+				It("should return an update watch event", func() {
+					results, _, _ := etcd.WatchRouteChanges()
+
+					err := etcd.SaveRoute(route)
+					Expect(err).NotTo(HaveOccurred())
+
+					event := <-results
+					Expect(event).NotTo(BeNil())
+					Expect(event.Type).To(Equal(storeadapter.UpdateEvent))
+				})
+			})
+
+			Context("when a route is deleted", func() {
+				It("should return an delete watch event", func() {
+					err := etcd.SaveRoute(route)
+					Expect(err).NotTo(HaveOccurred())
+
+					results, _, _ := etcd.WatchRouteChanges()
+
+					err = etcd.DeleteRoute(route)
+					Expect(err).NotTo(HaveOccurred())
+
+					event := <-results
+					Expect(event).NotTo(BeNil())
+					Expect(event.Type).To(Equal(storeadapter.DeleteEvent))
+				})
+			})
+
+			Context("when a route is expired", func() {
+				It("should return an expire watch event", func() {
+					route.TTL = 1
+					err := etcd.SaveRoute(route)
+					Expect(err).NotTo(HaveOccurred())
+					results, _, _ := etcd.WatchRouteChanges()
+
+					time.Sleep(1 * time.Second)
+					event := <-results
+					Expect(event).NotTo(BeNil())
+					Expect(event.Type).To(Equal(storeadapter.ExpireEvent))
 				})
 			})
 		})

@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/cloudfoundry/storeadapter"
 )
 
 type FakeDB struct {
@@ -30,6 +31,26 @@ type FakeDB struct {
 	}
 	deleteRouteReturns struct {
 		result1 error
+	}
+	ConnectStub        func() error
+	connectMutex       sync.RWMutex
+	connectArgsForCall []struct{}
+	connectReturns struct {
+		result1 error
+	}
+	DisconnectStub        func() error
+	disconnectMutex       sync.RWMutex
+	disconnectArgsForCall []struct{}
+	disconnectReturns struct {
+		result1 error
+	}
+	WatchRouteChangesStub        func() (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error)
+	watchRouteChangesMutex       sync.RWMutex
+	watchRouteChangesArgsForCall []struct{}
+	watchRouteChangesReturns struct {
+		result1 <-chan storeadapter.WatchEvent
+		result2 chan<- bool
+		result3 <-chan error
 	}
 }
 
@@ -120,6 +141,80 @@ func (fake *FakeDB) DeleteRouteReturns(result1 error) {
 	fake.deleteRouteReturns = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeDB) Connect() error {
+	fake.connectMutex.Lock()
+	fake.connectArgsForCall = append(fake.connectArgsForCall, struct{}{})
+	fake.connectMutex.Unlock()
+	if fake.ConnectStub != nil {
+		return fake.ConnectStub()
+	} else {
+		return fake.connectReturns.result1
+	}
+}
+
+func (fake *FakeDB) ConnectCallCount() int {
+	fake.connectMutex.RLock()
+	defer fake.connectMutex.RUnlock()
+	return len(fake.connectArgsForCall)
+}
+
+func (fake *FakeDB) ConnectReturns(result1 error) {
+	fake.ConnectStub = nil
+	fake.connectReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeDB) Disconnect() error {
+	fake.disconnectMutex.Lock()
+	fake.disconnectArgsForCall = append(fake.disconnectArgsForCall, struct{}{})
+	fake.disconnectMutex.Unlock()
+	if fake.DisconnectStub != nil {
+		return fake.DisconnectStub()
+	} else {
+		return fake.disconnectReturns.result1
+	}
+}
+
+func (fake *FakeDB) DisconnectCallCount() int {
+	fake.disconnectMutex.RLock()
+	defer fake.disconnectMutex.RUnlock()
+	return len(fake.disconnectArgsForCall)
+}
+
+func (fake *FakeDB) DisconnectReturns(result1 error) {
+	fake.DisconnectStub = nil
+	fake.disconnectReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeDB) WatchRouteChanges() (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error) {
+	fake.watchRouteChangesMutex.Lock()
+	fake.watchRouteChangesArgsForCall = append(fake.watchRouteChangesArgsForCall, struct{}{})
+	fake.watchRouteChangesMutex.Unlock()
+	if fake.WatchRouteChangesStub != nil {
+		return fake.WatchRouteChangesStub()
+	} else {
+		return fake.watchRouteChangesReturns.result1, fake.watchRouteChangesReturns.result2, fake.watchRouteChangesReturns.result3
+	}
+}
+
+func (fake *FakeDB) WatchRouteChangesCallCount() int {
+	fake.watchRouteChangesMutex.RLock()
+	defer fake.watchRouteChangesMutex.RUnlock()
+	return len(fake.watchRouteChangesArgsForCall)
+}
+
+func (fake *FakeDB) WatchRouteChangesReturns(result1 <-chan storeadapter.WatchEvent, result2 chan<- bool, result3 <-chan error) {
+	fake.WatchRouteChangesStub = nil
+	fake.watchRouteChangesReturns = struct {
+		result1 <-chan storeadapter.WatchEvent
+		result2 chan<- bool
+		result3 <-chan error
+	}{result1, result2, result3}
 }
 
 var _ db.DB = new(FakeDB)

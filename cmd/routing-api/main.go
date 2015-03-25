@@ -22,6 +22,7 @@ var Routes = rata.Routes{
 	{Path: "/v1/routes", Method: "POST", Name: "Upsert"},
 	{Path: "/v1/routes", Method: "DELETE", Name: "Delete"},
 	{Path: "/v1/routes", Method: "GET", Name: "List"},
+	{Path: "/v1/events", Method: "GET", Name: "EventStream"},
 }
 
 var maxTTL = flag.Int("maxTTL", 120, "Maximum TTL on the route")
@@ -55,6 +56,12 @@ func main() {
 
 	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
 	database := db.NewETCD(flag.Args())
+	err = database.Connect()
+	if err != nil {
+		logger.Error("failed to connect to etcd", err)
+		os.Exit(1)
+	}
+	defer database.Disconnect()
 
 	token := authentication.NewAccessToken(cfg.UAAPublicKey)
 	err = token.CheckPublicToken()
@@ -66,11 +73,13 @@ func main() {
 	validator := handlers.NewValidator()
 
 	routesHandler := handlers.NewRoutesHandler(token, *maxTTL, validator, database, logger)
+	eventStreamHandler := handlers.NewEventStreamHandler(token, database, logger)
 
 	actions := rata.Handlers{
-		"Upsert": route(routesHandler.Upsert),
-		"Delete": route(routesHandler.Delete),
-		"List":   route(routesHandler.List),
+		"Upsert":      route(routesHandler.Upsert),
+		"Delete":      route(routesHandler.Delete),
+		"List":        route(routesHandler.List),
+		"EventStream": route(eventStreamHandler.EventStream),
 	}
 
 	handler, err := rata.NewRouter(Routes, actions)

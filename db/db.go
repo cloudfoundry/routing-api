@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	etcdclient "github.com/coreos/go-etcd/etcd"
+	"github.com/cloudfoundry/gunk/workpool"
+	"github.com/cloudfoundry/storeadapter"
+	"github.com/cloudfoundry/storeadapter/etcdstoreadapter"
 )
 
 //go:generate counterfeiter -o fakes/fake_db.go . DB
@@ -12,6 +14,9 @@ type DB interface {
 	ReadRoutes() ([]Route, error)
 	SaveRoute(route Route) error
 	DeleteRoute(route Route) error
+	Connect() error
+	Disconnect() error
+	WatchRouteChanges() (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error)
 }
 
 type Route struct {
@@ -23,23 +28,33 @@ type Route struct {
 }
 
 type etcd struct {
-	client *etcdclient.Client
+	storeAdapter *etcdstoreadapter.ETCDStoreAdapter
 }
 
 func NewETCD(nodeURLs []string) etcd {
+	workpool := workpool.NewWorkPool(1)
+	storeAdapter := etcdstoreadapter.NewETCDStoreAdapter(nodeURLs, workpool)
 	return etcd{
-		client: etcdclient.NewClient(nodeURLs),
+		storeAdapter: storeAdapter,
 	}
 }
 
+func (e etcd) Connect() error {
+	return e.storeAdapter.Connect()
+}
+
+func (e etcd) Disconnect() error {
+	return e.storeAdapter.Disconnect()
+}
+
 func (e etcd) ReadRoutes() ([]Route, error) {
-	routes, err := e.client.Get("/routes", false, false)
+	routes, err := e.storeAdapter.ListRecursively("/routes")
 	if err != nil {
 		return []Route{}, nil
 	}
 	var route Route
 	listRoutes := []Route{}
-	for _, node := range routes.Node.Nodes {
+	for _, node := range routes.ChildNodes {
 		json.Unmarshal([]byte(node.Value), &route)
 		listRoutes = append(listRoutes, route)
 	}
@@ -49,15 +64,22 @@ func (e etcd) ReadRoutes() ([]Route, error) {
 func (e etcd) SaveRoute(route Route) error {
 	key := generateKey(route)
 	routeJSON, _ := json.Marshal(route)
-	_, err := e.client.Set(key, string(routeJSON), uint64(route.TTL))
+	node := storeadapter.StoreNode{
+		Key:   key,
+		Value: routeJSON,
+		TTL:   uint64(route.TTL),
+	}
 
-	return err
+	return e.storeAdapter.SetMulti([]storeadapter.StoreNode{node})
 }
 
 func (e etcd) DeleteRoute(route Route) error {
 	key := generateKey(route)
-	_, err := e.client.Delete(key, false)
-	return err
+	return e.storeAdapter.Delete(key)
+}
+
+func (e etcd) WatchRouteChanges() (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error) {
+	return e.storeAdapter.Watch("/routes")
 }
 
 func generateKey(route Route) string {
