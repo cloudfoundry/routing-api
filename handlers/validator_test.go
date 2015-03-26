@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"fmt"
 
+	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
 
@@ -47,7 +48,7 @@ var _ = Describe("Validator", func() {
 				routes[1].TTL = maxTTL + 1
 
 				err := validator.ValidateCreate(routes, maxTTL)
-				Expect(err.Type).To(Equal(handlers.RouteInvalidError))
+				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
 				Expect(err.Error()).To(Equal(fmt.Sprintf("Max ttl is %d", maxTTL)))
 			})
 
@@ -55,7 +56,7 @@ var _ = Describe("Validator", func() {
 				routes[1].TTL = 0
 
 				err := validator.ValidateCreate(routes, maxTTL)
-				Expect(err.Type).To(Equal(handlers.RouteInvalidError))
+				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
 				Expect(err.Error()).To(Equal("Request requires a ttl greater than 0"))
 			})
 
@@ -63,7 +64,7 @@ var _ = Describe("Validator", func() {
 				routes[0].Route = ""
 
 				err := validator.ValidateCreate(routes, maxTTL)
-				Expect(err.Type).To(Equal(handlers.RouteInvalidError))
+				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
 				Expect(err.Error()).To(Equal("Each route request requires a valid route"))
 			})
 
@@ -71,7 +72,7 @@ var _ = Describe("Validator", func() {
 				routes[0].Port = 0
 
 				err := validator.ValidateCreate(routes, maxTTL)
-				Expect(err.Type).To(Equal(handlers.RouteInvalidError))
+				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
 				Expect(err.Error()).To(Equal("Each route request requires a port greater than 0"))
 			})
 
@@ -79,7 +80,7 @@ var _ = Describe("Validator", func() {
 				routes[1].IP = ""
 
 				err := validator.ValidateCreate(routes, maxTTL)
-				Expect(err.Type).To(Equal(handlers.RouteInvalidError))
+				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
 				Expect(err.Error()).To(Equal("Each route request requires an IP"))
 			})
 		})
@@ -100,7 +101,7 @@ var _ = Describe("Validator", func() {
 				routes[0].Route = ""
 
 				err := validator.ValidateDelete(routes)
-				Expect(err.Type).To(Equal(handlers.RouteInvalidError))
+				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
 				Expect(err.Error()).To(Equal("Each route request requires a valid route"))
 			})
 
@@ -108,7 +109,7 @@ var _ = Describe("Validator", func() {
 				routes[0].Port = 0
 
 				err := validator.ValidateDelete(routes)
-				Expect(err.Type).To(Equal(handlers.RouteInvalidError))
+				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
 				Expect(err.Error()).To(Equal("Each route request requires a port greater than 0"))
 			})
 
@@ -116,7 +117,7 @@ var _ = Describe("Validator", func() {
 				routes[1].IP = ""
 
 				err := validator.ValidateDelete(routes)
-				Expect(err.Type).To(Equal(handlers.RouteInvalidError))
+				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
 				Expect(err.Error()).To(Equal("Each route request requires an IP"))
 			})
 		})

@@ -41,13 +41,13 @@ func (h *RoutesHandler) List(w http.ResponseWriter, req *http.Request) {
 		handleUnauthorizedError(w, err, log)
 		return
 	}
-	route, err := h.db.ReadRoutes()
+	routes, err := h.db.ReadRoutes()
 	if err != nil {
 		handleDBError(w, err, log)
 		return
 	}
 	encoder := json.NewEncoder(w)
-	encoder.Encode(route)
+	encoder.Encode(routes)
 }
 
 func (h *RoutesHandler) Upsert(w http.ResponseWriter, req *http.Request) {

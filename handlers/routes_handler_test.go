@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 
+	"github.com/cloudfoundry-incubator/routing-api"
 	fake_token "github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
@@ -417,7 +418,7 @@ var _ = Describe("RoutesHandler", func() {
 
 			Context("when there are errors with the input", func() {
 				BeforeEach(func() {
-					validator.ValidateCreateReturns(&handlers.Error{"a type", "error message"})
+					validator.ValidateCreateReturns(&routing_api.Error{"a type", "error message"})
 				})
 
 				It("does not write to the key-value store backend", func() {

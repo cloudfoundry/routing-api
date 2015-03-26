@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/authentication"
 	"github.com/cloudfoundry-incubator/routing-api/config"
 	"github.com/cloudfoundry-incubator/routing-api/db"
@@ -18,16 +19,10 @@ import (
 	"github.com/tedsuo/rata"
 )
 
-var Routes = rata.Routes{
-	{Path: "/v1/routes", Method: "POST", Name: "Upsert"},
-	{Path: "/v1/routes", Method: "DELETE", Name: "Delete"},
-	{Path: "/v1/routes", Method: "GET", Name: "List"},
-	{Path: "/v1/events", Method: "GET", Name: "EventStream"},
-}
-
 var maxTTL = flag.Int("maxTTL", 120, "Maximum TTL on the route")
 var port = flag.Int("port", 8080, "Port to run rounting-api server on")
-var cfg_flag = flag.String("config", "", "Configuration for routing-api")
+var configPath = flag.String("config", "", "Configuration for routing-api")
+var devMode = flag.Bool("devMode", false, "Disable authentication for easier development iteration")
 
 func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 	return http.HandlerFunc(f)
@@ -37,20 +32,20 @@ func main() {
 	logger := cf_lager.New("routing-api")
 
 	flag.Parse()
-	if *cfg_flag == "" {
-		logger.Error("starting", errors.New("No configuration file provided"))
+	if *configPath == "" {
+		logger.Error("failed to start", errors.New("No configuration file provided"))
 		os.Exit(1)
 	}
 
-	cfg, err := config.NewConfigFromFile(*cfg_flag)
+	cfg, err := config.NewConfigFromFile(*configPath)
 	if err != nil {
-		logger.Error("starting", err)
+		logger.Error("failed to start", err)
 		os.Exit(1)
 	}
 
 	err = dropsonde.Initialize(cfg.MetronConfig.Address+":"+cfg.MetronConfig.Port, cfg.LogGuid)
 	if err != nil {
-		logger.Error("Dropsonde failed to initialize:", err)
+		logger.Error("failed to initialize Dropsonde", err)
 		os.Exit(1)
 	}
 
@@ -63,11 +58,17 @@ func main() {
 	}
 	defer database.Disconnect()
 
-	token := authentication.NewAccessToken(cfg.UAAPublicKey)
-	err = token.CheckPublicToken()
-	if err != nil {
-		logger.Error("starting", err)
-		os.Exit(1)
+	var token authentication.Token
+
+	if *devMode {
+		token = authentication.NullToken{}
+	} else {
+		token = authentication.NewAccessToken(cfg.UAAPublicKey)
+		err = token.CheckPublicToken()
+		if err != nil {
+			logger.Error("failed to check public token", err)
+			os.Exit(1)
+		}
 	}
 
 	validator := handlers.NewValidator()
@@ -82,9 +83,10 @@ func main() {
 		"EventStream": route(eventStreamHandler.EventStream),
 	}
 
-	handler, err := rata.NewRouter(Routes, actions)
+	handler, err := rata.NewRouter(routing_api.Routes, actions)
 	if err != nil {
-		panic("unable to create router: " + err.Error())
+		logger.Error("failed to create router", err)
+		os.Exit(1)
 	}
 
 	handler = handlers.LogWrap(handler, logger)

@@ -4,31 +4,32 @@ package fakes
 import (
 	"sync"
 
+	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
 )
 
 type FakeRouteValidator struct {
-	ValidateCreateStub        func(routes []db.Route, maxTTL int) *handlers.Error
+	ValidateCreateStub        func(routes []db.Route, maxTTL int) *routing_api.Error
 	validateCreateMutex       sync.RWMutex
 	validateCreateArgsForCall []struct {
 		routes []db.Route
 		maxTTL int
 	}
 	validateCreateReturns struct {
-		result1 *handlers.Error
+		result1 *routing_api.Error
 	}
-	ValidateDeleteStub        func(routes []db.Route) *handlers.Error
+	ValidateDeleteStub        func(routes []db.Route) *routing_api.Error
 	validateDeleteMutex       sync.RWMutex
 	validateDeleteArgsForCall []struct {
 		routes []db.Route
 	}
 	validateDeleteReturns struct {
-		result1 *handlers.Error
+		result1 *routing_api.Error
 	}
 }
 
-func (fake *FakeRouteValidator) ValidateCreate(routes []db.Route, maxTTL int) *handlers.Error {
+func (fake *FakeRouteValidator) ValidateCreate(routes []db.Route, maxTTL int) *routing_api.Error {
 	fake.validateCreateMutex.Lock()
 	fake.validateCreateArgsForCall = append(fake.validateCreateArgsForCall, struct {
 		routes []db.Route
@@ -54,14 +55,14 @@ func (fake *FakeRouteValidator) ValidateCreateArgsForCall(i int) ([]db.Route, in
 	return fake.validateCreateArgsForCall[i].routes, fake.validateCreateArgsForCall[i].maxTTL
 }
 
-func (fake *FakeRouteValidator) ValidateCreateReturns(result1 *handlers.Error) {
+func (fake *FakeRouteValidator) ValidateCreateReturns(result1 *routing_api.Error) {
 	fake.ValidateCreateStub = nil
 	fake.validateCreateReturns = struct {
-		result1 *handlers.Error
+		result1 *routing_api.Error
 	}{result1}
 }
 
-func (fake *FakeRouteValidator) ValidateDelete(routes []db.Route) *handlers.Error {
+func (fake *FakeRouteValidator) ValidateDelete(routes []db.Route) *routing_api.Error {
 	fake.validateDeleteMutex.Lock()
 	fake.validateDeleteArgsForCall = append(fake.validateDeleteArgsForCall, struct {
 		routes []db.Route
@@ -86,10 +87,10 @@ func (fake *FakeRouteValidator) ValidateDeleteArgsForCall(i int) []db.Route {
 	return fake.validateDeleteArgsForCall[i].routes
 }
 
-func (fake *FakeRouteValidator) ValidateDeleteReturns(result1 *handlers.Error) {
+func (fake *FakeRouteValidator) ValidateDeleteReturns(result1 *routing_api.Error) {
 	fake.ValidateDeleteStub = nil
 	fake.validateDeleteReturns = struct {
-		result1 *handlers.Error
+		result1 *routing_api.Error
 	}{result1}
 }
 

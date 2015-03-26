@@ -14,6 +14,16 @@ type Token interface {
 	CheckPublicToken() error
 }
 
+type NullToken struct{}
+
+func (_ NullToken) DecodeToken(_ string, _ ...string) error {
+	return nil
+}
+
+func (_ NullToken) CheckPublicToken() error {
+	return nil
+}
+
 type accessToken struct {
 	uaaPublicKey string
 }
