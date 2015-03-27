@@ -13,17 +13,17 @@ import (
 
 //go:generate counterfeiter -o fake_routing_api/fake_client.go . Client
 type Client interface {
+	SetToken(string)
 	UpsertRoutes([]db.Route) error
 	Routes() ([]db.Route, error)
 
 	// SubscribeToEvents() (EventSource, error)
 }
 
-func NewClient(url, token string) Client {
+func NewClient(url string) Client {
 	return &client{
 		httpClient:          cf_http.NewClient(),
 		streamingHTTPClient: cf_http.NewStreamingClient(),
-		authToken:           token,
 
 		reqGen: rata.NewRequestGenerator(url, Routes),
 	}
@@ -35,6 +35,10 @@ type client struct {
 	authToken           string
 
 	reqGen *rata.RequestGenerator
+}
+
+func (c *client) SetToken(token string) {
+	c.authToken = token
 }
 
 func (c *client) UpsertRoutes(routes []db.Route) error {

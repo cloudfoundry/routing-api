@@ -68,7 +68,7 @@ var _ = BeforeEach(func() {
 		Host:   routingAPIAddress,
 	}
 
-	client = routing_api.NewClient(routingAPIURL.String(), "")
+	client = routing_api.NewClient(routingAPIURL.String())
 	workingDir, _ := os.Getwd()
 
 	routingAPIArgs = testrunner.Args{

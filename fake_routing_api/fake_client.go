@@ -9,6 +9,11 @@ import (
 )
 
 type FakeClient struct {
+	SetTokenStub        func(string)
+	setTokenMutex       sync.RWMutex
+	setTokenArgsForCall []struct {
+		arg1 string
+	}
 	UpsertRoutesStub        func([]db.Route) error
 	upsertRoutesMutex       sync.RWMutex
 	upsertRoutesArgsForCall []struct {
@@ -24,6 +29,29 @@ type FakeClient struct {
 		result1 []db.Route
 		result2 error
 	}
+}
+
+func (fake *FakeClient) SetToken(arg1 string) {
+	fake.setTokenMutex.Lock()
+	fake.setTokenArgsForCall = append(fake.setTokenArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.setTokenMutex.Unlock()
+	if fake.SetTokenStub != nil {
+		fake.SetTokenStub(arg1)
+	}
+}
+
+func (fake *FakeClient) SetTokenCallCount() int {
+	fake.setTokenMutex.RLock()
+	defer fake.setTokenMutex.RUnlock()
+	return len(fake.setTokenArgsForCall)
+}
+
+func (fake *FakeClient) SetTokenArgsForCall(i int) string {
+	fake.setTokenMutex.RLock()
+	defer fake.setTokenMutex.RUnlock()
+	return fake.setTokenArgsForCall[i].arg1
 }
 
 func (fake *FakeClient) UpsertRoutes(arg1 []db.Route) error {
