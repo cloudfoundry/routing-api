@@ -20,7 +20,7 @@ type FakeToken struct {
 	CheckPublicTokenStub        func() error
 	checkPublicTokenMutex       sync.RWMutex
 	checkPublicTokenArgsForCall []struct{}
-	checkPublicTokenReturns struct {
+	checkPublicTokenReturns     struct {
 		result1 error
 	}
 }

@@ -50,5 +50,15 @@ var _ = Describe("Routes API", func() {
 			Expect(routes).To(HaveLen(2))
 			Expect(routes).To(ConsistOf(route1, route2))
 		})
+
+		It("deletes a route", func() {
+			err := client.DeleteRoutes([]db.Route{route1})
+
+			Expect(err).NotTo(HaveOccurred())
+
+			routes, err = client.Routes()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes).NotTo(ContainElement(route1))
+		})
 	})
 })

@@ -25,7 +25,7 @@ type FakeClient struct {
 	RoutesStub        func() ([]db.Route, error)
 	routesMutex       sync.RWMutex
 	routesArgsForCall []struct{}
-	routesReturns struct {
+	routesReturns     struct {
 		result1 []db.Route
 		result2 error
 	}

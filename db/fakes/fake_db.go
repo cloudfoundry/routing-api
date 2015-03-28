@@ -12,7 +12,7 @@ type FakeDB struct {
 	ReadRoutesStub        func() ([]db.Route, error)
 	readRoutesMutex       sync.RWMutex
 	readRoutesArgsForCall []struct{}
-	readRoutesReturns struct {
+	readRoutesReturns     struct {
 		result1 []db.Route
 		result2 error
 	}
@@ -35,19 +35,19 @@ type FakeDB struct {
 	ConnectStub        func() error
 	connectMutex       sync.RWMutex
 	connectArgsForCall []struct{}
-	connectReturns struct {
+	connectReturns     struct {
 		result1 error
 	}
 	DisconnectStub        func() error
 	disconnectMutex       sync.RWMutex
 	disconnectArgsForCall []struct{}
-	disconnectReturns struct {
+	disconnectReturns     struct {
 		result1 error
 	}
 	WatchRouteChangesStub        func() (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error)
 	watchRouteChangesMutex       sync.RWMutex
 	watchRouteChangesArgsForCall []struct{}
-	watchRouteChangesReturns struct {
+	watchRouteChangesReturns     struct {
 		result1 <-chan storeadapter.WatchEvent
 		result2 chan<- bool
 		result3 <-chan error

@@ -48,28 +48,38 @@ func (h *EventStreamHandler) EventStream(w http.ResponseWriter, req *http.Reques
 	flusher.Flush()
 
 	eventID := 0
-	select {
-	case event := <-resultChan:
-		eventType, err := stringifyEventType(event.Type)
-		if eventType == "Invalid" || err != nil {
-			break
+	for {
+		select {
+		case event := <-resultChan:
+			eventType, err := stringifyEventType(event.Type)
+			if eventType == "Invalid" || err != nil {
+				return
+			}
+
+			var nodeValue []byte
+			switch eventType {
+			case "Delete":
+				nodeValue = event.PrevNode.Value
+			case "Upsert":
+				nodeValue = event.Node.Value
+			}
+
+			err = sse.Event{
+				ID:   strconv.Itoa(eventID),
+				Name: string(eventType),
+				Data: nodeValue,
+			}.Write(w)
+
+			if err != nil {
+				break
+			}
+
+			flusher.Flush()
+
+			eventID++
+		case <-closeNotifier:
+			return
 		}
-
-		err = sse.Event{
-			ID:   strconv.Itoa(eventID),
-			Name: string(eventType),
-			Data: event.Node.Value,
-		}.Write(w)
-
-		if err != nil {
-			break
-		}
-
-		flusher.Flush()
-
-		eventID++
-	case <-closeNotifier:
-		return
 	}
 }
 

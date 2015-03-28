@@ -35,6 +35,7 @@ var _ = Describe("EventsHandler", func() {
 	AfterEach(func(done Done) {
 		if server != nil {
 			go func() {
+				server.CloseClientConnections()
 				server.Close()
 				close(done)
 			}()
@@ -105,6 +106,7 @@ var _ = Describe("EventsHandler", func() {
 					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.InvalidEvent}
 					database.WatchRouteChangesReturns(resultsChan, nil, nil)
 				})
+
 				It("closes the event stream", func() {
 					reader := sse.NewReadCloser(response.Body)
 					_, err := reader.Next()

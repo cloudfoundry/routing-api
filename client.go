@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/cloudfoundry-incubator/cf_http"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/tedsuo/rata"
+	"github.com/vito/go-sse/sse"
 )
 
 //go:generate counterfeiter -o fake_routing_api/fake_client.go . Client
@@ -16,8 +18,9 @@ type Client interface {
 	SetToken(string)
 	UpsertRoutes([]db.Route) error
 	Routes() ([]db.Route, error)
+	DeleteRoutes([]db.Route) error
 
-	// SubscribeToEvents() (EventSource, error)
+	SubscribeToEvents() (EventSource, error)
 }
 
 func NewClient(url string) Client {
@@ -52,21 +55,26 @@ func (c *client) Routes() ([]db.Route, error) {
 	return routes, err
 }
 
-// func (c *client) SubscribeToEvents() (EventSource, error) {
-// 	eventSource, err := sse.Connect(c.streamingHTTPClient, time.Second, func() *http.Request {
-// 		request, err := c.reqGen.CreateRequest(EventStream, nil, nil)
-// 		if err != nil {
-// 			panic(err) // totally shouldn't happen
-// 		}
+func (c *client) DeleteRoutes(routes []db.Route) error {
+	err := c.doRequest(DeleteRoute, nil, nil, routes, nil)
+	return err
+}
 
-// 		return request
-// 	})
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func (c *client) SubscribeToEvents() (EventSource, error) {
+	eventSource, err := sse.Connect(c.streamingHTTPClient, time.Second, func() *http.Request {
+		request, err := c.reqGen.CreateRequest(EventStreamRoute, nil, nil)
+		if err != nil {
+			panic(err) // totally shouldn't happen
+		}
 
-// 	return NewEventSource(eventSource), nil
-// }
+		return request
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return NewEventSource(eventSource), nil
+}
 
 func (c *client) createRequest(requestName string, params rata.Params, queryParams url.Values, request interface{}) (*http.Request, error) {
 	requestJson, err := json.Marshal(request)
