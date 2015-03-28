@@ -63,6 +63,7 @@ func (c *client) DeleteRoutes(routes []db.Route) error {
 func (c *client) SubscribeToEvents() (EventSource, error) {
 	eventSource, err := sse.Connect(c.streamingHTTPClient, time.Second, func() *http.Request {
 		request, err := c.reqGen.CreateRequest(EventStreamRoute, nil, nil)
+		request.Header.Add("Authorization", "bearer "+c.authToken)
 		if err != nil {
 			panic(err) // totally shouldn't happen
 		}

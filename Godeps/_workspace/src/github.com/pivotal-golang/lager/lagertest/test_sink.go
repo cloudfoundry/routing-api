@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 
+	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega/gbytes"
 
 	"github.com/pivotal-golang/lager"
@@ -17,15 +18,15 @@ type TestLogger struct {
 
 type TestSink struct {
 	lager.Sink
-	*gbytes.Buffer
+	buffer *gbytes.Buffer
 }
 
 func NewTestLogger(component string) *TestLogger {
 	logger := lager.NewLogger(component)
 
 	testSink := NewTestSink()
-
 	logger.RegisterSink(testSink)
+	logger.RegisterSink(lager.NewWriterSink(ginkgo.GinkgoWriter, lager.DEBUG))
 
 	return &TestLogger{logger, testSink}
 }
@@ -35,14 +36,18 @@ func NewTestSink() *TestSink {
 
 	return &TestSink{
 		Sink:   lager.NewWriterSink(buffer, lager.DEBUG),
-		Buffer: buffer,
+		buffer: buffer,
 	}
+}
+
+func (s *TestSink) Buffer() *gbytes.Buffer {
+	return s.buffer
 }
 
 func (s *TestSink) Logs() []lager.LogFormat {
 	logs := []lager.LogFormat{}
 
-	decoder := json.NewDecoder(bytes.NewBuffer(s.Buffer.Contents()))
+	decoder := json.NewDecoder(bytes.NewBuffer(s.buffer.Contents()))
 	for {
 		var log lager.LogFormat
 		if err := decoder.Decode(&log); err == io.EOF {
@@ -54,4 +59,13 @@ func (s *TestSink) Logs() []lager.LogFormat {
 	}
 
 	return logs
+}
+
+func (s *TestSink) LogMessages() []string {
+	logs := s.Logs()
+	messages := make([]string, 0, len(logs))
+	for _, log := range logs {
+		messages = append(messages, log.Message)
+	}
+	return messages
 }

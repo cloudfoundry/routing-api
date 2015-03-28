@@ -85,16 +85,12 @@ func (h *EventStreamHandler) EventStream(w http.ResponseWriter, req *http.Reques
 
 func stringifyEventType(eventType storeadapter.EventType) (string, error) {
 	switch eventType {
-	case 0:
+	case storeadapter.InvalidEvent:
 		return "Invalid", nil
-	case 1:
+	case storeadapter.CreateEvent, storeadapter.UpdateEvent:
 		return "Upsert", nil
-	case 2:
+	case storeadapter.DeleteEvent, storeadapter.ExpireEvent:
 		return "Delete", nil
-	case 3:
-		return "Expire", nil
-	case 4:
-		return "Upsert", nil
 	default:
 		return "", errors.New("Unknown event type")
 	}

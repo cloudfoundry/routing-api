@@ -12,7 +12,7 @@ import (
 // EventSource provides sequential access to a stream of events.
 type EventSource interface {
 	Next() (sse.Event, error)
-	Close() error
+	// Close() error
 }
 
 //go:generate counterfeiter -o fake_receptor/fake_raw_event_source.go . RawEventSource
@@ -49,11 +49,11 @@ func (e *eventSource) Next() (sse.Event, error) {
 	return rawEvent, nil
 }
 
-func (e *eventSource) Close() error {
-	err := e.Close()
-	if err != nil {
-		return err
-	}
+// func (e *eventSource) Close() error {
+// 	err := e.Close()
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }

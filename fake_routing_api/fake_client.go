@@ -25,8 +25,23 @@ type FakeClient struct {
 	RoutesStub        func() ([]db.Route, error)
 	routesMutex       sync.RWMutex
 	routesArgsForCall []struct{}
-	routesReturns     struct {
+	routesReturns struct {
 		result1 []db.Route
+		result2 error
+	}
+	DeleteRoutesStub        func([]db.Route) error
+	deleteRoutesMutex       sync.RWMutex
+	deleteRoutesArgsForCall []struct {
+		arg1 []db.Route
+	}
+	deleteRoutesReturns struct {
+		result1 error
+	}
+	SubscribeToEventsStub        func() (routing_api.EventSource, error)
+	subscribeToEventsMutex       sync.RWMutex
+	subscribeToEventsArgsForCall []struct{}
+	subscribeToEventsReturns struct {
+		result1 routing_api.EventSource
 		result2 error
 	}
 }
@@ -107,6 +122,63 @@ func (fake *FakeClient) RoutesReturns(result1 []db.Route, result2 error) {
 	fake.RoutesStub = nil
 	fake.routesReturns = struct {
 		result1 []db.Route
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) DeleteRoutes(arg1 []db.Route) error {
+	fake.deleteRoutesMutex.Lock()
+	fake.deleteRoutesArgsForCall = append(fake.deleteRoutesArgsForCall, struct {
+		arg1 []db.Route
+	}{arg1})
+	fake.deleteRoutesMutex.Unlock()
+	if fake.DeleteRoutesStub != nil {
+		return fake.DeleteRoutesStub(arg1)
+	} else {
+		return fake.deleteRoutesReturns.result1
+	}
+}
+
+func (fake *FakeClient) DeleteRoutesCallCount() int {
+	fake.deleteRoutesMutex.RLock()
+	defer fake.deleteRoutesMutex.RUnlock()
+	return len(fake.deleteRoutesArgsForCall)
+}
+
+func (fake *FakeClient) DeleteRoutesArgsForCall(i int) []db.Route {
+	fake.deleteRoutesMutex.RLock()
+	defer fake.deleteRoutesMutex.RUnlock()
+	return fake.deleteRoutesArgsForCall[i].arg1
+}
+
+func (fake *FakeClient) DeleteRoutesReturns(result1 error) {
+	fake.DeleteRoutesStub = nil
+	fake.deleteRoutesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) SubscribeToEvents() (routing_api.EventSource, error) {
+	fake.subscribeToEventsMutex.Lock()
+	fake.subscribeToEventsArgsForCall = append(fake.subscribeToEventsArgsForCall, struct{}{})
+	fake.subscribeToEventsMutex.Unlock()
+	if fake.SubscribeToEventsStub != nil {
+		return fake.SubscribeToEventsStub()
+	} else {
+		return fake.subscribeToEventsReturns.result1, fake.subscribeToEventsReturns.result2
+	}
+}
+
+func (fake *FakeClient) SubscribeToEventsCallCount() int {
+	fake.subscribeToEventsMutex.RLock()
+	defer fake.subscribeToEventsMutex.RUnlock()
+	return len(fake.subscribeToEventsArgsForCall)
+}
+
+func (fake *FakeClient) SubscribeToEventsReturns(result1 routing_api.EventSource, result2 error) {
+	fake.SubscribeToEventsStub = nil
+	fake.subscribeToEventsReturns = struct {
+		result1 routing_api.EventSource
 		result2 error
 	}{result1, result2}
 }

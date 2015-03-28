@@ -114,6 +114,24 @@ var _ = Describe("EventsHandler", func() {
 				})
 			})
 
+			Context("when the event is of type Expire", func() {
+				BeforeEach(func() {
+					resultsChan := make(chan storeadapter.WatchEvent, 1)
+					storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
+					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.ExpireEvent, PrevNode: &storeNode}
+					database.WatchRouteChangesReturns(resultsChan, nil, nil)
+				})
+
+				It("emits a Delete Event", func() {
+					reader := sse.NewReadCloser(response.Body)
+					event, err := reader.Next()
+					expectedEvent := sse.Event{ID: "0", Name: "Delete", Data: []byte("valuable-string")}
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(event).To(Equal(expectedEvent))
+				})
+			})
+
 			Context("when the client closes the response body", func() {
 				It("returns early", func() {
 					reader := sse.NewReadCloser(response.Body)

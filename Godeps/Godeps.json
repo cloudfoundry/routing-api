@@ -1,29 +1,29 @@
 {
 	"ImportPath": "github.com/cloudfoundry-incubator/routing-api",
-	"GoVersion": "go1.4.1",
+	"GoVersion": "go1.4.2",
 	"Packages": [
 		"./..."
 	],
 	"Deps": [
-		{
-			"ImportPath": "code.google.com/p/gogoprotobuf/proto",
-			"Rev": "6c980277330804e94257ac7ef70a3adbe1641059"
-		},
 		{
 			"ImportPath": "github.com/bmizerany/pat",
 			"Rev": "b8a35001b773c267eb260a691f4e5499a3531600"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/candiedyaml",
-			"Rev": "150e4e8f749b21a7f0de8e3cfd885143fcea6b32"
+			"Rev": "5f3b3579b3dc360c8ad3f86fe9e59e58c5652d10"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/cf-lager",
 			"Rev": "ddeb0ea40763e3e81aa65919b9d9fc6d0ecc75d6"
 		},
 		{
+			"ImportPath": "github.com/cloudfoundry-incubator/cf_http",
+			"Rev": "db1bf7202e706de8d7460c1b54494ac7ab481a59"
+		},
+		{
 			"ImportPath": "github.com/cloudfoundry/dropsonde",
-			"Rev": "d8399b690bf4b541b1a530ca1ca7305b4f3444c2"
+			"Rev": "0afd306c305053e4cf1a90e9b58eb24cb1f126b5"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gosteno",
@@ -40,13 +40,17 @@
 		},
 		{
 			"ImportPath": "github.com/coreos/go-etcd/etcd",
-			"Comment": "v0.2.0-rc1-120-g23142f6",
-			"Rev": "23142f6773a676cc2cae8dd0cb90b2ea761c853f"
+			"Comment": "v0.4.6",
+			"Rev": "6aa2da5a7a905609c93036b9307185a04a5a84a5"
 		},
 		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",
-			"Comment": "v2.2.0-13-ga3e2f13",
-			"Rev": "a3e2f13bb7a4cfef6824fab97be5a7df9b86eff2"
+			"Comment": "v2.2.0-15-g61124b6",
+			"Rev": "61124b62ad244d655f87d944aefaa2ae5a0d2f16"
+		},
+		{
+			"ImportPath": "github.com/gogo/protobuf/proto",
+			"Rev": "bc946d07d1016848dfd2507f90f0859c9471681e"
 		},
 		{
 			"ImportPath": "github.com/nu7hatch/gouuid",
@@ -54,21 +58,25 @@
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",
-			"Comment": "v1.1.0-33-g17ea479",
-			"Rev": "17ea479729ee427265ac1e913443018350946ddf"
+			"Comment": "v1.1.0-41-g38caab9",
+			"Rev": "38caab951a9ff39f0e61294a1dbaaa074a39228b"
 		},
 		{
 			"ImportPath": "github.com/onsi/gomega",
-			"Comment": "v1.0-28-g8adf9e1",
-			"Rev": "8adf9e1730c55cdc590de7d49766cb2acc88d8f2"
+			"Comment": "v1.0-33-ge7b2cd9",
+			"Rev": "e7b2cd96b5633fbc5f0c221159a5c1e85323f770"
 		},
 		{
 			"ImportPath": "github.com/pivotal-golang/lager",
-			"Rev": "a106931abed5afe3043eae8851be8b33a4bdfa3f"
+			"Rev": "09a71f6eb2dcc1c2335e37ceb78a91c6f618d561"
+		},
+		{
+			"ImportPath": "github.com/tedsuo/ifrit",
+			"Rev": "4d62400529d15177ea24ec270bca3735629e4fd5"
 		},
 		{
 			"ImportPath": "github.com/tedsuo/rata",
-			"Rev": "6197c97c67a03bfd4d6977a3b6060d6c6b3d581f"
+			"Rev": "b15ebd8bd97ae9202eb00c076d59b2f2824bce37"
 		},
 		{
 			"ImportPath": "github.com/vito/go-sse/sse",
