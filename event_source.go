@@ -1,59 +1,67 @@
 package routing_api
 
 import (
-	"errors"
-	"io"
+	"encoding/json"
 
+	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/vito/go-sse/sse"
 )
 
-//go:generate counterfeiter -o fake_receptor/fake_event_source.go . EventSource
-
-// EventSource provides sequential access to a stream of events.
 type EventSource interface {
-	Next() (sse.Event, error)
-	// Close() error
+	Next() (Event, error)
+	Close() error
 }
 
-//go:generate counterfeiter -o fake_receptor/fake_raw_event_source.go . RawEventSource
-
-type RawEventSource struct {
+type RawEventSource interface {
+	Next() (sse.Event, error)
+	Close() error
 }
 
 type eventSource struct {
-	sseEventSource *sse.EventSource
+	rawEventSource RawEventSource
 }
 
-func NewEventSource(sseEventSource *sse.EventSource) EventSource {
+type Event struct {
+	Route  db.Route
+	Action string
+}
+
+func NewEventSource(raw RawEventSource) EventSource {
 	return &eventSource{
-		sseEventSource: sseEventSource,
+		rawEventSource: raw,
 	}
 }
 
-func (e *eventSource) Next() (sse.Event, error) {
-	rawEvent, err := e.sseEventSource.Next()
+func (e *eventSource) Next() (Event, error) {
+	rawEvent, err := e.rawEventSource.Next()
 	if err != nil {
-		switch err {
-		//make our own errors!
-		case io.EOF:
-			return sse.Event{}, err
-
-		case sse.ErrSourceClosed:
-			return sse.Event{}, errors.New("source closed")
-
-		default:
-			return sse.Event{}, errors.New("default")
-		}
+		return Event{}, err
 	}
 
-	return rawEvent, nil
+	event, err := convertRawEvent(rawEvent)
+	if err != nil {
+		return Event{}, err
+	}
+
+	return event, nil
 }
 
-// func (e *eventSource) Close() error {
-// 	err := e.Close()
-// 	if err != nil {
-// 		return err
-// 	}
+func (e *eventSource) Close() error {
+	err := e.rawEventSource.Close()
+	if err != nil {
+		return err
+	}
 
-// 	return nil
-// }
+	return nil
+}
+
+func convertRawEvent(event sse.Event) (Event, error) {
+	var route db.Route
+
+	err := json.Unmarshal(event.Data, &route)
+	if err != nil {
+		return Event{}, err
+	}
+
+	return Event{Action: event.Name, Route: route}, nil
+}

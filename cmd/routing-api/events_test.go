@@ -38,6 +38,10 @@ var _ = Describe("Routes API", func() {
 			}
 		})
 
+		AfterEach(func() {
+			eventStream.Close()
+		})
+
 		It("returns an eventstream", func() {
 			routesToInsert := []db.Route{route1}
 			client.UpsertRoutes(routesToInsert)
@@ -45,8 +49,8 @@ var _ = Describe("Routes API", func() {
 			event, err := eventStream.Next()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(event.Name).To(Equal("Upsert"))
-			Expect(event.Data).To(ContainSubstring("a.b.c"))
+			Expect(event.Action).To(Equal("Upsert"))
+			Expect(event.Route).To(Equal(route1))
 		})
 
 		It("gets events for updated routes", func() {
@@ -61,14 +65,14 @@ var _ = Describe("Routes API", func() {
 			client.UpsertRoutes([]db.Route{route1})
 			event1, err := eventStream.Next()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(event1.Data).To(ContainSubstring("55"))
+			Expect(event1.Route).To(Equal(route1))
 
 			client.UpsertRoutes([]db.Route{routeUpdated})
 			event2, err := eventStream.Next()
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(event2.Name).To(Equal("Upsert"))
-			Expect(event2.Data).To(ContainSubstring("85"))
+			Expect(event2.Action).To(Equal("Upsert"))
+			Expect(event2.Route).To(Equal(routeUpdated))
 		})
 
 		It("gets events for deleted routes", func() {
@@ -80,8 +84,8 @@ var _ = Describe("Routes API", func() {
 			event, err := eventStream.Next()
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(event.Name).To(Equal("Delete"))
-			Expect(event.Data).To(ContainSubstring("a.b.c"))
+			Expect(event.Action).To(Equal("Delete"))
+			Expect(event.Route).To(Equal(route1))
 		})
 
 		It("gets events for expired routes", func() {
@@ -100,8 +104,8 @@ var _ = Describe("Routes API", func() {
 			event, err := eventStream.Next()
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(event.Name).To(Equal("Delete"))
-			Expect(event.Data).To(ContainSubstring("z.a.k"))
+			Expect(event.Action).To(Equal("Delete"))
+			Expect(event.Route).To(Equal(routeExpire))
 		})
 	})
 })
