@@ -55,9 +55,13 @@ you can simply run etcd in a temporary directory.
 To easily generate a token with the `route.advertise` scope, you will need to
 install the `uaac` CLI tool (`gem install cf-uaac`) and follow these steps:
 
+- Get the admin client token
 ```bash
 uaac target uaa.10.244.0.34.xip.io
 uaac token client get admin # You will need to provide the client_secret, found in your CF manifest.
+```
+- Generate the route client and retrieve its token
+```bash
 uaac client add route --authorities "route.advertise" --authorized_grant_type "client_credentials"
 uaac token client get route
 uaac context
@@ -65,6 +69,16 @@ uaac context
 
 The last command will show you the client's token, which can then be used to
 curl the Routing API as a Authorization header.
+
+In order to generate a token for the `route.admin` scope, you will need to follow these steps:
+
+- Get the admin client token
+- Generate the route admin client and retrieve its token
+```
+uaac client add route-admin --authorities "route.admin" --authorized_grant_type "client_credentials"
+uaac token client get route-admin
+uaac context
+```
 
 ## API Server Configuration
 
@@ -140,6 +154,29 @@ To delete a route:
 ```sh
 curl -vvv -H "Authorization: bearer [token with uaa route.advertise scope]" -X DELETE http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
 ```
+
+To list advertised routes:
+```sh
+curl -vvv -H "Authorization: bearer [token with uaa route.admin scope]" http://127.0.0.1:8080/v1/routes
+```
+
+To subscribe to route changes:
+```sh
+curl -vvv -H "Authorization: bearer [token with uaa route.admin scope]" http://127.0.0.1:8080/v1/events
+```
+
+## Deploying to CF-Release
+1. Deploy at least one instance of consul.
+2. Set `instances` for routing_api_z1 to 1 and ensure that the job has at least one static ip address.
+
+   ```yml
+   jobs:
+   - name: routing_api_z1
+      instances: 1
+   ```
+3. Set `properties.routing_api.enabled` to true in your deployment manifest.
+4. `bosh deploy`
+5. Enjoy.
 
 ## Known issues
 
