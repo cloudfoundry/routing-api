@@ -3,15 +3,18 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/authentication"
 	"github.com/cloudfoundry-incubator/routing-api/config"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
+	"github.com/cloudfoundry-incubator/routing-api/helpers"
 	"github.com/cloudfoundry/dropsonde"
 	"github.com/pivotal-golang/lager"
 
@@ -23,6 +26,8 @@ var maxTTL = flag.Int("maxTTL", 120, "Maximum TTL on the route")
 var port = flag.Int("port", 8080, "Port to run rounting-api server on")
 var configPath = flag.String("config", "", "Configuration for routing-api")
 var devMode = flag.Bool("devMode", false, "Disable authentication for easier development iteration")
+var ip = flag.String("ip", "", "The public ip of the routing api")
+var systemDomain = flag.String("systemDomain", "", "System domain that the routing api should register on")
 
 func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 	return http.HandlerFunc(f)
@@ -31,9 +36,9 @@ func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 func main() {
 	logger := cf_lager.New("routing-api")
 
-	flag.Parse()
-	if *configPath == "" {
-		logger.Error("failed to start", errors.New("No configuration file provided"))
+	err := checkFlags()
+	if err != nil {
+		logger.Error("failed to start", err)
 		os.Exit(1)
 	}
 
@@ -91,9 +96,49 @@ func main() {
 
 	handler = handlers.LogWrap(handler, logger)
 
+	registerInterval := *maxTTL / 2
+
+	host := fmt.Sprintf("routing-api.%s", *systemDomain)
+	route := db.Route{
+		Route:   host,
+		Port:    *port,
+		IP:      *ip,
+		TTL:     *maxTTL,
+		LogGuid: cfg.LogGuid,
+	}
+
+	ticker := time.NewTicker(time.Duration(registerInterval))
+	quitChan := make(chan bool)
+	go helpers.RegisterRoutingAPI(quitChan, database, route, ticker, logger)
+
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Info("Unregistering self from gorouter")
+			quitChan <- true
+			<-quitChan
+		}
+	}()
+
 	logger.Info("starting", lager.Data{"port": *port})
 	err = http.ListenAndServe(":"+strconv.Itoa(*port), handler)
 	if err != nil {
 		panic(err)
 	}
+}
+
+func checkFlags() error {
+	flag.Parse()
+	if *configPath == "" {
+		return errors.New("No configuration file provided")
+	}
+
+	if *ip == "" {
+		return errors.New("No ip address provided")
+	}
+
+	if *systemDomain == "" {
+		return errors.New("No system domain provided")
+	}
+
+	return nil
 }

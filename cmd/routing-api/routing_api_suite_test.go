@@ -30,6 +30,9 @@ var routingAPIAddress string
 var routingAPIArgs testrunner.Args
 var routingAPIRunner *ginkgomon.Runner
 var routingAPIProcess ifrit.Process
+var routingAPIPort int
+var routingAPIIP string
+var routingAPISystemDomain string
 
 func TestMain(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -60,8 +63,10 @@ var _ = BeforeEach(func() {
 	etcdRunner.Start()
 
 	etcdAdapter = etcdRunner.Adapter()
-	port := 6900 + GinkgoParallelNode()
-	routingAPIAddress = fmt.Sprintf("127.0.0.1:%d", port)
+	routingAPIPort = 6900 + GinkgoParallelNode()
+	routingAPIIP = "127.0.0.1"
+	routingAPISystemDomain = "example.com"
+	routingAPIAddress = fmt.Sprintf("%s:%d", routingAPIIP, routingAPIPort)
 
 	routingAPIURL := &url.URL{
 		Scheme: "http",
@@ -72,10 +77,12 @@ var _ = BeforeEach(func() {
 	workingDir, _ := os.Getwd()
 
 	routingAPIArgs = testrunner.Args{
-		Port:        port,
-		ConfigPath:  workingDir + "/../../example_config/example.yml",
-		EtcdCluster: etcdUrl,
-		DevMode:     true,
+		Port:         routingAPIPort,
+		IP:           routingAPIIP,
+		SystemDomain: routingAPISystemDomain,
+		ConfigPath:   workingDir + "/../../example_config/example.yml",
+		EtcdCluster:  etcdUrl,
+		DevMode:      true,
 	}
 	routingAPIRunner = testrunner.New(routingAPIBinPath, routingAPIArgs)
 })
