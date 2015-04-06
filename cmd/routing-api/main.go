@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/cloudfoundry-incubator/routing-api"
@@ -111,12 +113,16 @@ func main() {
 	quitChan := make(chan bool)
 	go helpers.RegisterRoutingAPI(quitChan, database, route, ticker, logger)
 
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Info("Unregistering self from gorouter")
-			quitChan <- true
-			<-quitChan
-		}
+	c := make(chan os.Signal)
+	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT, syscall.SIGUSR1)
+	go func() {
+		<-c
+		logger.Info("Unregistering from etcd")
+
+		quitChan <- true
+		<-quitChan
+
+		os.Exit(0)
 	}()
 
 	logger.Info("starting", lager.Data{"port": *port})
@@ -124,6 +130,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 }
 
 func checkFlags() error {
