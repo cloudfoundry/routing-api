@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"os"
 	"time"
 
 	"github.com/cloudfoundry-incubator/routing-api/db"
@@ -23,6 +24,7 @@ func RegisterRoutingAPI(quit chan bool, database db.DB, route db.Route, ticker *
 			err := database.DeleteRoute(route)
 			if err != nil {
 				logger.Error("Error deleting route registration", err)
+				os.Exit(1)
 			}
 			return
 		}

@@ -1,6 +1,9 @@
 package main_test
 
 import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os/exec"
 
 	. "github.com/onsi/ginkgo"
@@ -32,6 +35,39 @@ var _ = Describe("Main", func() {
 		session := RoutingApi("-config=../../example_config/bad_uaa_verification_key.yml", "-ip='1.1.1.1'", "-systemDomain='some-system-domain'")
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("Public uaa token must be PEM encoded"))
+	})
+
+	Context("when initialized correctly and etcd is running", func() {
+		It("unregistesrs form etcd when the process exits", func() {
+			session := RoutingApi("-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
+
+			getRoutes := func() string {
+				routesPath := fmt.Sprintf("%s/v2/keys/routes", etcdUrl)
+				resp, err := http.Get(routesPath)
+				Expect(err).ToNot(HaveOccurred())
+
+				body, err := ioutil.ReadAll(resp.Body)
+				Expect(err).ToNot(HaveOccurred())
+				return string(body)
+			}
+			Eventually(getRoutes).Should(ContainSubstring("routing-api"))
+
+			session.Terminate()
+
+			Eventually(getRoutes).ShouldNot(ContainSubstring("routing-api"))
+			Eventually(session.ExitCode()).Should(Equal(0))
+		})
+
+		It("exits 1 if etcd returns an error as we unregister ourself during  a deployment roll", func() {
+			session := RoutingApi("-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
+
+			etcdAdapter.Disconnect()
+			etcdRunner.Stop()
+
+			session.Terminate()
+
+			Eventually(session).Should(Exit(1))
+		})
 	})
 })
 
