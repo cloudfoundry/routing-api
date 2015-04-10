@@ -109,7 +109,7 @@ func main() {
 		LogGuid: cfg.LogGuid,
 	}
 
-	ticker := time.NewTicker(time.Duration(registerInterval))
+	ticker := time.NewTicker(time.Duration(registerInterval) * time.Second)
 	quitChan := make(chan bool)
 	go helpers.RegisterRoutingAPI(quitChan, database, route, ticker, logger)
 
