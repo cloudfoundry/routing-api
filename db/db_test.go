@@ -208,6 +208,7 @@ var _ = Describe("DB", func() {
 				It("returns a key not found error if the key does not exists", func() {
 					err := etcd.DeleteRoute(route)
 					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(Equal("The specified route could not be found."))
 				})
 			})
 		})

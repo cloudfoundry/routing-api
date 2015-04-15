@@ -42,7 +42,7 @@ func (h *RoutesHandler) List(w http.ResponseWriter, req *http.Request) {
 	}
 	routes, err := h.db.ReadRoutes()
 	if err != nil {
-		handleDBError(w, err, log)
+		handleDBCommunicationError(w, err, log)
 		return
 	}
 	encoder := json.NewEncoder(w)
@@ -77,7 +77,7 @@ func (h *RoutesHandler) Upsert(w http.ResponseWriter, req *http.Request) {
 	for _, route := range routes {
 		err = h.db.SaveRoute(route)
 		if err != nil {
-			handleDBError(w, err, log)
+			handleDBCommunicationError(w, err, log)
 			return
 		}
 	}
@@ -112,9 +112,11 @@ func (h *RoutesHandler) Delete(w http.ResponseWriter, req *http.Request) {
 
 	for _, route := range routes {
 		err = h.db.DeleteRoute(route)
-		if err != nil && !strings.Contains(err.Error(), "Key not found") {
-			handleDBError(w, err, log)
-			return
+		if err != nil {
+			if dberr, ok := err.(db.DBError); !ok || dberr.Type != db.KeyNotFound {
+				handleDBCommunicationError(w, err, log)
+				return
+			}
 		}
 	}
 

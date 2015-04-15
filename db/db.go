@@ -75,7 +75,11 @@ func (e etcd) SaveRoute(route Route) error {
 
 func (e etcd) DeleteRoute(route Route) error {
 	key := generateKey(route)
-	return e.storeAdapter.Delete(key)
+	err := e.storeAdapter.Delete(key)
+	if err != nil && err.Error() == "the requested key could not be found" {
+		err = DBError{Type: KeyNotFound, Message: "The specified route could not be found."}
+	}
+	return err
 }
 
 func (e etcd) WatchRouteChanges() (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error) {

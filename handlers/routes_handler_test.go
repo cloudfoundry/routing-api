@@ -273,7 +273,7 @@ var _ = Describe("RoutesHandler", func() {
 
 			Context("when the database deletion fails", func() {
 				It("returns a 204 if the key was not found", func() {
-					database.DeleteRouteReturns(errors.New("Key not found"))
+					database.DeleteRouteReturns(db.DBError{Type: db.KeyNotFound, Message: "The specified route could not be found."})
 
 					request = newTestRequest(route)
 					routesHandler.Delete(responseRecorder, request)
