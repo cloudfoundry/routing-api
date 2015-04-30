@@ -76,6 +76,24 @@ var _ = Describe("Validator", func() {
 				Expect(err.Error()).To(Equal("Each route request requires a port greater than 0"))
 			})
 
+			It("returns an error if the path contains invalid characters", func() {
+				routes[0].Route = "/foo/b ar"
+
+				err := validator.ValidateCreate(routes, maxTTL)
+				Expect(err).ToNot(BeNil())
+				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
+				Expect(err.Error()).To(Equal("Route cannot contain invalid characters"))
+			})
+
+			It("returns an error if the path is not valid", func() {
+				routes[0].Route = "/foo/bar%"
+
+				err := validator.ValidateCreate(routes, maxTTL)
+				Expect(err).ToNot(BeNil())
+				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
+				Expect(err.Error()).To(ContainSubstring("invalid URL"))
+			})
+
 			It("returns an error if any request does not have an IP", func() {
 				routes[1].IP = ""
 

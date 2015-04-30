@@ -72,5 +72,24 @@ var _ = Describe("Routes API", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes).NotTo(ContainElement(route1))
 		})
+
+		It("rejects bad routes", func() {
+			route3 := db.Route{
+				Route:   "/foo/b ar",
+				Port:    35,
+				IP:      "2.2.2.2",
+				TTL:     66,
+				LogGuid: "banana",
+			}
+
+			err := client.UpsertRoutes([]db.Route{route3})
+			Expect(err).To(HaveOccurred())
+
+			routes, err = client.Routes()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(routes).NotTo(ContainElement(route3))
+			Expect(routes).To(ContainElement(route1))
+			Expect(routes).To(ContainElement(route2))
+		})
 	})
 })

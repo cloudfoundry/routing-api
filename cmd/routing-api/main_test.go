@@ -38,7 +38,7 @@ var _ = Describe("Main", func() {
 	})
 
 	Context("when initialized correctly and etcd is running", func() {
-		It("unregistesrs form etcd when the process exits", func() {
+		It("unregisters form etcd when the process exits", func() {
 			session := RoutingApi("-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
 
 			getRoutes := func() string {
@@ -58,7 +58,7 @@ var _ = Describe("Main", func() {
 			Eventually(session.ExitCode()).Should(Equal(0))
 		})
 
-		It("exits 1 if etcd returns an error as we unregister ourself during  a deployment roll", func() {
+		It("exits 1 if etcd returns an error as we unregister ourself during a deployment roll", func() {
 			session := RoutingApi("-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
 
 			etcdAdapter.Disconnect()
