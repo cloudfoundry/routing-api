@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/db"
@@ -78,6 +79,10 @@ func validateRouteParses(route string) *routing_api.Error {
 
 	if parsedURL.String() != route {
 		return &routing_api.Error{routing_api.RouteInvalidError, "Route cannot contain invalid characters"}
+	}
+
+	if strings.ContainsAny(route, "?#") {
+		return &routing_api.Error{routing_api.RouteInvalidError, "Route cannot contain any of [?, #]"}
 	}
 
 	return nil

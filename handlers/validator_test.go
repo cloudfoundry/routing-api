@@ -94,6 +94,24 @@ var _ = Describe("Validator", func() {
 				Expect(err.Error()).To(ContainSubstring("invalid URL"))
 			})
 
+			It("returns an error if the path contains a question mark", func() {
+				routes[0].Route = "/foo/bar?a"
+
+				err := validator.ValidateCreate(routes, maxTTL)
+				Expect(err).ToNot(BeNil())
+				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
+				Expect(err.Error()).To(ContainSubstring("cannot contain any of [?, #]"))
+			})
+
+			It("returns an error if the path contains a hash mark", func() {
+				routes[0].Route = "/foo/bar#a"
+
+				err := validator.ValidateCreate(routes, maxTTL)
+				Expect(err).ToNot(BeNil())
+				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
+				Expect(err.Error()).To(ContainSubstring("cannot contain any of [?, #]"))
+			})
+
 			It("returns an error if any request does not have an IP", func() {
 				routes[1].IP = ""
 
