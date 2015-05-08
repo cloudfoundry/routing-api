@@ -167,6 +167,11 @@ curl -vvv -H "Authorization: bearer [token with uaa route.admin scope]" http://1
 
 ## Deploying to CF-Release
 1. Deploy at least one instance of consul.
+   ```yml
+   jobs:
+   - name: consul_z1
+      instances: 1
+   ```
 2. Set `instances` for routing_api_z1 to 1 and ensure that the job has at least one static ip address.
 
    ```yml
