@@ -9,6 +9,7 @@ import (
 	fake_token "github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
 	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
+	fake_statsd "github.com/cloudfoundry-incubator/routing-api/metrics/fakes"
 	"github.com/cloudfoundry/storeadapter"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,13 +24,15 @@ var _ = Describe("EventsHandler", func() {
 		logger   *lagertest.TestLogger
 		token    *fake_token.FakeToken
 		server   *httptest.Server
+		stats    *fake_statsd.FakePartialStatsdClient
 	)
 
 	BeforeEach(func() {
 		token = &fake_token.FakeToken{}
 		database = &fake_db.FakeDB{}
 		logger = lagertest.NewTestLogger("event-handler-test")
-		handler = *handlers.NewEventStreamHandler(token, database, logger)
+		stats = new(fake_statsd.FakePartialStatsdClient)
+		handler = *handlers.NewEventStreamHandler(token, database, logger, stats)
 	})
 
 	AfterEach(func(done Done) {
@@ -126,6 +129,60 @@ var _ = Describe("EventsHandler", func() {
 					reader := sse.NewReadCloser(response.Body)
 					event, err := reader.Next()
 					expectedEvent := sse.Event{ID: "0", Name: "Delete", Data: []byte("valuable-string")}
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(event).To(Equal(expectedEvent))
+				})
+			})
+
+			Context("when the event is of type Delete", func() {
+				BeforeEach(func() {
+					resultsChan := make(chan storeadapter.WatchEvent, 1)
+					storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
+					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.DeleteEvent, PrevNode: &storeNode}
+					database.WatchRouteChangesReturns(resultsChan, nil, nil)
+				})
+
+				It("emits a Delete Event", func() {
+					reader := sse.NewReadCloser(response.Body)
+					event, err := reader.Next()
+					expectedEvent := sse.Event{ID: "0", Name: "Delete", Data: []byte("valuable-string")}
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(event).To(Equal(expectedEvent))
+				})
+			})
+
+			Context("when the event is of type Create", func() {
+				BeforeEach(func() {
+					resultsChan := make(chan storeadapter.WatchEvent, 1)
+					storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
+					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.CreateEvent, Node: &storeNode}
+					database.WatchRouteChangesReturns(resultsChan, nil, nil)
+				})
+
+				It("emits a Upsert Event", func() {
+					reader := sse.NewReadCloser(response.Body)
+					event, err := reader.Next()
+					expectedEvent := sse.Event{ID: "0", Name: "Upsert", Data: []byte("valuable-string")}
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(event).To(Equal(expectedEvent))
+				})
+			})
+
+			Context("when the event is of type Update", func() {
+				BeforeEach(func() {
+					resultsChan := make(chan storeadapter.WatchEvent, 1)
+					storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
+					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode}
+					database.WatchRouteChangesReturns(resultsChan, nil, nil)
+				})
+
+				It("emits a Upsert Event", func() {
+					reader := sse.NewReadCloser(response.Body)
+					event, err := reader.Next()
+					expectedEvent := sse.Event{ID: "0", Name: "Upsert", Data: []byte("valuable-string")}
 
 					Expect(err).NotTo(HaveOccurred())
 					Expect(event).To(Equal(expectedEvent))

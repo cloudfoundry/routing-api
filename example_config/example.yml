@@ -1,3 +1,5 @@
+# values in this example are only suitable for testing and are not recommended
+# for production systems
 log_guid: "my_logs"
 uaa_verification_key: "-----BEGIN PUBLIC KEY-----
 
@@ -13,3 +15,8 @@ uaa_verification_key: "-----BEGIN PUBLIC KEY-----
 metron_config:
   address: "1.2.3.4"
   port: "4567"
+consul_config:
+  ttl: "10000ms"
+  lock_retry_interval: "100ms"
+metrics_reporting_interval: "500ms"
+statsd_endpoint: "localhost:8125"

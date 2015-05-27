@@ -22,6 +22,14 @@
 			"Rev": "db1bf7202e706de8d7460c1b54494ac7ab481a59"
 		},
 		{
+			"ImportPath": "github.com/cloudfoundry-incubator/consuladapter",
+			"Rev": "9e61960ef98bf9750c8faa1573e8786aba07561c"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry-incubator/runtime-schema/maintainer",
+			"Rev": "e86cfed5370257cc26783b3cbc088d9abb04e438"
+		},
+		{
 			"ImportPath": "github.com/cloudfoundry/dropsonde",
 			"Rev": "0afd306c305053e4cf1a90e9b58eb24cb1f126b5"
 		},
@@ -53,6 +61,11 @@
 			"Rev": "bc946d07d1016848dfd2507f90f0859c9471681e"
 		},
 		{
+			"ImportPath": "github.com/hashicorp/consul/api",
+			"Comment": "v0.5.2-33-g0aea1f0",
+			"Rev": "0aea1f06a1662dd392d3c8e8240cb4cc662e2e65"
+		},
+		{
 			"ImportPath": "github.com/nu7hatch/gouuid",
 			"Rev": "179d4d0c4d8d407a32af483c2354df1d2c91e6c3"
 		},
@@ -67,16 +80,20 @@
 			"Rev": "e7b2cd96b5633fbc5f0c221159a5c1e85323f770"
 		},
 		{
-			"ImportPath": "github.com/pivotal-golang/clock",
-			"Rev": "270608bba0223b4ee5e0ac06f85e7964378f57a3"
-		},
-		{
 			"ImportPath": "github.com/pivotal-cf-experimental/trace-logger",
 			"Rev": "db7feda4944cc58be58a6769fd5ee81a279e5daf"
 		},
 		{
+			"ImportPath": "github.com/pivotal-golang/clock",
+			"Rev": "270608bba0223b4ee5e0ac06f85e7964378f57a3"
+		},
+		{
 			"ImportPath": "github.com/pivotal-golang/lager",
 			"Rev": "09a71f6eb2dcc1c2335e37ceb78a91c6f618d561"
+		},
+		{
+			"ImportPath": "github.com/quipo/statsd",
+			"Rev": "b16c3be8a03e3c39a2d9c669b8f13f8876de61cd"
 		},
 		{
 			"ImportPath": "github.com/tedsuo/ifrit",

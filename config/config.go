@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"io/ioutil"
+	"time"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
 )
@@ -12,10 +13,21 @@ type MetronConfig struct {
 	Port    string
 }
 
+type ConsulConfig struct {
+	TTLString               string        `yaml:"ttl"`
+	LockRetryIntervalString string        `yaml:"lock_retry_interval"`
+	TTL                     time.Duration `yaml:"-"`
+	LockRetryInterval       time.Duration `yaml:"-"`
+}
+
 type Config struct {
-	UAAPublicKey string       `yaml:"uaa_verification_key"`
-	LogGuid      string       `yaml:"log_guid"`
-	MetronConfig MetronConfig `yaml:"metron_config"`
+	UAAPublicKey                   string        `yaml:"uaa_verification_key"`
+	LogGuid                        string        `yaml:"log_guid"`
+	MetronConfig                   MetronConfig  `yaml:"metron_config"`
+	ConsulConfig                   ConsulConfig  `yaml:"consul_config"`
+	MetricsReportingIntervalString string        `yaml:"metrics_reporting_interval"`
+	MetricsReportingInterval       time.Duration `yaml:"-"`
+	StatsdEndpoint                 string        `yaml:"statsd_endpoint"`
 }
 
 func NewConfigFromFile(configFile string) (Config, error) {
@@ -44,6 +56,30 @@ func (cfg *Config) Initialize(file []byte) error {
 	if cfg.UAAPublicKey == "" {
 		return errors.New("No uaa_verification_key specified")
 	}
+
+	cfg.process()
+
+	return nil
+}
+
+func (cfg *Config) process() error {
+	metricsReportingInterval, err := time.ParseDuration(cfg.MetricsReportingIntervalString)
+	if err != nil {
+		return err
+	}
+	cfg.MetricsReportingInterval = metricsReportingInterval
+
+	consulTTL, err := time.ParseDuration(cfg.ConsulConfig.TTLString)
+	if err != nil {
+		return err
+	}
+	cfg.ConsulConfig.TTL = consulTTL
+
+	lockRetryInterval, err := time.ParseDuration(cfg.ConsulConfig.LockRetryIntervalString)
+	if err != nil {
+		return err
+	}
+	cfg.ConsulConfig.LockRetryInterval = lockRetryInterval
 
 	return nil
 }
