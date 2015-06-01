@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/authentication"
 	"github.com/cloudfoundry-incubator/routing-api/config"
 	"github.com/cloudfoundry-incubator/routing-api/db"
@@ -22,6 +21,7 @@ import (
 
 	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/tedsuo/rata"
+	"github.com/cloudfoundry-incubator/routing-api"
 )
 
 var maxTTL = flag.Int("maxTTL", 120, "Maximum TTL on the route")

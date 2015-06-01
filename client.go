@@ -45,8 +45,7 @@ func (c *client) SetToken(token string) {
 }
 
 func (c *client) UpsertRoutes(routes []db.Route) error {
-	err := c.doRequest(UpsertRoute, nil, nil, routes, nil)
-	return err
+	return c.doRequest(UpsertRoute, nil, nil, routes, nil)
 }
 
 func (c *client) Routes() ([]db.Route, error) {
@@ -56,8 +55,7 @@ func (c *client) Routes() ([]db.Route, error) {
 }
 
 func (c *client) DeleteRoutes(routes []db.Route) error {
-	err := c.doRequest(DeleteRoute, nil, nil, routes, nil)
-	return err
+	return c.doRequest(DeleteRoute, nil, nil, routes, nil)
 }
 
 func (c *client) SubscribeToEvents() (EventSource, error) {
