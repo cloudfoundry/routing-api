@@ -71,6 +71,10 @@
 			"Rev": "270608bba0223b4ee5e0ac06f85e7964378f57a3"
 		},
 		{
+			"ImportPath": "github.com/pivotal-cf-experimental/trace-logger",
+			"Rev": "db7feda4944cc58be58a6769fd5ee81a279e5daf"
+		},
+		{
 			"ImportPath": "github.com/pivotal-golang/lager",
 			"Rev": "09a71f6eb2dcc1c2335e37ceb78a91c6f618d561"
 		},
