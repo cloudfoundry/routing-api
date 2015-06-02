@@ -32,7 +32,7 @@ var _ = Describe("Main", func() {
 	})
 
 	It("exits 1 if the uaa_verification_key is not a valid PEM format", func() {
-		session := RoutingApi("-config=../../example_config/bad_uaa_verification_key.yml", "-ip='1.1.1.1'", "-systemDomain='some-system-domain'")
+		session := RoutingApi("-config=../../example_config/bad_uaa_verification_key.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("Public uaa token must be PEM encoded"))
 	})

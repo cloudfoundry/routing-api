@@ -32,7 +32,7 @@ type etcd struct {
 }
 
 func NewETCD(nodeURLs []string) etcd {
-	workpool := workpool.NewWorkPool(1)
+	workpool, _ := workpool.NewWorkPool(1) //do not check error for constructor when hard coding number of workers
 	storeAdapter := etcdstoreadapter.NewETCDStoreAdapter(nodeURLs, workpool)
 	return etcd{
 		storeAdapter: storeAdapter,

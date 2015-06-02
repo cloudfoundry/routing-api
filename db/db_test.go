@@ -97,22 +97,16 @@ var _ = Describe("DB", func() {
 				err := etcd.SaveRoute(route)
 				Expect(err).NotTo(HaveOccurred())
 
-				response, err := etcdClient.Get(`/routes/post_here,1.2.3.4:7000`, false, false)
+				node, err := etcdClient.Get(`/routes/post_here,1.2.3.4:7000`)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(response.Node.TTL).To(Equal(int64(50)))
-				Expect(response.Node.Value).To(MatchJSON(`{
+				Expect(node.TTL).To(Equal(uint64(50)))
+				Expect(node.Value).To(MatchJSON(`{
 						"ip": "1.2.3.4",
 						"route": "post_here",
 						"port": 7000,
 						"ttl": 50,
 						"log_guid": "my-guid"
 					}`))
-			})
-
-			It("Returns the ETCD error if bad inputs are given", func() {
-				route.TTL = -1
-				err := etcd.SaveRoute(route)
-				Expect(err).To(HaveOccurred())
 			})
 
 			Context("when an entry already exists", func() {
@@ -132,10 +126,10 @@ var _ = Describe("DB", func() {
 					err := etcd.SaveRoute(route)
 					Expect(err).NotTo(HaveOccurred())
 
-					response, err := etcdClient.Get(`/routes/next-route,9.8.7.6:12345`, false, false)
+					node, err := etcdClient.Get(`/routes/next-route,9.8.7.6:12345`)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(response.Node.TTL).To(Equal(int64(47)))
-					Expect(response.Node.Value).To(MatchJSON(`{
+					Expect(node.TTL).To(Equal(uint64(47)))
+					Expect(node.Value).To(MatchJSON(`{
 						"ip": "9.8.7.6",
 						"route": "next-route",
 						"port": 12345,

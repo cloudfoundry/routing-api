@@ -32,16 +32,16 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gunk/workpool",
-			"Rev": "de79b69f590594db2b9771018784c55251d5e7e7"
+			"Rev": "1e83496bd55b10dde3ac60f22ab5058eaa4042e0"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/storeadapter",
-			"Rev": "dff7a18fad3c03aae624a5ae0bce53d142d72971"
+			"Rev": "776fd8b514e4c7ae50db872e14dc0995ae3721ca"
 		},
 		{
 			"ImportPath": "github.com/coreos/go-etcd/etcd",
-			"Comment": "v0.4.6",
-			"Rev": "6aa2da5a7a905609c93036b9307185a04a5a84a5"
+			"Comment": "v2.0.0-7-g73a8ef7",
+			"Rev": "73a8ef737e8ea002281a28b4cb92a1de121ad4c6"
 		},
 		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",
@@ -65,6 +65,10 @@
 			"ImportPath": "github.com/onsi/gomega",
 			"Comment": "v1.0-33-ge7b2cd9",
 			"Rev": "e7b2cd96b5633fbc5f0c221159a5c1e85323f770"
+		},
+		{
+			"ImportPath": "github.com/pivotal-golang/clock",
+			"Rev": "270608bba0223b4ee5e0ac06f85e7964378f57a3"
 		},
 		{
 			"ImportPath": "github.com/pivotal-golang/lager",
