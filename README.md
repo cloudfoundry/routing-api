@@ -27,23 +27,23 @@ go get github.com/cloudfoundry-incubator/routing-api/cmd/routing-api
 
 #### etcd
 
-To run the tests you need a running etcd cluster on version 0.4.6. To get that do:
+To run the tests you need a running etcd cluster on version 2.0.1. To get that do:
 
 ```sh
 go get github.com/coreos/etcd
 cd $GOPATH/src/github.com/coreos/etcd
 git fetch --tags
-git checkout v0.4.6
+git checkout v2.0.1
 go install .
 ```
 
 Once installed, you can run etcd with the command `etcd` and you should see the
-following output:
+output contain the following lines:
 ```
-   | Using the directory majestic.etcd as the etcd curation directory because a directory was not specified.
-   | majestic is starting a new cluster
-   | etcd server [name majestic, listen on :4001, advertised url http://127.0.0.1:4001]   <-- default location of the etcd server
-   | peer server [name majestic, listen on :7001, advertised url http://127.0.0.1:7001]
+   | etcd: listening for peers on http://localhost:2380
+   | etcd: listening for peers on http://localhost:7001
+   | etcd: listening for client requests on http://localhost:2379
+   | etcd: listening for client requests on http://localhost:4001
 ```
 
 Note that this will run an etcd server and create a new directory at that location 
