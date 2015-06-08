@@ -31,12 +31,32 @@ var _ = Describe("Routes API", func() {
 	Describe("Stats for event subscribers", func() {
 		Context("Subscribe", func() {
 			var fakeStatsdServer *net.UDPConn
+			var fakeStatsdChan chan []byte
 
 			BeforeEach(func() {
 				var err error
 				fakeStatsdServer, err = net.ListenUDP("udp", addr)
 				fakeStatsdServer.SetReadDeadline(time.Now().Add(15 * time.Second))
 				Expect(err).ToNot(HaveOccurred())
+				fakeStatsdChan = make(chan []byte, 1)
+
+				go func() {
+					defer GinkgoRecover()
+					for {
+						buffer := make([]byte, 64)
+						n, err := fakeStatsdServer.Read(buffer)
+						if err != nil {
+							close(fakeStatsdChan)
+							return
+						}
+
+						select {
+						case fakeStatsdChan <- buffer[:n]:
+						default:
+						}
+					}
+				}()
+
 			})
 
 			AfterEach(func() {
@@ -45,6 +65,7 @@ var _ = Describe("Routes API", func() {
 			})
 
 			It("should have two subscriptions", func() {
+
 				eventStream1, err := client.SubscribeToEvents()
 				Expect(err).NotTo(HaveOccurred())
 
@@ -53,13 +74,15 @@ var _ = Describe("Routes API", func() {
 				defer eventStream1.Close()
 				defer eventStream2.Close()
 
-				var line []byte = make([]byte, 64)
-				Eventually(func() []byte {
-					n, err := fakeStatsdServer.Read(line)
-					Expect(err).ToNot(HaveOccurred())
-					return line[:n]
-				}).Should(BeEquivalentTo("routing_api.total_subscriptions:2|g"))
+				eventStream3, err := client.SubscribeToEvents()
+				Expect(err).NotTo(HaveOccurred())
+				defer eventStream3.Close()
 
+				eventStream4, err := client.SubscribeToEvents()
+				Expect(err).NotTo(HaveOccurred())
+				defer eventStream4.Close()
+
+				Eventually(fakeStatsdChan).Should(Receive(BeEquivalentTo("routing_api.total_subscriptions:4|g")))
 			})
 		})
 	})
