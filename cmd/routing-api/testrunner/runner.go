@@ -8,13 +8,12 @@ import (
 )
 
 type Args struct {
-	Port          int
-	ConfigPath    string
-	DevMode       bool
-	EtcdCluster   string
-	IP            string
-	SystemDomain  string
-	ConsulCluster string
+	Port         int
+	ConfigPath   string
+	DevMode      bool
+	EtcdCluster  string
+	IP           string
+	SystemDomain string
 }
 
 func (args Args) ArgSlice() []string {
@@ -24,7 +23,6 @@ func (args Args) ArgSlice() []string {
 		"-systemDomain", args.SystemDomain,
 		"-config", args.ConfigPath,
 		"-devMode=" + strconv.FormatBool(args.DevMode),
-		"-consulCluster", args.ConsulCluster,
 		args.EtcdCluster,
 	}
 }

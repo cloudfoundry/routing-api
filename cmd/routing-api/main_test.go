@@ -32,20 +32,14 @@ var _ = Describe("Main", func() {
 	})
 
 	It("exits 1 if the uaa_verification_key is not a valid PEM format", func() {
-		session := RoutingApi("-config=../../example_config/bad_uaa_verification_key.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", "-consulCluster="+consulRunner.ConsulCluster(), etcdUrl)
+		session := RoutingApi("-config=../../example_config/bad_uaa_verification_key.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("Public uaa token must be PEM encoded"))
 	})
 
-	It("exits 1 if the consulCluster is not provided", func() {
-		session := RoutingApi("-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
-		Eventually(session).Should(Exit(1))
-		Eventually(session).Should(Say("No consul cluster provided"))
-	})
-
 	Context("when initialized correctly and etcd is running", func() {
 		It("unregisters form etcd when the process exits", func() {
-			session := RoutingApi("-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", "-consulCluster="+consulRunner.ConsulCluster(), etcdUrl)
+			session := RoutingApi("-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
 
 			getRoutes := func() string {
 				routesPath := fmt.Sprintf("%s/v2/keys/routes", etcdUrl)
@@ -65,7 +59,7 @@ var _ = Describe("Main", func() {
 		})
 
 		It("exits 1 if etcd returns an error as we unregister ourself during a deployment roll", func() {
-			session := RoutingApi("-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", "-consulCluster="+consulRunner.ConsulCluster(), etcdUrl)
+			session := RoutingApi("-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
 
 			etcdAdapter.Disconnect()
 			etcdRunner.Stop()
