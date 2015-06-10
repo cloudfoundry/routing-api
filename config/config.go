@@ -22,12 +22,14 @@ type ConsulConfig struct {
 
 type Config struct {
 	UAAPublicKey                   string        `yaml:"uaa_verification_key"`
+	DebugAddress                   string        `yaml:"debug_address"`
 	LogGuid                        string        `yaml:"log_guid"`
 	MetronConfig                   MetronConfig  `yaml:"metron_config"`
 	ConsulConfig                   ConsulConfig  `yaml:"consul_config"`
 	MetricsReportingIntervalString string        `yaml:"metrics_reporting_interval"`
 	MetricsReportingInterval       time.Duration `yaml:"-"`
 	StatsdEndpoint                 string        `yaml:"statsd_endpoint"`
+	MaxConcurrentETCDRequests      uint          `yaml:"max_concurrent_etcd_requests"`
 }
 
 func NewConfigFromFile(configFile string) (Config, error) {

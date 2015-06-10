@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cloudfoundry-incubator/cf-debug-server"
 	"github.com/cloudfoundry-incubator/consuladapter"
 	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/authentication"
@@ -31,6 +32,8 @@ import (
 	"github.com/tedsuo/ifrit/sigmon"
 	"github.com/tedsuo/rata"
 )
+
+const DEFAULT_ETCD_WORKERS = 25
 
 var maxTTL = flag.Int("maxTTL", 120, "Maximum TTL on the route")
 var port = flag.Int("port", 8080, "Port to run rounting-api server on")
@@ -65,8 +68,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	if cfg.DebugAddress != "" {
+		cf_debug_server.Run(cfg.DebugAddress)
+	}
+
+	maxWorkers := cfg.MaxConcurrentETCDRequests
+	if maxWorkers <= 0 {
+		maxWorkers = DEFAULT_ETCD_WORKERS
+	}
+
 	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
-	database := db.NewETCD(flag.Args())
+	database, err := db.NewETCD(flag.Args(), maxWorkers)
+	if err != nil {
+		logger.Error("failed to initialize etcd", err)
+		os.Exit(1)
+	}
+
 	err = database.Connect()
 	if err != nil {
 		logger.Error("failed to connect to etcd", err)

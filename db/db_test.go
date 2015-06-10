@@ -11,14 +11,31 @@ import (
 )
 
 var _ = Describe("DB", func() {
+	Describe("etcd error", func() {
+		var (
+			etcd db.DB
+			err  error
+		)
+
+		BeforeEach(func() {
+			etcd, err = db.NewETCD(etcdRunner.NodeURLS(), 0)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("should not return an etcd instance", func() {
+			Expect(etcd).To(BeNil())
+		})
+	})
+
 	Describe("etcd", func() {
 		var (
 			etcd  db.DB
 			route db.Route
+			err   error
 		)
 
 		BeforeEach(func() {
-			etcd = db.NewETCD(etcdRunner.NodeURLS())
+			etcd, err = db.NewETCD(etcdRunner.NodeURLS(), 10)
 			route = db.Route{
 				Route:   "post_here",
 				Port:    7000,
@@ -26,6 +43,7 @@ var _ = Describe("DB", func() {
 				TTL:     50,
 				LogGuid: "my-guid",
 			}
+			Expect(err).NotTo(HaveOccurred())
 			etcd.Connect()
 		})
 
