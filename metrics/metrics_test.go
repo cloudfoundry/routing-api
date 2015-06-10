@@ -60,9 +60,10 @@ var _ = Describe("Metrics", func() {
 
 			Eventually(stats.GaugeCallCount).Should(Equal(1))
 
-			totalStat, count := stats.GaugeArgsForCall(0)
+			totalStat, count, rate := stats.GaugeArgsForCall(0)
 			Expect(totalStat).To(Equal("total_routes"))
 			Expect(count).To(BeNumerically("==", 5))
+			Expect(rate).To(BeNumerically("==", 1.0))
 		})
 
 		Context("When a create event happens", func() {
@@ -74,9 +75,10 @@ var _ = Describe("Metrics", func() {
 			It("increments the gauge", func() {
 				Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
 
-				updatedStat, count := stats.GaugeDeltaArgsForCall(0)
+				updatedStat, count, rate := stats.GaugeDeltaArgsForCall(0)
 				Expect(updatedStat).To(Equal("total_routes"))
 				Expect(count).To(BeNumerically("==", 1))
+				Expect(rate).To(BeNumerically("==", 1.0))
 			})
 		})
 
@@ -90,9 +92,10 @@ var _ = Describe("Metrics", func() {
 			It("doesn't modify the gauge", func() {
 				Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
 
-				updatedStat, count := stats.GaugeDeltaArgsForCall(0)
+				updatedStat, count, rate := stats.GaugeDeltaArgsForCall(0)
 				Expect(updatedStat).To(Equal("total_routes"))
 				Expect(count).To(BeNumerically("==", 0))
+				Expect(rate).To(BeNumerically("==", 1.0))
 			})
 		})
 
@@ -105,9 +108,10 @@ var _ = Describe("Metrics", func() {
 			It("decrements the gauge", func() {
 				Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
 
-				updatedStat, count := stats.GaugeDeltaArgsForCall(0)
+				updatedStat, count, rate := stats.GaugeDeltaArgsForCall(0)
 				Expect(updatedStat).To(Equal("total_routes"))
 				Expect(count).To(BeNumerically("==", -1))
+				Expect(rate).To(BeNumerically("==", 1.0))
 			})
 		})
 
@@ -120,9 +124,10 @@ var _ = Describe("Metrics", func() {
 			It("decrements the gauge", func() {
 				Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
 
-				updatedStat, count := stats.GaugeDeltaArgsForCall(0)
+				updatedStat, count, rate := stats.GaugeDeltaArgsForCall(0)
 				Expect(updatedStat).To(Equal("total_routes"))
 				Expect(count).To(BeNumerically("==", -1))
+				Expect(rate).To(BeNumerically("==", 1.0))
 			})
 		})
 	})

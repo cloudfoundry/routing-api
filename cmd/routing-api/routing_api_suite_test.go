@@ -108,6 +108,7 @@ var _ = BeforeEach(func() {
 
 var _ = AfterEach(func() {
 	etcdAdapter.Disconnect()
+	etcdRunner.Reset()
 	etcdRunner.Stop()
 
 	consulRunner.Reset()

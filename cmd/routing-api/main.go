@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cactus/go-statsd-client/statsd"
 	"github.com/cloudfoundry-incubator/cf-debug-server"
 	"github.com/cloudfoundry-incubator/consuladapter"
 	"github.com/cloudfoundry-incubator/routing-api"
@@ -24,7 +25,6 @@ import (
 	"github.com/cloudfoundry/dropsonde"
 	"github.com/pivotal-golang/clock"
 	"github.com/pivotal-golang/lager"
-	"github.com/quipo/statsd"
 
 	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/tedsuo/ifrit"
@@ -106,15 +106,17 @@ func main() {
 
 	validator := handlers.NewValidator()
 
-	prefix := "routing_api."
-	statsdclient := statsd.NewStatsdClient(cfg.StatsdEndpoint, prefix) // make sure you config this yo
-	statsdclient.CreateSocket()
+	prefix := "routing_api"
 	interval := cfg.MetricsReportingInterval
-	stats := statsd.NewStatsdBuffer(interval, statsdclient)
-	defer stats.Close()
+	statsdClient, err := statsd.NewBufferedClient(cfg.StatsdEndpoint, prefix, interval, 512) // make sure you config this yo
+	if err != nil {
+		logger.Error("failed to create a statsd client", err)
+		os.Exit(1)
+	}
+	defer statsdClient.Close()
 
 	routesHandler := handlers.NewRoutesHandler(token, *maxTTL, validator, database, logger)
-	eventStreamHandler := handlers.NewEventStreamHandler(token, database, logger, stats)
+	eventStreamHandler := handlers.NewEventStreamHandler(token, database, logger, statsdClient)
 
 	actions := rata.Handlers{
 		"Upsert":      route(routesHandler.Upsert),
@@ -169,7 +171,7 @@ func main() {
 		logger,
 	)
 
-	metricsReporter := metrics.NewMetricsReporter(database, stats, metricsTicker)
+	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker)
 
 	members := grouper.Members{
 		{"lock", lock},

@@ -42,8 +42,8 @@ func (h *EventStreamHandler) EventStream(w http.ResponseWriter, req *http.Reques
 
 	resultChan, _, _ := h.db.WatchRouteChanges()
 
-	h.stats.GaugeDelta("total_subscriptions", 1)
-	defer h.stats.GaugeDelta("total_subscriptions", -1)
+	h.stats.GaugeDelta("total_subscriptions", 1, 1.0)
+	defer h.stats.GaugeDelta("total_subscriptions", -1, 1.0)
 
 	w.Header().Add("Content-Type", "text/event-stream; charset=utf-8")
 	w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")

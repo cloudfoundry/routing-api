@@ -9,8 +9,8 @@ import (
 )
 
 type PartialStatsdClient interface {
-	GaugeDelta(stat string, value int64) error
-	Gauge(stat string, value int64) error
+	GaugeDelta(stat string, value int64, rate float32) error
+	Gauge(stat string, value int64, rate float32) error
 }
 
 type MetricsReporter struct {
@@ -33,9 +33,9 @@ func (r *MetricsReporter) Run(signals <-chan os.Signal, ready chan<- struct{}) e
 		select {
 		case event := <-eventChan:
 			statsDelta := getStatsEventType(event)
-			r.stats.GaugeDelta("total_routes", statsDelta)
+			r.stats.GaugeDelta("total_routes", statsDelta, 1.0)
 		case <-r.ticker.C:
-			r.stats.Gauge("total_routes", r.getTotalRoutes())
+			r.stats.Gauge("total_routes", r.getTotalRoutes(), 1.0)
 		case <-signals:
 			return nil
 		case err := <-errChan:

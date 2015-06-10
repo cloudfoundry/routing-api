@@ -1,6 +1,8 @@
 package main_test
 
 import (
+	"bufio"
+	"bytes"
 	"net"
 	"time"
 
@@ -13,65 +15,60 @@ import (
 
 var _ = Describe("Routes API", func() {
 	var (
-		err    error
-		route1 db.Route
-		addr   *net.UDPAddr
+		err              error
+		route1           db.Route
+		addr             *net.UDPAddr
+		fakeStatsdServer *net.UDPConn
+		fakeStatsdChan   chan string
 	)
 
 	BeforeEach(func() {
 		routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
 		addr, err = net.ResolveUDPAddr("udp", "localhost:8125")
 		Expect(err).ToNot(HaveOccurred())
+
+		fakeStatsdServer, err = net.ListenUDP("udp", addr)
+		fakeStatsdServer.SetReadDeadline(time.Now().Add(15 * time.Second))
+		Expect(err).ToNot(HaveOccurred())
+		fakeStatsdChan = make(chan string, 1)
+
+		go func() {
+			defer GinkgoRecover()
+			for {
+				buffer := make([]byte, 1000)
+				_, err := fakeStatsdServer.Read(buffer)
+				if err != nil {
+					close(fakeStatsdChan)
+					return
+				}
+				scanner := bufio.NewScanner(bytes.NewBuffer(buffer))
+				for scanner.Scan() {
+					select {
+					case fakeStatsdChan <- scanner.Text():
+					}
+				}
+			}
+		}()
+
+		time.Sleep(1000 * time.Millisecond)
 	})
 
 	AfterEach(func() {
 		ginkgomon.Kill(routingAPIProcess)
+		err := fakeStatsdServer.Close()
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Describe("Stats for event subscribers", func() {
 		Context("Subscribe", func() {
-			var fakeStatsdServer *net.UDPConn
-			var fakeStatsdChan chan []byte
-
-			BeforeEach(func() {
-				var err error
-				fakeStatsdServer, err = net.ListenUDP("udp", addr)
-				fakeStatsdServer.SetReadDeadline(time.Now().Add(15 * time.Second))
-				Expect(err).ToNot(HaveOccurred())
-				fakeStatsdChan = make(chan []byte, 1)
-
-				go func() {
-					defer GinkgoRecover()
-					for {
-						buffer := make([]byte, 64)
-						n, err := fakeStatsdServer.Read(buffer)
-						if err != nil {
-							close(fakeStatsdChan)
-							return
-						}
-
-						select {
-						case fakeStatsdChan <- buffer[:n]:
-						default:
-						}
-					}
-				}()
-
-			})
-
-			AfterEach(func() {
-				err := fakeStatsdServer.Close()
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should have two subscriptions", func() {
+			It("should increase subscriptions by 4", func() {
 
 				eventStream1, err := client.SubscribeToEvents()
 				Expect(err).NotTo(HaveOccurred())
+				defer eventStream1.Close()
 
 				eventStream2, err := client.SubscribeToEvents()
 				Expect(err).NotTo(HaveOccurred())
-				defer eventStream1.Close()
 				defer eventStream2.Close()
 
 				eventStream3, err := client.SubscribeToEvents()
@@ -82,22 +79,17 @@ var _ = Describe("Routes API", func() {
 				Expect(err).NotTo(HaveOccurred())
 				defer eventStream4.Close()
 
-				Eventually(fakeStatsdChan).Should(Receive(BeEquivalentTo("routing_api.total_subscriptions:4|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_subscriptions:+1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_subscriptions:+1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_subscriptions:+1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_subscriptions:+1|g")))
 			})
 		})
 	})
 
 	Describe("Stats for total routes", func() {
-		var fakeStatsdServer *net.UDPConn
-		var fakeStatsdChan chan []byte
 
 		BeforeEach(func() {
-			var err error
-			fakeStatsdServer, err = net.ListenUDP("udp", addr)
-			Expect(err).ToNot(HaveOccurred())
-
-			fakeStatsdServer.SetReadDeadline(time.Now().Add(20 * time.Second))
-
 			route1 = db.Route{
 				Route:   "a.b.c",
 				Port:    33,
@@ -105,38 +97,14 @@ var _ = Describe("Routes API", func() {
 				TTL:     55,
 				LogGuid: "potato",
 			}
-
-			fakeStatsdChan = make(chan []byte, 1)
-
-			go func() {
-				defer GinkgoRecover()
-				for {
-					buffer := make([]byte, 1024)
-					n, err := fakeStatsdServer.Read(buffer)
-					if err != nil {
-						close(fakeStatsdChan)
-						return
-					}
-
-					select {
-					case fakeStatsdChan <- buffer[:n]:
-					default:
-					}
-				}
-			}()
-		})
-
-		AfterEach(func() {
-			err := fakeStatsdServer.Close()
-			Expect(err).ToNot(HaveOccurred())
 		})
 
 		Context("periodically receives total routes", func() {
 			It("Gets statsd messages for existing routes", func() {
 				//The first time is because we get the event of adding the self route
-				Eventually(fakeStatsdChan).Should(Receive(BeEquivalentTo("routing_api.total_routes:1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:1|g")))
 				//Do it again to make sure it's not because of events
-				Eventually(fakeStatsdChan).Should(Receive(BeEquivalentTo("routing_api.total_routes:1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:1|g")))
 			})
 		})
 
@@ -144,7 +112,7 @@ var _ = Describe("Routes API", func() {
 			It("Gets statsd messages for new routes", func() {
 				client.UpsertRoutes([]db.Route{route1})
 
-				Eventually(fakeStatsdChan).Should(Receive(BeEquivalentTo("routing_api.total_routes:2|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:+1|g")))
 			})
 		})
 
@@ -154,7 +122,8 @@ var _ = Describe("Routes API", func() {
 
 				client.DeleteRoutes([]db.Route{route1})
 
-				Eventually(fakeStatsdChan).Should(Receive(BeEquivalentTo("routing_api.total_routes:1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:+1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:-1|g")))
 			})
 		})
 
@@ -170,7 +139,8 @@ var _ = Describe("Routes API", func() {
 
 				client.UpsertRoutes([]db.Route{routeExpire})
 
-				Eventually(fakeStatsdChan).Should(Receive(BeEquivalentTo("routing_api.total_routes:1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:+1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:-1|g")))
 			})
 		})
 	})
