@@ -34,6 +34,10 @@
 			"Rev": "e86cfed5370257cc26783b3cbc088d9abb04e438"
 		},
 		{
+			"ImportPath": "github.com/cloudfoundry-incubator/trace-logger",
+			"Rev": "db7feda4944cc58be58a6769fd5ee81a279e5daf"
+		},
+		{
 			"ImportPath": "github.com/cloudfoundry/dropsonde",
 			"Rev": "0afd306c305053e4cf1a90e9b58eb24cb1f126b5"
 		},
@@ -82,10 +86,6 @@
 			"ImportPath": "github.com/onsi/gomega",
 			"Comment": "v1.0-33-ge7b2cd9",
 			"Rev": "e7b2cd96b5633fbc5f0c221159a5c1e85323f770"
-		},
-		{
-			"ImportPath": "github.com/pivotal-cf-experimental/trace-logger",
-			"Rev": "db7feda4944cc58be58a6769fd5ee81a279e5daf"
 		},
 		{
 			"ImportPath": "github.com/pivotal-golang/clock",

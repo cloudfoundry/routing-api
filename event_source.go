@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/cloudfoundry-incubator/routing-api/db"
-	trace "github.com/pivotal-cf-experimental/trace-logger"
+	trace "github.com/cloudfoundry-incubator/trace-logger"
 	"github.com/vito/go-sse/sse"
 )
 

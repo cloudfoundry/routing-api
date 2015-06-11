@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"io/ioutil"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	. "github.com/pivotal-cf-experimental/trace-logger"
 	"net/http"
 	"strings"
+
+	. "github.com/cloudfoundry-incubator/trace-logger"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("trace logger", func() {

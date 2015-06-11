@@ -5,14 +5,15 @@ import (
 
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
+
 	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/fake_routing_api"
+	trace "github.com/cloudfoundry-incubator/trace-logger"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	trace "github.com/pivotal-cf-experimental/trace-logger"
 	"github.com/vito/go-sse/sse"
-	"io/ioutil"
 )
 
 var _ = Describe("EventSource", func() {

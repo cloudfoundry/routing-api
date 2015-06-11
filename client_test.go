@@ -6,13 +6,14 @@ import (
 
 	"bytes"
 	"encoding/json"
-	"github.com/cloudfoundry-incubator/routing-api"
-	"github.com/cloudfoundry-incubator/routing-api/db"
-	"github.com/onsi/gomega/ghttp"
-	trace "github.com/pivotal-cf-experimental/trace-logger"
-	"github.com/vito/go-sse/sse"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/cloudfoundry-incubator/routing-api"
+	"github.com/cloudfoundry-incubator/routing-api/db"
+	trace "github.com/cloudfoundry-incubator/trace-logger"
+	"github.com/onsi/gomega/ghttp"
+	"github.com/vito/go-sse/sse"
 )
 
 var _ = Describe("Client", func() {
