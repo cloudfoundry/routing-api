@@ -102,8 +102,7 @@ func main() {
 	validator := handlers.NewValidator()
 
 	prefix := "routing_api"
-	interval := cfg.MetricsReportingInterval
-	statsdClient, err := statsd.NewBufferedClient(cfg.StatsdEndpoint, prefix, interval, 512) // make sure you config this yo
+	statsdClient, err := statsd.NewBufferedClient(cfg.StatsdEndpoint, prefix, cfg.StatsdClientFlushInterval, 512)
 	if err != nil {
 		logger.Error("failed to create a statsd client", err)
 		os.Exit(1)
