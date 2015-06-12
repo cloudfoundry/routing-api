@@ -32,23 +32,23 @@ var _ = Describe("Routes API", func() {
 		Expect(err).ToNot(HaveOccurred())
 		fakeStatsdChan = make(chan string, 1)
 
-		go func() {
+		go func(statsChan chan string) {
 			defer GinkgoRecover()
 			for {
 				buffer := make([]byte, 1000)
 				_, err := fakeStatsdServer.Read(buffer)
 				if err != nil {
-					close(fakeStatsdChan)
+					close(statsChan)
 					return
 				}
 				scanner := bufio.NewScanner(bytes.NewBuffer(buffer))
 				for scanner.Scan() {
 					select {
-					case fakeStatsdChan <- scanner.Text():
+					case statsChan <- scanner.Text():
 					}
 				}
 			}
-		}()
+		}(fakeStatsdChan)
 
 		time.Sleep(1000 * time.Millisecond)
 	})
