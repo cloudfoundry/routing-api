@@ -77,14 +77,19 @@ var _ = Describe("Helpers", func() {
 			Context("when there are errors", func() {
 				It("only logs the error once for each attempt", func() {
 					database.SaveRouteStub = func(route db.Route) error {
-						received <- struct{}{}
 						return errors.New("beep boop, self destruct mode engaged")
 					}
 
 					go helpers.RegisterRoutingAPI(quitChan, &database, route, ticker, logger)
-					<-received
-					Expect(logger.Logs()[0].Data["error"]).To(ContainSubstring("beep boop, self destruct mode engaged"))
-					Expect(len(logger.Logs())).To(Equal(1))
+
+					Consistently(func() int { return len(logger.Logs()) }).Should(BeNumerically("<=", 1))
+					Eventually(func() string {
+						if len(logger.Logs()) > 0 {
+							return logger.Logs()[0].Data["error"].(string)
+						} else {
+							return ""
+						}
+					}).Should(ContainSubstring("beep boop, self destruct mode engaged"))
 				})
 			})
 		})
