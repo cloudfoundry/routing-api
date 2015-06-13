@@ -22,7 +22,6 @@ var _ = Describe("Helpers", func() {
 			timeChan chan time.Time
 			ticker   *time.Ticker
 
-			received chan struct{}
 			quitChan chan bool
 		)
 
@@ -40,8 +39,6 @@ var _ = Describe("Helpers", func() {
 			timeChan = make(chan time.Time)
 			ticker = &time.Ticker{C: timeChan}
 
-			received = make(chan struct{})
-
 			quitChan = make(chan bool)
 		})
 
@@ -49,28 +46,24 @@ var _ = Describe("Helpers", func() {
 			Context("with no errors", func() {
 				BeforeEach(func() {
 					database.SaveRouteStub = func(route db.Route) error {
-						received <- struct{}{}
 						return nil
 					}
 				})
 
 				It("registers the route for a routing api on init", func() {
 					go helpers.RegisterRoutingAPI(quitChan, &database, route, ticker, logger)
-					<-received
 
-					Expect(database.SaveRouteCallCount()).To(Equal(1))
-					Expect(database.SaveRouteArgsForCall(0)).To(Equal(route))
+					Eventually(func() int { return database.SaveRouteCallCount() }).Should(Equal(1))
+					Eventually(func() db.Route { return database.SaveRouteArgsForCall(0) }).Should(Equal(route))
 				})
 
 				It("registers on an interval", func() {
 					go helpers.RegisterRoutingAPI(quitChan, &database, route, ticker, logger)
-					<-received
 					timeChan <- time.Now()
-					<-received
 
-					Expect(database.SaveRouteCallCount()).To(Equal(2))
-					Expect(database.SaveRouteArgsForCall(1)).To(Equal(route))
-					Expect(len(logger.Logs())).To(Equal(0))
+					Eventually(func() int { return database.SaveRouteCallCount() }).Should(Equal(2))
+					Eventually(func() db.Route { return database.SaveRouteArgsForCall(1) }).Should(Equal(route))
+					Eventually(func() int { return len(logger.Logs()) }).Should(Equal(0))
 				})
 			})
 
