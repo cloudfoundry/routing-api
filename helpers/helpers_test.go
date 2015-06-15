@@ -53,7 +53,7 @@ var _ = Describe("Helpers", func() {
 				It("registers the route for a routing api on init", func() {
 					go helpers.RegisterRoutingAPI(quitChan, &database, route, ticker, logger)
 
-					Eventually(func() int { return database.SaveRouteCallCount() }).Should(Equal(1))
+					Eventually(database.SaveRouteCallCount).Should(Equal(1))
 					Eventually(func() db.Route { return database.SaveRouteArgsForCall(0) }).Should(Equal(route))
 				})
 
@@ -61,9 +61,9 @@ var _ = Describe("Helpers", func() {
 					go helpers.RegisterRoutingAPI(quitChan, &database, route, ticker, logger)
 					timeChan <- time.Now()
 
-					Eventually(func() int { return database.SaveRouteCallCount() }).Should(Equal(2))
+					Eventually(database.SaveRouteCallCount).Should(Equal(2))
 					Eventually(func() db.Route { return database.SaveRouteArgsForCall(1) }).Should(Equal(route))
-					Eventually(func() int { return len(logger.Logs()) }).Should(Equal(0))
+					Eventually(logger.Logs).Should(HaveLen(0))
 				})
 			})
 
