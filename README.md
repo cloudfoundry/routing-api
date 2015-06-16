@@ -168,22 +168,16 @@ curl -vvv -H "Authorization: bearer [token with uaa route.admin scope]" http://1
 ```
 
 ## Deploying to CF-Release
-1. Deploy at least one instance of consul.
-   ```yml
-   jobs:
-   - name: consul_z1
-      instances: 1
-   ```
-2. Set `instances` for routing_api_z1 to 1 and ensure that the job has at least one static ip address.
+1. Set `instances` for routing_api_z1 to 1 and ensure that the job has at least one static ip address.
 
    ```yml
    jobs:
    - name: routing_api_z1
       instances: 1
    ```
-3. Set `properties.routing_api.enabled` to true in your deployment manifest.
-4. `bosh deploy`
-5. Enjoy.
+2. Set `properties.router.enable_routing_api` to true in your deployment manifest.
+3. `bosh deploy`
+4. Enjoy.
 
 ## Known issues
 

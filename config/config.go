@@ -13,19 +13,11 @@ type MetronConfig struct {
 	Port    string
 }
 
-type ConsulConfig struct {
-	TTLString               string        `yaml:"ttl"`
-	LockRetryIntervalString string        `yaml:"lock_retry_interval"`
-	TTL                     time.Duration `yaml:"-"`
-	LockRetryInterval       time.Duration `yaml:"-"`
-}
-
 type Config struct {
 	UAAPublicKey                    string        `yaml:"uaa_verification_key"`
 	DebugAddress                    string        `yaml:"debug_address"`
 	LogGuid                         string        `yaml:"log_guid"`
 	MetronConfig                    MetronConfig  `yaml:"metron_config"`
-	ConsulConfig                    ConsulConfig  `yaml:"consul_config"`
 	MetricsReportingIntervalString  string        `yaml:"metrics_reporting_interval"`
 	MetricsReportingInterval        time.Duration `yaml:"-"`
 	StatsdEndpoint                  string        `yaml:"statsd_endpoint"`
@@ -82,18 +74,6 @@ func (cfg *Config) process() error {
 		return err
 	}
 	cfg.StatsdClientFlushInterval = statsdClientFlushInterval
-
-	consulTTL, err := time.ParseDuration(cfg.ConsulConfig.TTLString)
-	if err != nil {
-		return err
-	}
-	cfg.ConsulConfig.TTL = consulTTL
-
-	lockRetryInterval, err := time.ParseDuration(cfg.ConsulConfig.LockRetryIntervalString)
-	if err != nil {
-		return err
-	}
-	cfg.ConsulConfig.LockRetryInterval = lockRetryInterval
 
 	return nil
 }
