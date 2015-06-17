@@ -40,7 +40,7 @@ func (h *EventStreamHandler) EventStream(w http.ResponseWriter, req *http.Reques
 	flusher := w.(http.Flusher)
 	closeNotifier := w.(http.CloseNotifier).CloseNotify()
 
-	resultChan, _, _ := h.db.WatchRouteChanges()
+	resultChan, _, errChan := h.db.WatchRouteChanges()
 
 	h.stats.GaugeDelta("total_subscriptions", 1, 1.0)
 	defer h.stats.GaugeDelta("total_subscriptions", -1, 1.0)
@@ -87,7 +87,11 @@ func (h *EventStreamHandler) EventStream(w http.ResponseWriter, req *http.Reques
 			flusher.Flush()
 
 			eventID++
+		case err := <-errChan:
+			log.Error("watch-error", err)
+			return
 		case <-closeNotifier:
+			log.Debug("connection-closed")
 			return
 		}
 	}

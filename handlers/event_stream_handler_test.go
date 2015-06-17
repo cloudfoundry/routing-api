@@ -189,6 +189,24 @@ var _ = Describe("EventsHandler", func() {
 				})
 			})
 
+			Context("when the watch returns an error", func() {
+				var errChan chan error
+
+				BeforeEach(func() {
+					resultsChan := make(chan storeadapter.WatchEvent, 1)
+					storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
+					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode}
+
+					errChan = make(chan error)
+					database.WatchRouteChangesReturns(resultsChan, nil, errChan)
+				})
+
+				It("returns early", func() {
+					errChan <- errors.New("Boom!")
+					Eventually(eventStreamDone).Should(BeClosed())
+				})
+			})
+
 			Context("when the client closes the response body", func() {
 				It("returns early", func() {
 					reader := sse.NewReadCloser(response.Body)
