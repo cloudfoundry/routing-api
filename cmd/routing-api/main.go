@@ -102,7 +102,7 @@ func main() {
 		{"api-server", apiServer},
 	}
 
-	group := grouper.NewParallel(os.Interrupt, members)
+	group := grouper.NewOrdered(os.Interrupt, members)
 	process := ifrit.Invoke(sigmon.New(group))
 
 	// This is used by testrunner to signal ready for tests.
