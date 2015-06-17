@@ -42,7 +42,8 @@ var _ = Describe("Routes API", func() {
 			}
 
 			routesToInsert := []db.Route{route1, route2}
-			client.UpsertRoutes(routesToInsert)
+			upsertErr := client.UpsertRoutes(routesToInsert)
+			Expect(upsertErr).NotTo(HaveOccurred())
 			routes, getErr = client.Routes()
 		})
 

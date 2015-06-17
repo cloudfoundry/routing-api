@@ -25,6 +25,8 @@ import (
 
 	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/grouper"
+	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
 	"github.com/tedsuo/rata"
 )
@@ -67,39 +69,18 @@ func main() {
 		cf_debug_server.Run(cfg.DebugAddress)
 	}
 
-	maxWorkers := cfg.MaxConcurrentETCDRequests
-	if maxWorkers <= 0 {
-		maxWorkers = DEFAULT_ETCD_WORKERS
-	}
-
-	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
-	database, err := db.NewETCD(flag.Args(), maxWorkers)
+	database, err := initializeDatabase(cfg, logger)
 	if err != nil {
-		logger.Error("failed to initialize etcd", err)
+		logger.Error("failed to initialize database", err)
 		os.Exit(1)
 	}
 
 	err = database.Connect()
 	if err != nil {
-		logger.Error("failed to connect to etcd", err)
+		logger.Error("failed to connect to database", err)
 		os.Exit(1)
 	}
 	defer database.Disconnect()
-
-	var token authentication.Token
-
-	if *devMode {
-		token = authentication.NullToken{}
-	} else {
-		token = authentication.NewAccessToken(cfg.UAAPublicKey)
-		err = token.CheckPublicToken()
-		if err != nil {
-			logger.Error("failed to check public token", err)
-			os.Exit(1)
-		}
-	}
-
-	validator := handlers.NewValidator()
 
 	prefix := "routing_api"
 	statsdClient, err := statsd.NewBufferedClient(cfg.StatsdEndpoint, prefix, cfg.StatsdClientFlushInterval, 512)
@@ -109,6 +90,74 @@ func main() {
 	}
 	defer statsdClient.Close()
 
+	apiServer := constructApiServer(cfg, database, statsdClient, logger)
+
+	registerRoutePeriodically(cfg.LogGuid, database, logger)
+
+	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
+	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker)
+
+	members := grouper.Members{
+		{"metrics", metricsReporter},
+		{"api-server", apiServer},
+	}
+
+	group := grouper.NewParallel(os.Interrupt, members)
+	process := ifrit.Invoke(sigmon.New(group))
+
+	// This is used by testrunner to signal ready for tests.
+	logger.Info("starting", lager.Data{"port": *port})
+
+	errChan := process.Wait()
+	err = <-errChan
+	if err != nil {
+		panic(err)
+	}
+}
+
+func registerRoutePeriodically(logGuid string, database db.DB, logger lager.Logger) {
+	host := fmt.Sprintf("routing-api.%s", *systemDomain)
+	route := db.Route{
+		Route:   host,
+		Port:    *port,
+		IP:      *ip,
+		TTL:     *maxTTL,
+		LogGuid: logGuid,
+	}
+
+	registerInterval := *maxTTL / 2
+	ticker := time.NewTicker(time.Duration(registerInterval) * time.Second)
+	quitChan := make(chan bool)
+	go helpers.RegisterRoutingAPI(quitChan, database, route, ticker, logger)
+
+	c := make(chan os.Signal)
+	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT, syscall.SIGUSR1)
+	go func() {
+		<-c
+		logger.Info("Unregistering from etcd")
+
+		quitChan <- true
+		<-quitChan
+
+		os.Exit(0)
+	}()
+}
+
+func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.Statter, logger lager.Logger) ifrit.Runner {
+	var token authentication.Token
+
+	if *devMode {
+		token = authentication.NullToken{}
+	} else {
+		token = authentication.NewAccessToken(cfg.UAAPublicKey)
+		err := token.CheckPublicToken()
+		if err != nil {
+			logger.Error("failed to check public token", err)
+			os.Exit(1)
+		}
+	}
+
+	validator := handlers.NewValidator()
 	routesHandler := handlers.NewRoutesHandler(token, *maxTTL, validator, database, logger)
 	eventStreamHandler := handlers.NewEventStreamHandler(token, database, logger, statsdClient)
 
@@ -126,44 +175,17 @@ func main() {
 	}
 
 	handler = handlers.LogWrap(handler, logger)
+	return http_server.New(":"+strconv.Itoa(*port), handler)
+}
 
-	registerInterval := *maxTTL / 2
-
-	host := fmt.Sprintf("routing-api.%s", *systemDomain)
-	route := db.Route{
-		Route:   host,
-		Port:    *port,
-		IP:      *ip,
-		TTL:     *maxTTL,
-		LogGuid: cfg.LogGuid,
+func initializeDatabase(cfg config.Config, logger lager.Logger) (db.DB, error) {
+	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
+	maxWorkers := cfg.MaxConcurrentETCDRequests
+	if maxWorkers <= 0 {
+		maxWorkers = DEFAULT_ETCD_WORKERS
 	}
 
-	ticker := time.NewTicker(time.Duration(registerInterval) * time.Second)
-	quitChan := make(chan bool)
-	go helpers.RegisterRoutingAPI(quitChan, database, route, ticker, logger)
-
-	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT, syscall.SIGUSR1)
-	go func() {
-		<-c
-		logger.Info("Unregistering from etcd")
-
-		quitChan <- true
-		<-quitChan
-
-		os.Exit(0)
-	}()
-
-	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
-	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker)
-
-	ifrit.Background(sigmon.New(metricsReporter))
-
-	logger.Info("starting", lager.Data{"port": *port})
-	err = http.ListenAndServe(":"+strconv.Itoa(*port), handler)
-	if err != nil {
-		panic(err)
-	}
+	return db.NewETCD(flag.Args(), maxWorkers)
 }
 
 func checkFlags() error {
