@@ -55,6 +55,17 @@ var _ = Describe("Metrics", func() {
 			sigChan <- nil
 		})
 
+		It("periodically sends a delta of 0 to total_subscriptions", func() {
+			tickChan <- time.Now()
+
+			Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
+
+			totalStat, count, rate := stats.GaugeDeltaArgsForCall(0)
+			Expect(totalStat).To(Equal("total_subscriptions"))
+			Expect(count).To(BeNumerically("==", 0))
+			Expect(rate).To(BeNumerically("==", 1.0))
+		})
+
 		It("periodically gets total routes", func() {
 			tickChan <- time.Now()
 

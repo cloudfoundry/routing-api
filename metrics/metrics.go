@@ -36,6 +36,7 @@ func (r *MetricsReporter) Run(signals <-chan os.Signal, ready chan<- struct{}) e
 			r.stats.GaugeDelta("total_routes", statsDelta, 1.0)
 		case <-r.ticker.C:
 			r.stats.Gauge("total_routes", r.getTotalRoutes(), 1.0)
+			r.stats.GaugeDelta("total_subscriptions", 0, 1.0)
 		case <-signals:
 			return nil
 		case err := <-errChan:
