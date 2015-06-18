@@ -98,8 +98,10 @@ var _ = Describe("Main", func() {
 
 			ginkgomon.Interrupt(proc)
 
-			_, err = events.Next()
-			Expect(err).To(HaveOccurred())
+			Eventually(func() error {
+				_, err = events.Next()
+				return err
+			}).Should(HaveOccurred())
 
 			Eventually(routingAPIRunner.ExitCode(), 2*time.Second).Should(Equal(0))
 		})
