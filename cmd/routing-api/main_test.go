@@ -5,41 +5,56 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os/exec"
+	"time"
 
+	"github.com/cloudfoundry-incubator/routing-api"
+	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/testrunner"
+	"github.com/cloudfoundry-incubator/routing-api/db"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
+	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/ginkgomon"
 )
 
+var session *Session
+
 var _ = Describe("Main", func() {
+	AfterEach(func() {
+		if session != nil {
+			session.Kill()
+		}
+	})
+
 	It("exits 1 if no config file is provided", func() {
-		session := RoutingApi()
+		session = RoutingApi()
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("No configuration file provided"))
 	})
 
 	It("exits 1 if no ip address is provided", func() {
-		session := RoutingApi("-config=../../example_config/example.yml")
+		session = RoutingApi("-config=../../example_config/example.yml")
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("No ip address provided"))
 	})
 
 	It("exits 1 if no system domain is provided", func() {
-		session := RoutingApi("-config=../../example_config/example.yml", "-ip='1.1.1.1'")
+		session = RoutingApi("-config=../../example_config/example.yml", "-ip='1.1.1.1'")
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("No system domain provided"))
 	})
 
 	It("exits 1 if the uaa_verification_key is not a valid PEM format", func() {
-		session := RoutingApi("-config=../../example_config/bad_uaa_verification_key.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
+		session = RoutingApi("-config=../../example_config/bad_uaa_verification_key.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("Public uaa token must be PEM encoded"))
 	})
 
 	Context("when initialized correctly and etcd is running", func() {
-		It("unregisters form etcd when the process exits", func() {
-			session := RoutingApi("-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
+		It("unregisters from etcd when the process exits", func() {
+			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			proc := ifrit.Invoke(routingAPIRunner)
 
 			getRoutes := func() string {
 				routesPath := fmt.Sprintf("%s/v2/keys/routes", etcdUrl)
@@ -52,14 +67,45 @@ var _ = Describe("Main", func() {
 			}
 			Eventually(getRoutes).Should(ContainSubstring("routing-api"))
 
-			session.Terminate()
+			ginkgomon.Interrupt(proc)
 
 			Eventually(getRoutes).ShouldNot(ContainSubstring("routing-api"))
-			Eventually(session.ExitCode()).Should(Equal(0))
+			Eventually(routingAPIRunner.ExitCode()).Should(Equal(0))
+		})
+
+		It("closes open event streams when the process exits", func() {
+			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			proc := ifrit.Invoke(routingAPIRunner)
+			client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
+
+			events, err := client.SubscribeToEvents()
+			Expect(err).ToNot(HaveOccurred())
+
+			client.UpsertRoutes([]db.Route{
+				db.Route{
+					Route:   "some-route",
+					Port:    1234,
+					IP:      "234.32.43.4",
+					TTL:     5,
+					LogGuid: "some-guid",
+				},
+			})
+
+			Eventually(func() string {
+				event, _ := events.Next()
+				return event.Action
+			}).Should(Equal("Upsert"))
+
+			ginkgomon.Interrupt(proc)
+
+			_, err = events.Next()
+			Expect(err).To(HaveOccurred())
+
+			Eventually(routingAPIRunner.ExitCode(), 2*time.Second).Should(Equal(0))
 		})
 
 		It("exits 1 if etcd returns an error as we unregister ourself during a deployment roll", func() {
-			session := RoutingApi("-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
+			session = RoutingApi("-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
 
 			etcdAdapter.Disconnect()
 			etcdRunner.Stop()
@@ -75,7 +121,7 @@ func RoutingApi(args ...string) *Session {
 	path, err := Build("github.com/cloudfoundry-incubator/routing-api/cmd/routing-api")
 	Expect(err).NotTo(HaveOccurred())
 
-	session, err := Start(exec.Command(path, args...), GinkgoWriter, GinkgoWriter)
+	session, err = Start(exec.Command(path, args...), GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 
 	return session

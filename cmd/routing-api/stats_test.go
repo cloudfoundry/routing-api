@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
 	. "github.com/onsi/ginkgo"
@@ -15,11 +16,12 @@ import (
 
 var _ = Describe("Routes API", func() {
 	var (
-		err              error
-		route1           db.Route
-		addr             *net.UDPAddr
-		fakeStatsdServer *net.UDPConn
-		fakeStatsdChan   chan string
+		err               error
+		route1            db.Route
+		addr              *net.UDPAddr
+		fakeStatsdServer  *net.UDPConn
+		fakeStatsdChan    chan string
+		routingAPIProcess ifrit.Process
 	)
 
 	BeforeEach(func() {

@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/signal"
 	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/cactus/go-statsd-client/statsd"
@@ -90,9 +88,11 @@ func main() {
 	}
 	defer statsdClient.Close()
 
-	apiServer := constructApiServer(cfg, database, statsdClient, logger)
+	stopChan := make(chan struct{})
+	apiServer := constructApiServer(cfg, database, statsdClient, stopChan, logger)
+	stopper := constructStopper(stopChan)
 
-	registerRoutePeriodically(cfg.LogGuid, database, logger)
+	routerRegister := constructRouteRegister(cfg.LogGuid, database, logger)
 
 	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
 	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker)
@@ -100,22 +100,37 @@ func main() {
 	members := grouper.Members{
 		{"metrics", metricsReporter},
 		{"api-server", apiServer},
+		{"conn-stopper", stopper},
+		{"route-register", routerRegister},
 	}
 
 	group := grouper.NewOrdered(os.Interrupt, members)
 	process := ifrit.Invoke(sigmon.New(group))
 
 	// This is used by testrunner to signal ready for tests.
-	logger.Info("starting", lager.Data{"port": *port})
+	logger.Info("started", lager.Data{"port": *port})
 
 	errChan := process.Wait()
 	err = <-errChan
 	if err != nil {
 		panic(err)
 	}
+	logger.Info("exited")
 }
 
-func registerRoutePeriodically(logGuid string, database db.DB, logger lager.Logger) {
+func constructStopper(stopChan chan struct{}) ifrit.Runner {
+	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
+		close(ready)
+		select {
+		case <-signals:
+			close(stopChan)
+		}
+
+		return nil
+	})
+}
+
+func constructRouteRegister(logGuid string, database db.DB, logger lager.Logger) ifrit.Runner {
 	host := fmt.Sprintf("routing-api.%s", *systemDomain)
 	route := db.Route{
 		Route:   host,
@@ -127,23 +142,11 @@ func registerRoutePeriodically(logGuid string, database db.DB, logger lager.Logg
 
 	registerInterval := *maxTTL / 2
 	ticker := time.NewTicker(time.Duration(registerInterval) * time.Second)
-	quitChan := make(chan bool)
-	go helpers.RegisterRoutingAPI(quitChan, database, route, ticker, logger)
 
-	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT, syscall.SIGUSR1)
-	go func() {
-		<-c
-		logger.Info("Unregistering from etcd")
-
-		quitChan <- true
-		<-quitChan
-
-		os.Exit(0)
-	}()
+	return helpers.NewRouteRegister(database, route, ticker, logger)
 }
 
-func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.Statter, logger lager.Logger) ifrit.Runner {
+func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.Statter, stopChan chan struct{}, logger lager.Logger) ifrit.Runner {
 	var token authentication.Token
 
 	if *devMode {
@@ -159,7 +162,7 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 
 	validator := handlers.NewValidator()
 	routesHandler := handlers.NewRoutesHandler(token, *maxTTL, validator, database, logger)
-	eventStreamHandler := handlers.NewEventStreamHandler(token, database, logger, statsdClient)
+	eventStreamHandler := handlers.NewEventStreamHandler(token, database, logger, statsdClient, stopChan)
 
 	actions := rata.Handlers{
 		"Upsert":      route(routesHandler.Upsert),

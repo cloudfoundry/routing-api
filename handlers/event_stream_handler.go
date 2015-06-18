@@ -14,18 +14,20 @@ import (
 )
 
 type EventStreamHandler struct {
-	token  authentication.Token
-	db     db.DB
-	logger lager.Logger
-	stats  metrics.PartialStatsdClient
+	token    authentication.Token
+	db       db.DB
+	logger   lager.Logger
+	stats    metrics.PartialStatsdClient
+	stopChan <-chan struct{}
 }
 
-func NewEventStreamHandler(token authentication.Token, database db.DB, logger lager.Logger, stats metrics.PartialStatsdClient) *EventStreamHandler {
+func NewEventStreamHandler(token authentication.Token, database db.DB, logger lager.Logger, stats metrics.PartialStatsdClient, stopChan <-chan struct{}) *EventStreamHandler {
 	return &EventStreamHandler{
-		token:  token,
-		db:     database,
-		logger: logger,
-		stats:  stats,
+		token:    token,
+		db:       database,
+		logger:   logger,
+		stats:    stats,
+		stopChan: stopChan,
 	}
 }
 
@@ -40,7 +42,7 @@ func (h *EventStreamHandler) EventStream(w http.ResponseWriter, req *http.Reques
 	flusher := w.(http.Flusher)
 	closeNotifier := w.(http.CloseNotifier).CloseNotify()
 
-	resultChan, _, errChan := h.db.WatchRouteChanges()
+	resultChan, cancelChan, errChan := h.db.WatchRouteChanges()
 
 	h.stats.GaugeDelta("total_subscriptions", 1, 1.0)
 	defer h.stats.GaugeDelta("total_subscriptions", -1, 1.0)
@@ -89,6 +91,10 @@ func (h *EventStreamHandler) EventStream(w http.ResponseWriter, req *http.Reques
 			eventID++
 		case err := <-errChan:
 			log.Error("watch-error", err)
+			return
+		case <-h.stopChan:
+			log.Info("event-stream-stopped")
+			cancelChan <- true
 			return
 		case <-closeNotifier:
 			log.Debug("connection-closed")
