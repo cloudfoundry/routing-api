@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/testrunner"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
@@ -25,6 +26,7 @@ var _ = Describe("Routes API", func() {
 	)
 
 	BeforeEach(func() {
+		routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 		routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
 		addr, err = net.ResolveUDPAddr("udp", "localhost:8125")
 		Expect(err).ToNot(HaveOccurred())

@@ -12,8 +12,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-	"github.com/tedsuo/ifrit"
-	"github.com/tedsuo/ifrit/ginkgomon"
 
 	"testing"
 	"time"
@@ -28,8 +26,6 @@ var client routing_api.Client
 var routingAPIBinPath string
 var routingAPIAddress string
 var routingAPIArgs testrunner.Args
-var routingAPIRunner *ginkgomon.Runner
-var routingAPIProcess ifrit.Process
 var routingAPIPort int
 var routingAPIIP string
 var routingAPISystemDomain string
@@ -83,7 +79,6 @@ var _ = BeforeEach(func() {
 		EtcdCluster:  etcdUrl,
 		DevMode:      true,
 	}
-	routingAPIRunner = testrunner.New(routingAPIBinPath, routingAPIArgs)
 })
 
 var _ = AfterEach(func() {

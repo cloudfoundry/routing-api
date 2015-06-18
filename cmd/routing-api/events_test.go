@@ -3,14 +3,19 @@ package main_test
 import (
 	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
+	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/testrunner"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Routes API", func() {
+	var routingAPIProcess ifrit.Process
+
 	BeforeEach(func() {
+		routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 		routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
 	})
 

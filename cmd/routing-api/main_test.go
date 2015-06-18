@@ -107,23 +107,20 @@ var _ = Describe("Main", func() {
 		})
 
 		It("exits 1 if etcd returns an error as we unregister ourself during a deployment roll", func() {
-			session = RoutingApi("-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
+			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			proc := ifrit.Invoke(routingAPIRunner)
 
 			etcdAdapter.Disconnect()
 			etcdRunner.Stop()
 
-			session.Terminate()
-
-			Eventually(session).Should(Exit(1))
+			ginkgomon.Interrupt(proc)
+			Eventually(routingAPIRunner).Should(Exit(1))
 		})
 	})
 })
 
 func RoutingApi(args ...string) *Session {
-	path, err := Build("github.com/cloudfoundry-incubator/routing-api/cmd/routing-api")
-	Expect(err).NotTo(HaveOccurred())
-
-	session, err = Start(exec.Command(path, args...), GinkgoWriter, GinkgoWriter)
+	session, err := Start(exec.Command(routingAPIBinPath, args...), GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 
 	return session

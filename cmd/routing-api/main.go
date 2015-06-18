@@ -113,7 +113,8 @@ func main() {
 	errChan := process.Wait()
 	err = <-errChan
 	if err != nil {
-		panic(err)
+		logger.Error("shutdown-error", err)
+		os.Exit(1)
 	}
 	logger.Info("exited")
 }
