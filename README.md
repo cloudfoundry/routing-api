@@ -167,18 +167,6 @@ To subscribe to route changes:
 curl -vvv -H "Authorization: bearer [token with uaa route.admin scope]" http://127.0.0.1:8080/v1/events
 ```
 
-## Deploying to CF-Release
-1. Set `instances` for routing_api_z1 to 1 and ensure that the job has at least one static ip address.
-
-   ```yml
-   jobs:
-   - name: routing_api_z1
-      instances: 1
-   ```
-2. Set `properties.router.enable_routing_api` to true in your deployment manifest.
-3. `bosh deploy`
-4. Enjoy.
-
 ## Known issues
 
 + The routing-api will return a 404 if you attempt to hit the endpoint `http://[router host]/v1/routes/` as opposed to `http://[router host]/v1/routes`
