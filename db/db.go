@@ -57,9 +57,10 @@ func (e *etcd) ReadRoutes() ([]Route, error) {
 	if err != nil {
 		return []Route{}, nil
 	}
-	var route Route
+
 	listRoutes := []Route{}
 	for _, node := range routes.ChildNodes {
+		route := Route{}
 		json.Unmarshal([]byte(node.Value), &route)
 		listRoutes = append(listRoutes, route)
 	}

@@ -79,6 +79,7 @@ var _ = Describe("DB", func() {
 			Context("when multiple entries present", func() {
 				var (
 					route2 db.Route
+					route3 db.Route
 				)
 
 				BeforeEach(func() {
@@ -99,6 +100,16 @@ var _ = Describe("DB", func() {
 					}
 					err = etcd.SaveRoute(route2)
 					Expect(err).NotTo(HaveOccurred())
+
+					route3 = db.Route{
+						Route:   "some-other-route",
+						Port:    5500,
+						IP:      "3.1.5.7",
+						TTL:     1000,
+						LogGuid: "your-guid",
+					}
+					err = etcd.SaveRoute(route3)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("Returns a list with multiple routes", func() {
@@ -107,6 +118,7 @@ var _ = Describe("DB", func() {
 
 					Expect(routes).To(ContainElement(route))
 					Expect(routes).To(ContainElement(route2))
+					Expect(routes).To(ContainElement(route3))
 				})
 			})
 		})
