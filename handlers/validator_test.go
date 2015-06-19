@@ -24,11 +24,12 @@ var _ = Describe("Validator", func() {
 
 		routes = []db.Route{
 			{
-				Route:   "http://127.0.0.1/a/valid/route",
-				IP:      "127.0.0.1",
-				Port:    8080,
-				TTL:     maxTTL,
-				LogGuid: "log_guid",
+				Route:           "http://127.0.0.1/a/valid/route",
+				IP:              "127.0.0.1",
+				Port:            8080,
+				TTL:             maxTTL,
+				LogGuid:         "log_guid",
+				RouteServiceUrl: "https://my-rs.example.com",
 			},
 		}
 	})
@@ -82,7 +83,7 @@ var _ = Describe("Validator", func() {
 				err := validator.ValidateCreate(routes, maxTTL)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
-				Expect(err.Error()).To(Equal("Route cannot contain invalid characters"))
+				Expect(err.Error()).To(Equal("Url cannot contain invalid characters"))
 			})
 
 			It("returns an error if the path is not valid", func() {
@@ -109,6 +110,60 @@ var _ = Describe("Validator", func() {
 				err := validator.ValidateCreate(routes, maxTTL)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
+				Expect(err.Error()).To(ContainSubstring("cannot contain any of [?, #]"))
+			})
+
+			It("returns an error if the route service url is not https", func() {
+				routes[0].RouteServiceUrl = "http://my-rs.com/ab"
+
+				err := validator.ValidateCreate(routes, maxTTL)
+				Expect(err).ToNot(BeNil())
+				Expect(err.Type).To(Equal(routing_api.RouteServiceUrlInvalidError))
+				Expect(err.Error()).To(Equal("Route service url must use HTTPS."))
+			})
+
+			It("returns an error if the route service url contains invalid characters", func() {
+				routes[0].RouteServiceUrl = "https://my-rs.com/a  b"
+
+				err := validator.ValidateCreate(routes, maxTTL)
+				Expect(err).ToNot(BeNil())
+				Expect(err.Type).To(Equal(routing_api.RouteServiceUrlInvalidError))
+				Expect(err.Error()).To(Equal("Url cannot contain invalid characters"))
+			})
+
+			It("returns an error if the route service url host is not valid", func() {
+				routes[0].RouteServiceUrl = "https://my-rs%.com"
+
+				err := validator.ValidateCreate(routes, maxTTL)
+				Expect(err).ToNot(BeNil())
+				Expect(err.Type).To(Equal(routing_api.RouteServiceUrlInvalidError))
+				Expect(err.Error()).To(ContainSubstring("hexadecimal escape in host"))
+			})
+
+			It("returns an error if the route service url path is not valid", func() {
+				routes[0].RouteServiceUrl = "https://my-rs.com/ad%"
+
+				err := validator.ValidateCreate(routes, maxTTL)
+				Expect(err).ToNot(BeNil())
+				Expect(err.Type).To(Equal(routing_api.RouteServiceUrlInvalidError))
+				Expect(err.Error()).To(ContainSubstring("invalid URL"))
+			})
+
+			It("returns an error if the route service url contains a question mark", func() {
+				routes[0].RouteServiceUrl = "https://foo/bar?a"
+
+				err := validator.ValidateCreate(routes, maxTTL)
+				Expect(err).ToNot(BeNil())
+				Expect(err.Type).To(Equal(routing_api.RouteServiceUrlInvalidError))
+				Expect(err.Error()).To(ContainSubstring("cannot contain any of [?, #]"))
+			})
+
+			It("returns an error if the route service url contains a hash mark", func() {
+				routes[0].RouteServiceUrl = "https://foo/bar#a"
+
+				err := validator.ValidateCreate(routes, maxTTL)
+				Expect(err).ToNot(BeNil())
+				Expect(err.Type).To(Equal(routing_api.RouteServiceUrlInvalidError))
 				Expect(err.Error()).To(ContainSubstring("cannot contain any of [?, #]"))
 			})
 

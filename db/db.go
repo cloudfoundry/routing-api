@@ -20,11 +20,12 @@ type DB interface {
 }
 
 type Route struct {
-	Route   string `json:"route"`
-	Port    int    `json:"port"`
-	IP      string `json:"ip"`
-	TTL     int    `json:"ttl"`
-	LogGuid string `json:"log_guid"`
+	Route           string `json:"route"`
+	Port            int    `json:"port"`
+	IP              string `json:"ip"`
+	TTL             int    `json:"ttl"`
+	LogGuid         string `json:"log_guid"`
+	RouteServiceUrl string `json:"route_service_url,omitempty"`
 }
 
 type etcd struct {

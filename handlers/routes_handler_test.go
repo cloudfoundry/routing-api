@@ -31,12 +31,12 @@ func newTestRequest(body interface{}) *http.Request {
 		reader = bytes.NewReader(body)
 	default:
 		jsonBytes, err := json.Marshal(body)
-		Ω(err).ToNot(HaveOccurred())
+		Expect(err).ToNot(HaveOccurred())
 		reader = bytes.NewReader(jsonBytes)
 	}
 
 	request, err := http.NewRequest("", "", reader)
-	Ω(err).ToNot(HaveOccurred())
+	Expect(err).ToNot(HaveOccurred())
 	return request
 }
 
@@ -365,6 +365,16 @@ var _ = Describe("RoutesHandler", func() {
 					Expect(database.SaveRouteArgsForCall(1)).To(Equal(route[1]))
 				})
 
+				It("accepts route_service_url parameters", func() {
+					route[0].RouteServiceUrl = "https://my-rs.com"
+					request = newTestRequest(route)
+					routesHandler.Upsert(responseRecorder, request)
+
+					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+					Expect(database.SaveRouteCallCount()).To(Equal(1))
+					Expect(database.SaveRouteArgsForCall(0)).To(Equal(route[0]))
+				})
+
 				It("logs the route declaration", func() {
 					request = newTestRequest(route)
 					routesHandler.Upsert(responseRecorder, request)
@@ -380,6 +390,15 @@ var _ = Describe("RoutesHandler", func() {
 
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("request"))
 					Expect(logger.Logs()[0].Data["route_creation"]).To(Equal(log_data["route_creation"]))
+				})
+
+				It("does not require route_service_url on the request", func() {
+					route[0].RouteServiceUrl = ""
+
+					request = newTestRequest(route)
+					routesHandler.Upsert(responseRecorder, request)
+
+					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 				})
 
 				It("does not require log guid on the request", func() {
