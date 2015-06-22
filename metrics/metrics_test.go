@@ -32,7 +32,7 @@ var _ = Describe("Metrics", func() {
 			stats = &fake_statsd.FakePartialStatsdClient{}
 
 			tickChan = make(chan time.Time, 1)
-			reporter = NewMetricsReporter(database, stats, &time.Ticker{C: tickChan}) //insert fake db and fake stats and returns a pointer
+			reporter = NewMetricsReporter(database, stats, &time.Ticker{C: tickChan})
 
 			sigChan = make(chan os.Signal, 1)
 			readyChan = make(chan struct{}, 1)
@@ -55,6 +55,15 @@ var _ = Describe("Metrics", func() {
 			sigChan <- nil
 		})
 
+		It("emits total_subscriptions on start", func() {
+			Eventually(stats.GaugeCallCount).Should(Equal(1))
+
+			totalStat, count, rate := stats.GaugeArgsForCall(0)
+			Expect(totalStat).To(Equal("total_subscriptions"))
+			Expect(count).To(BeNumerically("==", 0))
+			Expect(rate).To(BeNumerically("==", 1.0))
+		})
+
 		It("periodically sends a delta of 0 to total_subscriptions", func() {
 			tickChan <- time.Now()
 
@@ -69,9 +78,9 @@ var _ = Describe("Metrics", func() {
 		It("periodically gets total routes", func() {
 			tickChan <- time.Now()
 
-			Eventually(stats.GaugeCallCount).Should(Equal(1))
+			Eventually(stats.GaugeCallCount).Should(Equal(2))
 
-			totalStat, count, rate := stats.GaugeArgsForCall(0)
+			totalStat, count, rate := stats.GaugeArgsForCall(1)
 			Expect(totalStat).To(Equal("total_routes"))
 			Expect(count).To(BeNumerically("==", 5))
 			Expect(rate).To(BeNumerically("==", 1.0))

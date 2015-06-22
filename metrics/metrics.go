@@ -29,6 +29,8 @@ func (r *MetricsReporter) Run(signals <-chan os.Signal, ready chan<- struct{}) e
 	close(ready)
 	ready = nil
 
+	r.stats.Gauge("total_subscriptions", 0, 1.0)
+
 	for {
 		select {
 		case event := <-eventChan:

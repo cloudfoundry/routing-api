@@ -97,7 +97,7 @@ func (h *EventStreamHandler) EventStream(w http.ResponseWriter, req *http.Reques
 			cancelChan <- true
 			return
 		case <-closeNotifier:
-			log.Debug("connection-closed")
+			log.Info("connection-closed")
 			return
 		}
 	}
