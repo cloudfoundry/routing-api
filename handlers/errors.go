@@ -11,7 +11,7 @@ import (
 func handleProcessRequestError(w http.ResponseWriter, procErr error, log lager.Logger) {
 	log.Error("error", procErr)
 
-	retErr, _ := json.Marshal(routing_api.Error{routing_api.ProcessRequestError, "Cannot process request"})
+	retErr, _ := json.Marshal(routing_api.Error{routing_api.ProcessRequestError, "Cannot process request: " + procErr.Error()})
 
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write(retErr)

@@ -440,6 +440,15 @@ var _ = Describe("RoutesHandler", func() {
 					validator.ValidateCreateReturns(&routing_api.Error{"a type", "error message"})
 				})
 
+				It("blows up when a port does not fit into a uint16", func() {
+					json := `[{"route":"my-route.com","ip":"1.2.3.4", "port":65537}]`
+					request = newTestRequest(json)
+					routesHandler.Upsert(responseRecorder, request)
+
+					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number 65537 into Go value of type uint16"))
+				})
+
 				It("does not write to the key-value store backend", func() {
 					request = newTestRequest(route)
 					routesHandler.Upsert(responseRecorder, request)

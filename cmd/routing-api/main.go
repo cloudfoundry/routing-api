@@ -32,7 +32,7 @@ import (
 const DEFAULT_ETCD_WORKERS = 25
 
 var maxTTL = flag.Int("maxTTL", 120, "Maximum TTL on the route")
-var port = flag.Int("port", 8080, "Port to run rounting-api server on")
+var port = flag.Uint("port", 8080, "Port to run rounting-api server on")
 var configPath = flag.String("config", "", "Configuration for routing-api")
 var devMode = flag.Bool("devMode", false, "Disable authentication for easier development iteration")
 var ip = flag.String("ip", "", "The public ip of the routing api")
@@ -135,7 +135,7 @@ func constructRouteRegister(logGuid string, database db.DB, logger lager.Logger)
 	host := fmt.Sprintf("routing-api.%s", *systemDomain)
 	route := db.Route{
 		Route:   host,
-		Port:    *port,
+		Port:    uint16(*port),
 		IP:      *ip,
 		TTL:     *maxTTL,
 		LogGuid: logGuid,
@@ -179,7 +179,7 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 	}
 
 	handler = handlers.LogWrap(handler, logger)
-	return http_server.New(":"+strconv.Itoa(*port), handler)
+	return http_server.New(":"+strconv.Itoa(int(*port)), handler)
 }
 
 func initializeDatabase(cfg config.Config, logger lager.Logger) (db.DB, error) {
@@ -204,6 +204,10 @@ func checkFlags() error {
 
 	if *systemDomain == "" {
 		return errors.New("No system domain provided")
+	}
+
+	if *port > 65535 {
+		return errors.New("Port must be in range 0 - 65535")
 	}
 
 	return nil

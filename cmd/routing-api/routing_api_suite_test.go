@@ -26,7 +26,7 @@ var client routing_api.Client
 var routingAPIBinPath string
 var routingAPIAddress string
 var routingAPIArgs testrunner.Args
-var routingAPIPort int
+var routingAPIPort uint16
 var routingAPIIP string
 var routingAPISystemDomain string
 
@@ -58,7 +58,7 @@ var _ = BeforeEach(func() {
 	etcdRunner.Start()
 
 	etcdAdapter = etcdRunner.Adapter()
-	routingAPIPort = 6900 + GinkgoParallelNode()
+	routingAPIPort = uint16(6900 + GinkgoParallelNode())
 	routingAPIIP = "127.0.0.1"
 	routingAPISystemDomain = "example.com"
 	routingAPIAddress = fmt.Sprintf("%s:%d", routingAPIIP, routingAPIPort)

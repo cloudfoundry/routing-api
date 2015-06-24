@@ -8,7 +8,7 @@ import (
 )
 
 type Args struct {
-	Port         int
+	Port         uint16
 	ConfigPath   string
 	DevMode      bool
 	EtcdCluster  string
@@ -18,7 +18,7 @@ type Args struct {
 
 func (args Args) ArgSlice() []string {
 	return []string{
-		"-port", strconv.Itoa(args.Port),
+		"-port", strconv.Itoa(int(args.Port)),
 		"-ip", args.IP,
 		"-systemDomain", args.SystemDomain,
 		"-config", args.ConfigPath,

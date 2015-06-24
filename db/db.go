@@ -21,7 +21,7 @@ type DB interface {
 
 type Route struct {
 	Route           string `json:"route"`
-	Port            int    `json:"port"`
+	Port            uint16 `json:"port"`
 	IP              string `json:"ip"`
 	TTL             int    `json:"ttl"`
 	LogGuid         string `json:"log_guid"`
