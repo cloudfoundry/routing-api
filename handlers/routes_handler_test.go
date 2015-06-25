@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	"github.com/cloudfoundry-incubator/routing-api"
+	routing_api "github.com/cloudfoundry-incubator/routing-api"
 	fake_token "github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
@@ -437,7 +437,7 @@ var _ = Describe("RoutesHandler", func() {
 
 			Context("when there are errors with the input", func() {
 				BeforeEach(func() {
-					validator.ValidateCreateReturns(&routing_api.Error{"a type", "error message"})
+					validator.ValidateCreateReturns(&routing_api.Error{Type: "a type", Message: "error message"})
 				})
 
 				It("blows up when a port does not fit into a uint16", func() {

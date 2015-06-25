@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/cloudfoundry-incubator/routing-api"
+	routing_api "github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 )
 
@@ -30,11 +30,13 @@ func (v Validator) ValidateCreate(routes []db.Route, maxTTL int) *routing_api.Er
 		}
 
 		if route.TTL > maxTTL {
-			return &routing_api.Error{routing_api.RouteInvalidError, fmt.Sprintf("Max ttl is %d", maxTTL)}
+			err := routing_api.NewError(routing_api.RouteInvalidError, fmt.Sprintf("Max ttl is %d", maxTTL))
+			return &err
 		}
 
 		if route.TTL <= 0 {
-			return &routing_api.Error{routing_api.RouteInvalidError, "Request requires a ttl greater than 0"}
+			err := routing_api.NewError(routing_api.RouteInvalidError, "Request requires a ttl greater than 0")
+			return &err
 		}
 	}
 	return nil
@@ -62,15 +64,18 @@ func requiredValidation(route db.Route) *routing_api.Error {
 	}
 
 	if route.Port <= 0 {
-		return &routing_api.Error{routing_api.RouteInvalidError, "Each route request requires a port greater than 0"}
+		err := routing_api.NewError(routing_api.RouteInvalidError, "Each route request requires a port greater than 0")
+		return &err
 	}
 
 	if route.Route == "" {
-		return &routing_api.Error{routing_api.RouteInvalidError, "Each route request requires a valid route"}
+		err := routing_api.NewError(routing_api.RouteInvalidError, "Each route request requires a valid route")
+		return &err
 	}
 
 	if route.IP == "" {
-		return &routing_api.Error{routing_api.RouteInvalidError, "Each route request requires an IP"}
+		err := routing_api.NewError(routing_api.RouteInvalidError, "Each route request requires an IP")
+		return &err
 	}
 
 	return nil
@@ -79,7 +84,8 @@ func requiredValidation(route db.Route) *routing_api.Error {
 func validateRouteUrl(route string) *routing_api.Error {
 	err := validateUrl(route)
 	if err != nil {
-		return &routing_api.Error{routing_api.RouteInvalidError, err.Error()}
+		err := routing_api.NewError(routing_api.RouteInvalidError, err.Error())
+		return &err
 	}
 
 	return nil
@@ -91,12 +97,14 @@ func validateRouteServiceUrl(routeService string) *routing_api.Error {
 	}
 
 	if !strings.HasPrefix(routeService, "https://") {
-		return &routing_api.Error{routing_api.RouteServiceUrlInvalidError, "Route service url must use HTTPS."}
+		err := routing_api.NewError(routing_api.RouteServiceUrlInvalidError, "Route service url must use HTTPS.")
+		return &err
 	}
 
 	err := validateUrl(routeService)
 	if err != nil {
-		return &routing_api.Error{routing_api.RouteServiceUrlInvalidError, err.Error()}
+		err := routing_api.NewError(routing_api.RouteServiceUrlInvalidError, err.Error())
+		return &err
 	}
 
 	return nil
