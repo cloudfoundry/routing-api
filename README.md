@@ -145,6 +145,12 @@ Where `http://etcd.127.0.0.1.xip.io:4001` is one member of the cluster and `http
 
 Note that flags have to come before the etcd addresses.
 
+### rtr CLI
+
+The Routing API has an associated CLI, called `rtr`, that lives at [cloudfoundry-incubator/routing-api-cli](https://github.com/cloudfoundry-incubator/routing-api-cli). Documentation for the CLI can be found on its README.
+
+### curl
+
 To add a route to the API server:
 
 ```sh
