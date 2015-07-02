@@ -171,6 +171,17 @@ Where `http://etcd.127.0.0.1.xip.io:4001` is one member of the cluster and `http
 
 Note that flags have to come before the etcd addresses.
 
+### Profiling the Server
+
+The Routing API runs the [cf_debug_server](https://github.com/cloudfoundry-incubator/cf-debug-server), which is a wrapper around the go pprof tool. In order to generate this profile, do the following:
+
+```bash
+# Establish a SSH tunnel to your server (not necessary if you can connect directly)
+ssh -L localhost:8080:[INTERNAL_SERVER_IP]:17002 vcap@[BOSH_DIRECTOR]
+# Run the profile tool.
+go tool pprof http://localhost:8080/debug/pprof/profile
+```
+
 ## Using the API
 
 The Routing API uses OAuth tokens to authenticate clients. To obtain a token from UAA an OAuth client must first be created for the API client in UAA. For instructions on registering OAuth clients, see "Server Configuration" above.
