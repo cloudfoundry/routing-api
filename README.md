@@ -2,17 +2,25 @@
 
 # CF Routing API Server
 
-## Installing this Repo
+## Downloading and Installing
 
-To clone this repo you will need to have godeps installed. You can install godeps
-by running the command `go get github.com/tools/godep`.
+### External Dependencies
 
-To then install this repo you can run the following commands.
+- Go should be installed and in the PATH
+- GOPATH should be set as described in http://golang.org/doc/code.html
+- [godep](https://github.com/tools/godep) installed and in the PATH
+- Install [direnv](http://direnv.net/) if you are planning to do routing-api
+development as part of cf-release.
 
-```sh
+
+### Development Setup
+
+Download:
+
+Option 1: Routing API (standalone)
+```bash
 go get github.com/cloudfoundry-incubator/routing-api
 cd $GOPATH/src/github.com/cloudfoundry-incubator/routing-api
-godep restore
 ```
 
 To install the server binary you can do
@@ -23,6 +31,23 @@ go install ./cmd/routing-api
 
 # OR
 go get github.com/cloudfoundry-incubator/routing-api/cmd/routing-api
+```
+
+Option 2: Routing API (as part of [cf-release](https://github.com/cloudfoundry/cf-release))
+```bash
+git clone https://github.com/cloudfoundry/cf-release
+cd cf-release
+./update
+cd cf-release/src/github.com/cloudfoundry-incubator/routing-api
+```
+ *Note: direnv will automatically set your GOPATH when you cd into the routing-api directory. You will need to run `direnv allow` the first time.*
+
+
+To install exactly the dependencies vendored with the Routing API, use [godep](https://github.com/tools/godep):
+
+```bash
+go get -v github.com/tools/godep
+godep restore ./...
 ```
 
 ## Development
@@ -48,8 +73,8 @@ output contain the following lines:
    | etcd: listening for client requests on http://localhost:4001
 ```
 
-Note that this will run an etcd server and create a new directory at that location 
-where it stores all of the records. This directory can be removed afterwards, or 
+Note that this will run an etcd server and create a new directory at that location
+where it stores all of the records. This directory can be removed afterwards, or
 you can simply run etcd in a temporary directory.
 
 ## Running the API Server
@@ -82,9 +107,9 @@ This can be found in your Cloud Foundry manifest under `uaa.jwt.verification_key
 
 #### Oauth Clients
 
-The Routing API uses OAuth tokens to authenticate clients. To obtain a token from UAA that grants the API client permission to register routes, an OAuth client must first be created for the API client in UAA. An API client can then authenticate with UAA using the registered OAuth client credentials, request a token, then provide this token with requests to the Routing API. 
+The Routing API uses OAuth tokens to authenticate clients. To obtain a token from UAA that grants the API client permission to register routes, an OAuth client must first be created for the API client in UAA. An API client can then authenticate with UAA using the registered OAuth client credentials, request a token, then provide this token with requests to the Routing API.
 
-Registering OAuth clients can be done using the cf-release BOSH deployment manifest, or manually using the `uaac` CLI for UAA. 
+Registering OAuth clients can be done using the cf-release BOSH deployment manifest, or manually using the `uaac` CLI for UAA.
 
 - For API clients that wish to register routes with the Routing API, the OAuth client in UAA must be configured with the `route.advertise` authority.
 - For API clients that require admin permissions with the Routing API, the OAuth client in UAA must be configured with the `route.admin` authority.
@@ -110,7 +135,7 @@ uaa:
    ```
    gem install cf-uaac
    ```
-   
+
 2. Get the admin client token
 
    ```bash
@@ -118,7 +143,7 @@ uaa:
    uaac token client get admin # You will need to provide the client_secret, found in your CF manifest.
    ```
 
-3. Create the OAuth client. 
+3. Create the OAuth client.
 
    ```bash
    uaac client add routing_api_client --authorities "route.advertise" --authorized_grant_type "client_credentials"
@@ -181,7 +206,7 @@ To obtain an token from UAA, use the `uaac` CLI for UAA.
    uaac context
    ```
 
-#### `curl` Examples 
+#### `curl` Examples
 
 To add a route to the API server:
 
