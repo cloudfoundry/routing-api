@@ -114,7 +114,7 @@ Registering OAuth clients can be done using the cf-release BOSH deployment manif
 - For API clients that wish to register routes with the Routing API, the OAuth client in UAA must be configured with the `route.advertise` authority.
 - For API clients that require admin permissions with the Routing API, the OAuth client in UAA must be configured with the `route.admin` authority.
 
-For instructions on fetching a token, see the section "Using the API" below.
+For instructions on fetching a token, see [Using the API](#using-the-api).
 
 ##### Configure OAuth clients in the cf-release BOSH Manifest
 
@@ -184,7 +184,7 @@ go tool pprof http://localhost:8080/debug/pprof/profile
 
 ## Using the API
 
-The Routing API uses OAuth tokens to authenticate clients. To obtain a token from UAA an OAuth client must first be created for the API client in UAA. For instructions on registering OAuth clients, see "Server Configuration" above.
+The Routing API uses OAuth tokens to authenticate clients. To obtain a token from UAA an OAuth client must first be created for the API client in UAA. For instructions on registering OAuth clients, see [Server Configuration](#oauth-clients).
 
 ### Using the API with the `rtr` CLI
 
