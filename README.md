@@ -54,13 +54,13 @@ godep restore ./...
 
 ### etcd
 
-To run the tests you need a running etcd cluster on version 2.0.1. To get that do:
+To run the tests you need a running etcd cluster on version 2.1.1. To get that do:
 
 ```sh
 go get github.com/coreos/etcd
 cd $GOPATH/src/github.com/coreos/etcd
 git fetch --tags
-git checkout v2.0.1
+git checkout v2.1.1
 go install .
 ```
 
