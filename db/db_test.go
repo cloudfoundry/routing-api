@@ -76,6 +76,24 @@ var _ = Describe("DB", func() {
 				})
 			})
 
+			Context("when the route contains a path", func() {
+				BeforeEach(func() {
+					route.Route = "route/path"
+					route.IP = "9.8.7.6"
+					route.Port = 12345
+
+					err := etcd.SaveRoute(route)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("returns the route", func() {
+					routes, err := etcd.ReadRoutes()
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(routes).To(ContainElement(route))
+				})
+			})
+
 			Context("when multiple entries present", func() {
 				var (
 					route2 db.Route

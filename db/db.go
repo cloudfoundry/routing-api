@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"github.com/cloudfoundry/gunk/workpool"
 	"github.com/cloudfoundry/storeadapter"
@@ -93,5 +94,5 @@ func (e *etcd) WatchRouteChanges() (<-chan storeadapter.WatchEvent, chan<- bool,
 }
 
 func generateKey(route Route) string {
-	return fmt.Sprintf("/routes/%s,%s:%d", route.Route, route.IP, route.Port)
+	return fmt.Sprintf("/routes/%s,%s:%d", url.QueryEscape(route.Route), route.IP, route.Port)
 }
