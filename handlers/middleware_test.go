@@ -50,9 +50,11 @@ var _ = Describe("Middleware", func() {
 	})
 
 	It("doesn't output the authorization information", func() {
-
 		req, err := http.NewRequest("GET", ts.URL, nil)
 		req.Header.Add("Authorization", "this-is-a-secret")
+		req.Header.Add("authorization", "this-is-a-secret2")
+		req.Header.Add("AUTHORIZATION", "this-is-a-secret3")
+		req.Header.Add("auThoRizaTion", "this-is-a-secret4")
 
 		resp, err := client.Do(req)
 
@@ -66,5 +68,8 @@ var _ = Describe("Middleware", func() {
 
 		headers := testSink.Logs()[0].Data["request-headers"]
 		Expect(headers).ToNot(HaveKey("Authorization"))
+		Expect(headers).ToNot(HaveKey("authorization"))
+		Expect(headers).ToNot(HaveKey("AUTHORIZATION"))
+		Expect(headers).ToNot(HaveKey("auThoRizaTion"))
 	})
 })

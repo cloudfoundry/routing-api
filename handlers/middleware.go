@@ -25,10 +25,9 @@ func LogWrap(handler http.Handler, logger lager.Logger) http.HandlerFunc {
 func filter(header http.Header) http.Header {
 	filtered := make(http.Header)
 	for k, v := range header {
-		// TODO: cleanup, case-insensitive, blacklist?
-		if k != "Authorization" {
-			filtered[k] = v
-		}
+		filtered[k] = v
 	}
+	// filter headers
+	filtered.Del("Authorization")
 	return filtered
 }
