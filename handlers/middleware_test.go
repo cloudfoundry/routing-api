@@ -2,7 +2,6 @@ package handlers_test
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -11,17 +10,15 @@ import (
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-golang/lager"
-	. "github.com/pivotal-golang/lager/chug"
+	"github.com/pivotal-golang/lager/lagertest"
 )
 
 var _ = Describe("Middleware", func() {
 	var (
+		client       *http.Client
 		ts           *httptest.Server
 		dummyHandler http.HandlerFunc
-		stream       chan Entry
-		pipeReader   *io.PipeReader
-		pipeWriter   *io.PipeWriter
+		testSink     *lagertest.TestSink
 	)
 
 	BeforeEach(func() {
@@ -40,10 +37,12 @@ var _ = Describe("Middleware", func() {
 		// test server
 		ts = httptest.NewServer(dummyHandler)
 
-		pipeReader, pipeWriter = io.Pipe()
-		logger.RegisterSink(lager.NewWriterSink(pipeWriter, lager.DEBUG))
-		stream = make(chan Entry, 100)
-		go Chug(pipeReader, stream)
+		client = &http.Client{}
+
+		// test sink
+		testSink = lagertest.NewTestSink()
+		logger.RegisterSink(testSink)
+
 	})
 
 	AfterEach(func() {
@@ -52,15 +51,11 @@ var _ = Describe("Middleware", func() {
 
 	It("doesn't output the authorization information", func() {
 
-		client := &http.Client{
-			CheckRedirect: nil,
-		}
-
 		req, err := http.NewRequest("GET", ts.URL, nil)
 		req.Header.Add("Authorization", "this-is-a-secret")
+
 		resp, err := client.Do(req)
 
-		// res, err := http.Get(ts.URL)
 		Expect(err).NotTo(HaveOccurred())
 
 		output, err := ioutil.ReadAll(resp.Body)
@@ -69,13 +64,7 @@ var _ = Describe("Middleware", func() {
 
 		Expect(output).To(ContainSubstring("Dummy handler"))
 
-		entry := <-stream
-
-		fmt.Printf("log data entry: %#v\n", entry.Log.Data)
-		Expect(entry.Log).ToNot(BeNil())
-		Expect(entry.Log.Data).ToNot(BeNil())
-		Expect(entry.Log.Data["request-headers"]).ToNot(BeNil())
-		Expect(entry.Log.Data["request-headers"]).ToNot(HaveKey("Authorization"))
-
+		headers := testSink.Logs()[0].Data["request-headers"]
+		Expect(headers).ToNot(HaveKey("Authorization"))
 	})
 })
