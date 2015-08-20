@@ -17,7 +17,7 @@ var etcdClient storeadapter.StoreAdapter
 var etcdPort int
 var etcdUrl string
 var etcdRunner *etcdstorerunner.ETCDClusterRunner
-var etcdVersion = "2.1.0"
+var etcdVersion = "etcdserver\":\"2.1.1"
 var routingAPIBinPath string
 
 func TestDB(t *testing.T) {
@@ -45,6 +45,7 @@ var _ = BeforeSuite(func() {
 	body, err := ioutil.ReadAll(resp.Body)
 	Expect(err).ToNot(HaveOccurred())
 
+	// response body: {"etcdserver":"2.1.1","etcdcluster":"2.1.0"}
 	Expect(string(body)).To(ContainSubstring(etcdVersion))
 })
 
