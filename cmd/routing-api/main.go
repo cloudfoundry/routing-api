@@ -164,7 +164,7 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 	validator := handlers.NewValidator()
 	routesHandler := handlers.NewRoutesHandler(token, *maxTTL, validator, database, logger)
 	eventStreamHandler := handlers.NewEventStreamHandler(token, database, logger, statsdClient, stopChan)
-	routeGroupsHandler := handlers.NewRouteGroupsHandler(logger)
+	routeGroupsHandler := handlers.NewRouteGroupsHandler(token, logger)
 
 	actions := rata.Handlers{
 		routing_api.UpsertRoute:      route(routesHandler.Upsert),

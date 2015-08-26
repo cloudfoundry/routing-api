@@ -1,10 +1,12 @@
 package handlers_test
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 
 	"github.com/cloudfoundry-incubator/routing-api"
+	fake_token "github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,12 +19,14 @@ var _ = Describe("RouterGroupsHandler", func() {
 		routerGroupHandler *handlers.RouterGroupsHandler
 		request            *http.Request
 		responseRecorder   *httptest.ResponseRecorder
+		token              *fake_token.FakeToken
 		logger             *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test-router-group")
-		routerGroupHandler = handlers.NewRouteGroupsHandler(logger)
+		token = &fake_token.FakeToken{}
+		routerGroupHandler = handlers.NewRouteGroupsHandler(token, logger)
 		responseRecorder = httptest.NewRecorder()
 	})
 
@@ -42,6 +46,29 @@ var _ = Describe("RouterGroupsHandler", func() {
 										        "tcp"
 											]
 			}]`))
+		})
+
+		It("checks for router_group.read scope", func() {
+			var err error
+			request, err = http.NewRequest("GET", routing_api.ListRouterGroups, nil)
+			Expect(err).NotTo(HaveOccurred())
+			routerGroupHandler.ListRouterGroups(responseRecorder, request)
+			_, permission := token.DecodeTokenArgsForCall(0)
+			Expect(permission).To(ConsistOf(handlers.RouterGroupsReadScope))
+		})
+
+		Context("when authorization token is invalid", func() {
+			BeforeEach(func() {
+				token.DecodeTokenReturns(errors.New("kaboom"))
+			})
+
+			It("returns Unauthorized error", func() {
+				var err error
+				request, err = http.NewRequest("GET", routing_api.ListRouterGroups, nil)
+				Expect(err).NotTo(HaveOccurred())
+				routerGroupHandler.ListRouterGroups(responseRecorder, request)
+				Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
+			})
 		})
 
 	})
