@@ -11,6 +11,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/helpers"
 	trace "github.com/cloudfoundry-incubator/trace-logger"
 	"github.com/onsi/gomega/ghttp"
 	"github.com/vito/go-sse/sse"
@@ -259,6 +260,88 @@ var _ = Describe("Client", func() {
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
 				Expect(log).To(ContainSubstring("HTTP/1.1 400 Bad Request"))
+				Expect(log).NotTo(ContainSubstring(string(expectedBody)))
+			})
+		})
+	})
+
+	Context("RouterGroups", func() {
+		var (
+			routerGroups []db.RouterGroup
+			err          error
+			routerGroup1 db.RouterGroup
+		)
+
+		BeforeEach(func() {
+			routerGroup1 = helpers.GetDefaultRouterGroup()
+		})
+
+		JustBeforeEach(func() {
+			routerGroups, err = client.RouterGroups()
+		})
+
+		Context("when the server returns a valid response", func() {
+			BeforeEach(func() {
+				data, _ := json.Marshal([]db.RouterGroup{routerGroup1})
+
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/v1/router_groups"),
+						ghttp.RespondWith(http.StatusOK, data),
+					),
+				)
+			})
+
+			It("Sends a ListRouterGroups request to the server", func() {
+				Expect(server.ReceivedRequests()).Should(HaveLen(1))
+			})
+
+			It("gets a list of router groups from the server", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(routerGroups).To(Equal([]db.RouterGroup{routerGroup1}))
+			})
+
+			It("logs the request and response", func() {
+				expectedBody, _ := json.Marshal([]db.RouterGroup{routerGroup1})
+
+				r, err := ioutil.ReadAll(stdout)
+				log := string(r)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(log).To(ContainSubstring("REQUEST: "))
+				Expect(log).To(ContainSubstring("GET /v1/router_groups HTTP/1.1"))
+
+				Expect(log).To(ContainSubstring("RESPONSE: "))
+				Expect(log).To(ContainSubstring("HTTP/1.1 200 OK"))
+				Expect(log).To(ContainSubstring(string(expectedBody)))
+			})
+		})
+
+		Context("When the server returns an error", func() {
+			BeforeEach(func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/v1/router_groups"),
+						ghttp.RespondWith(http.StatusInternalServerError, nil),
+					),
+				)
+			})
+
+			It("returns an error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(routerGroups).To(BeEmpty())
+			})
+
+			It("logs the request and response", func() {
+				expectedBody, _ := json.Marshal([]db.RouterGroup{routerGroup1})
+
+				r, err := ioutil.ReadAll(stdout)
+				log := string(r)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(log).To(ContainSubstring("REQUEST: "))
+				Expect(log).To(ContainSubstring("GET /v1/router_groups HTTP/1.1"))
+
+				Expect(log).To(ContainSubstring("RESPONSE: "))
+				Expect(log).To(ContainSubstring("HTTP/1.1 500 Internal Server Error"))
 				Expect(log).NotTo(ContainSubstring(string(expectedBody)))
 			})
 		})

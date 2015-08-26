@@ -4,8 +4,8 @@ package fake_routing_api
 import (
 	"sync"
 
-	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api"
+	"github.com/cloudfoundry-incubator/routing-api/db"
 )
 
 type FakeClient struct {
@@ -36,6 +36,13 @@ type FakeClient struct {
 	}
 	deleteRoutesReturns struct {
 		result1 error
+	}
+	RouterGroupsStub        func() ([]db.RouterGroup, error)
+	routerGroupsMutex       sync.RWMutex
+	routerGroupsArgsForCall []struct{}
+	routerGroupsReturns struct {
+		result1 []db.RouterGroup
+		result2 error
 	}
 	SubscribeToEventsStub        func() (routing_api.EventSource, error)
 	subscribeToEventsMutex       sync.RWMutex
@@ -156,6 +163,31 @@ func (fake *FakeClient) DeleteRoutesReturns(result1 error) {
 	fake.deleteRoutesReturns = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeClient) RouterGroups() ([]db.RouterGroup, error) {
+	fake.routerGroupsMutex.Lock()
+	fake.routerGroupsArgsForCall = append(fake.routerGroupsArgsForCall, struct{}{})
+	fake.routerGroupsMutex.Unlock()
+	if fake.RouterGroupsStub != nil {
+		return fake.RouterGroupsStub()
+	} else {
+		return fake.routerGroupsReturns.result1, fake.routerGroupsReturns.result2
+	}
+}
+
+func (fake *FakeClient) RouterGroupsCallCount() int {
+	fake.routerGroupsMutex.RLock()
+	defer fake.routerGroupsMutex.RUnlock()
+	return len(fake.routerGroupsArgsForCall)
+}
+
+func (fake *FakeClient) RouterGroupsReturns(result1 []db.RouterGroup, result2 error) {
+	fake.RouterGroupsStub = nil
+	fake.routerGroupsReturns = struct {
+		result1 []db.RouterGroup
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeClient) SubscribeToEvents() (routing_api.EventSource, error) {

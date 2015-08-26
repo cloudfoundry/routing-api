@@ -10,6 +10,7 @@ import (
 	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/testrunner"
 	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -77,6 +78,26 @@ var _ = Describe("Main", func() {
 
 			Eventually(getRoutes).ShouldNot(ContainSubstring("routing-api"))
 			Eventually(routingAPIRunner.ExitCode()).Should(Equal(0))
+		})
+
+		Context("when router groups endpoint is invoked", func() {
+			var proc ifrit.Process
+
+			BeforeEach(func() {
+				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+				proc = ifrit.Invoke(routingAPIRunner)
+			})
+
+			AfterEach(func() {
+				ginkgomon.Interrupt(proc)
+			})
+
+			It("returns router groups", func() {
+				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
+				routerGroups, err := client.RouterGroups()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(routerGroups).To(Equal([]db.RouterGroup{helpers.GetDefaultRouterGroup()}))
+			})
 		})
 
 		It("closes open event streams when the process exits", func() {

@@ -20,6 +20,14 @@ type DB interface {
 	WatchRouteChanges() (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error)
 }
 
+type Feature string
+
+type RouterGroup struct {
+	Guid     string    `json:"guid"`
+	Name     string    `json:"name"`
+	Features []Feature `json:"features"`
+}
+
 type Route struct {
 	Route           string `json:"route"`
 	Port            uint16 `json:"port"`

@@ -20,6 +20,7 @@ type Client interface {
 	UpsertRoutes([]db.Route) error
 	Routes() ([]db.Route, error)
 	DeleteRoutes([]db.Route) error
+	RouterGroups() ([]db.RouterGroup, error)
 
 	SubscribeToEvents() (EventSource, error)
 }
@@ -53,6 +54,12 @@ func (c *client) Routes() ([]db.Route, error) {
 	var routes []db.Route
 	err := c.doRequest(ListRoute, nil, nil, nil, &routes)
 	return routes, err
+}
+
+func (c *client) RouterGroups() ([]db.RouterGroup, error) {
+	var routerGroups []db.RouterGroup
+	err := c.doRequest(ListRouterGroups, nil, nil, nil, &routerGroups)
+	return routerGroups, err
 }
 
 func (c *client) DeleteRoutes(routes []db.Route) error {
