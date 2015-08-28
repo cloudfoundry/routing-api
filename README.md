@@ -113,6 +113,7 @@ Registering OAuth clients can be done using the cf-release BOSH deployment manif
 
 - For API clients that wish to register routes with the Routing API, the OAuth client in UAA must be configured with the `route.advertise` authority.
 - For API clients that require admin permissions with the Routing API, the OAuth client in UAA must be configured with the `route.admin` authority.
+- For API clients that wish to list router groups with the Routing API, the OAuth client in UAA must be configured with the `router_groups.read` authority.
 
 For instructions on fetching a token, see [Using the API manually](#authorization-token).
 
@@ -224,7 +225,7 @@ To add a route to the API server:
 ```sh
 curl -vvv -H "Authorization: bearer [token with uaa route.advertise scope]" -X POST http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
 ```
-
+π
 To add a route, with an associated route service, to the API server. This must be a https-only url:
 
 ```sh
@@ -245,6 +246,20 @@ curl -vvv -H "Authorization: bearer [token with uaa route.admin scope]" http://1
 To subscribe to route changes:
 ```sh
 curl -vvv -H "Authorization: bearer [token with uaa route.admin scope]" http://127.0.0.1:8080/v1/events
+```
+
+To list available Router Groups:
+```sh
+curl -vvv -H "Authorization: bearer [token with uaa router_groups.read scope]" http://127.0.0.1:8080/v1/router_groups
+
+Sample response:
+[{
+    "guid": "f7392031-a488-4890-8835-c4a038a3bded",
+    "name": "default_tcp",
+    "features": [
+        "tcp"
+    ]
+}]
 ```
 
 ## Known issues
