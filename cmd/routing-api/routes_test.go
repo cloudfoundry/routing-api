@@ -58,7 +58,7 @@ var _ = Describe("Routes API", func() {
 
 		It("fetches all of the routes", func() {
 			routingAPIRoute := db.Route{
-				Route:   fmt.Sprintf("routing-api.%s", routingAPISystemDomain),
+				Route:   fmt.Sprintf("api.%s/routing", routingAPISystemDomain),
 				Port:    routingAPIPort,
 				IP:      routingAPIIP,
 				TTL:     120,

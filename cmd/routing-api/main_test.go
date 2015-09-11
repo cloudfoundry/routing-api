@@ -72,11 +72,11 @@ var _ = Describe("Main", func() {
 				Expect(err).ToNot(HaveOccurred())
 				return string(body)
 			}
-			Eventually(getRoutes).Should(ContainSubstring("routing-api"))
+			Eventually(getRoutes).Should(ContainSubstring("api.example.com/routing"))
 
 			ginkgomon.Interrupt(proc)
 
-			Eventually(getRoutes).ShouldNot(ContainSubstring("routing-api"))
+			Eventually(getRoutes).ShouldNot(ContainSubstring("api.example.com/routing"))
 			Eventually(routingAPIRunner.ExitCode()).Should(Equal(0))
 		})
 
