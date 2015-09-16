@@ -202,4 +202,70 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 		})
 	})
 
+	Describe("List", func() {
+
+		Context("when db returns tcp route mappings", func() {
+			var (
+				tcpRoutes []db.TcpRouteMapping
+			)
+
+			BeforeEach(func() {
+				tcpRoutes = []db.TcpRouteMapping{
+					db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000),
+					db.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001),
+				}
+				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
+			})
+
+			It("returns tcp route mappings", func() {
+				request = handlers.NewTestRequest("")
+				tcpRouteMappingsHandler.List(responseRecorder, request)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				Expect(responseRecorder.Body.String()).To(MatchJSON(`[{"route":{"router_group_guid": "router-group-guid-001", "external_port": 52000}, "host_ip": "1.2.3.4", "host_port": 60000},
+					{"route":{"router_group_guid": "router-group-guid-001", "external_port": 52001}, "host_ip": "1.2.3.5", "host_port": 60001}]`))
+			})
+		})
+
+		Context("when db returns empty tcp route mappings", func() {
+			BeforeEach(func() {
+				database.ReadTcpRouteMappingsReturns([]db.TcpRouteMapping{}, nil)
+			})
+
+			It("returns empty response", func() {
+				request = handlers.NewTestRequest("")
+				tcpRouteMappingsHandler.List(responseRecorder, request)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				Expect(responseRecorder.Body.String()).To(MatchJSON(`[]`))
+			})
+		})
+
+		Context("when db returns error", func() {
+			BeforeEach(func() {
+				database.ReadTcpRouteMappingsReturns(nil, errors.New("something bad"))
+			})
+			It("returns internal server error", func() {
+				request = handlers.NewTestRequest("")
+				tcpRouteMappingsHandler.List(responseRecorder, request)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		Context("when the UAA token is not valid", func() {
+			BeforeEach(func() {
+				token.DecodeTokenReturns(errors.New("Not valid"))
+			})
+
+			It("returns an Unauthorized status code", func() {
+				request = handlers.NewTestRequest("")
+				tcpRouteMappingsHandler.List(responseRecorder, request)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
+			})
+		})
+
+	})
+
 })

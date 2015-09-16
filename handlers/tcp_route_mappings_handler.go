@@ -25,8 +25,25 @@ func NewTcpRouteMappingsHandler(token authentication.Token, validator RouteValid
 	}
 }
 
+func (h *TcpRouteMappingsHandler) List(w http.ResponseWriter, req *http.Request) {
+	log := h.logger.Session("list-tcp-route-mappings")
+
+	err := h.token.DecodeToken(req.Header.Get("Authorization"), AdminRouteScope)
+	if err != nil {
+		handleUnauthorizedError(w, err, log)
+		return
+	}
+	routes, err := h.db.ReadTcpRouteMappings()
+	if err != nil {
+		handleDBCommunicationError(w, err, log)
+		return
+	}
+	encoder := json.NewEncoder(w)
+	encoder.Encode(routes)
+}
+
 func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Request) {
-	log := h.logger.Session("create-tcp-mapping")
+	log := h.logger.Session("create-tcp-route-mappings")
 	decoder := json.NewDecoder(req.Body)
 
 	var tcpMappings []db.TcpRouteMapping
