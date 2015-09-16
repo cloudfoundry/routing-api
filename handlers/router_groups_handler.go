@@ -11,10 +11,6 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-const (
-	RouterGroupsReadScope = "router_groups.read"
-)
-
 type RouterGroupsHandler struct {
 	token  authentication.Token
 	logger lager.Logger

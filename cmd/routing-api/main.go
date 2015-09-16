@@ -165,13 +165,15 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 	routesHandler := handlers.NewRoutesHandler(token, *maxTTL, validator, database, logger)
 	eventStreamHandler := handlers.NewEventStreamHandler(token, database, logger, statsdClient, stopChan)
 	routeGroupsHandler := handlers.NewRouteGroupsHandler(token, logger)
+	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(token, validator, database, logger)
 
 	actions := rata.Handlers{
-		routing_api.UpsertRoute:      route(routesHandler.Upsert),
-		routing_api.DeleteRoute:      route(routesHandler.Delete),
-		routing_api.ListRoute:        route(routesHandler.List),
-		routing_api.EventStreamRoute: route(eventStreamHandler.EventStream),
-		routing_api.ListRouterGroups: route(routeGroupsHandler.ListRouterGroups),
+		routing_api.UpsertRoute:           route(routesHandler.Upsert),
+		routing_api.DeleteRoute:           route(routesHandler.Delete),
+		routing_api.ListRoute:             route(routesHandler.List),
+		routing_api.EventStreamRoute:      route(eventStreamHandler.EventStream),
+		routing_api.ListRouterGroups:      route(routeGroupsHandler.ListRouterGroups),
+		routing_api.UpsertTcpRouteMapping: route(tcpMappingsHandler.Upsert),
 	}
 
 	handler, err := rata.NewRouter(routing_api.Routes, actions)

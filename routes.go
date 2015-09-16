@@ -3,11 +3,12 @@ package routing_api
 import "github.com/tedsuo/rata"
 
 const (
-	UpsertRoute      = "Upsert"
-	DeleteRoute      = "Delete"
-	ListRoute        = "List"
-	EventStreamRoute = "EventStream"
-	ListRouterGroups = "ListRouterGroups"
+	UpsertRoute           = "UpsertRoute"
+	DeleteRoute           = "Delete"
+	ListRoute             = "List"
+	EventStreamRoute      = "EventStream"
+	ListRouterGroups      = "ListRouterGroups"
+	UpsertTcpRouteMapping = "UpsertTcpRouteMapping"
 )
 
 var Routes = rata.Routes{
@@ -16,4 +17,6 @@ var Routes = rata.Routes{
 	{Path: "/v1/routes", Method: "GET", Name: ListRoute},
 	{Path: "/v1/events", Method: "GET", Name: EventStreamRoute},
 	{Path: "/v1/router_groups", Method: "GET", Name: ListRouterGroups},
+
+	{Path: "/v1/tcp_routes/create", Method: "POST", Name: UpsertTcpRouteMapping},
 }

@@ -14,6 +14,8 @@ import (
 type RouteValidator interface {
 	ValidateCreate(routes []db.Route, maxTTL int) *routing_api.Error
 	ValidateDelete(routes []db.Route) *routing_api.Error
+
+	ValidateTcpRouteMapping(tcpRouteMappings []db.TcpRouteMapping) *routing_api.Error
 }
 
 type Validator struct{}
@@ -123,6 +125,41 @@ func validateUrl(urlToValidate string) error {
 
 	if parsedURL.String() != urlToValidate {
 		return errors.New("Url cannot contain invalid characters")
+	}
+
+	return nil
+}
+
+func (v Validator) ValidateTcpRouteMapping(tcpRouteMappings []db.TcpRouteMapping) *routing_api.Error {
+	for _, tcpRouteMapping := range tcpRouteMappings {
+		err := validateTcpRouteMapping(tcpRouteMapping)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateTcpRouteMapping(tcpRouteMappings db.TcpRouteMapping) *routing_api.Error {
+
+	if tcpRouteMappings.TcpRoute.RouterGroupGuid == "" {
+		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError, "Each tcp mapping requires a valid router group guid")
+		return &err
+	}
+
+	if tcpRouteMappings.TcpRoute.ExternalPort <= 0 {
+		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError, "Each tcp mapping requires a positive external port")
+		return &err
+	}
+
+	if tcpRouteMappings.HostIP == "" {
+		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError, "Each tcp mapping requires a non empty host ip")
+		return &err
+	}
+
+	if tcpRouteMappings.HostPort <= 0 {
+		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError, "Each tcp mapping requires a positive host port")
+		return &err
 	}
 
 	return nil

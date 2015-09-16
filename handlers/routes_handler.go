@@ -9,11 +9,6 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-const (
-	AdminRouteScope     = "route.admin"
-	AdvertiseRouteScope = "route.advertise"
-)
-
 type RoutesHandler struct {
 	token     authentication.Token
 	maxTTL    int

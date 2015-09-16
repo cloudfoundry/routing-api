@@ -22,4 +22,5 @@ const (
 	RouteServiceUrlInvalidError = "RouteServiceUrlInvalidError"
 	DBCommunicationError        = "DBCommunicationError"
 	UnauthorizedError           = "UnauthorizedError"
+	TcpRouteMappingInvalidError = "TcpRouteMappingInvalidError"
 )
