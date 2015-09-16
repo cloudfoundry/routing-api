@@ -1,7 +1,7 @@
 package handlers
 
 const (
-	AdminRouteScope       = "route.admin"
-	AdvertiseRouteScope   = "route.advertise"
-	RouterGroupsReadScope = "router_groups.read"
+	RouterGroupsReadScope   = "routing.router_groups.read"
+	RoutingRoutesReadScope  = "routing.routes.read"
+	RoutingRoutesWriteScope = "routing.routes.write"
 )

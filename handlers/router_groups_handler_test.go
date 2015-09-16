@@ -48,7 +48,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 			}]`))
 		})
 
-		It("checks for router_group.read scope", func() {
+		It("checks for routing.router_groups.read scope", func() {
 			var err error
 			request, err = http.NewRequest("GET", routing_api.ListRouterGroups, nil)
 			Expect(err).NotTo(HaveOccurred())

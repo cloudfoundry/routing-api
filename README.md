@@ -111,9 +111,9 @@ The Routing API uses OAuth tokens to authenticate clients. To obtain a token fro
 
 Registering OAuth clients can be done using the cf-release BOSH deployment manifest, or manually using the `uaac` CLI for UAA.
 
-- For API clients that wish to register routes with the Routing API, the OAuth client in UAA must be configured with the `route.advertise` authority.
-- For API clients that require admin permissions with the Routing API, the OAuth client in UAA must be configured with the `route.admin` authority.
-- For API clients that wish to list router groups with the Routing API, the OAuth client in UAA must be configured with the `router_groups.read` authority.
+- For API clients that wish to register/unregister routes with the Routing API, the OAuth client in UAA must be configured with the `routing.routes.write` authority.
+- For API clients that wish to list routes with the Routing API, the OAuth client in UAA must be configured with the `routing.routes.read` authority.
+- For API clients that wish to list router groups with the Routing API, the OAuth client in UAA must be configured with the `routing.router_groups.read` authority.
 
 For instructions on fetching a token, see [Using the API manually](#authorization-token).
 
@@ -124,7 +124,7 @@ E.g:
 uaa:
    clients:
       routing_api_client:
-         authorities: route.advertise
+         authorities: routing.routes.write,routing.routes.read,routing.router_groups.read
          authorized_grant_type: client_credentials
          secret: route_secret
 ```
@@ -147,7 +147,7 @@ uaa:
 3. Create the OAuth client.
 
    ```bash
-   uaac client add routing_api_client --authorities "route.advertise" --authorized_grant_type "client_credentials"
+   uaac client add routing_api_client --authorities "routing.routes.write,routing.routes.read,routing.router_groups.read" --authorized_grant_type "client_credentials"
    ```
 
 ### Starting the Server
@@ -223,34 +223,34 @@ To obtain an token from UAA, use the `uaac` CLI for UAA.
 To add a route to the API server:
 
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa route.advertise or route.admin scope]" -X POST http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X POST http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
 ```
 To add a route, with an associated route service, to the API server. This must be a https-only url:
 
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa route.advertise or route.admin scope]" -X POST http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45, "route_service_url":"https://route-service.example.cf-app.com"}]'
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X POST http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45, "route_service_url":"https://route-service.example.cf-app.com"}]'
 ```
 
 To add a tcp route to the API server:
 
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa route.advertise or route.admin scopes]" -X POST http://127.0.0.1:8080/v1/tcp_routes/create -d '[{"route":{"router_group_guid": "tcp-default", "external_port": 5200}, "host_ip": "10.1.1.12", "host_port": 60000}]'
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X POST http://127.0.0.1:8080/v1/tcp_routes/create -d '[{"route":{"router_group_guid": "tcp-default", "external_port": 5200}, "host_ip": "10.1.1.12", "host_port": 60000}]'
 ```
 
 To delete a route:
 
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa route.advertise scope]" -X DELETE http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X DELETE http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
 ```
 
-To list advertised routes:
+To list registered routes:
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa route.admin scope]" http://127.0.0.1:8080/v1/routes
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.read scope]" http://127.0.0.1:8080/v1/routes
 ```
 
-To list advertised tcp routes:
+To list registered tcp routes:
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa route.admin scope]" http://127.0.0.1:8080/v1/tcp_routes
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.read scope]" http://127.0.0.1:8080/v1/tcp_routes
 
 Sample response:
 [
@@ -264,12 +264,12 @@ Sample response:
 
 To subscribe to route changes:
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa route.admin scope]" http://127.0.0.1:8080/v1/events
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.read scope]" http://127.0.0.1:8080/v1/events
 ```
 
 To list available Router Groups:
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa router_groups.read scope]" http://127.0.0.1:8080/v1/router_groups
+curl -vvv -H "Authorization: bearer [token with uaa routing.router_groups.read scope]" http://127.0.0.1:8080/v1/router_groups
 
 Sample response:
 [{

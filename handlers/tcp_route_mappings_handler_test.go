@@ -58,14 +58,14 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				tcpMappings = []db.TcpRouteMapping{tcpMapping}
 			})
 
-			It("checks for route.advertise & route.admin scope", func() {
+			It("checks for routing.routes.write scope", func() {
 				request = handlers.NewTestRequest(tcpMappings)
 
 				tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 				Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 
 				_, permission := token.DecodeTokenArgsForCall(0)
-				Expect(permission).To(ConsistOf(handlers.AdvertiseRouteScope, handlers.AdminRouteScope))
+				Expect(permission).To(ConsistOf(handlers.RoutingRoutesWriteScope))
 			})
 
 			Context("when all inputs are present and correct", func() {
@@ -203,6 +203,16 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 	})
 
 	Describe("List", func() {
+
+		It("checks for routing.routes.read scope", func() {
+			request = handlers.NewTestRequest("")
+
+			tcpRouteMappingsHandler.List(responseRecorder, request)
+			Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+
+			_, permission := token.DecodeTokenArgsForCall(0)
+			Expect(permission).To(ConsistOf(handlers.RoutingRoutesReadScope))
+		})
 
 		Context("when db returns tcp route mappings", func() {
 			var (

@@ -28,7 +28,7 @@ func NewTcpRouteMappingsHandler(token authentication.Token, validator RouteValid
 func (h *TcpRouteMappingsHandler) List(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("list-tcp-route-mappings")
 
-	err := h.token.DecodeToken(req.Header.Get("Authorization"), AdminRouteScope)
+	err := h.token.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -55,7 +55,7 @@ func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Reques
 
 	log.Info("request", lager.Data{"tcp_mapping_creation": tcpMappings})
 
-	err = h.token.DecodeToken(req.Header.Get("Authorization"), AdvertiseRouteScope, AdminRouteScope)
+	err = h.token.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
