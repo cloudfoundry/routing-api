@@ -157,7 +157,7 @@ To run the API server you need to provide all the urls for the etcd cluster, a c
 Example 1:
 
 ```sh
-routing-api -config example_config/example.yml -port 3000 -maxTTL 60 http://etcd.127.0.0.1.xip.io:4001
+routing-api -ip 127.0.0.1 -systemDomain 127.0.0.1.xip.io -config example_config/example.yml -port 3000 -maxTTL 60 http://etcd.127.0.0.1.xip.io:4001
 ```
 
 Where `http://etcd.127.0.0.1.xip.io:4001` is the single etcd member.
@@ -223,13 +223,18 @@ To obtain an token from UAA, use the `uaac` CLI for UAA.
 To add a route to the API server:
 
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa route.advertise scope]" -X POST http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
+curl -vvv -H "Authorization: bearer [token with uaa route.advertise or route.admin scope]" -X POST http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
 ```
-π
 To add a route, with an associated route service, to the API server. This must be a https-only url:
 
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa route.advertise scope]" -X POST http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45, "route_service_url":"https://route-service.example.cf-app.com"}]'
+curl -vvv -H "Authorization: bearer [token with uaa route.advertise or route.admin scope]" -X POST http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45, "route_service_url":"https://route-service.example.cf-app.com"}]'
+```
+
+To add a tcp route to the API server:
+
+```sh
+curl -vvv -H "Authorization: bearer [token with uaa route.advertise or route.admin scopes]" -X POST http://127.0.0.1:8080/v1/tcp_routes/create -d '[{"route":{"router_group_guid": "tcp-default", "external_port": 5200}, "host_ip": "10.1.1.12", "host_port": 60000}]'
 ```
 
 To delete a route:
@@ -241,6 +246,20 @@ curl -vvv -H "Authorization: bearer [token with uaa route.advertise scope]" -X D
 To list advertised routes:
 ```sh
 curl -vvv -H "Authorization: bearer [token with uaa route.admin scope]" http://127.0.0.1:8080/v1/routes
+```
+
+To list advertised tcp routes:
+```sh
+curl -vvv -H "Authorization: bearer [token with uaa route.admin scope]" http://127.0.0.1:8080/v1/tcp_routes
+
+Sample response:
+[
+  {
+    "route": {"router_group_guid": "tcp-default", "external_port": 5200},
+    "host_ip": "10.1.1.12",
+    "host_port": 60000
+  }
+]
 ```
 
 To subscribe to route changes:

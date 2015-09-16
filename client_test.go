@@ -121,6 +121,82 @@ var _ = Describe("Client", func() {
 		})
 	})
 
+	Context("UpsertTcpRouteMappings", func() {
+
+		var (
+			err              error
+			tcpRouteMapping1 db.TcpRouteMapping
+			tcpRouteMapping2 db.TcpRouteMapping
+		)
+		BeforeEach(func() {
+			tcpRouteMapping1 = db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+			tcpRouteMapping2 = db.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
+		})
+
+		JustBeforeEach(func() {
+			err = client.UpsertTcpRouteMappings([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+		})
+
+		Context("when the server returns a valid response", func() {
+			BeforeEach(func() {
+				server.AppendHandlers(
+					ghttp.VerifyRequest("POST", "/v1/tcp_routes/create"),
+				)
+			})
+
+			It("sends an Upsert request to the server", func() {
+				Expect(server.ReceivedRequests()).Should(HaveLen(1))
+			})
+
+			It("does not receive an error", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("logs the request and response", func() {
+				expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+
+				r, err := ioutil.ReadAll(stdout)
+				log := string(r)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(log).To(ContainSubstring("REQUEST: "))
+				Expect(log).To(ContainSubstring("POST /v1/tcp_routes/create HTTP/1.1"))
+				Expect(log).To(ContainSubstring(string(expectedBody)))
+
+				Expect(log).To(ContainSubstring("RESPONSE: "))
+				Expect(log).To(ContainSubstring("HTTP/1.1 200 OK"))
+			})
+		})
+
+		Context("When the server returns an error", func() {
+			BeforeEach(func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/v1/tcp_routes/create"),
+						ghttp.RespondWith(http.StatusBadRequest, nil),
+					),
+				)
+			})
+
+			It("receives an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("logs the request and response", func() {
+				expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+
+				r, err := ioutil.ReadAll(stdout)
+				log := string(r)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(log).To(ContainSubstring("REQUEST: "))
+				Expect(log).To(ContainSubstring("POST /v1/tcp_routes/create HTTP/1.1"))
+				Expect(log).To(ContainSubstring(string(expectedBody)))
+
+				Expect(log).To(ContainSubstring("RESPONSE: "))
+				Expect(log).To(ContainSubstring("HTTP/1.1 400 Bad Request"))
+			})
+		})
+	})
+
 	Context("DeleteRoutes", func() {
 		var err error
 		JustBeforeEach(func() {
@@ -265,6 +341,89 @@ var _ = Describe("Client", func() {
 		})
 	})
 
+	Context("TcpRouteMappings", func() {
+
+		var (
+			err              error
+			tcpRouteMapping1 db.TcpRouteMapping
+			tcpRouteMapping2 db.TcpRouteMapping
+			routes           []db.TcpRouteMapping
+		)
+		BeforeEach(func() {
+			tcpRouteMapping1 = db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+			tcpRouteMapping2 = db.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
+		})
+
+		JustBeforeEach(func() {
+			routes, err = client.TcpRouteMappings()
+		})
+
+		Context("when the server returns a valid response", func() {
+			BeforeEach(func() {
+				data, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/v1/tcp_routes"),
+						ghttp.RespondWith(http.StatusOK, data),
+					),
+				)
+			})
+
+			It("Sends a ListRoutes request to the server", func() {
+				Expect(server.ReceivedRequests()).Should(HaveLen(1))
+			})
+
+			It("gets a list of routes from the server", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(routes).To(Equal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}))
+			})
+
+			It("logs the request and response", func() {
+				expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+
+				r, err := ioutil.ReadAll(stdout)
+				log := string(r)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(log).To(ContainSubstring("REQUEST: "))
+				Expect(log).To(ContainSubstring("GET /v1/tcp_routes HTTP/1.1"))
+
+				Expect(log).To(ContainSubstring("RESPONSE: "))
+				Expect(log).To(ContainSubstring("HTTP/1.1 200 OK"))
+				Expect(log).To(ContainSubstring(string(expectedBody)))
+			})
+		})
+
+		Context("When the server returns an error", func() {
+			BeforeEach(func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/v1/tcp_routes"),
+						ghttp.RespondWith(http.StatusBadRequest, nil),
+					),
+				)
+			})
+
+			It("returns an error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(routes).To(BeEmpty())
+			})
+
+			It("logs the request and response", func() {
+				expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+
+				r, err := ioutil.ReadAll(stdout)
+				log := string(r)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(log).To(ContainSubstring("REQUEST: "))
+				Expect(log).To(ContainSubstring("GET /v1/tcp_routes HTTP/1.1"))
+
+				Expect(log).To(ContainSubstring("RESPONSE: "))
+				Expect(log).To(ContainSubstring("HTTP/1.1 400 Bad Request"))
+				Expect(log).NotTo(ContainSubstring(string(expectedBody)))
+			})
+		})
+	})
 	Context("RouterGroups", func() {
 		var (
 			routerGroups []db.RouterGroup
