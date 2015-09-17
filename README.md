@@ -223,34 +223,34 @@ To obtain an token from UAA, use the `uaac` CLI for UAA.
 To add a route to the API server:
 
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X POST http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X POST http://127.0.0.1:8080/routing/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
 ```
 To add a route, with an associated route service, to the API server. This must be a https-only url:
 
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X POST http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45, "route_service_url":"https://route-service.example.cf-app.com"}]'
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X POST http://127.0.0.1:8080/routing/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45, "route_service_url":"https://route-service.example.cf-app.com"}]'
 ```
 
 To add a tcp route to the API server:
 
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X POST http://127.0.0.1:8080/v1/tcp_routes/create -d '[{"route":{"router_group_guid": "tcp-default", "external_port": 5200}, "host_ip": "10.1.1.12", "host_port": 60000}]'
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X POST http://127.0.0.1:8080/routing/v1/tcp_routes/create -d '[{"route":{"router_group_guid": "tcp-default", "external_port": 5200}, "host_ip": "10.1.1.12", "host_port": 60000}]'
 ```
 
 To delete a route:
 
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X DELETE http://127.0.0.1:8080/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X DELETE http://127.0.0.1:8080/routing/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
 ```
 
 To list registered routes:
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa routing.routes.read scope]" http://127.0.0.1:8080/v1/routes
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.read scope]" http://127.0.0.1:8080/routing/v1/routes
 ```
 
 To list registered tcp routes:
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa routing.routes.read scope]" http://127.0.0.1:8080/v1/tcp_routes
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.read scope]" http://127.0.0.1:8080/routing/v1/tcp_routes
 
 Sample response:
 [
@@ -264,12 +264,12 @@ Sample response:
 
 To subscribe to route changes:
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa routing.routes.read scope]" http://127.0.0.1:8080/v1/events
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.read scope]" http://127.0.0.1:8080/routing/v1/events
 ```
 
 To list available Router Groups:
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa routing.router_groups.read scope]" http://127.0.0.1:8080/v1/router_groups
+curl -vvv -H "Authorization: bearer [token with uaa routing.router_groups.read scope]" http://127.0.0.1:8080/routing/v1/router_groups
 
 Sample response:
 [{
@@ -283,5 +283,5 @@ Sample response:
 
 ## Known issues
 
-+ The routing-api will return a 404 if you attempt to hit the endpoint `http://[router host]/v1/routes/` as opposed to `http://[router host]/v1/routes`
++ The routing-api will return a 404 if you attempt to hit the endpoint `http://[router host]/routing/v1/routes/` as opposed to `http://[router host]/routing/v1/routes`
 + The routing-api currently logs everything to the ctl log.
