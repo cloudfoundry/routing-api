@@ -160,7 +160,7 @@ var _ = Describe("Main", func() {
 				tcpRouteMappingsResponse, err := client.TcpRouteMappings()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(tcpRouteMappingsResponse).NotTo(BeNil())
-				Expect(tcpRouteMappingsResponse).To(Equal(tcpRouteMappings))
+				Expect(tcpRouteMappingsResponse).To(ConsistOf(tcpRouteMappings))
 			})
 		})
 
