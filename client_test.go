@@ -18,6 +18,14 @@ import (
 )
 
 var _ = Describe("Client", func() {
+	const (
+		ROUTES_API_URL            = "/routing/v1/routes"
+		TCP_CREATE_ROUTES_API_URL = "/routing/v1/tcp_routes/create"
+		TCP_ROUTES_API_URL        = "/routing/v1/tcp_routes"
+		TCP_ROUTER_GROUPS_API_URL = "/routing/v1/router_groups"
+		EVENTS_SSE_URL            = "/routing/v1/events"
+	)
+
 	var server *ghttp.Server
 	var client routing_api.Client
 	var route1 db.Route
@@ -64,7 +72,7 @@ var _ = Describe("Client", func() {
 		Context("when the server returns a valid response", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
-					ghttp.VerifyRequest("POST", "/v1/routes"),
+					ghttp.VerifyRequest("POST", ROUTES_API_URL),
 				)
 			})
 
@@ -83,7 +91,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("POST /v1/routes HTTP/1.1"))
+				Expect(log).To(ContainSubstring("POST " + ROUTES_API_URL + " HTTP/1.1"))
 				Expect(log).To(ContainSubstring(string(expectedBody)))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
@@ -95,7 +103,7 @@ var _ = Describe("Client", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("POST", "/v1/routes"),
+						ghttp.VerifyRequest("POST", ROUTES_API_URL),
 						ghttp.RespondWith(http.StatusBadRequest, nil),
 					),
 				)
@@ -112,7 +120,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("POST /v1/routes HTTP/1.1"))
+				Expect(log).To(ContainSubstring("POST " + ROUTES_API_URL + " HTTP/1.1"))
 				Expect(log).To(ContainSubstring(string(expectedBody)))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
@@ -140,7 +148,7 @@ var _ = Describe("Client", func() {
 		Context("when the server returns a valid response", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
-					ghttp.VerifyRequest("POST", "/v1/tcp_routes/create"),
+					ghttp.VerifyRequest("POST", TCP_CREATE_ROUTES_API_URL),
 				)
 			})
 
@@ -159,7 +167,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("POST /v1/tcp_routes/create HTTP/1.1"))
+				Expect(log).To(ContainSubstring("POST " + TCP_CREATE_ROUTES_API_URL + " HTTP/1.1"))
 				Expect(log).To(ContainSubstring(string(expectedBody)))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
@@ -171,7 +179,7 @@ var _ = Describe("Client", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("POST", "/v1/tcp_routes/create"),
+						ghttp.VerifyRequest("POST", TCP_CREATE_ROUTES_API_URL),
 						ghttp.RespondWith(http.StatusBadRequest, nil),
 					),
 				)
@@ -188,7 +196,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("POST /v1/tcp_routes/create HTTP/1.1"))
+				Expect(log).To(ContainSubstring("POST " + TCP_CREATE_ROUTES_API_URL + " HTTP/1.1"))
 				Expect(log).To(ContainSubstring(string(expectedBody)))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
@@ -207,7 +215,7 @@ var _ = Describe("Client", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("DELETE", "/v1/routes"),
+						ghttp.VerifyRequest("DELETE", ROUTES_API_URL),
 						ghttp.VerifyJSONRepresenting([]db.Route{route1, route2}),
 					),
 				)
@@ -228,7 +236,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("DELETE /v1/routes HTTP/1.1"))
+				Expect(log).To(ContainSubstring("DELETE " + ROUTES_API_URL + " HTTP/1.1"))
 				Expect(log).To(ContainSubstring(string(expectedBody)))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
@@ -240,7 +248,7 @@ var _ = Describe("Client", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("DELETE", "/v1/routes"),
+						ghttp.VerifyRequest("DELETE", ROUTES_API_URL),
 						ghttp.RespondWith(http.StatusBadRequest, nil),
 					),
 				)
@@ -257,7 +265,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("DELETE /v1/routes HTTP/1.1"))
+				Expect(log).To(ContainSubstring("DELETE " + ROUTES_API_URL + " HTTP/1.1"))
 				Expect(log).To(ContainSubstring(string(expectedBody)))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
@@ -280,7 +288,7 @@ var _ = Describe("Client", func() {
 
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/v1/routes"),
+						ghttp.VerifyRequest("GET", ROUTES_API_URL),
 						ghttp.RespondWith(http.StatusOK, data),
 					),
 				)
@@ -302,7 +310,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("GET /v1/routes HTTP/1.1"))
+				Expect(log).To(ContainSubstring("GET " + ROUTES_API_URL + " HTTP/1.1"))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
 				Expect(log).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -314,7 +322,7 @@ var _ = Describe("Client", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/v1/routes"),
+						ghttp.VerifyRequest("GET", ROUTES_API_URL),
 						ghttp.RespondWith(http.StatusBadRequest, nil),
 					),
 				)
@@ -332,7 +340,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("GET /v1/routes HTTP/1.1"))
+				Expect(log).To(ContainSubstring("GET " + ROUTES_API_URL + " HTTP/1.1"))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
 				Expect(log).To(ContainSubstring("HTTP/1.1 400 Bad Request"))
@@ -364,7 +372,7 @@ var _ = Describe("Client", func() {
 
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/v1/tcp_routes"),
+						ghttp.VerifyRequest("GET", TCP_ROUTES_API_URL),
 						ghttp.RespondWith(http.StatusOK, data),
 					),
 				)
@@ -386,7 +394,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("GET /v1/tcp_routes HTTP/1.1"))
+				Expect(log).To(ContainSubstring("GET " + TCP_ROUTES_API_URL + " HTTP/1.1"))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
 				Expect(log).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -398,7 +406,7 @@ var _ = Describe("Client", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/v1/tcp_routes"),
+						ghttp.VerifyRequest("GET", TCP_ROUTES_API_URL),
 						ghttp.RespondWith(http.StatusBadRequest, nil),
 					),
 				)
@@ -416,7 +424,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("GET /v1/tcp_routes HTTP/1.1"))
+				Expect(log).To(ContainSubstring("GET " + TCP_ROUTES_API_URL + " HTTP/1.1"))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
 				Expect(log).To(ContainSubstring("HTTP/1.1 400 Bad Request"))
@@ -445,7 +453,7 @@ var _ = Describe("Client", func() {
 
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/v1/router_groups"),
+						ghttp.VerifyRequest("GET", TCP_ROUTER_GROUPS_API_URL),
 						ghttp.RespondWith(http.StatusOK, data),
 					),
 				)
@@ -467,7 +475,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("GET /v1/router_groups HTTP/1.1"))
+				Expect(log).To(ContainSubstring("GET " + TCP_ROUTER_GROUPS_API_URL + " HTTP/1.1"))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
 				Expect(log).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -479,7 +487,7 @@ var _ = Describe("Client", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/v1/router_groups"),
+						ghttp.VerifyRequest("GET", TCP_ROUTER_GROUPS_API_URL),
 						ghttp.RespondWith(http.StatusInternalServerError, nil),
 					),
 				)
@@ -497,7 +505,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("GET /v1/router_groups HTTP/1.1"))
+				Expect(log).To(ContainSubstring("GET " + TCP_ROUTER_GROUPS_API_URL + " HTTP/1.1"))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
 				Expect(log).To(ContainSubstring("HTTP/1.1 500 Internal Server Error"))
@@ -521,7 +529,7 @@ var _ = Describe("Client", func() {
 
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/v1/events"),
+					ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
 					ghttp.VerifyHeader(http.Header{
 						"Authorization": []string{"bearer"},
 					}),
@@ -556,14 +564,14 @@ var _ = Describe("Client", func() {
 			log := string(r)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(log).To(ContainSubstring("REQUEST: "))
-			Expect(log).To(ContainSubstring("GET /v1/events HTTP/1.1"))
+			Expect(log).To(ContainSubstring("GET " + EVENTS_SSE_URL + " HTTP/1.1"))
 		})
 
 		Context("When the server responds with an error", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/v1/events"),
+						ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
 						ghttp.RespondWith(http.StatusBadRequest, nil),
 					),
 				)
