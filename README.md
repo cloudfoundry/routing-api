@@ -1,6 +1,8 @@
 [![Build Status](https://travis-ci.org/cloudfoundry-incubator/routing-api.svg)](https://travis-ci.org/cloudfoundry-incubator/routing-api)
 
-# CF Routing API Server
+# CF Routing API Server (Experimental)
+
+The initial release of this API server is currently in development and subject to backward incompatible changes.
 
 ## Downloading and Installing
 
