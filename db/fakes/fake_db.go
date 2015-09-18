@@ -59,9 +59,11 @@ type FakeDB struct {
 	disconnectReturns struct {
 		result1 error
 	}
-	WatchRouteChangesStub        func() (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error)
+	WatchRouteChangesStub        func(filter string) (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error)
 	watchRouteChangesMutex       sync.RWMutex
-	watchRouteChangesArgsForCall []struct{}
+	watchRouteChangesArgsForCall []struct {
+		filter string
+	}
 	watchRouteChangesReturns struct {
 		result1 <-chan storeadapter.WatchEvent
 		result2 chan<- bool
@@ -263,12 +265,14 @@ func (fake *FakeDB) DisconnectReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeDB) WatchRouteChanges() (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error) {
+func (fake *FakeDB) WatchRouteChanges(filter string) (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error) {
 	fake.watchRouteChangesMutex.Lock()
-	fake.watchRouteChangesArgsForCall = append(fake.watchRouteChangesArgsForCall, struct{}{})
+	fake.watchRouteChangesArgsForCall = append(fake.watchRouteChangesArgsForCall, struct {
+		filter string
+	}{filter})
 	fake.watchRouteChangesMutex.Unlock()
 	if fake.WatchRouteChangesStub != nil {
-		return fake.WatchRouteChangesStub()
+		return fake.WatchRouteChangesStub(filter)
 	} else {
 		return fake.watchRouteChangesReturns.result1, fake.watchRouteChangesReturns.result2, fake.watchRouteChangesReturns.result3
 	}
@@ -278,6 +282,12 @@ func (fake *FakeDB) WatchRouteChangesCallCount() int {
 	fake.watchRouteChangesMutex.RLock()
 	defer fake.watchRouteChangesMutex.RUnlock()
 	return len(fake.watchRouteChangesArgsForCall)
+}
+
+func (fake *FakeDB) WatchRouteChangesArgsForCall(i int) string {
+	fake.watchRouteChangesMutex.RLock()
+	defer fake.watchRouteChangesMutex.RUnlock()
+	return fake.watchRouteChangesArgsForCall[i].filter
 }
 
 func (fake *FakeDB) WatchRouteChangesReturns(result1 <-chan storeadapter.WatchEvent, result2 chan<- bool, result3 <-chan error) {

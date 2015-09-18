@@ -12,6 +12,7 @@ import (
 )
 
 var _ = Describe("DB", func() {
+
 	Describe("etcd error", func() {
 		var (
 			etcd db.DB
@@ -31,14 +32,25 @@ var _ = Describe("DB", func() {
 	Describe("etcd", func() {
 
 		var (
-			etcd db.DB
-			err  error
+			etcd             db.DB
+			err              error
+			route            db.Route
+			tcpRouteMapping1 db.TcpRouteMapping
 		)
 
 		BeforeEach(func() {
 			etcd, err = db.NewETCD(etcdRunner.NodeURLS(), 10)
 			Expect(err).NotTo(HaveOccurred())
 			etcd.Connect()
+			route = db.Route{
+				Route:   "post_here",
+				Port:    7000,
+				IP:      "1.2.3.4",
+				TTL:     50,
+				LogGuid: "my-guid",
+			}
+
+			tcpRouteMapping1 = db.NewTcpRouteMapping("router-group-guid-002", 52002, "2.3.4.5", 60002)
 		})
 
 		AfterEach(func() {
@@ -47,21 +59,7 @@ var _ = Describe("DB", func() {
 
 		Describe("Http Routes", func() {
 
-			var (
-				route db.Route
-			)
-
-			BeforeEach(func() {
-				route = db.Route{
-					Route:   "post_here",
-					Port:    7000,
-					IP:      "1.2.3.4",
-					TTL:     50,
-					LogGuid: "my-guid",
-				}
-			})
-
-			Describe(".ReadRoutes", func() {
+			Describe("ReadRoutes", func() {
 				It("Returns a empty list of routes", func() {
 					routes, err := etcd.ReadRoutes()
 					Expect(err).NotTo(HaveOccurred())
@@ -151,7 +149,7 @@ var _ = Describe("DB", func() {
 				})
 			})
 
-			Describe(".SaveRoute", func() {
+			Describe("SaveRoute", func() {
 				It("Creates a route if none exist", func() {
 					err := etcd.SaveRoute(route)
 					Expect(err).NotTo(HaveOccurred())
@@ -229,17 +227,21 @@ var _ = Describe("DB", func() {
 				})
 			})
 
-			Describe(".WatchRouteChanges", func() {
+			Describe("WatchRouteChanges with http events", func() {
 				Context("when a route is upserted", func() {
 					It("should return an update watch event", func() {
-						results, _, _ := etcd.WatchRouteChanges()
+						results, _, _ := etcd.WatchRouteChanges(db.HTTP_ROUTE_BASE_KEY)
 
 						err := etcd.SaveRoute(route)
 						Expect(err).NotTo(HaveOccurred())
-
 						event := <-results
 						Expect(event).NotTo(BeNil())
 						Expect(event.Type).To(Equal(storeadapter.UpdateEvent))
+
+						By("when tcp route is upserted")
+						err = etcd.SaveTcpRouteMapping(tcpRouteMapping1)
+						Expect(err).NotTo(HaveOccurred())
+						Consistently(results).ShouldNot(Receive())
 					})
 				})
 
@@ -248,7 +250,7 @@ var _ = Describe("DB", func() {
 						err := etcd.SaveRoute(route)
 						Expect(err).NotTo(HaveOccurred())
 
-						results, _, _ := etcd.WatchRouteChanges()
+						results, _, _ := etcd.WatchRouteChanges(db.HTTP_ROUTE_BASE_KEY)
 
 						err = etcd.DeleteRoute(route)
 						Expect(err).NotTo(HaveOccurred())
@@ -264,7 +266,7 @@ var _ = Describe("DB", func() {
 						route.TTL = 1
 						err := etcd.SaveRoute(route)
 						Expect(err).NotTo(HaveOccurred())
-						results, _, _ := etcd.WatchRouteChanges()
+						results, _, _ := etcd.WatchRouteChanges(db.HTTP_ROUTE_BASE_KEY)
 
 						time.Sleep(1 * time.Second)
 						event := <-results
@@ -274,7 +276,7 @@ var _ = Describe("DB", func() {
 				})
 			})
 
-			Describe(".DeleteRoute", func() {
+			Describe("DeleteRoute", func() {
 				Context("when a route exists", func() {
 					BeforeEach(func() {
 						err := etcd.SaveRoute(route)
@@ -309,6 +311,7 @@ var _ = Describe("DB", func() {
 			Describe("SaveTcpRouteMapping", func() {
 				It("Creates a mapping if none exist", func() {
 					err := etcd.SaveTcpRouteMapping(tcpMapping)
+
 					Expect(err).NotTo(HaveOccurred())
 
 					key := fmt.Sprintf("%s/%s/%d/%s:%d", db.TCP_MAPPING_BASE_KEY, "router-group-guid-001", 52000, "1.2.3.4", 60000)
@@ -342,6 +345,28 @@ var _ = Describe("DB", func() {
 						Expect(tcpMappings).To(ContainElement(tcpMapping))
 					})
 				})
+			})
+
+			Describe("WatchRouteChanges with tcp events", func() {
+
+				Context("when a tcp route is upserted", func() {
+					It("should return an update watch event", func() {
+						results, _, _ := etcd.WatchRouteChanges(db.TCP_MAPPING_BASE_KEY)
+
+						err = etcd.SaveTcpRouteMapping(tcpRouteMapping1)
+						Expect(err).NotTo(HaveOccurred())
+
+						event := <-results
+						Expect(event).NotTo(BeNil())
+						Expect(event.Type).To(Equal(storeadapter.UpdateEvent))
+
+						By("when http route is upserted")
+						err := etcd.SaveRoute(route)
+						Expect(err).NotTo(HaveOccurred())
+						Consistently(results).ShouldNot(Receive())
+					})
+				})
+
 			})
 
 		})

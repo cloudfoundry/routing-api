@@ -25,6 +25,7 @@ type Client interface {
 	TcpRouteMappings() ([]db.TcpRouteMapping, error)
 
 	SubscribeToEvents() (EventSource, error)
+	SubscribeToTcpEvents() (TcpEventSource, error)
 }
 
 func NewClient(url string) Client {
@@ -79,8 +80,24 @@ func (c *client) TcpRouteMappings() ([]db.TcpRouteMapping, error) {
 }
 
 func (c *client) SubscribeToEvents() (EventSource, error) {
+	eventSource, err := c.doSubscribe(EventStreamRoute)
+	if err != nil {
+		return nil, err
+	}
+	return NewEventSource(eventSource), nil
+}
+
+func (c *client) SubscribeToTcpEvents() (TcpEventSource, error) {
+	eventSource, err := c.doSubscribe(EventStreamTcpRoute)
+	if err != nil {
+		return nil, err
+	}
+	return NewTcpEventSource(eventSource), nil
+}
+
+func (c *client) doSubscribe(routeName string) (RawEventSource, error) {
 	eventSource, err := sse.Connect(c.streamingHTTPClient, time.Second, func() *http.Request {
-		request, err := c.reqGen.CreateRequest(EventStreamRoute, nil, nil)
+		request, err := c.reqGen.CreateRequest(routeName, nil, nil)
 		request.Header.Add("Authorization", "bearer "+c.authToken)
 		if err != nil {
 			panic(err) // totally shouldn't happen
@@ -93,7 +110,7 @@ func (c *client) SubscribeToEvents() (EventSource, error) {
 		return nil, err
 	}
 
-	return NewEventSource(eventSource), nil
+	return eventSource, nil
 }
 
 func (c *client) createRequest(requestName string, params rata.Params, queryParams url.Values, request interface{}) (*http.Request, error) {

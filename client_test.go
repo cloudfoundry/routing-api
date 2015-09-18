@@ -24,6 +24,7 @@ var _ = Describe("Client", func() {
 		TCP_ROUTES_API_URL        = "/routing/v1/tcp_routes"
 		TCP_ROUTER_GROUPS_API_URL = "/routing/v1/router_groups"
 		EVENTS_SSE_URL            = "/routing/v1/events"
+		TCP_EVENTS_SSE_URL        = "/routing/v1/tcp_routes/events"
 	)
 
 	var server *ghttp.Server
@@ -584,6 +585,85 @@ var _ = Describe("Client", func() {
 			It("propagates the error to the client", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(eventSource).To(BeNil())
+			})
+		})
+	})
+
+	Context("SubscribeToTcpEvents", func() {
+		var (
+			tcpEventSource routing_api.TcpEventSource
+			err            error
+			event          sse.Event
+			tcpRoute1      db.TcpRouteMapping
+		)
+
+		BeforeEach(func() {
+			tcpRoute1 = db.NewTcpRouteMapping("rguid1", 52000, "1.1.1.1", 60000)
+
+			data, _ := json.Marshal(tcpRoute1)
+			event = sse.Event{
+				ID:   "1",
+				Name: "Upsert",
+				Data: data,
+			}
+
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", TCP_EVENTS_SSE_URL),
+					ghttp.VerifyHeader(http.Header{
+						"Authorization": []string{"bearer"},
+					}),
+					func(w http.ResponseWriter, req *http.Request) {
+						event.Write(w)
+					},
+				),
+			)
+		})
+
+		JustBeforeEach(func() {
+			tcpEventSource, err = client.SubscribeToTcpEvents()
+		})
+
+		It("Starts an SSE connection to the server", func() {
+			Expect(server.ReceivedRequests()).Should(HaveLen(1))
+		})
+
+		It("Streams events from the server", func() {
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tcpEventSource).ToNot(BeNil())
+
+			ev, err := tcpEventSource.Next()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(ev.TcpRouteMapping).To(Equal(tcpRoute1))
+			Expect(ev.Action).To(Equal("Upsert"))
+		})
+
+		It("logs the request", func() {
+			r, err := ioutil.ReadAll(stdout)
+			log := string(r)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(log).To(ContainSubstring("REQUEST: "))
+			Expect(log).To(ContainSubstring("GET " + TCP_EVENTS_SSE_URL + " HTTP/1.1"))
+		})
+
+		Context("When the server responds with an error", func() {
+			BeforeEach(func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", TCP_EVENTS_SSE_URL),
+						ghttp.RespondWith(http.StatusBadRequest, nil),
+					),
+				)
+			})
+
+			JustBeforeEach(func() {
+				tcpEventSource, err = client.SubscribeToTcpEvents()
+			})
+
+			It("propagates the error to the client", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(tcpEventSource).To(BeNil())
 			})
 		})
 	})

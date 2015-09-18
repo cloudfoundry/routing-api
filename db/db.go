@@ -21,7 +21,7 @@ type DB interface {
 
 	Connect() error
 	Disconnect() error
-	WatchRouteChanges() (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error)
+	WatchRouteChanges(filter string) (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error)
 }
 
 type RouterGroupType string
@@ -42,12 +42,12 @@ type Route struct {
 }
 
 type TcpRouteMapping struct {
-	TcpRoute tcpRoute `json:"route"`
+	TcpRoute TcpRoute `json:"route"`
 	HostPort uint16   `json:"host_port"`
 	HostIP   string   `json:"host_ip"`
 }
 
-type tcpRoute struct {
+type TcpRoute struct {
 	RouterGroupGuid string `json:"router_group_guid"`
 	ExternalPort    uint16 `json:"external_port"`
 }
@@ -117,8 +117,8 @@ func (e *etcd) DeleteRoute(route Route) error {
 	return err
 }
 
-func (e *etcd) WatchRouteChanges() (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error) {
-	return e.storeAdapter.Watch("/routes")
+func (e *etcd) WatchRouteChanges(filter string) (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error) {
+	return e.storeAdapter.Watch(filter)
 }
 
 func generateKey(route Route) string {
@@ -163,7 +163,7 @@ func generateTcpRouteMappingKey(tcpMapping TcpRouteMapping) string {
 
 func NewTcpRouteMapping(routerGroupGuid string, externalPort uint16, hostIP string, hostPort uint16) TcpRouteMapping {
 	return TcpRouteMapping{
-		TcpRoute: tcpRoute{RouterGroupGuid: routerGroupGuid, ExternalPort: externalPort},
+		TcpRoute: TcpRoute{RouterGroupGuid: routerGroupGuid, ExternalPort: externalPort},
 		HostPort: hostPort,
 		HostIP:   hostIP,
 	}

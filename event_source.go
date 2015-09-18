@@ -33,6 +33,26 @@ func NewEventSource(raw RawEventSource) EventSource {
 	}
 }
 
+type TcpEventSource interface {
+	Next() (TcpEvent, error)
+	Close() error
+}
+
+type TcpEvent struct {
+	TcpRouteMapping db.TcpRouteMapping
+	Action          string
+}
+
+type tcpEventSource struct {
+	rawEventSource RawEventSource
+}
+
+func NewTcpEventSource(raw RawEventSource) TcpEventSource {
+	return &tcpEventSource{
+		rawEventSource: raw,
+	}
+}
+
 func (e *eventSource) Next() (Event, error) {
 	rawEvent, err := e.rawEventSource.Next()
 	if err != nil {
@@ -50,7 +70,31 @@ func (e *eventSource) Next() (Event, error) {
 }
 
 func (e *eventSource) Close() error {
-	err := e.rawEventSource.Close()
+	return doClose(e.rawEventSource)
+}
+
+func (e *tcpEventSource) Next() (TcpEvent, error) {
+	rawEvent, err := e.rawEventSource.Next()
+	if err != nil {
+		return TcpEvent{}, err
+	}
+
+	trace.DumpJSON("EVENT", rawEvent)
+
+	event, err := convertRawToTcpEvent(rawEvent)
+	if err != nil {
+		return TcpEvent{}, err
+	}
+
+	return event, nil
+}
+
+func (e *tcpEventSource) Close() error {
+	return doClose(e.rawEventSource)
+}
+
+func doClose(rawEventSource RawEventSource) error {
+	err := rawEventSource.Close()
 	if err != nil {
 		return err
 	}
@@ -67,4 +111,15 @@ func convertRawEvent(event sse.Event) (Event, error) {
 	}
 
 	return Event{Action: event.Name, Route: route}, nil
+}
+
+func convertRawToTcpEvent(event sse.Event) (TcpEvent, error) {
+	var route db.TcpRouteMapping
+
+	err := json.Unmarshal(event.Data, &route)
+	if err != nil {
+		return TcpEvent{}, err
+	}
+
+	return TcpEvent{Action: event.Name, TcpRouteMapping: route}, nil
 }

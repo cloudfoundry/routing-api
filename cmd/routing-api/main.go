@@ -175,6 +175,7 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 		routing_api.ListRouterGroups:      route(routeGroupsHandler.ListRouterGroups),
 		routing_api.UpsertTcpRouteMapping: route(tcpMappingsHandler.Upsert),
 		routing_api.ListTcpRouteMapping:   route(tcpMappingsHandler.List),
+		routing_api.EventStreamTcpRoute:   route(eventStreamHandler.TcpEventStream),
 	}
 
 	handler, err := rata.NewRouter(routing_api.Routes, actions)

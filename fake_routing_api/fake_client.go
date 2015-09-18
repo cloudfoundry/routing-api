@@ -66,6 +66,13 @@ type FakeClient struct {
 		result1 routing_api.EventSource
 		result2 error
 	}
+	SubscribeToTcpEventsStub        func() (routing_api.TcpEventSource, error)
+	subscribeToTcpEventsMutex       sync.RWMutex
+	subscribeToTcpEventsArgsForCall []struct{}
+	subscribeToTcpEventsReturns struct {
+		result1 routing_api.TcpEventSource
+		result2 error
+	}
 }
 
 func (fake *FakeClient) SetToken(arg1 string) {
@@ -283,6 +290,31 @@ func (fake *FakeClient) SubscribeToEventsReturns(result1 routing_api.EventSource
 	fake.SubscribeToEventsStub = nil
 	fake.subscribeToEventsReturns = struct {
 		result1 routing_api.EventSource
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) SubscribeToTcpEvents() (routing_api.TcpEventSource, error) {
+	fake.subscribeToTcpEventsMutex.Lock()
+	fake.subscribeToTcpEventsArgsForCall = append(fake.subscribeToTcpEventsArgsForCall, struct{}{})
+	fake.subscribeToTcpEventsMutex.Unlock()
+	if fake.SubscribeToTcpEventsStub != nil {
+		return fake.SubscribeToTcpEventsStub()
+	} else {
+		return fake.subscribeToTcpEventsReturns.result1, fake.subscribeToTcpEventsReturns.result2
+	}
+}
+
+func (fake *FakeClient) SubscribeToTcpEventsCallCount() int {
+	fake.subscribeToTcpEventsMutex.RLock()
+	defer fake.subscribeToTcpEventsMutex.RUnlock()
+	return len(fake.subscribeToTcpEventsArgsForCall)
+}
+
+func (fake *FakeClient) SubscribeToTcpEventsReturns(result1 routing_api.TcpEventSource, result2 error) {
+	fake.SubscribeToTcpEventsStub = nil
+	fake.subscribeToTcpEventsReturns = struct {
+		result1 routing_api.TcpEventSource
 		result2 error
 	}{result1, result2}
 }

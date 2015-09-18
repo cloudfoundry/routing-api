@@ -18,13 +18,14 @@ var _ = Describe("Metrics", func() {
 	Describe("Watch", func() {
 
 		var (
-			database    *fake_db.FakeDB
-			reporter    *MetricsReporter
-			stats       *fake_statsd.FakePartialStatsdClient
-			resultsChan chan storeadapter.WatchEvent
-			sigChan     chan os.Signal
-			readyChan   chan struct{}
-			tickChan    chan time.Time
+			database       *fake_db.FakeDB
+			reporter       *MetricsReporter
+			stats          *fake_statsd.FakePartialStatsdClient
+			resultsChan    chan storeadapter.WatchEvent
+			tcpResultsChan chan storeadapter.WatchEvent
+			sigChan        chan os.Signal
+			readyChan      chan struct{}
+			tickChan       chan time.Time
 		)
 
 		BeforeEach(func() {
@@ -37,13 +38,26 @@ var _ = Describe("Metrics", func() {
 			sigChan = make(chan os.Signal, 1)
 			readyChan = make(chan struct{}, 1)
 			resultsChan = make(chan storeadapter.WatchEvent, 1)
-			database.WatchRouteChangesReturns(resultsChan, nil, nil)
+			tcpResultsChan = make(chan storeadapter.WatchEvent, 1)
+			database.WatchRouteChangesStub = func(filter string) (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error) {
+				if filter == db.HTTP_ROUTE_BASE_KEY {
+					return resultsChan, nil, nil
+				} else {
+					return tcpResultsChan, nil, nil
+				}
+			}
 			database.ReadRoutesReturns([]db.Route{
 				db.Route{},
 				db.Route{},
 				db.Route{},
 				db.Route{},
 				db.Route{},
+			}, nil)
+
+			database.ReadTcpRouteMappingsReturns([]db.TcpRouteMapping{
+				db.TcpRouteMapping{},
+				db.TcpRouteMapping{},
+				db.TcpRouteMapping{},
 			}, nil)
 		})
 
@@ -55,67 +69,94 @@ var _ = Describe("Metrics", func() {
 			sigChan <- nil
 		})
 
-		It("emits total_subscriptions on start", func() {
-			Eventually(stats.GaugeCallCount).Should(Equal(1))
+		verifyGaugeCall := func(statKey string, expectedCount int64, expectedRate float32, index int) {
+			totalStat, count, rate := stats.GaugeArgsForCall(index)
+			Expect(totalStat).To(Equal(statKey))
+			Expect(count).To(BeNumerically("==", expectedCount))
+			Expect(rate).To(BeNumerically("==", expectedRate))
+		}
 
-			totalStat, count, rate := stats.GaugeArgsForCall(0)
-			Expect(totalStat).To(Equal("total_subscriptions"))
-			Expect(count).To(BeNumerically("==", 0))
-			Expect(rate).To(BeNumerically("==", 1.0))
+		verifyGaugeDeltaCall := func(statKey string, expectedCount int64, expectedRate float32, index int) {
+			totalStat, count, rate := stats.GaugeDeltaArgsForCall(index)
+			Expect(totalStat).To(Equal(statKey))
+			Expect(count).To(BeNumerically("==", expectedCount))
+			Expect(rate).To(BeNumerically("==", expectedRate))
+		}
+
+		It("emits total_subscriptions on start", func() {
+			Eventually(stats.GaugeCallCount).Should(Equal(2))
+			verifyGaugeCall("total_subscriptions", 0, 1.0, 0)
+			verifyGaugeCall("total_tcp_subscriptions", 0, 1.0, 1)
 		})
 
 		It("periodically sends a delta of 0 to total_subscriptions", func() {
 			tickChan <- time.Now()
 
-			Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
-
-			totalStat, count, rate := stats.GaugeDeltaArgsForCall(0)
-			Expect(totalStat).To(Equal("total_subscriptions"))
-			Expect(count).To(BeNumerically("==", 0))
-			Expect(rate).To(BeNumerically("==", 1.0))
+			Eventually(stats.GaugeDeltaCallCount).Should(Equal(2))
+			verifyGaugeDeltaCall("total_subscriptions", 0, 1.0, 0)
+			verifyGaugeDeltaCall("total_tcp_subscriptions", 0, 1.0, 1)
 		})
 
 		It("periodically gets total routes", func() {
 			tickChan <- time.Now()
 
-			Eventually(stats.GaugeCallCount).Should(Equal(2))
+			Eventually(stats.GaugeCallCount).Should(Equal(4))
 
-			totalStat, count, rate := stats.GaugeArgsForCall(1)
-			Expect(totalStat).To(Equal("total_routes"))
-			Expect(count).To(BeNumerically("==", 5))
-			Expect(rate).To(BeNumerically("==", 1.0))
+			verifyGaugeCall("total_routes", 5, 1.0, 2)
+			verifyGaugeCall("total_tcp_routes", 3, 1.0, 3)
 		})
 
 		Context("When a create event happens", func() {
-			BeforeEach(func() {
-				storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-				resultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode}
+			Context("when event is for http route", func() {
+				BeforeEach(func() {
+					storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
+					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode}
+				})
+
+				It("increments the gauge", func() {
+					Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
+					verifyGaugeDeltaCall("total_routes", 1, 1.0, 0)
+				})
 			})
 
-			It("increments the gauge", func() {
-				Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
+			Context("when event is for tcp route", func() {
+				BeforeEach(func() {
+					storeNode := storeadapter.StoreNode{Value: []byte("invaluable-string")}
+					tcpResultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode}
+				})
 
-				updatedStat, count, rate := stats.GaugeDeltaArgsForCall(0)
-				Expect(updatedStat).To(Equal("total_routes"))
-				Expect(count).To(BeNumerically("==", 1))
-				Expect(rate).To(BeNumerically("==", 1.0))
+				It("increments the gauge", func() {
+					Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
+					verifyGaugeDeltaCall("total_tcp_routes", 1, 1.0, 0)
+				})
 			})
 		})
 
 		Context("When a update event happens", func() {
-			BeforeEach(func() {
-				storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-				prevNode := storeadapter.StoreNode{Value: []byte("older-valuable-string")}
-				resultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode, PrevNode: &prevNode}
+			Context("when event is for http route", func() {
+				BeforeEach(func() {
+					storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
+					prevNode := storeadapter.StoreNode{Value: []byte("older-valuable-string")}
+					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode, PrevNode: &prevNode}
+				})
+
+				It("doesn't modify the gauge", func() {
+					Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
+					verifyGaugeDeltaCall("total_routes", 0, 1.0, 0)
+				})
 			})
 
-			It("doesn't modify the gauge", func() {
-				Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
+			Context("when event is for tcp route", func() {
+				BeforeEach(func() {
+					storeNode := storeadapter.StoreNode{Value: []byte("invaluable-string")}
+					prevNode := storeadapter.StoreNode{Value: []byte("older-invaluable-string")}
+					tcpResultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode, PrevNode: &prevNode}
+				})
 
-				updatedStat, count, rate := stats.GaugeDeltaArgsForCall(0)
-				Expect(updatedStat).To(Equal("total_routes"))
-				Expect(count).To(BeNumerically("==", 0))
-				Expect(rate).To(BeNumerically("==", 1.0))
+				It("doesn't modify the gauge", func() {
+					Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
+					verifyGaugeDeltaCall("total_tcp_routes", 0, 1.0, 0)
+				})
 			})
 		})
 
@@ -136,18 +177,28 @@ var _ = Describe("Metrics", func() {
 		})
 
 		Context("When a delete event happens", func() {
-			BeforeEach(func() {
-				storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-				resultsChan <- storeadapter.WatchEvent{Type: storeadapter.DeleteEvent, Node: &storeNode}
+			Context("when event is for http route", func() {
+				BeforeEach(func() {
+					storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
+					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.DeleteEvent, Node: &storeNode}
+				})
+
+				It("decrements the gauge", func() {
+					Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
+					verifyGaugeDeltaCall("total_routes", -1, 1.0, 0)
+				})
 			})
 
-			It("decrements the gauge", func() {
-				Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
+			Context("when event is for tcp route", func() {
+				BeforeEach(func() {
+					storeNode := storeadapter.StoreNode{Value: []byte("invaluable-string")}
+					tcpResultsChan <- storeadapter.WatchEvent{Type: storeadapter.DeleteEvent, Node: &storeNode}
+				})
 
-				updatedStat, count, rate := stats.GaugeDeltaArgsForCall(0)
-				Expect(updatedStat).To(Equal("total_routes"))
-				Expect(count).To(BeNumerically("==", -1))
-				Expect(rate).To(BeNumerically("==", 1.0))
+				It("decrements the gauge", func() {
+					Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
+					verifyGaugeDeltaCall("total_tcp_routes", -1, 1.0, 0)
+				})
 			})
 		})
 	})

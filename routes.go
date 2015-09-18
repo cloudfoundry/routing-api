@@ -10,6 +10,7 @@ const (
 	ListRouterGroups      = "ListRouterGroups"
 	UpsertTcpRouteMapping = "UpsertTcpRouteMapping"
 	ListTcpRouteMapping   = "ListTcpRouteMapping"
+	EventStreamTcpRoute   = "TcpRouteEventStream"
 )
 
 var Routes = rata.Routes{
@@ -21,4 +22,5 @@ var Routes = rata.Routes{
 
 	{Path: "/routing/v1/tcp_routes/create", Method: "POST", Name: UpsertTcpRouteMapping},
 	{Path: "/routing/v1/tcp_routes", Method: "GET", Name: ListTcpRouteMapping},
+	{Path: "/routing/v1/tcp_routes/events", Method: "GET", Name: EventStreamTcpRoute},
 }
