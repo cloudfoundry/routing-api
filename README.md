@@ -269,6 +269,11 @@ To subscribe to route changes:
 curl -vvv -H "Authorization: bearer [token with uaa routing.routes.read scope]" http://127.0.0.1:8080/routing/v1/events
 ```
 
+To subscribe to tcp route changes:
+```sh
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.read scope]" http://127.0.0.1:8080/routing/v1/tcp_routes/events
+```
+
 To list available Router Groups:
 ```sh
 curl -vvv -H "Authorization: bearer [token with uaa routing.router_groups.read scope]" http://127.0.0.1:8080/routing/v1/router_groups
