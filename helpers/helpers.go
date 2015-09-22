@@ -10,7 +10,7 @@ import (
 
 const (
 	DefaultRouterGroupGuid = "bad25cff-9332-48a6-8603-b619858e7992"
-	DefaultRouterGroupName = "default_tcp"
+	DefaultRouterGroupName = "default-tcp"
 	DefaultRouterGroupType = "tcp"
 )
 

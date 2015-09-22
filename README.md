@@ -281,7 +281,7 @@ curl -vvv -H "Authorization: bearer [token with uaa routing.router_groups.read s
 Sample response:
 [{
     "guid": "f7392031-a488-4890-8835-c4a038a3bded",
-    "name": "default_tcp",
+    "name": "default-tcp",
     "features": [
         "tcp"
     ]
