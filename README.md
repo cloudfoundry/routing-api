@@ -236,7 +236,7 @@ curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]"
 To add a tcp route to the API server:
 
 ```sh
-curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X POST http://127.0.0.1:8080/routing/v1/tcp_routes/create -d '[{"route":{"router_group_guid": "tcp-default", "external_port": 5200}, "host_ip": "10.1.1.12", "host_port": 60000}]'
+curl -vvv -H "Authorization: bearer [token with uaa routing.routes.write scope]" -X POST http://127.0.0.1:8080/routing/v1/tcp_routes/create -d '[{"route":{"router_group_guid": "tcp-default", "port": 5200}, "backend_ip": "10.1.1.12", "backend_port": 60000}]'
 ```
 
 To delete a route:
@@ -257,9 +257,9 @@ curl -vvv -H "Authorization: bearer [token with uaa routing.routes.read scope]" 
 Sample response:
 [
   {
-    "route": {"router_group_guid": "tcp-default", "external_port": 5200},
-    "host_ip": "10.1.1.12",
-    "host_port": 60000
+    "route": {"router_group_guid": "tcp-default", "port": 5200},
+    "backend_ip": "10.1.1.12",
+    "backend_port": 60000
   }
 ]
 ```

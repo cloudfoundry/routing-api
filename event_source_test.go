@@ -144,7 +144,7 @@ var _ = Describe("EventSource", func() {
 					rawEvent := sse.Event{
 						ID:    "1",
 						Name:  "Test",
-						Data:  []byte(`{"route": {"router_group_guid": "rguid1", "external_port":52000}, "host_port":60000,"host_ip":"1.1.1.1"}`),
+						Data:  []byte(`{"route": {"router_group_guid": "rguid1", "port":52000}, "backend_port":60000,"backend_ip":"1.1.1.1"}`),
 						Retry: 1,
 					}
 					expectedJSON, _ := json.Marshal(rawEvent)
@@ -163,7 +163,7 @@ var _ = Describe("EventSource", func() {
 						rawEvent := sse.Event{
 							ID:    "1",
 							Name:  "Test",
-							Data:  []byte(`{"route": {"router_group_guid": "rguid1", "external_port":52000}, "host_port":60000,"host_ip":"1.1.1.1"}`),
+							Data:  []byte(`{"route": {"router_group_guid": "rguid1", "port":52000}, "backend_port":60000,"backend_ip":"1.1.1.1"}`),
 							Retry: 1,
 						}
 

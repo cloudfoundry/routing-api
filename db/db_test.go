@@ -319,9 +319,9 @@ var _ = Describe("DB", func() {
 					node, err := etcdClient.Get(key)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(node.Value).To(MatchJSON(`{
-							"route": {"router_group_guid":"router-group-guid-001", "external_port":52000},
-							"host_ip": "1.2.3.4",
-							"host_port": 60000
+							"route": {"router_group_guid":"router-group-guid-001", "port":52000},
+							"backend_ip": "1.2.3.4",
+							"backend_port": 60000
 						}`))
 				})
 			})

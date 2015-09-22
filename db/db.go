@@ -43,13 +43,13 @@ type Route struct {
 
 type TcpRouteMapping struct {
 	TcpRoute TcpRoute `json:"route"`
-	HostPort uint16   `json:"host_port"`
-	HostIP   string   `json:"host_ip"`
+	HostPort uint16   `json:"backend_port"`
+	HostIP   string   `json:"backend_ip"`
 }
 
 type TcpRoute struct {
 	RouterGroupGuid string `json:"router_group_guid"`
-	ExternalPort    uint16 `json:"external_port"`
+	ExternalPort    uint16 `json:"port"`
 }
 
 const (
@@ -156,7 +156,7 @@ func (e *etcd) SaveTcpRouteMapping(tcpMapping TcpRouteMapping) error {
 
 func generateTcpRouteMappingKey(tcpMapping TcpRouteMapping) string {
 	// Generating keys following this pattern
-	// /v1/tcp_routes/router_groups/{router_guid}/{external_port}/{host-ip}:{host-port}
+	// /v1/tcp_routes/router_groups/{router_guid}/{port}/{host-ip}:{host-port}
 	return fmt.Sprintf("%s/%s/%d/%s:%d", TCP_MAPPING_BASE_KEY,
 		tcpMapping.TcpRoute.RouterGroupGuid, tcpMapping.TcpRoute.ExternalPort, tcpMapping.HostIP, tcpMapping.HostPort)
 }
