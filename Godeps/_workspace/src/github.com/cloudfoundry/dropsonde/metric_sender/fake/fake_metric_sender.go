@@ -64,6 +64,14 @@ func (fms *FakeMetricSender) SendContainerMetric(applicationId string, instanceI
 	return nil
 }
 
+func (fms *FakeMetricSender) HasValue(name string) bool {
+	fms.RLock()
+	defer fms.RUnlock()
+
+	_, exists := fms.values[name]
+	return exists
+}
+
 func (fms *FakeMetricSender) GetValue(name string) Metric {
 	fms.RLock()
 	defer fms.RUnlock()
@@ -83,4 +91,13 @@ func (fms *FakeMetricSender) GetContainerMetric(applicationId string) ContainerM
 	defer fms.RUnlock()
 
 	return fms.containerMetrics[applicationId]
+}
+
+func (fms *FakeMetricSender) Reset() {
+	fms.Lock()
+	defer fms.Unlock()
+
+	fms.counters = make(map[string]uint64)
+	fms.values = make(map[string]Metric)
+	fms.containerMetrics = make(map[string]ContainerMetric)
 }

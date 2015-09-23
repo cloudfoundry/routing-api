@@ -77,3 +77,15 @@ func TestHMACSign(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkHS256Signing(b *testing.B) {
+	benchmarkSigning(b, jwt.SigningMethodHS256, hmacTestKey)
+}
+
+func BenchmarkHS384Signing(b *testing.B) {
+	benchmarkSigning(b, jwt.SigningMethodHS384, hmacTestKey)
+}
+
+func BenchmarkHS512Signing(b *testing.B) {
+	benchmarkSigning(b, jwt.SigningMethodHS512, hmacTestKey)
+}

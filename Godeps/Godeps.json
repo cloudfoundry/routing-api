@@ -11,12 +11,12 @@
 		},
 		{
 			"ImportPath": "github.com/cactus/go-statsd-client/statsd",
-			"Comment": "v2.0.0-30-gdc93b85",
-			"Rev": "dc93b8587d799a204e96175505fff9678a8ec3e1"
+			"Comment": "v2.0.1-4-g6fa055a",
+			"Rev": "6fa055a7b594287657e95f3b20f11baa8bbc33f9"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/candiedyaml",
-			"Rev": "5f3b3579b3dc360c8ad3f86fe9e59e58c5652d10"
+			"Rev": "29b4d9cda9fd156adea631d790c95d37ee6ab8e6"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/cf-debug-server",
@@ -36,7 +36,7 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/dropsonde",
-			"Rev": "0afd306c305053e4cf1a90e9b58eb24cb1f126b5"
+			"Rev": "d78de6439d41efc5211e2d048009e14fdbf0537f"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gosteno",
@@ -53,13 +53,13 @@
 		},
 		{
 			"ImportPath": "github.com/coreos/go-etcd/etcd",
-			"Comment": "v2.0.0-7-g73a8ef7",
-			"Rev": "73a8ef737e8ea002281a28b4cb92a1de121ad4c6"
+			"Comment": "v2.0.0-34-gde3514f",
+			"Rev": "de3514f25635bbfb024fdaf2a8d5f67378492675"
 		},
 		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",
-			"Comment": "v2.2.0-15-g61124b6",
-			"Rev": "61124b62ad244d655f87d944aefaa2ae5a0d2f16"
+			"Comment": "v2.3.0-6-gf62f64e",
+			"Rev": "f62f64ea222e5e6d6d86421b5507b0862a3ebf7f"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/proto",
@@ -76,16 +76,16 @@
 		},
 		{
 			"ImportPath": "github.com/onsi/gomega",
-			"Comment": "v1.0-33-ge7b2cd9",
-			"Rev": "e7b2cd96b5633fbc5f0c221159a5c1e85323f770"
+			"Comment": "v1.0-55-g6331bf5",
+			"Rev": "6331bf5a5b5e7a832348789eb3cedff7a6917103"
 		},
 		{
 			"ImportPath": "github.com/pivotal-golang/clock",
-			"Rev": "270608bba0223b4ee5e0ac06f85e7964378f57a3"
+			"Rev": "240d07df7a54b9fa7dc6adb66f3730bad8a77dfa"
 		},
 		{
 			"ImportPath": "github.com/pivotal-golang/lager",
-			"Rev": "09a71f6eb2dcc1c2335e37ceb78a91c6f618d561"
+			"Rev": "be52ae622d25728f17aac7330e4565201c19155c"
 		},
 		{
 			"ImportPath": "github.com/tedsuo/ifrit",

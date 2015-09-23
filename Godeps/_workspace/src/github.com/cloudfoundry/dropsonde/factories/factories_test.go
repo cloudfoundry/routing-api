@@ -5,21 +5,29 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/cloudfoundry/dropsonde/events"
-	"github.com/cloudfoundry/dropsonde/factories"
-	"github.com/gogo/protobuf/proto"
 	"net/http"
+
+	"github.com/cloudfoundry/dropsonde/factories"
+	"github.com/cloudfoundry/sonde-go/events"
+	"github.com/gogo/protobuf/proto"
 )
 
 var _ = Describe("HTTP event creation", func() {
-	var applicationId *uuid.UUID
-	var requestId *uuid.UUID
-	var req *http.Request
+	var (
+		applicationId *uuid.UUID
+		requestId     *uuid.UUID
+		req           *http.Request
+		reqMethod     string
+	)
 
 	BeforeEach(func() {
 		applicationId, _ = uuid.NewV4()
 		requestId, _ = uuid.NewV4()
-		req, _ = http.NewRequest("GET", "http://foo.example.com/", nil)
+		reqMethod = "GET"
+	})
+
+	JustBeforeEach(func() {
+		req, _ = http.NewRequest(reqMethod, "http://foo.example.com/", nil)
 
 		req.RemoteAddr = "127.0.0.1"
 		req.Header.Set("User-Agent", "our-testing-client")
@@ -78,14 +86,22 @@ var _ = Describe("HTTP event creation", func() {
 				Expect(startEvent.GetInstanceId()).To(Equal("fake-id"))
 			})
 		})
+
+		Context("with other HTTP methods", func() {
+			BeforeEach(func() {
+				reqMethod = "PATCH"
+			})
+
+			It("sends the other method through", func() {
+				startEvent := factories.NewHttpStart(req, events.PeerType_Server, requestId)
+				Expect(startEvent.GetMethod()).To(Equal(events.Method_PATCH))
+			})
+		})
 	})
 
 	Describe("NewHttpStop", func() {
-		BeforeEach(func() {
-			req.Header.Set("X-CF-ApplicationID", applicationId.String())
-		})
-
 		It("should set appropriate fields", func() {
+			req.Header.Set("X-CF-ApplicationID", applicationId.String())
 			expectedStopEvent := &events.HttpStop{
 				ApplicationId: factories.NewUUID(applicationId),
 				RequestId:     factories.NewUUID(requestId),

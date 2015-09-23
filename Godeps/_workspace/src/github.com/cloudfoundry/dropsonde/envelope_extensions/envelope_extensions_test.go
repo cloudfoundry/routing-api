@@ -2,7 +2,7 @@ package envelope_extensions_test
 
 import (
 	"github.com/cloudfoundry/dropsonde/envelope_extensions"
-	"github.com/cloudfoundry/dropsonde/events"
+	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
 
 	. "github.com/onsi/ginkgo"
@@ -66,16 +66,6 @@ var _ = Describe("EnvelopeExtensions", func() {
 				}
 				appId := envelope_extensions.GetAppId(envelope)
 				Expect(appId).To(Equal("test-app-id"))
-			})
-		})
-
-		Context("Heartbeat", func() {
-			It("returns the system app ID", func() {
-				envelope := &events.Envelope{
-					EventType: events.Envelope_Heartbeat.Enum(),
-				}
-				appId := envelope_extensions.GetAppId(envelope)
-				Expect(appId).To(Equal(envelope_extensions.SystemAppId))
 			})
 		})
 

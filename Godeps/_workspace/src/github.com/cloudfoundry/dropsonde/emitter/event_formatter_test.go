@@ -5,8 +5,8 @@ import (
 
 	"time"
 
-	"github.com/cloudfoundry/dropsonde/events"
 	"github.com/cloudfoundry/dropsonde/factories"
+	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/nu7hatch/gouuid"
 
@@ -24,13 +24,6 @@ var _ = Describe("EventFormatter", func() {
 
 		BeforeEach(func() {
 			origin = "testEventFormatter/42"
-		})
-
-		It("works with dropsonde status (Heartbeat) events", func() {
-			statusEvent := &events.Heartbeat{SentCount: proto.Uint64(1), ErrorCount: proto.Uint64(0)}
-			envelope, _ := emitter.Wrap(statusEvent, origin)
-			Expect(envelope.GetEventType()).To(Equal(events.Envelope_Heartbeat))
-			Expect(envelope.GetHeartbeat()).To(Equal(statusEvent))
 		})
 
 		It("works with HttpStart events", func() {
@@ -65,6 +58,29 @@ var _ = Describe("EventFormatter", func() {
 			envelope, _ := emitter.Wrap(testEvent, origin)
 			Expect(envelope.GetEventType()).To(Equal(events.Envelope_CounterEvent))
 			Expect(envelope.GetCounterEvent()).To(Equal(testEvent))
+		})
+
+		It("works with HttpStartStop events", func() {
+			testEvent := &events.HttpStartStop{
+				StartTimestamp: proto.Int64(200),
+				StopTimestamp:  proto.Int64(500),
+				RequestId: &events.UUID{
+					Low:  proto.Uint64(200),
+					High: proto.Uint64(300),
+				},
+				PeerType:      events.PeerType_Client.Enum(),
+				Method:        events.Method_GET.Enum(),
+				Uri:           proto.String("http://some.example.com"),
+				RemoteAddress: proto.String("http://remote.address"),
+				UserAgent:     proto.String("some user agent"),
+				ContentLength: proto.Int64(200),
+				StatusCode:    proto.Int32(200),
+			}
+
+			envelope, err := emitter.Wrap(testEvent, origin)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(envelope.GetEventType()).To(Equal(events.Envelope_HttpStartStop))
+			Expect(envelope.GetHttpStartStop()).To(Equal(testEvent))
 		})
 
 		It("errors with unknown events", func() {

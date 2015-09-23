@@ -3,8 +3,8 @@ package emitter_test
 import (
 	"github.com/cloudfoundry/dropsonde/emitter"
 	"github.com/cloudfoundry/dropsonde/emitter/fake"
-	"github.com/cloudfoundry/dropsonde/events"
 	"github.com/cloudfoundry/dropsonde/factories"
+	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
 
 	. "github.com/onsi/ginkgo"
@@ -18,7 +18,7 @@ var _ = Describe("EventEmitter", func() {
 				innerEmitter := fake.NewFakeByteEmitter()
 				eventEmitter := emitter.NewEventEmitter(innerEmitter, "")
 
-				testEvent := factories.NewHeartbeat(1, 2, 3)
+				testEvent := factories.NewValueMetric("metric-name", 2.0, "metric-unit")
 				err := eventEmitter.Emit(testEvent)
 
 				Expect(err).To(HaveOccurred())
@@ -31,7 +31,7 @@ var _ = Describe("EventEmitter", func() {
 			origin := "fake-origin"
 			eventEmitter := emitter.NewEventEmitter(innerEmitter, origin)
 
-			testEvent := factories.NewHeartbeat(1, 2, 3)
+			testEvent := factories.NewValueMetric("metric-name", 2.0, "metric-unit")
 			err := eventEmitter.Emit(testEvent)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -41,7 +41,7 @@ var _ = Describe("EventEmitter", func() {
 			var envelope events.Envelope
 			err = proto.Unmarshal(msg, &envelope)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(envelope.GetEventType()).To(Equal(events.Envelope_Heartbeat))
+			Expect(envelope.GetEventType()).To(Equal(events.Envelope_ValueMetric))
 		})
 	})
 

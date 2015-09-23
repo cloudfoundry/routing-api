@@ -116,6 +116,27 @@ func VerifyJSONRepresenting(object interface{}) http.HandlerFunc {
 	)
 }
 
+//VerifyForm returns a handler that verifies a request contains the specified form values.
+//
+//The request must contain *all* of the specified values, but it is allowed to have additional
+//form values beyond the passed in set.
+func VerifyForm(values url.Values) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		Ω(err).ShouldNot(HaveOccurred())
+		for key, vals := range values {
+			Ω(r.Form[key]).Should(Equal(vals), "Form mismatch for key: %s", key)
+		}
+	}
+}
+
+//VerifyFormKV returns a handler that verifies a request contains a form key with the specified values.
+//
+//It is a convenience wrapper around `VerifyForm` that lets you avoid having to create a `url.Values` object.
+func VerifyFormKV(key string, values ...string) http.HandlerFunc {
+	return VerifyForm(url.Values{key: values})
+}
+
 func copyHeader(src http.Header, dst http.Header) {
 	for key, value := range src {
 		dst[key] = value
@@ -183,7 +204,17 @@ Also, RespondWithJSONEncoded can be given an optional http.Header.  The headers 
 func RespondWithJSONEncoded(statusCode int, object interface{}, optionalHeader ...http.Header) http.HandlerFunc {
 	data, err := json.Marshal(object)
 	Ω(err).ShouldNot(HaveOccurred())
-	return RespondWith(statusCode, string(data), optionalHeader...)
+
+	var headers http.Header
+	if len(optionalHeader) == 1 {
+		headers = optionalHeader[0]
+	} else {
+		headers = make(http.Header)
+	}
+	if _, found := headers["Content-Type"]; !found {
+		headers["Content-Type"] = []string{"application/json"}
+	}
+	return RespondWith(statusCode, string(data), headers)
 }
 
 /*
@@ -196,13 +227,20 @@ objects.
 Also, RespondWithJSONEncodedPtr can be given an optional http.Header.  The headers defined therein will be added to the response headers.
 Since the http.Header can be mutated after the fact you don't need to pass in a pointer.
 */
-func RespondWithJSONEncodedPtr(statusCode *int, object *interface{}, optionalHeader ...http.Header) http.HandlerFunc {
+func RespondWithJSONEncodedPtr(statusCode *int, object interface{}, optionalHeader ...http.Header) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		data, err := json.Marshal(*object)
+		data, err := json.Marshal(object)
 		Ω(err).ShouldNot(HaveOccurred())
+		var headers http.Header
 		if len(optionalHeader) == 1 {
-			copyHeader(optionalHeader[0], w.Header())
+			headers = optionalHeader[0]
+		} else {
+			headers = make(http.Header)
 		}
+		if _, found := headers["Content-Type"]; !found {
+			headers["Content-Type"] = []string{"application/json"}
+		}
+		copyHeader(headers, w.Header())
 		w.WriteHeader(*statusCode)
 		w.Write(data)
 	}
