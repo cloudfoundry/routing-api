@@ -25,9 +25,9 @@ func TestDB(t *testing.T) {
 
 	etcdPort = 4001 + GinkgoParallelNode()
 	etcdUrl = fmt.Sprintf("http://127.0.0.1:%d", etcdPort)
-	etcdRunner = etcdstorerunner.NewETCDClusterRunner(etcdPort, 1)
+	etcdRunner = etcdstorerunner.NewETCDClusterRunner(etcdPort, 1, nil)
 	etcdRunner.Start()
-	etcdClient = etcdRunner.Adapter()
+	etcdClient = etcdRunner.Adapter(nil)
 
 	RunSpecs(t, "DB Suite")
 

@@ -53,10 +53,10 @@ var _ = SynchronizedAfterSuite(func() {}, gexec.CleanupBuildArtifacts)
 var _ = BeforeEach(func() {
 	etcdPort = 4001 + GinkgoParallelNode()
 	etcdUrl = fmt.Sprintf("http://127.0.0.1:%d", etcdPort)
-	etcdRunner = etcdstorerunner.NewETCDClusterRunner(etcdPort, 1)
+	etcdRunner = etcdstorerunner.NewETCDClusterRunner(etcdPort, 1, nil)
 	etcdRunner.Start()
 
-	etcdAdapter = etcdRunner.Adapter()
+	etcdAdapter = etcdRunner.Adapter(nil)
 	routingAPIPort = uint16(6900 + GinkgoParallelNode())
 	routingAPIIP = "127.0.0.1"
 	routingAPISystemDomain = "example.com"

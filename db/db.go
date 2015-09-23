@@ -67,7 +67,10 @@ func NewETCD(nodeURLs []string, maxWorkers uint) (*etcd, error) {
 		return nil, err
 	}
 
-	storeAdapter := etcdstoreadapter.NewETCDStoreAdapter(nodeURLs, workpool)
+	storeAdapter, err := etcdstoreadapter.New(&etcdstoreadapter.ETCDOptions{ClusterUrls: nodeURLs}, workpool)
+	if err != nil {
+		return nil, err
+	}
 	return &etcd{
 		storeAdapter: storeAdapter,
 	}, nil
