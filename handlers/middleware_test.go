@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -24,7 +23,7 @@ var _ = Describe("Middleware", func() {
 	BeforeEach(func() {
 
 		// logger
-		logger := cf_lager.New("dummy-api")
+		logger := lagertest.NewTestLogger("dummy-api")
 
 		// dummy handler
 		dummyHandler = func(w http.ResponseWriter, r *http.Request) {

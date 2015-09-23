@@ -43,7 +43,9 @@ func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 }
 
 func main() {
-	logger := cf_lager.New("routing-api")
+	flag.Parse()
+	cf_lager.AddFlags(flag.CommandLine)
+	logger, reconfigurableSink := cf_lager.New("routing-api")
 
 	err := checkFlags()
 	if err != nil {
@@ -64,7 +66,7 @@ func main() {
 	}
 
 	if cfg.DebugAddress != "" {
-		cf_debug_server.Run(cfg.DebugAddress)
+		cf_debug_server.Run(cfg.DebugAddress, reconfigurableSink)
 	}
 
 	database, err := initializeDatabase(cfg, logger)
@@ -199,7 +201,6 @@ func initializeDatabase(cfg config.Config, logger lager.Logger) (db.DB, error) {
 }
 
 func checkFlags() error {
-	flag.Parse()
 	if *configPath == "" {
 		return errors.New("No configuration file provided")
 	}

@@ -20,11 +20,11 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/cf-debug-server",
-			"Rev": "6e8c6102596e3fb6a17511f9f39fae64c89144a7"
+			"Rev": "162f1dd3c78f53911302d2874333315476faf231"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/cf-lager",
-			"Rev": "ddeb0ea40763e3e81aa65919b9d9fc6d0ecc75d6"
+			"Rev": "f28b321dda1184e439717f60b9265103c3cc5537"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/cf_http",
