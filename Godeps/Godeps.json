@@ -39,6 +39,10 @@
 			"Rev": "d78de6439d41efc5211e2d048009e14fdbf0537f"
 		},
 		{
+			"ImportPath": "github.com/cloudfoundry/sonde-go/events",
+			"Rev": "3d364d9ed49fee2f9fdcba278199127462cae3c4"
+		},
+		{
 			"ImportPath": "github.com/cloudfoundry/gosteno",
 			"Comment": "scotty_09012012-41-g5c1406e",
 			"Rev": "5c1406e9ea0ab919f92e1b194169565def41147b"
