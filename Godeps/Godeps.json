@@ -43,6 +43,10 @@
 			"Rev": "3d364d9ed49fee2f9fdcba278199127462cae3c4"
 		},
 		{
+			"ImportPath": "github.com/ugorji/go/codec",
+			"Rev": "1d5269ed4e89d423d40362a0914e1c99adb13cc8"
+		},
+		{
 			"ImportPath": "github.com/cloudfoundry/gosteno",
 			"Comment": "scotty_09012012-41-g5c1406e",
 			"Rev": "5c1406e9ea0ab919f92e1b194169565def41147b"
