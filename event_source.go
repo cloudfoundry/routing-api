@@ -8,6 +8,7 @@ import (
 	"github.com/vito/go-sse/sse"
 )
 
+//go:generate counterfeiter -o fake_routing_api/fake_event_source.go . EventSource
 type EventSource interface {
 	Next() (Event, error)
 	Close() error
@@ -33,6 +34,7 @@ func NewEventSource(raw RawEventSource) EventSource {
 	}
 }
 
+//go:generate counterfeiter -o fake_routing_api/fake_tcp_event_source.go . TcpEventSource
 type TcpEventSource interface {
 	Next() (TcpEvent, error)
 	Close() error
