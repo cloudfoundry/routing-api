@@ -52,6 +52,14 @@ type FakeClient struct {
 	upsertTcpRouteMappingsReturns struct {
 		result1 error
 	}
+	DeleteTcpRouteMappingsStub        func([]db.TcpRouteMapping) error
+	deleteTcpRouteMappingsMutex       sync.RWMutex
+	deleteTcpRouteMappingsArgsForCall []struct {
+		arg1 []db.TcpRouteMapping
+	}
+	deleteTcpRouteMappingsReturns struct {
+		result1 error
+	}
 	TcpRouteMappingsStub        func() ([]db.TcpRouteMapping, error)
 	tcpRouteMappingsMutex       sync.RWMutex
 	tcpRouteMappingsArgsForCall []struct{}
@@ -240,6 +248,38 @@ func (fake *FakeClient) UpsertTcpRouteMappingsArgsForCall(i int) []db.TcpRouteMa
 func (fake *FakeClient) UpsertTcpRouteMappingsReturns(result1 error) {
 	fake.UpsertTcpRouteMappingsStub = nil
 	fake.upsertTcpRouteMappingsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) DeleteTcpRouteMappings(arg1 []db.TcpRouteMapping) error {
+	fake.deleteTcpRouteMappingsMutex.Lock()
+	fake.deleteTcpRouteMappingsArgsForCall = append(fake.deleteTcpRouteMappingsArgsForCall, struct {
+		arg1 []db.TcpRouteMapping
+	}{arg1})
+	fake.deleteTcpRouteMappingsMutex.Unlock()
+	if fake.DeleteTcpRouteMappingsStub != nil {
+		return fake.DeleteTcpRouteMappingsStub(arg1)
+	} else {
+		return fake.deleteTcpRouteMappingsReturns.result1
+	}
+}
+
+func (fake *FakeClient) DeleteTcpRouteMappingsCallCount() int {
+	fake.deleteTcpRouteMappingsMutex.RLock()
+	defer fake.deleteTcpRouteMappingsMutex.RUnlock()
+	return len(fake.deleteTcpRouteMappingsArgsForCall)
+}
+
+func (fake *FakeClient) DeleteTcpRouteMappingsArgsForCall(i int) []db.TcpRouteMapping {
+	fake.deleteTcpRouteMappingsMutex.RLock()
+	defer fake.deleteTcpRouteMappingsMutex.RUnlock()
+	return fake.deleteTcpRouteMappingsArgsForCall[i].arg1
+}
+
+func (fake *FakeClient) DeleteTcpRouteMappingsReturns(result1 error) {
+	fake.DeleteTcpRouteMappingsStub = nil
+	fake.deleteTcpRouteMappingsReturns = struct {
 		result1 error
 	}{result1}
 }

@@ -22,6 +22,7 @@ type Client interface {
 	DeleteRoutes([]db.Route) error
 	RouterGroups() ([]db.RouterGroup, error)
 	UpsertTcpRouteMappings([]db.TcpRouteMapping) error
+	DeleteTcpRouteMappings([]db.TcpRouteMapping) error
 	TcpRouteMappings() ([]db.TcpRouteMapping, error)
 
 	SubscribeToEvents() (EventSource, error)
@@ -77,6 +78,10 @@ func (c *client) TcpRouteMappings() ([]db.TcpRouteMapping, error) {
 	var tcpRouteMappings []db.TcpRouteMapping
 	err := c.doRequest(ListTcpRouteMapping, nil, nil, nil, &tcpRouteMappings)
 	return tcpRouteMappings, err
+}
+
+func (c *client) DeleteTcpRouteMappings(tcpRouteMappings []db.TcpRouteMapping) error {
+	return c.doRequest(DeleteTcpRouteMapping, nil, nil, tcpRouteMappings, nil)
 }
 
 func (c *client) SubscribeToEvents() (EventSource, error) {

@@ -19,12 +19,13 @@ import (
 
 var _ = Describe("Client", func() {
 	const (
-		ROUTES_API_URL            = "/routing/v1/routes"
-		TCP_CREATE_ROUTES_API_URL = "/routing/v1/tcp_routes/create"
-		TCP_ROUTES_API_URL        = "/routing/v1/tcp_routes"
-		TCP_ROUTER_GROUPS_API_URL = "/routing/v1/router_groups"
-		EVENTS_SSE_URL            = "/routing/v1/events"
-		TCP_EVENTS_SSE_URL        = "/routing/v1/tcp_routes/events"
+		ROUTES_API_URL                    = "/routing/v1/routes"
+		TCP_CREATE_ROUTE_MAPPINGS_API_URL = "/routing/v1/tcp_routes/create"
+		TCP_DELETE_ROUTE_MAPPINGS_API_URL = "/routing/v1/tcp_routes/delete"
+		TCP_ROUTES_API_URL                = "/routing/v1/tcp_routes"
+		TCP_ROUTER_GROUPS_API_URL         = "/routing/v1/router_groups"
+		EVENTS_SSE_URL                    = "/routing/v1/events"
+		TCP_EVENTS_SSE_URL                = "/routing/v1/tcp_routes/events"
 	)
 
 	var server *ghttp.Server
@@ -149,7 +150,7 @@ var _ = Describe("Client", func() {
 		Context("when the server returns a valid response", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
-					ghttp.VerifyRequest("POST", TCP_CREATE_ROUTES_API_URL),
+					ghttp.VerifyRequest("POST", TCP_CREATE_ROUTE_MAPPINGS_API_URL),
 				)
 			})
 
@@ -168,7 +169,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("POST " + TCP_CREATE_ROUTES_API_URL + " HTTP/1.1"))
+				Expect(log).To(ContainSubstring("POST " + TCP_CREATE_ROUTE_MAPPINGS_API_URL + " HTTP/1.1"))
 				Expect(log).To(ContainSubstring(string(expectedBody)))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
@@ -180,7 +181,7 @@ var _ = Describe("Client", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("POST", TCP_CREATE_ROUTES_API_URL),
+						ghttp.VerifyRequest("POST", TCP_CREATE_ROUTE_MAPPINGS_API_URL),
 						ghttp.RespondWith(http.StatusBadRequest, nil),
 					),
 				)
@@ -197,7 +198,7 @@ var _ = Describe("Client", func() {
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("POST " + TCP_CREATE_ROUTES_API_URL + " HTTP/1.1"))
+				Expect(log).To(ContainSubstring("POST " + TCP_CREATE_ROUTE_MAPPINGS_API_URL + " HTTP/1.1"))
 				Expect(log).To(ContainSubstring(string(expectedBody)))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
@@ -267,6 +268,85 @@ var _ = Describe("Client", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
 				Expect(log).To(ContainSubstring("DELETE " + ROUTES_API_URL + " HTTP/1.1"))
+				Expect(log).To(ContainSubstring(string(expectedBody)))
+
+				Expect(log).To(ContainSubstring("RESPONSE: "))
+				Expect(log).To(ContainSubstring("HTTP/1.1 400 Bad Request"))
+			})
+		})
+	})
+
+	Context("DeleteTcpRouteMappings", func() {
+		var (
+			err              error
+			tcpRouteMapping1 db.TcpRouteMapping
+			tcpRouteMapping2 db.TcpRouteMapping
+		)
+		BeforeEach(func() {
+			tcpRouteMapping1 = db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+			tcpRouteMapping2 = db.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
+		})
+		JustBeforeEach(func() {
+			err = client.DeleteTcpRouteMappings([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+		})
+
+		Context("when the server returns a valid response", func() {
+			BeforeEach(func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", TCP_DELETE_ROUTE_MAPPINGS_API_URL),
+						func(w http.ResponseWriter, req *http.Request) {
+							w.WriteHeader(http.StatusNoContent)
+						},
+					),
+				)
+			})
+
+			It("sends a Delete request to the server", func() {
+				Expect(server.ReceivedRequests()).Should(HaveLen(1))
+			})
+
+			It("does not receive an error", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("logs the request and response", func() {
+				expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+
+				r, err := ioutil.ReadAll(stdout)
+				log := string(r)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(log).To(ContainSubstring("REQUEST: "))
+				Expect(log).To(ContainSubstring("POST " + TCP_DELETE_ROUTE_MAPPINGS_API_URL + " HTTP/1.1"))
+				Expect(log).To(ContainSubstring(string(expectedBody)))
+
+				Expect(log).To(ContainSubstring("RESPONSE: "))
+				Expect(log).To(ContainSubstring("HTTP/1.1 204 No Content"))
+			})
+		})
+
+		Context("When the server returns an error", func() {
+			BeforeEach(func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", TCP_DELETE_ROUTE_MAPPINGS_API_URL),
+						ghttp.RespondWith(http.StatusBadRequest, nil),
+					),
+				)
+			})
+
+			It("receives an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("logs the request and response", func() {
+				expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+
+				r, err := ioutil.ReadAll(stdout)
+				log := string(r)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(log).To(ContainSubstring("REQUEST: "))
+				Expect(log).To(ContainSubstring("POST " + TCP_DELETE_ROUTE_MAPPINGS_API_URL + " HTTP/1.1"))
 				Expect(log).To(ContainSubstring(string(expectedBody)))
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))

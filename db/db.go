@@ -18,6 +18,7 @@ type DB interface {
 
 	ReadTcpRouteMappings() ([]TcpRouteMapping, error)
 	SaveTcpRouteMapping(tcpMapping TcpRouteMapping) error
+	DeleteTcpRouteMapping(tcpMapping TcpRouteMapping) error
 
 	Connect() error
 	Disconnect() error
@@ -157,6 +158,15 @@ func (e *etcd) SaveTcpRouteMapping(tcpMapping TcpRouteMapping) error {
 	return e.storeAdapter.SetMulti([]storeadapter.StoreNode{node})
 }
 
+func (e *etcd) DeleteTcpRouteMapping(tcpMapping TcpRouteMapping) error {
+	key := generateTcpRouteMappingKey(tcpMapping)
+	err := e.storeAdapter.Delete(key)
+	if err != nil && err.Error() == "the requested key could not be found" {
+		err = DBError{Type: KeyNotFound, Message: "The specified route (" + tcpMapping.String() + ") could not be found."}
+	}
+	return err
+}
+
 func generateTcpRouteMappingKey(tcpMapping TcpRouteMapping) string {
 	// Generating keys following this pattern
 	// /v1/tcp_routes/router_groups/{router_guid}/{port}/{host-ip}:{host-port}
@@ -170,4 +180,8 @@ func NewTcpRouteMapping(routerGroupGuid string, externalPort uint16, hostIP stri
 		HostPort: hostPort,
 		HostIP:   hostIP,
 	}
+}
+
+func (m TcpRouteMapping) String() string {
+	return fmt.Sprintf("%s:%d<->%s:%d", m.RouterGroupGuid, m.ExternalPort, m.HostIP, m.HostPort)
 }

@@ -370,6 +370,29 @@ var _ = Describe("DB", func() {
 
 			})
 
+			Describe("DeleteTcpRouteMapping", func() {
+				Context("when a tcp route mapping exists", func() {
+					BeforeEach(func() {
+						err := etcd.SaveTcpRouteMapping(tcpMapping)
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("Deletes the tcp route mapping", func() {
+						err := etcd.DeleteTcpRouteMapping(tcpMapping)
+						Expect(err).NotTo(HaveOccurred())
+					})
+				})
+
+				Context("when deleting a tcp route mapping returns an error", func() {
+					It("returns a key not found error if the key does not exists", func() {
+						nonExistingTcpMapping := db.NewTcpRouteMapping("router-group-guid-009", 53000, "1.2.3.4", 60000)
+						err := etcd.DeleteTcpRouteMapping(nonExistingTcpMapping)
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(Equal("The specified route (router-group-guid-009:53000<->1.2.3.4:60000) could not be found."))
+					})
+				})
+			})
+
 		})
 	})
 })
