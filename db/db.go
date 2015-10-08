@@ -42,9 +42,9 @@ type Route struct {
 }
 
 type TcpRouteMapping struct {
-	TcpRoute TcpRoute `json:"route"`
-	HostPort uint16   `json:"backend_port"`
-	HostIP   string   `json:"backend_ip"`
+	TcpRoute
+	HostPort uint16 `json:"backend_port"`
+	HostIP   string `json:"backend_ip"`
 }
 
 type TcpRoute struct {

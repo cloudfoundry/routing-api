@@ -95,14 +95,11 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 
 					tcpMapping = db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
 
-					routeData := map[string]interface{}{
-						"router_group_guid": "router-group-guid-001",
-						"port":              float64(52000),
-					}
 					data := map[string]interface{}{
-						"backend_ip":   "1.2.3.4",
-						"backend_port": float64(60000),
-						"route":        routeData,
+						"port":              float64(52000),
+						"router_group_guid": "router-group-guid-001",
+						"backend_ip":        "1.2.3.4",
+						"backend_port":      float64(60000),
 					}
 					log_data := map[string][]interface{}{"tcp_mapping_creation": []interface{}{data}}
 
@@ -127,7 +124,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			Context("when there are errors with the input ports", func() {
 
 				It("blows up when a external port is negative", func() {
-					request = handlers.NewTestRequest(`[{"route":{"router_group_guid": "tcp-default", "port": -1}, "backend_ip": "10.1.1.12", "backend_port": 60000}]`)
+					request = handlers.NewTestRequest(`[{"router_group_guid": "tcp-default", "port": -1, "backend_ip": "10.1.1.12", "backend_port": 60000}]`)
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
 					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number -1 into Go value of type uint16"))
@@ -136,7 +133,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				})
 
 				It("blows up when a external port does not fit into a uint16", func() {
-					request = handlers.NewTestRequest(`[{"route":{"router_group_guid": "tcp-default", "port": 65537}, "backend_ip": "10.1.1.12", "backend_port": 60000}]`)
+					request = handlers.NewTestRequest(`[{"router_group_guid": "tcp-default", "port": 65537, "backend_ip": "10.1.1.12", "backend_port": 60000}]`)
 
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
@@ -147,7 +144,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				})
 
 				It("blows up when a host port is negative", func() {
-					request = handlers.NewTestRequest(`[{"route":{"router_group_guid": "tcp-default", "port": 52000}, "backend_ip": "10.1.1.12", "backend_port": -1}]`)
+					request = handlers.NewTestRequest(`[{"router_group_guid": "tcp-default", "port": 52000, "backend_ip": "10.1.1.12", "backend_port": -1}]`)
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
@@ -158,7 +155,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				})
 
 				It("blows up when a host port does not fit into a uint16", func() {
-					request = handlers.NewTestRequest(`[{"route":{"router_group_guid": "tcp-default", "port": 5200}, "backend_ip": "10.1.1.12", "backend_port": 65537}]`)
+					request = handlers.NewTestRequest(`[{"router_group_guid": "tcp-default", "port": 5200, "backend_ip": "10.1.1.12", "backend_port": 65537}]`)
 
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
@@ -232,8 +229,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				tcpRouteMappingsHandler.List(responseRecorder, request)
 
 				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
-				Expect(responseRecorder.Body.String()).To(MatchJSON(`[{"route":{"router_group_guid": "router-group-guid-001", "port": 52000}, "backend_ip": "1.2.3.4", "backend_port": 60000},
-					{"route":{"router_group_guid": "router-group-guid-001", "port": 52001}, "backend_ip": "1.2.3.5", "backend_port": 60001}]`))
+				Expect(responseRecorder.Body.String()).To(MatchJSON(`[{"router_group_guid": "router-group-guid-001", "port": 52000, "backend_ip": "1.2.3.4", "backend_port": 60000},
+					{"router_group_guid": "router-group-guid-001", "port": 52001, "backend_ip": "1.2.3.5", "backend_port": 60001}]`))
 			})
 		})
 
