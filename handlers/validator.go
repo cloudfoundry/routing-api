@@ -140,25 +140,28 @@ func (v Validator) ValidateTcpRouteMapping(tcpRouteMappings []db.TcpRouteMapping
 	return nil
 }
 
-func validateTcpRouteMapping(tcpRouteMappings db.TcpRouteMapping) *routing_api.Error {
-
-	if tcpRouteMappings.TcpRoute.RouterGroupGuid == "" {
-		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError, "Each tcp mapping requires a valid router group guid")
+func validateTcpRouteMapping(tcpRouteMapping db.TcpRouteMapping) *routing_api.Error {
+	if tcpRouteMapping.TcpRoute.RouterGroupGuid == "" {
+		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
+			"Each tcp mapping requires a valid router group guid. RouteMapping=["+tcpRouteMapping.String()+"]")
 		return &err
 	}
 
-	if tcpRouteMappings.TcpRoute.ExternalPort <= 0 {
-		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError, "Each tcp mapping requires a positive external port")
+	if tcpRouteMapping.TcpRoute.ExternalPort <= 0 {
+		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
+			"Each tcp mapping requires a positive external port. RouteMapping=["+tcpRouteMapping.String()+"]")
 		return &err
 	}
 
-	if tcpRouteMappings.HostIP == "" {
-		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError, "Each tcp mapping requires a non empty host ip")
+	if tcpRouteMapping.HostIP == "" {
+		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
+			"Each tcp mapping requires a non empty host ip. RouteMapping=["+tcpRouteMapping.String()+"]")
 		return &err
 	}
 
-	if tcpRouteMappings.HostPort <= 0 {
-		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError, "Each tcp mapping requires a positive host port")
+	if tcpRouteMapping.HostPort <= 0 {
+		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
+			"Each tcp mapping requires a positive host port. RouteMapping=["+tcpRouteMapping.String()+"]")
 		return &err
 	}
 
