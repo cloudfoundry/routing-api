@@ -305,7 +305,7 @@ Sample response:
 [{
     "guid": "f7392031-a488-4890-8835-c4a038a3bded",
     "name": "default-tcp",
-    "features": [
+    "type": [
         "tcp"
     ]
 }]
