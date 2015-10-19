@@ -232,12 +232,12 @@ var _ = Describe("Validator", func() {
 
 		Context("when invalid tcp route mappings are passed", func() {
 
-			It("blows up when a host port is zero", func() {
+			It("blows up when a backend port is zero", func() {
 				tcpMapping.HostPort = 0
 				err := validator.ValidateTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
-				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a positive host port"))
+				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a positive backend port"))
 			})
 
 			It("blows up when a external port is zero", func() {
@@ -248,12 +248,12 @@ var _ = Describe("Validator", func() {
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a positive external port"))
 			})
 
-			It("blows up when host ip empty", func() {
+			It("blows up when backend ip empty", func() {
 				tcpMapping.HostIP = ""
 				err := validator.ValidateTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
-				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a non empty host ip"))
+				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a non empty backend ip"))
 			})
 
 			It("blows up when group guid is empty", func() {

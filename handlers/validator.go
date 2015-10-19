@@ -155,13 +155,13 @@ func validateTcpRouteMapping(tcpRouteMapping db.TcpRouteMapping) *routing_api.Er
 
 	if tcpRouteMapping.HostIP == "" {
 		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
-			"Each tcp mapping requires a non empty host ip. RouteMapping=["+tcpRouteMapping.String()+"]")
+			"Each tcp mapping requires a non empty backend ip. RouteMapping=["+tcpRouteMapping.String()+"]")
 		return &err
 	}
 
 	if tcpRouteMapping.HostPort <= 0 {
 		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
-			"Each tcp mapping requires a positive host port. RouteMapping=["+tcpRouteMapping.String()+"]")
+			"Each tcp mapping requires a positive backend port. RouteMapping=["+tcpRouteMapping.String()+"]")
 		return &err
 	}
 
