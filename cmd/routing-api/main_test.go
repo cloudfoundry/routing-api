@@ -119,8 +119,8 @@ var _ = Describe("Main", func() {
 			It("allows to create given tcp route mappings", func() {
 				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 
-				tcpRouteMapping1 = db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = db.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
+				tcpRouteMapping1 = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
+				tcpRouteMapping2 = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52001, "1.2.3.5", 60001)
 
 				err := client.UpsertTcpRouteMappings([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 				Expect(err).NotTo(HaveOccurred())
@@ -147,8 +147,8 @@ var _ = Describe("Main", func() {
 			})
 
 			JustBeforeEach(func() {
-				tcpRouteMapping1 = db.NewTcpRouteMapping("router-group-guid-010", 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = db.NewTcpRouteMapping("router-group-guid-010", 52001, "1.2.3.5", 60001)
+				tcpRouteMapping1 = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
+				tcpRouteMapping2 = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52001, "1.2.3.5", 60001)
 				tcpRouteMappings = []db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 				err := client.UpsertTcpRouteMappings(tcpRouteMappings)
 
@@ -182,8 +182,8 @@ var _ = Describe("Main", func() {
 			JustBeforeEach(func() {
 				client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 
-				tcpRouteMapping1 = db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = db.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
+				tcpRouteMapping1 = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
+				tcpRouteMapping2 = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52001, "1.2.3.5", 60001)
 				tcpRouteMappings = []db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 				err := client.UpsertTcpRouteMappings(tcpRouteMappings)
 

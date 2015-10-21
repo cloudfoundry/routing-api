@@ -6,6 +6,7 @@ import (
 	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
+	"github.com/cloudfoundry-incubator/routing-api/helpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -220,7 +221,7 @@ var _ = Describe("Validator", func() {
 		)
 
 		BeforeEach(func() {
-			tcpMapping = db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+			tcpMapping = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
 		})
 
 		Context("when valid tcp mapping is passed", func() {
@@ -261,7 +262,15 @@ var _ = Describe("Validator", func() {
 				err := validator.ValidateTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
-				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a valid router group guid"))
+				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a non empty router group guid"))
+			})
+
+			It("blows up when group guid is unknown", func() {
+				tcpMapping.TcpRoute.RouterGroupGuid = "unknown-router-group-guid"
+				err := validator.ValidateTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
+				Expect(err).ToNot(BeNil())
+				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
+				Expect(err.Error()).To(ContainSubstring("Tcp mapping has an unknown router group guid"))
 			})
 		})
 	})

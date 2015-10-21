@@ -8,6 +8,7 @@ import (
 
 	routing_api "github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/helpers"
 )
 
 //go:generate counterfeiter -o fakes/fake_validator.go . RouteValidator
@@ -143,7 +144,13 @@ func (v Validator) ValidateTcpRouteMapping(tcpRouteMappings []db.TcpRouteMapping
 func validateTcpRouteMapping(tcpRouteMapping db.TcpRouteMapping) *routing_api.Error {
 	if tcpRouteMapping.TcpRoute.RouterGroupGuid == "" {
 		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
-			"Each tcp mapping requires a valid router group guid. RouteMapping=["+tcpRouteMapping.String()+"]")
+			"Each tcp mapping requires a non empty router group guid. RouteMapping=["+tcpRouteMapping.String()+"]")
+		return &err
+	}
+
+	if tcpRouteMapping.TcpRoute.RouterGroupGuid != helpers.DefaultRouterGroupGuid {
+		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
+			"Tcp mapping has an unknown router group guid. RouteMapping=["+tcpRouteMapping.String()+"]")
 		return &err
 	}
 
