@@ -270,7 +270,7 @@ var _ = Describe("Validator", func() {
 				err := validator.ValidateTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
-				Expect(err.Error()).To(ContainSubstring("Tcp mapping has an unknown router group guid"))
+				Expect(err.Error()).To(ContainSubstring("router_group_guid: unknown-router-group-guid not found"))
 			})
 		})
 	})

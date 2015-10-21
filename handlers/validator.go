@@ -150,7 +150,7 @@ func validateTcpRouteMapping(tcpRouteMapping db.TcpRouteMapping) *routing_api.Er
 
 	if tcpRouteMapping.TcpRoute.RouterGroupGuid != helpers.DefaultRouterGroupGuid {
 		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
-			"Tcp mapping has an unknown router group guid. RouteMapping=["+tcpRouteMapping.String()+"]")
+			"router_group_guid: "+tcpRouteMapping.TcpRoute.RouterGroupGuid+" not found")
 		return &err
 	}
 
