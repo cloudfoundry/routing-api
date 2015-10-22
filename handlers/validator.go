@@ -16,7 +16,8 @@ type RouteValidator interface {
 	ValidateCreate(routes []db.Route, maxTTL int) *routing_api.Error
 	ValidateDelete(routes []db.Route) *routing_api.Error
 
-	ValidateTcpRouteMapping(tcpRouteMappings []db.TcpRouteMapping) *routing_api.Error
+	ValidateCreateTcpRouteMapping(tcpRouteMappings []db.TcpRouteMapping) *routing_api.Error
+	ValidateDeleteTcpRouteMapping(tcpRouteMappings []db.TcpRouteMapping) *routing_api.Error
 }
 
 type Validator struct{}
@@ -131,7 +132,22 @@ func validateUrl(urlToValidate string) error {
 	return nil
 }
 
-func (v Validator) ValidateTcpRouteMapping(tcpRouteMappings []db.TcpRouteMapping) *routing_api.Error {
+func (v Validator) ValidateCreateTcpRouteMapping(tcpRouteMappings []db.TcpRouteMapping) *routing_api.Error {
+	for _, tcpRouteMapping := range tcpRouteMappings {
+		err := validateTcpRouteMapping(tcpRouteMapping)
+		if err != nil {
+			return err
+		}
+		if tcpRouteMapping.TcpRoute.RouterGroupGuid != helpers.DefaultRouterGroupGuid {
+			err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
+				"router_group_guid: "+tcpRouteMapping.TcpRoute.RouterGroupGuid+" not found")
+			return &err
+		}
+	}
+	return nil
+}
+
+func (v Validator) ValidateDeleteTcpRouteMapping(tcpRouteMappings []db.TcpRouteMapping) *routing_api.Error {
 	for _, tcpRouteMapping := range tcpRouteMappings {
 		err := validateTcpRouteMapping(tcpRouteMapping)
 		if err != nil {
@@ -145,12 +161,6 @@ func validateTcpRouteMapping(tcpRouteMapping db.TcpRouteMapping) *routing_api.Er
 	if tcpRouteMapping.TcpRoute.RouterGroupGuid == "" {
 		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
 			"Each tcp mapping requires a non empty router group guid. RouteMapping=["+tcpRouteMapping.String()+"]")
-		return &err
-	}
-
-	if tcpRouteMapping.TcpRoute.RouterGroupGuid != helpers.DefaultRouterGroupGuid {
-		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
-			"router_group_guid: "+tcpRouteMapping.TcpRoute.RouterGroupGuid+" not found")
 		return &err
 	}
 

@@ -171,7 +171,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			Context("when validator returns error", func() {
 				BeforeEach(func() {
 					err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError, "Each tcp mapping requires a valid router group guid")
-					validator.ValidateTcpRouteMappingReturns(&err)
+					validator.ValidateCreateTcpRouteMappingReturns(&err)
 				})
 
 				It("returns error", func() {
@@ -410,7 +410,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			Context("when validator returns error", func() {
 				BeforeEach(func() {
 					err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError, "Each tcp mapping requires a valid router group guid")
-					validator.ValidateTcpRouteMappingReturns(&err)
+					validator.ValidateDeleteTcpRouteMappingReturns(&err)
 				})
 
 				It("returns error", func() {

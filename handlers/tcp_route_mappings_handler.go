@@ -61,7 +61,7 @@ func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	apiErr := h.validator.ValidateTcpRouteMapping(tcpMappings)
+	apiErr := h.validator.ValidateCreateTcpRouteMapping(tcpMappings)
 	if apiErr != nil {
 		handleProcessRequestError(w, apiErr, log)
 		return
@@ -97,7 +97,7 @@ func (h *TcpRouteMappingsHandler) Delete(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	apiErr := h.validator.ValidateTcpRouteMapping(tcpMappings)
+	apiErr := h.validator.ValidateDeleteTcpRouteMapping(tcpMappings)
 	if apiErr != nil {
 		handleProcessRequestError(w, apiErr, log)
 		return
