@@ -58,6 +58,12 @@ var _ = Describe("Main", func() {
 		Eventually(session).Should(Say("Public uaa token must be PEM encoded"))
 	})
 
+	It("exits 1 if the uaa_verification_key is missing and non dev mode", func() {
+		session = RoutingApi("-config=../../example_config/missing_uaa_verification_key.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
+		Eventually(session).Should(Exit(1))
+		Eventually(session).Should(Say("No uaa_verification_key specified"))
+	})
+
 	Context("when initialized correctly and etcd is running", func() {
 		It("unregisters from etcd when the process exits", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)

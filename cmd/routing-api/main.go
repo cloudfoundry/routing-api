@@ -53,7 +53,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	cfg, err := config.NewConfigFromFile(*configPath)
+	cfg, err := config.NewConfigFromFile(*configPath, *devMode)
 	if err != nil {
 		logger.Error("failed to start", err)
 		os.Exit(1)
