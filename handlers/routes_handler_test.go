@@ -1,6 +1,7 @@
 package handlers_test
 
 import (
+	"fmt"
 	"errors"
 	routing_api "github.com/cloudfoundry-incubator/routing-api"
 	fake_token "github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
@@ -362,6 +363,21 @@ var _ = Describe("RoutesHandler", func() {
 					Expect(database.SaveRouteArgsForCall(0)).To(Equal(route[0]))
 				})
 
+				It("accepts tags parameters", func() {
+					tags := make(map[string]string)
+					tags["my-first-tag"] = "TAG1"
+					tags["my-second-tag"] = "TAG2"
+					route[0].Tags = tags
+					request = handlers.NewTestRequest(route)
+					routesHandler.Upsert(responseRecorder, request)
+
+					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+					Expect(database.SaveRouteCallCount()).To(Equal(1))
+					
+					savedTags := database.SaveRouteArgsForCall(0).Tags
+					Expect(savedTags).To(Equal(tags))
+				})
+
 				It("logs the route declaration", func() {
 					request = handlers.NewTestRequest(route)
 					routesHandler.Upsert(responseRecorder, request)
@@ -381,6 +397,15 @@ var _ = Describe("RoutesHandler", func() {
 
 				It("does not require route_service_url on the request", func() {
 					route[0].RouteServiceUrl = ""
+
+					request = handlers.NewTestRequest(route)
+					routesHandler.Upsert(responseRecorder, request)
+
+					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+				})
+
+				It("does not require tags on the request", func() {
+					route[0].Tags = nil
 
 					request = handlers.NewTestRequest(route)
 					routesHandler.Upsert(responseRecorder, request)
@@ -451,6 +476,22 @@ var _ = Describe("RoutesHandler", func() {
 					Expect(logger.Logs()[1].Data["error"]).To(Equal("error message"))
 				})
 			})
+			
+
+			Context("when there are errors with the input json", func() {
+				It("returns http error code", func() {
+					json := `[{"route":"my-route.com","ip":"1.2.3.4", "port":65535, "tags":123}]`
+					request = handlers.NewTestRequest(json)
+					routesHandler.Upsert(responseRecorder, request)
+
+					fmt.Println(logger.Logs()[0].Message)
+					Expect(logger.Logs()[0].Message).To(ContainSubstring("create-route.error"))
+					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("Cannot process request"))
+				})
+
+			})
+
 
 			Context("when the UAA token is not valid", func() {
 				var (
