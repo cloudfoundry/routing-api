@@ -25,7 +25,7 @@ go get github.com/cloudfoundry-incubator/routing-api
 cd $GOPATH/src/github.com/cloudfoundry-incubator/routing-api
 ```
 
-To install the server binary you can do
+To install the server binary you can do:
 
 ```sh
 cd $GOPATH/src/github.com/cloudfoundry-incubator/routing-api
