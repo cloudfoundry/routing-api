@@ -4,6 +4,8 @@
 
 The initial release of this API server is currently in development and subject to backward incompatible changes.
 
+The purpose of the Routing API is to present a RESTful interface for registering and deregistering routes for both internal and external clients. This allows easier consumption by different clients as well as the ability to register routes from outside of the CF deployment.
+
 ## Downloading and Installing
 
 ### External Dependencies
