@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/cloudfoundry-incubator/routing-api.svg)](https://travis-ci.org/cloudfoundry-incubator/routing-api)
-
 # CF Routing API Server (Experimental)
 
 The initial release of this API server is currently in development and subject to backward incompatible changes.
@@ -11,48 +9,12 @@ The purpose of the Routing API is to present a RESTful interface for registering
 ### External Dependencies
 
 - Go should be installed and in the PATH
-- GOPATH should be set as described in http://golang.org/doc/code.html
-- [godep](https://github.com/tools/godep) installed and in the PATH
-- Install [direnv](http://direnv.net/) if you are planning to do routing-api
-development as part of cf-release.
+- This repo is part of [cf-routing-release](https://github.com/cloudfoundry-incubator/cf-routing-release) bosh release repo, which also acts as cannonical GOPATH. So to work on routing-api you will need to checkout [cf-routing-release](https://github.com/cloudfoundry-incubator/cf-routing-release) and follow instructions in its [README](https://github.com/cloudfoundry-incubator/cf-routing-release/blob/develop/README.md) to setup GOPATH.
 
 
 ### Development Setup
 
-Download:
-
-Option 1: Routing API (standalone)
-```bash
-go get github.com/cloudfoundry-incubator/routing-api
-cd $GOPATH/src/github.com/cloudfoundry-incubator/routing-api
-```
-
-To install the server binary you can do:
-
-```sh
-cd $GOPATH/src/github.com/cloudfoundry-incubator/routing-api
-go install ./cmd/routing-api
-
-# OR
-go get github.com/cloudfoundry-incubator/routing-api/cmd/routing-api
-```
-
-Option 2: Routing API (as part of [cf-release](https://github.com/cloudfoundry/cf-release))
-```bash
-git clone https://github.com/cloudfoundry/cf-release
-cd cf-release
-./update
-cd cf-release/src/github.com/cloudfoundry-incubator/routing-api
-```
- *Note: direnv will automatically set your GOPATH when you cd into the routing-api directory. You will need to run `direnv allow` the first time.*
-
-
-To install exactly the dependencies vendored with the Routing API, use [godep](https://github.com/tools/godep):
-
-```bash
-go get -v github.com/tools/godep
-godep restore ./...
-```
+Refer to cf-routing-release [README](https://github.com/cloudfoundry-incubator/cf-routing-release/blob/develop/README.md) for development setup.
 
 ## Development
 
