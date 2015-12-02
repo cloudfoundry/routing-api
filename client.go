@@ -35,7 +35,7 @@ func NewClient(url string) Client {
 		httpClient:          cf_http.NewClient(),
 		streamingHTTPClient: cf_http.NewStreamingClient(),
 
-		tokenMutex: &sync.Mutex{},
+		tokenMutex: &sync.RWMutex{},
 
 		reqGen: rata.NewRequestGenerator(url, Routes),
 	}
@@ -45,7 +45,7 @@ type client struct {
 	httpClient          *http.Client
 	streamingHTTPClient *http.Client
 
-	tokenMutex *sync.Mutex
+	tokenMutex *sync.RWMutex
 	authToken  string
 
 	reqGen *rata.RequestGenerator
@@ -110,6 +110,8 @@ func (c *client) SubscribeToTcpEvents() (TcpEventSource, error) {
 func (c *client) doSubscribe(routeName string) (RawEventSource, error) {
 	eventSource, err := sse.Connect(c.streamingHTTPClient, time.Second, func() *http.Request {
 		request, err := c.reqGen.CreateRequest(routeName, nil, nil)
+		c.tokenMutex.RLock()
+		defer c.tokenMutex.RUnlock()
 		request.Header.Add("Authorization", "bearer "+c.authToken)
 		if err != nil {
 			panic(err) // totally shouldn't happen
@@ -139,6 +141,8 @@ func (c *client) createRequest(requestName string, params rata.Params, queryPara
 	req.URL.RawQuery = queryParams.Encode()
 	req.ContentLength = int64(len(requestJson))
 	req.Header.Set("Content-Type", "application/json")
+	c.tokenMutex.RLock()
+	defer c.tokenMutex.RUnlock()
 	req.Header.Add("Authorization", "bearer "+c.authToken)
 
 	return req, nil
