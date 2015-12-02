@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/cloudfoundry-incubator/cf_http"
@@ -34,6 +35,8 @@ func NewClient(url string) Client {
 		httpClient:          cf_http.NewClient(),
 		streamingHTTPClient: cf_http.NewStreamingClient(),
 
+		tokenMutex: &sync.Mutex{},
+
 		reqGen: rata.NewRequestGenerator(url, Routes),
 	}
 }
@@ -41,12 +44,16 @@ func NewClient(url string) Client {
 type client struct {
 	httpClient          *http.Client
 	streamingHTTPClient *http.Client
-	authToken           string
+
+	tokenMutex *sync.Mutex
+	authToken  string
 
 	reqGen *rata.RequestGenerator
 }
 
 func (c *client) SetToken(token string) {
+	c.tokenMutex.Lock()
+	defer c.tokenMutex.Unlock()
 	c.authToken = token
 }
 
