@@ -177,32 +177,64 @@ var _ = Describe("Client", func() {
 			})
 		})
 
-		Context("When the server returns an error", func() {
-			BeforeEach(func() {
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("POST", TCP_CREATE_ROUTE_MAPPINGS_API_URL),
-						ghttp.RespondWith(http.StatusBadRequest, nil),
-					),
-				)
+		Context("when the server returns an error", func() {
+			Context("other than unauthorized", func() {
+				BeforeEach(func() {
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("POST", TCP_CREATE_ROUTE_MAPPINGS_API_URL),
+							ghttp.RespondWith(http.StatusBadRequest, nil),
+						),
+					)
+				})
+
+				It("receives an error", func() {
+					Expect(err).To(HaveOccurred())
+				})
+
+				It("logs the request and response", func() {
+					expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+
+					r, err := ioutil.ReadAll(stdout)
+					log := string(r)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(log).To(ContainSubstring("REQUEST: "))
+					Expect(log).To(ContainSubstring("POST " + TCP_CREATE_ROUTE_MAPPINGS_API_URL + " HTTP/1.1"))
+					Expect(log).To(ContainSubstring(string(expectedBody)))
+
+					Expect(log).To(ContainSubstring("RESPONSE: "))
+					Expect(log).To(ContainSubstring("HTTP/1.1 400 Bad Request"))
+				})
 			})
 
-			It("receives an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
+			Context("unauthorized", func() {
+				BeforeEach(func() {
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("POST", TCP_CREATE_ROUTE_MAPPINGS_API_URL),
+							ghttp.RespondWith(http.StatusUnauthorized, nil),
+						),
+					)
+				})
 
-			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+				It("receives an unauthorized error", func() {
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).Should(Equal("unauthorized"))
+				})
 
-				r, err := ioutil.ReadAll(stdout)
-				log := string(r)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("POST " + TCP_CREATE_ROUTE_MAPPINGS_API_URL + " HTTP/1.1"))
-				Expect(log).To(ContainSubstring(string(expectedBody)))
+				It("logs the request and response", func() {
+					expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
-				Expect(log).To(ContainSubstring("RESPONSE: "))
-				Expect(log).To(ContainSubstring("HTTP/1.1 400 Bad Request"))
+					r, err := ioutil.ReadAll(stdout)
+					log := string(r)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(log).To(ContainSubstring("REQUEST: "))
+					Expect(log).To(ContainSubstring("POST " + TCP_CREATE_ROUTE_MAPPINGS_API_URL + " HTTP/1.1"))
+					Expect(log).To(ContainSubstring(string(expectedBody)))
+
+					Expect(log).To(ContainSubstring("RESPONSE: "))
+					Expect(log).To(ContainSubstring("HTTP/1.1 401 Unauthorized"))
+				})
 			})
 		})
 	})
@@ -247,31 +279,63 @@ var _ = Describe("Client", func() {
 		})
 
 		Context("When the server returns an error", func() {
-			BeforeEach(func() {
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("DELETE", ROUTES_API_URL),
-						ghttp.RespondWith(http.StatusBadRequest, nil),
-					),
-				)
+			Context("other than unauthorized", func() {
+				BeforeEach(func() {
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("DELETE", ROUTES_API_URL),
+							ghttp.RespondWith(http.StatusBadRequest, nil),
+						),
+					)
+				})
+
+				It("receives an error", func() {
+					Expect(err).To(HaveOccurred())
+				})
+
+				It("logs the request and response", func() {
+					expectedBody, _ := json.Marshal([]db.Route{route1, route2})
+
+					r, err := ioutil.ReadAll(stdout)
+					log := string(r)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(log).To(ContainSubstring("REQUEST: "))
+					Expect(log).To(ContainSubstring("DELETE " + ROUTES_API_URL + " HTTP/1.1"))
+					Expect(log).To(ContainSubstring(string(expectedBody)))
+
+					Expect(log).To(ContainSubstring("RESPONSE: "))
+					Expect(log).To(ContainSubstring("HTTP/1.1 400 Bad Request"))
+				})
 			})
 
-			It("receives an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
+			Context("unauthorized", func() {
+				BeforeEach(func() {
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("DELETE", ROUTES_API_URL),
+							ghttp.RespondWith(http.StatusUnauthorized, nil),
+						),
+					)
+				})
 
-			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.Route{route1, route2})
+				It("receives an unauthorized error", func() {
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).Should(Equal("unauthorized"))
+				})
 
-				r, err := ioutil.ReadAll(stdout)
-				log := string(r)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(log).To(ContainSubstring("REQUEST: "))
-				Expect(log).To(ContainSubstring("DELETE " + ROUTES_API_URL + " HTTP/1.1"))
-				Expect(log).To(ContainSubstring(string(expectedBody)))
+				It("logs the request and response", func() {
+					expectedBody, _ := json.Marshal([]db.Route{route1, route2})
 
-				Expect(log).To(ContainSubstring("RESPONSE: "))
-				Expect(log).To(ContainSubstring("HTTP/1.1 400 Bad Request"))
+					r, err := ioutil.ReadAll(stdout)
+					log := string(r)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(log).To(ContainSubstring("REQUEST: "))
+					Expect(log).To(ContainSubstring("DELETE " + ROUTES_API_URL + " HTTP/1.1"))
+					Expect(log).To(ContainSubstring(string(expectedBody)))
+
+					Expect(log).To(ContainSubstring("RESPONSE: "))
+					Expect(log).To(ContainSubstring("HTTP/1.1 401 Unauthorized"))
+				})
 			})
 		})
 	})

@@ -167,6 +167,10 @@ func (c *client) do(req *http.Request, response interface{}) error {
 
 	trace.DumpResponse(res)
 
+	if res.StatusCode == http.StatusUnauthorized {
+		return Error{Type: "unauthorized", Message: "unauthorized"}
+	}
+
 	if res.StatusCode > 299 {
 		errResponse := Error{}
 		json.NewDecoder(res.Body).Decode(&errResponse)
