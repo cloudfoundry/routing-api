@@ -1,6 +1,7 @@
 # values in this example are only suitable for testing and are not recommended
 # for production systems
 log_guid: "my_logs"
+uaa_url: "http://localhost:3000"
 uaa_verification_key: "-----BEGIN PUBLIC KEY-----
 
       MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDHFr+KICms+tuT1OXJwhCUmR2d

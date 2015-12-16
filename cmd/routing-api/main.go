@@ -155,7 +155,9 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 	if *devMode {
 		token = authentication.NullToken{}
 	} else {
-		token = authentication.NewAccessToken(cfg.UAAPublicKey)
+
+		uaaKeyFetcher := authentication.NewUaaKeyFetcher(logger, cfg.UAAEndpoint+"/token_key")
+		token = authentication.NewAccessToken(cfg.UAAPublicKey, uaaKeyFetcher)
 		err := token.CheckPublicToken()
 		if err != nil {
 			logger.Error("failed to check public token", err)

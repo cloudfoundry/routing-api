@@ -1,4 +1,5 @@
 log_guid: "my_logs"
+uaa_url: "http://localhost:3000"
 uaa_verification_key: "-----BEGIN PUBLIC KEY-----
 
       not a key

@@ -11,7 +11,6 @@ import (
 
 var _ = Describe("Config", func() {
 	Describe("NewConfigFromFile", func() {
-
 		Context("when auth is enabled", func() {
 			Context("when the file exists", func() {
 				It("returns a valid Config struct", func() {
@@ -26,12 +25,22 @@ var _ = Describe("Config", func() {
 					Expect(cfg.MaxConcurrentETCDRequests).To(Equal((uint)(10)))
 					Expect(cfg.UAAPublicKey).To(ContainSubstring("-----BEGIN PUBLIC KEY-----"))
 					Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
+					Expect(cfg.UAAEndpoint).To(Equal("http://localhost:3000"))
 				})
+
 				Context("when there is no UAA verification key", func() {
 					It("returns an error", func() {
 						cfg_file := "../example_config/missing_uaa_verification_key.yml"
 						_, err := config.NewConfigFromFile(cfg_file, false)
 
+						Expect(err).To(HaveOccurred())
+					})
+				})
+
+				Context("when there is no UAA url", func() {
+					It("returns an error", func() {
+						cfg_file := "../example_config/missing_uaa_url.yml"
+						_, err := config.NewConfigFromFile(cfg_file, false)
 						Expect(err).To(HaveOccurred())
 					})
 				})
@@ -61,6 +70,7 @@ var _ = Describe("Config", func() {
 					Expect(cfg.MaxConcurrentETCDRequests).To(Equal((uint)(10)))
 					Expect(cfg.UAAPublicKey).To(ContainSubstring("-----BEGIN PUBLIC KEY-----"))
 					Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
+					Expect(cfg.UAAEndpoint).To(Equal("http://localhost:3000"))
 				})
 
 				Context("when there is no UAA verification key", func() {
@@ -76,6 +86,24 @@ var _ = Describe("Config", func() {
 						Expect(cfg.MaxConcurrentETCDRequests).To(Equal((uint)(10)))
 						Expect(cfg.UAAPublicKey).To(BeEmpty())
 						Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
+						Expect(cfg.UAAEndpoint).To(Equal("http://localhost:3000"))
+					})
+				})
+
+				Context("when there is no UAA url", func() {
+					It("returns a valid config", func() {
+						cfg_file := "../example_config/missing_uaa_url.yml"
+						cfg, err := config.NewConfigFromFile(cfg_file, true)
+
+						Expect(err).NotTo(HaveOccurred())
+						Expect(cfg.LogGuid).To(Equal("my_logs"))
+						Expect(cfg.MetronConfig.Address).To(Equal("1.2.3.4"))
+						Expect(cfg.MetronConfig.Port).To(Equal("4567"))
+						Expect(cfg.DebugAddress).To(Equal("1.2.3.4:1234"))
+						Expect(cfg.MaxConcurrentETCDRequests).To(Equal((uint)(10)))
+						Expect(cfg.UAAPublicKey).To(ContainSubstring("-----BEGIN PUBLIC KEY-----"))
+						Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
+						Expect(cfg.UAAEndpoint).To(BeEmpty())
 					})
 				})
 			})
@@ -96,6 +124,7 @@ var _ = Describe("Config", func() {
 			Context("UAA errors", func() {
 				BeforeEach(func() {
 					test_config = `log_guid: "my_logs"
+uaa_url: "http://localhost:3000"
 uaa_verification_key: |
 
 debug_address: "1.2.3.4:1234"
