@@ -89,12 +89,20 @@ var _ = Describe("Token", func() {
 
 				signedKey, err = token.SignedString([]byte(UserPrivateKey))
 				Expect(err).NotTo(HaveOccurred())
-
-				signedKey = "bearer " + signedKey
 			})
 
 			It("does not return an error", func() {
-				err := accessTokenValidator.DecodeToken(signedKey, "route.advertise")
+				err := accessTokenValidator.DecodeToken("bearer "+signedKey, "route.advertise")
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("does not return an error if the token type string is capitalized", func() {
+				err := accessTokenValidator.DecodeToken("Bearer "+signedKey, "route.advertise")
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("does not return an error if the token type string is uppercase", func() {
+				err := accessTokenValidator.DecodeToken("BEARER "+signedKey, "route.advertise")
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
