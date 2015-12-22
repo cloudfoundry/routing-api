@@ -8,6 +8,8 @@ import (
 	"github.com/cloudfoundry-incubator/routing-api/authentication"
 	"github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/pivotal-golang/lager"
+	"github.com/pivotal-golang/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,6 +27,7 @@ var _ = Describe("Token", func() {
 		signedKey            string
 		UserPrivateKey       string
 		UAAPublicKey         string
+		logger               lager.Logger
 
 		token *jwt.Token
 		err   error
@@ -40,6 +43,7 @@ var _ = Describe("Token", func() {
 	BeforeEach(func() {
 		UserPrivateKey = "UserPrivateKey"
 		UAAPublicKey = "UAAPublicKey"
+		logger = lagertest.NewTestLogger("test")
 
 		fakeSigningMethod = &fakes.FakeSigningMethod{}
 		fakeSigningMethod.AlgStub = func() string {
@@ -71,7 +75,7 @@ var _ = Describe("Token", func() {
 		token.Header = header
 
 		fakeUaaKeyFetcher = &fakes.FakeUaaKeyFetcher{}
-		accessTokenValidator = authentication.NewAccessTokenValidator(UAAPublicKey, fakeUaaKeyFetcher)
+		accessTokenValidator = authentication.NewAccessTokenValidator(logger, UAAPublicKey, fakeUaaKeyFetcher)
 	})
 
 	Describe(".DecodeToken", func() {
@@ -303,7 +307,7 @@ var _ = Describe("Token", func() {
 
 	Describe(".CheckPublicToken", func() {
 		BeforeEach(func() {
-			accessTokenValidator = authentication.NewAccessTokenValidator("not a valid pem string", fakeUaaKeyFetcher)
+			accessTokenValidator = authentication.NewAccessTokenValidator(logger, "not a valid pem string", fakeUaaKeyFetcher)
 		})
 
 		It("returns an error if the public token is malformed", func() {

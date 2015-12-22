@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/pivotal-golang/lager"
 )
 
 //go:generate counterfeiter -o fakes/fake_token_validator.go . TokenValidator
@@ -26,13 +27,15 @@ func (_ NullTokenValidator) CheckPublicToken() error {
 }
 
 type accessToken struct {
+	logger        lager.Logger
 	uaaPublicKey  string
 	uaaKeyFetcher UaaKeyFetcher
 	rwlock        sync.RWMutex
 }
 
-func NewAccessTokenValidator(uaaPublicKey string, uaaKeyFetcher UaaKeyFetcher) TokenValidator {
+func NewAccessTokenValidator(logger lager.Logger, uaaPublicKey string, uaaKeyFetcher UaaKeyFetcher) TokenValidator {
 	return &accessToken{
+		logger:        logger,
 		uaaPublicKey:  uaaPublicKey,
 		uaaKeyFetcher: uaaKeyFetcher,
 		rwlock:        sync.RWMutex{},
@@ -40,8 +43,10 @@ func NewAccessTokenValidator(uaaPublicKey string, uaaKeyFetcher UaaKeyFetcher) T
 }
 
 func (accessToken *accessToken) DecodeToken(userToken string, desiredPermissions ...string) error {
+	logger := accessToken.logger.Session("decode-token")
+	logger.Debug("start")
+	defer logger.Debug("completed")
 	var err error
-
 	jwtToken, err := checkTokenFormat(userToken)
 	if err != nil {
 		return err
@@ -52,7 +57,7 @@ func (accessToken *accessToken) DecodeToken(userToken string, desiredPermissions
 	forceUaaKeyFetch := false
 
 	for i := 0; i < 2; i++ {
-		uaaKey, err = accessToken.getUaaTokenKey(forceUaaKeyFetch)
+		uaaKey, err = accessToken.getUaaTokenKey(logger, forceUaaKeyFetch)
 
 		if err == nil {
 			token, err = jwt.Parse(jwtToken, func(t *jwt.Token) (interface{}, error) {
@@ -61,6 +66,7 @@ func (accessToken *accessToken) DecodeToken(userToken string, desiredPermissions
 
 			if err != nil {
 				if matchesError(err, jwt.ValidationErrorSignatureInvalid) {
+					logger.Info("invalid-signature")
 					forceUaaKeyFetch = true
 					continue
 				}
@@ -114,8 +120,9 @@ func checkPublicKey(key string) error {
 	return nil
 }
 
-func (accessToken *accessToken) getUaaTokenKey(forceFetch bool) (string, error) {
+func (accessToken *accessToken) getUaaTokenKey(logger lager.Logger, forceFetch bool) (string, error) {
 	if accessToken.getUaaPublicKey() == "" || forceFetch {
+		logger.Debug("fetching-new-uaa-key")
 		key, err := accessToken.uaaKeyFetcher.FetchKey()
 		if err != nil {
 			return key, err
