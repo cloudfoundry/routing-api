@@ -150,15 +150,14 @@ func constructRouteRegister(logGuid string, database db.DB, logger lager.Logger)
 }
 
 func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.Statter, stopChan chan struct{}, logger lager.Logger) ifrit.Runner {
-	var token authentication.Token
+	var tokenValidator authentication.TokenValidator
 
 	if *devMode {
-		token = authentication.NullToken{}
+		tokenValidator = authentication.NullTokenValidator{}
 	} else {
-
 		uaaKeyFetcher := authentication.NewUaaKeyFetcher(logger, cfg.UAAEndpoint+"/token_key")
-		token = authentication.NewAccessToken(cfg.UAAPublicKey, uaaKeyFetcher)
-		err := token.CheckPublicToken()
+		tokenValidator = authentication.NewAccessTokenValidator(cfg.UAAPublicKey, uaaKeyFetcher)
+		err := tokenValidator.CheckPublicToken()
 		if err != nil {
 			logger.Error("failed to check public token", err)
 			os.Exit(1)
@@ -166,10 +165,10 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 	}
 
 	validator := handlers.NewValidator()
-	routesHandler := handlers.NewRoutesHandler(token, *maxTTL, validator, database, logger)
-	eventStreamHandler := handlers.NewEventStreamHandler(token, database, logger, statsdClient, stopChan)
-	routeGroupsHandler := handlers.NewRouteGroupsHandler(token, logger)
-	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(token, validator, database, logger)
+	routesHandler := handlers.NewRoutesHandler(tokenValidator, *maxTTL, validator, database, logger)
+	eventStreamHandler := handlers.NewEventStreamHandler(tokenValidator, database, logger, statsdClient, stopChan)
+	routeGroupsHandler := handlers.NewRouteGroupsHandler(tokenValidator, logger)
+	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(tokenValidator, validator, database, logger)
 
 	actions := rata.Handlers{
 		routing_api.UpsertRoute:           route(routesHandler.Upsert),

@@ -9,19 +9,19 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-//go:generate counterfeiter -o fakes/fake_token.go . Token
-type Token interface {
+//go:generate counterfeiter -o fakes/fake_token_validator.go . TokenValidator
+type TokenValidator interface {
 	DecodeToken(userToken string, desiredPermissions ...string) error
 	CheckPublicToken() error
 }
 
-type NullToken struct{}
+type NullTokenValidator struct{}
 
-func (_ NullToken) DecodeToken(_ string, _ ...string) error {
+func (_ NullTokenValidator) DecodeToken(_ string, _ ...string) error {
 	return nil
 }
 
-func (_ NullToken) CheckPublicToken() error {
+func (_ NullTokenValidator) CheckPublicToken() error {
 	return nil
 }
 
@@ -31,7 +31,7 @@ type accessToken struct {
 	rwlock        sync.RWMutex
 }
 
-func NewAccessToken(uaaPublicKey string, uaaKeyFetcher UaaKeyFetcher) Token {
+func NewAccessTokenValidator(uaaPublicKey string, uaaKeyFetcher UaaKeyFetcher) TokenValidator {
 	return &accessToken{
 		uaaPublicKey:  uaaPublicKey,
 		uaaKeyFetcher: uaaKeyFetcher,

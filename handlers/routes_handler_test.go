@@ -25,15 +25,15 @@ var _ = Describe("RoutesHandler", func() {
 		database         *fake_db.FakeDB
 		logger           *lagertest.TestLogger
 		validator        *fake_validator.FakeRouteValidator
-		token            *fake_token.FakeToken
+		tokenValidator   *fake_token.FakeTokenValidator
 	)
 
 	BeforeEach(func() {
 		database = &fake_db.FakeDB{}
 		validator = &fake_validator.FakeRouteValidator{}
-		token = &fake_token.FakeToken{}
+		tokenValidator = &fake_token.FakeTokenValidator{}
 		logger = lagertest.NewTestLogger("routing-api-test")
-		routesHandler = handlers.NewRoutesHandler(token, 50, validator, database, logger)
+		routesHandler = handlers.NewRoutesHandler(tokenValidator, 50, validator, database, logger)
 		responseRecorder = httptest.NewRecorder()
 	})
 
@@ -50,13 +50,13 @@ var _ = Describe("RoutesHandler", func() {
 			request = handlers.NewTestRequest("")
 
 			routesHandler.List(responseRecorder, request)
-			_, permission := token.DecodeTokenArgsForCall(0)
+			_, permission := tokenValidator.DecodeTokenArgsForCall(0)
 			Expect(permission).To(ConsistOf(handlers.RoutingRoutesReadScope))
 		})
 
 		Context("when the UAA token is not valid", func() {
 			BeforeEach(func() {
-				token.DecodeTokenReturns(errors.New("Not valid"))
+				tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
 			})
 
 			It("returns an Unauthorized status code", func() {
@@ -203,7 +203,7 @@ var _ = Describe("RoutesHandler", func() {
 
 			routesHandler.Delete(responseRecorder, request)
 
-			_, permission := token.DecodeTokenArgsForCall(0)
+			_, permission := tokenValidator.DecodeTokenArgsForCall(0)
 			Expect(permission).To(ConsistOf(handlers.RoutingRoutesWriteScope))
 		})
 
@@ -283,7 +283,7 @@ var _ = Describe("RoutesHandler", func() {
 
 		Context("when the UAA token is not valid", func() {
 			BeforeEach(func() {
-				token.DecodeTokenReturns(errors.New("Not valid"))
+				tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
 			})
 
 			It("returns an Unauthorized status code", func() {
@@ -317,7 +317,7 @@ var _ = Describe("RoutesHandler", func() {
 
 				routesHandler.Upsert(responseRecorder, request)
 
-				_, permission := token.DecodeTokenArgsForCall(0)
+				_, permission := tokenValidator.DecodeTokenArgsForCall(0)
 				Expect(permission).To(ConsistOf(handlers.RoutingRoutesWriteScope))
 			})
 
@@ -444,7 +444,7 @@ var _ = Describe("RoutesHandler", func() {
 
 			Context("when the UAA token is not valid", func() {
 				BeforeEach(func() {
-					token.DecodeTokenReturns(errors.New("Not valid"))
+					tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
 				})
 
 				It("returns an Unauthorized status code", func() {

@@ -19,14 +19,14 @@ var _ = Describe("RouterGroupsHandler", func() {
 		routerGroupHandler *handlers.RouterGroupsHandler
 		request            *http.Request
 		responseRecorder   *httptest.ResponseRecorder
-		token              *fake_token.FakeToken
+		tokenValidator     *fake_token.FakeTokenValidator
 		logger             *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test-router-group")
-		token = &fake_token.FakeToken{}
-		routerGroupHandler = handlers.NewRouteGroupsHandler(token, logger)
+		tokenValidator = &fake_token.FakeTokenValidator{}
+		routerGroupHandler = handlers.NewRouteGroupsHandler(tokenValidator, logger)
 		responseRecorder = httptest.NewRecorder()
 	})
 
@@ -51,13 +51,13 @@ var _ = Describe("RouterGroupsHandler", func() {
 			request, err = http.NewRequest("GET", routing_api.ListRouterGroups, nil)
 			Expect(err).NotTo(HaveOccurred())
 			routerGroupHandler.ListRouterGroups(responseRecorder, request)
-			_, permission := token.DecodeTokenArgsForCall(0)
+			_, permission := tokenValidator.DecodeTokenArgsForCall(0)
 			Expect(permission).To(ConsistOf(handlers.RouterGroupsReadScope))
 		})
 
 		Context("when authorization token is invalid", func() {
 			BeforeEach(func() {
-				token.DecodeTokenReturns(errors.New("kaboom"))
+				tokenValidator.DecodeTokenReturns(errors.New("kaboom"))
 			})
 
 			It("returns Unauthorized error", func() {

@@ -19,12 +19,12 @@ var _ = Describe("Token", func() {
 		invalidUaaPEMKey = "-----BEGIN PUBLIC KEY-----\nMIHfMA0SCSqGSIb3EQEBAQUAA4GNADCBiQKBgQDHFr+KICms+tuT1OXJwhCUmR2d\nKVy7psa8xzElSyzqx7oJyfJ1JZyOzToj9T5SfTIq396agbHJWVfYphNahvZ/7uMX\nqHxf+ZH9BL1gk9Y6kCnbM5R60gfwjyW1/dQPjOzn9N394zd2FJoFHwdq9Qs0wBug\nspULZVNRxq7veq/fzwIDAQAB\n-----END PUBLIC KEY-----"
 	)
 	var (
-		accessToken       authentication.Token
-		fakeSigningMethod *fakes.FakeSigningMethod
-		fakeUaaKeyFetcher *fakes.FakeUaaKeyFetcher
-		signedKey         string
-		UserPrivateKey    string
-		UAAPublicKey      string
+		accessTokenValidator authentication.TokenValidator
+		fakeSigningMethod    *fakes.FakeSigningMethod
+		fakeUaaKeyFetcher    *fakes.FakeUaaKeyFetcher
+		signedKey            string
+		UserPrivateKey       string
+		UAAPublicKey         string
 
 		token *jwt.Token
 		err   error
@@ -71,7 +71,7 @@ var _ = Describe("Token", func() {
 		token.Header = header
 
 		fakeUaaKeyFetcher = &fakes.FakeUaaKeyFetcher{}
-		accessToken = authentication.NewAccessToken(UAAPublicKey, fakeUaaKeyFetcher)
+		accessTokenValidator = authentication.NewAccessTokenValidator(UAAPublicKey, fakeUaaKeyFetcher)
 	})
 
 	Describe(".DecodeToken", func() {
@@ -90,21 +90,21 @@ var _ = Describe("Token", func() {
 			})
 
 			It("does not return an error", func() {
-				err := accessToken.DecodeToken(signedKey, "route.advertise")
+				err := accessTokenValidator.DecodeToken(signedKey, "route.advertise")
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 
 		Context("when a token is not valid", func() {
 			It("returns an error if the user token is not signed", func() {
-				err = accessToken.DecodeToken("bearer not-a-signed-key", "not a permission")
+				err = accessTokenValidator.DecodeToken("bearer not-a-signed-key", "not a permission")
 				Expect(err).To(HaveOccurred())
 				verifyErrorType(err, jwt.ValidationErrorMalformed, "token contains an invalid number of segments")
 				Expect(fakeUaaKeyFetcher.FetchKeyCallCount()).To(Equal(0))
 			})
 
 			It("returns an invalid token format when there is no token type", func() {
-				err = accessToken.DecodeToken("has-no-token-type", "not a permission")
+				err = accessTokenValidator.DecodeToken("has-no-token-type", "not a permission")
 
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal("Invalid token format"))
@@ -112,7 +112,7 @@ var _ = Describe("Token", func() {
 			})
 
 			It("returns an invalid token type when type is not bearer", func() {
-				err = accessToken.DecodeToken("basic some-auth", "not a permission")
+				err = accessTokenValidator.DecodeToken("basic some-auth", "not a permission")
 
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal("Invalid token type: basic"))
@@ -137,7 +137,7 @@ var _ = Describe("Token", func() {
 
 			Context("uaa returns a verification key", func() {
 				It("refreshes the key and returns an invalid signature error", func() {
-					err := accessToken.DecodeToken(signedKey, "route.advertise")
+					err := accessTokenValidator.DecodeToken(signedKey, "route.advertise")
 					Expect(err).To(HaveOccurred())
 					Expect(fakeUaaKeyFetcher.FetchKeyCallCount()).To(Equal(1))
 					verifyErrorType(err, jwt.ValidationErrorSignatureInvalid, "invalid signature")
@@ -150,7 +150,7 @@ var _ = Describe("Token", func() {
 				})
 
 				It("tries to refresh key and returns the uaa error", func() {
-					err := accessToken.DecodeToken(signedKey, "route.advertise")
+					err := accessTokenValidator.DecodeToken(signedKey, "route.advertise")
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(Equal("booom"))
 					Expect(fakeUaaKeyFetcher.FetchKeyCallCount()).To(Equal(1))
@@ -185,7 +185,7 @@ var _ = Describe("Token", func() {
 			})
 
 			It("fetches new key and then validates the token", func() {
-				err := accessToken.DecodeToken(signedKey, "route.advertise")
+				err := accessTokenValidator.DecodeToken(signedKey, "route.advertise")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(fakeUaaKeyFetcher.FetchKeyCallCount()).To(Equal(1))
 			})
@@ -199,7 +199,7 @@ var _ = Describe("Token", func() {
 							go func(wg *sync.WaitGroup) {
 								defer GinkgoRecover()
 								defer wg.Done()
-								err := accessToken.DecodeToken(signedKey, "route.advertise")
+								err := accessTokenValidator.DecodeToken(signedKey, "route.advertise")
 								Expect(err).NotTo(HaveOccurred())
 							}(&wg)
 						}
@@ -235,7 +235,7 @@ var _ = Describe("Token", func() {
 							go func(wg *sync.WaitGroup) {
 								defer GinkgoRecover()
 								defer wg.Done()
-								err := accessToken.DecodeToken(signedKey, "route.advertise")
+								err := accessTokenValidator.DecodeToken(signedKey, "route.advertise")
 								select {
 								case fail := <-resultChannel:
 									if fail {
@@ -272,7 +272,7 @@ var _ = Describe("Token", func() {
 			})
 
 			It("returns an error if the token is expired", func() {
-				err = accessToken.DecodeToken(signedKey, "route.advertise")
+				err = accessTokenValidator.DecodeToken(signedKey, "route.advertise")
 				Expect(err).To(HaveOccurred())
 				verifyErrorType(err, jwt.ValidationErrorExpired, "token is expired")
 			})
@@ -293,7 +293,7 @@ var _ = Describe("Token", func() {
 			})
 
 			It("returns an error if the the user does not have requested permissions", func() {
-				err = accessToken.DecodeToken(signedKey, "route.my-permissions", "some.other.scope")
+				err = accessTokenValidator.DecodeToken(signedKey, "route.my-permissions", "some.other.scope")
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal("Token does not have 'route.my-permissions', 'some.other.scope' scope"))
 			})
@@ -303,11 +303,11 @@ var _ = Describe("Token", func() {
 
 	Describe(".CheckPublicToken", func() {
 		BeforeEach(func() {
-			accessToken = authentication.NewAccessToken("not a valid pem string", fakeUaaKeyFetcher)
+			accessTokenValidator = authentication.NewAccessTokenValidator("not a valid pem string", fakeUaaKeyFetcher)
 		})
 
 		It("returns an error if the public token is malformed", func() {
-			err = accessToken.CheckPublicToken()
+			err = accessTokenValidator.CheckPublicToken()
 			Expect(err).To(HaveOccurred())
 		})
 	})

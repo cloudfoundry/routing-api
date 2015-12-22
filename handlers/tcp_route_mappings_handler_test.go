@@ -34,15 +34,15 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 		validator               *fake_validator.FakeRouteValidator
 		database                *fake_db.FakeDB
 		logger                  *lagertest.TestLogger
-		token                   *fake_token.FakeToken
+		tokenValidator          *fake_token.FakeTokenValidator
 	)
 
 	BeforeEach(func() {
 		database = &fake_db.FakeDB{}
-		token = &fake_token.FakeToken{}
+		tokenValidator = &fake_token.FakeTokenValidator{}
 		validator = &fake_validator.FakeRouteValidator{}
 		logger = lagertest.NewTestLogger("routing-api-test")
-		tcpRouteMappingsHandler = handlers.NewTcpRouteMappingsHandler(token, validator, database, logger)
+		tcpRouteMappingsHandler = handlers.NewTcpRouteMappingsHandler(tokenValidator, validator, database, logger)
 		responseRecorder = httptest.NewRecorder()
 	})
 
@@ -64,7 +64,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 				Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 
-				_, permission := token.DecodeTokenArgsForCall(0)
+				_, permission := tokenValidator.DecodeTokenArgsForCall(0)
 				Expect(permission).To(ConsistOf(handlers.RoutingRoutesWriteScope))
 			})
 
@@ -186,7 +186,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 
 			Context("when the UAA token is not valid", func() {
 				BeforeEach(func() {
-					token.DecodeTokenReturns(errors.New("Not valid"))
+					tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
 				})
 
 				It("returns an Unauthorized status code", func() {
@@ -207,7 +207,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			tcpRouteMappingsHandler.List(responseRecorder, request)
 			Expect(responseRecorder.Code).To(Equal(http.StatusOK))
 
-			_, permission := token.DecodeTokenArgsForCall(0)
+			_, permission := tokenValidator.DecodeTokenArgsForCall(0)
 			Expect(permission).To(ConsistOf(handlers.RoutingRoutesReadScope))
 		})
 
@@ -262,7 +262,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 
 		Context("when the UAA token is not valid", func() {
 			BeforeEach(func() {
-				token.DecodeTokenReturns(errors.New("Not valid"))
+				tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
 			})
 
 			It("returns an Unauthorized status code", func() {
@@ -293,7 +293,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				tcpRouteMappingsHandler.Delete(responseRecorder, request)
 				Expect(responseRecorder.Code).To(Equal(http.StatusNoContent))
 
-				_, permission := token.DecodeTokenArgsForCall(0)
+				_, permission := tokenValidator.DecodeTokenArgsForCall(0)
 				Expect(permission).To(ConsistOf(handlers.RoutingRoutesWriteScope))
 			})
 
@@ -425,7 +425,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 
 			Context("when the UAA token is not valid", func() {
 				BeforeEach(func() {
-					token.DecodeTokenReturns(errors.New("Not valid"))
+					tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
 				})
 
 				It("returns an Unauthorized status code", func() {

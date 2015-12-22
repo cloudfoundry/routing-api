@@ -20,22 +20,22 @@ import (
 
 var _ = Describe("EventsHandler", func() {
 	var (
-		handler  handlers.EventStreamHandler
-		database *fake_db.FakeDB
-		logger   *lagertest.TestLogger
-		token    *fake_token.FakeToken
-		server   *httptest.Server
-		stats    *fake_statsd.FakePartialStatsdClient
-		stopChan chan struct{}
+		handler        handlers.EventStreamHandler
+		database       *fake_db.FakeDB
+		logger         *lagertest.TestLogger
+		tokenValidator *fake_token.FakeTokenValidator
+		server         *httptest.Server
+		stats          *fake_statsd.FakePartialStatsdClient
+		stopChan       chan struct{}
 	)
 
 	BeforeEach(func() {
-		token = &fake_token.FakeToken{}
+		tokenValidator = &fake_token.FakeTokenValidator{}
 		database = &fake_db.FakeDB{}
 		logger = lagertest.NewTestLogger("event-handler-test")
 		stats = new(fake_statsd.FakePartialStatsdClient)
 		stopChan = make(chan struct{})
-		handler = *handlers.NewEventStreamHandler(token, database, logger, stats, stopChan)
+		handler = *handlers.NewEventStreamHandler(tokenValidator, database, logger, stats, stopChan)
 	})
 
 	AfterEach(func(done Done) {
@@ -72,13 +72,13 @@ var _ = Describe("EventsHandler", func() {
 			})
 
 			It("checks for routing.routes.read scope", func() {
-				_, permission := token.DecodeTokenArgsForCall(0)
+				_, permission := tokenValidator.DecodeTokenArgsForCall(0)
 				Expect(permission).To(ConsistOf(handlers.RoutingRoutesReadScope))
 			})
 
 			Context("when the user has incorrect scopes", func() {
 				BeforeEach(func() {
-					token.DecodeTokenReturns(errors.New("Not valid"))
+					tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
 				})
 
 				It("returns an Unauthorized status code", func() {
