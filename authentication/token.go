@@ -54,21 +54,20 @@ func (accessToken *accessToken) DecodeToken(userToken string, desiredPermissions
 	for i := 0; i < 2; i++ {
 		uaaKey, err = accessToken.getUaaTokenKey(forceUaaKeyFetch)
 
-		if err != nil {
-			return err
-		}
+		if err == nil {
+			token, err = jwt.Parse(jwtToken, func(t *jwt.Token) (interface{}, error) {
+				return []byte(uaaKey), nil
+			})
 
-		token, err = jwt.Parse(jwtToken, func(t *jwt.Token) (interface{}, error) {
-			return []byte(uaaKey), nil
-		})
-
-		if err != nil {
-			if matchesError(err, jwt.ValidationErrorSignatureInvalid) {
-				forceUaaKeyFetch = true
-				continue
+			if err != nil {
+				if matchesError(err, jwt.ValidationErrorSignatureInvalid) {
+					forceUaaKeyFetch = true
+					continue
+				}
 			}
-			return err
 		}
+
+		break
 	}
 
 	if err != nil {
