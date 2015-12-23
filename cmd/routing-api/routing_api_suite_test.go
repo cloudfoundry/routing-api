@@ -2,8 +2,10 @@ package main_test
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/cloudfoundry-incubator/routing-api"
@@ -13,23 +15,28 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	"github.com/onsi/gomega/ghttp"
 
 	"testing"
 	"time"
 )
 
-var etcdPort int
-var etcdUrl string
-var etcdRunner *etcdstorerunner.ETCDClusterRunner
-var etcdAdapter storeadapter.StoreAdapter
+var (
+	etcdPort    int
+	etcdUrl     string
+	etcdRunner  *etcdstorerunner.ETCDClusterRunner
+	etcdAdapter storeadapter.StoreAdapter
 
-var client routing_api.Client
-var routingAPIBinPath string
-var routingAPIAddress string
-var routingAPIArgs testrunner.Args
-var routingAPIPort uint16
-var routingAPIIP string
-var routingAPISystemDomain string
+	client                 routing_api.Client
+	routingAPIBinPath      string
+	routingAPIAddress      string
+	routingAPIArgs         testrunner.Args
+	routingAPIPort         uint16
+	routingAPIIP           string
+	routingAPISystemDomain string
+	oauthServer            *ghttp.Server
+	oauthServerPort        string
+)
 
 func TestMain(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -48,7 +55,9 @@ var _ = SynchronizedBeforeSuite(
 	},
 )
 
-var _ = SynchronizedAfterSuite(func() {}, gexec.CleanupBuildArtifacts)
+var _ = SynchronizedAfterSuite(func() {}, func() {
+	gexec.CleanupBuildArtifacts()
+})
 
 var _ = BeforeEach(func() {
 	etcdPort = 4001 + GinkgoParallelNode()
@@ -69,6 +78,11 @@ var _ = BeforeEach(func() {
 
 	client = routing_api.NewClient(routingAPIURL.String())
 
+	oauthServer = ghttp.NewServer()
+	oauthServer.AllowUnhandledRequests = true
+	oauthServer.UnhandledRequestStatusCode = http.StatusOK
+	oauthServerPort = getServerPort(oauthServer.URL())
+
 	routingAPIArgs = testrunner.Args{
 		Port:         routingAPIPort,
 		IP:           routingAPIIP,
@@ -83,13 +97,15 @@ var _ = AfterEach(func() {
 	etcdAdapter.Disconnect()
 	etcdRunner.Reset()
 	etcdRunner.Stop()
+	oauthServer.Close()
 })
 
 func createConfig() string {
-	type statsdConfig struct {
-		Port int
+	type customConfig struct {
+		Port    int
+		UAAPort string
 	}
-	actualStatsdConfig := statsdConfig{Port: 8125 + GinkgoParallelNode()}
+	actualStatsdConfig := customConfig{Port: 8125 + GinkgoParallelNode(), UAAPort: oauthServerPort}
 	workingDir, _ := os.Getwd()
 	template, err := template.ParseFiles(workingDir + "/../../example_config/example_template.yml")
 	Expect(err).NotTo(HaveOccurred())
@@ -102,4 +118,10 @@ func createConfig() string {
 	Expect(err).NotTo(HaveOccurred())
 
 	return configFilePath
+}
+
+func getServerPort(url string) string {
+	endpoints := strings.Split(url, ":")
+	Expect(endpoints).To(HaveLen(3))
+	return endpoints[2]
 }

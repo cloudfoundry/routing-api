@@ -15,11 +15,16 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
+	"github.com/onsi/gomega/ghttp"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 )
 
 var session *Session
+
+const (
+	TOKEN_KEY_ENDPOINT = "/token_key"
+)
 
 var _ = Describe("Main", func() {
 	AfterEach(func() {
@@ -41,7 +46,7 @@ var _ = Describe("Main", func() {
 	})
 
 	It("exits 1 if an illegal port number is provided", func() {
-		session = RoutingApi("-port=65538", "-config=../../example_config/bad_uaa_verification_key.yml", "-ip='127.0.0.1'", "-systemDomain='domain")
+		session = RoutingApi("-port=65538", "-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain")
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("Port must be in range 0 - 65535"))
 	})
@@ -53,18 +58,43 @@ var _ = Describe("Main", func() {
 	})
 
 	It("exits 1 if the uaa_verification_key is not a valid PEM format", func() {
-		session = RoutingApi("-config=../../example_config/bad_uaa_verification_key.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
+		oauthServer.AppendHandlers(
+			ghttp.CombineHandlers(
+				ghttp.VerifyRequest("GET", TOKEN_KEY_ENDPOINT),
+				ghttp.RespondWith(http.StatusOK, `{"alg":"rsa", "value": "Invalid PEM key" }`),
+			),
+		)
+		args := routingAPIArgs
+		args.DevMode = false
+		session = RoutingApi(args.ArgSlice()...)
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("Public uaa token must be PEM encoded"))
 	})
 
-	It("exits 1 if the uaa_verification_key is missing and non dev mode", func() {
-		session = RoutingApi("-config=../../example_config/missing_uaa_verification_key.yml", "-ip='127.0.0.1'", "-systemDomain='domain'", etcdUrl)
+	It("exits 1 if the uaa_verification_key cannot be fetched on startup and non dev mode", func() {
+		oauthServer.AppendHandlers(
+			ghttp.CombineHandlers(
+				ghttp.VerifyRequest("GET", TOKEN_KEY_ENDPOINT),
+				ghttp.RespondWith(http.StatusInternalServerError, `{}`),
+			),
+		)
+		args := routingAPIArgs
+		args.DevMode = false
+		session = RoutingApi(args.ArgSlice()...)
 		Eventually(session).Should(Exit(1))
-		Eventually(session).Should(Say("No uaa_verification_key specified"))
+		Eventually(session).Should(Say("Failed to get verification key from UAA"))
 	})
 
 	Context("when initialized correctly and etcd is running", func() {
+		BeforeEach(func() {
+			oauthServer.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", TOKEN_KEY_ENDPOINT),
+					ghttp.RespondWith(http.StatusOK, `{"alg":"rsa", "value": "-----BEGIN PUBLIC KEY-----MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDHFr+KICms+tuT1OXJwhCUmR2dKVy7psa8xzElSyzqx7oJyfJ1JZyOzToj9T5SfTIq396agbHJWVfYphNahvZ/7uMXqHxf+ZH9BL1gk9Y6kCnbM5R60gfwjyW1/dQPjOzn9N394zd2FJoFHwdq9Qs0wBugspULZVNRxq7veq/fzwIDAQAB-----END PUBLIC KEY-----" }`),
+				),
+			)
+		})
+
 		It("unregisters from etcd when the process exits", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)

@@ -156,10 +156,15 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 		tokenValidator = authentication.NullTokenValidator{}
 	} else {
 		uaaKeyFetcher := authentication.NewUaaKeyFetcher(logger, cfg.UAAEndpoint+"/token_key")
-		tokenValidator = authentication.NewAccessTokenValidator(logger, cfg.UAAPublicKey, uaaKeyFetcher)
-		err := tokenValidator.CheckPublicToken()
+		uaaPublicKey, err := uaaKeyFetcher.FetchKey()
 		if err != nil {
-			logger.Error("failed to check public token", err)
+			logger.Error("Failed to get verification key from UAA", err)
+			os.Exit(1)
+		}
+		tokenValidator = authentication.NewAccessTokenValidator(logger, uaaPublicKey, uaaKeyFetcher)
+		err = tokenValidator.CheckPublicToken()
+		if err != nil {
+			logger.Error("Failed to check public token", err)
 			os.Exit(1)
 		}
 	}
