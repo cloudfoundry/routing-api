@@ -2,16 +2,16 @@ package handlers_test
 
 import (
 	"errors"
-	"net/http"
-	"net/http/httptest"
-
 	routing_api "github.com/cloudfoundry-incubator/routing-api"
 	fake_token "github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
 	fake_validator "github.com/cloudfoundry-incubator/routing-api/handlers/fakes"
+	"github.com/cloudfoundry-incubator/routing-api/metrics"
 	"github.com/pivotal-golang/lager/lagertest"
+	"net/http"
+	"net/http/httptest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -55,7 +55,11 @@ var _ = Describe("RoutesHandler", func() {
 		})
 
 		Context("when the UAA token is not valid", func() {
+			var (
+				currentCount int64
+			)
 			BeforeEach(func() {
+				currentCount = metrics.GetTokenErrors()
 				tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
 			})
 
@@ -63,6 +67,7 @@ var _ = Describe("RoutesHandler", func() {
 				request = handlers.NewTestRequest("")
 				routesHandler.List(responseRecorder, request)
 				Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
+				Expect(metrics.GetTokenErrors()).To(Equal(currentCount + 1))
 			})
 		})
 
@@ -282,7 +287,11 @@ var _ = Describe("RoutesHandler", func() {
 		})
 
 		Context("when the UAA token is not valid", func() {
+			var (
+				currentCount int64
+			)
 			BeforeEach(func() {
+				currentCount = metrics.GetTokenErrors()
 				tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
 			})
 
@@ -291,6 +300,7 @@ var _ = Describe("RoutesHandler", func() {
 				routesHandler.Delete(responseRecorder, request)
 
 				Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
+				Expect(metrics.GetTokenErrors()).To(Equal(currentCount + 1))
 			})
 		})
 	})
@@ -443,7 +453,11 @@ var _ = Describe("RoutesHandler", func() {
 			})
 
 			Context("when the UAA token is not valid", func() {
+				var (
+					currentCount int64
+				)
 				BeforeEach(func() {
+					currentCount = metrics.GetTokenErrors()
 					tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
 				})
 
@@ -452,6 +466,7 @@ var _ = Describe("RoutesHandler", func() {
 					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
+					Expect(metrics.GetTokenErrors()).To(Equal(currentCount + 1))
 				})
 			})
 		})

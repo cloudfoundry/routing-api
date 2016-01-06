@@ -2,15 +2,15 @@ package handlers_test
 
 import (
 	"errors"
-	"net/http"
-	"net/http/httptest"
-
 	"github.com/cloudfoundry-incubator/routing-api"
 	fake_token "github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
+	"github.com/cloudfoundry-incubator/routing-api/metrics"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-golang/lager/lagertest"
+	"net/http"
+	"net/http/httptest"
 )
 
 var _ = Describe("RouterGroupsHandler", func() {
@@ -56,7 +56,11 @@ var _ = Describe("RouterGroupsHandler", func() {
 		})
 
 		Context("when authorization token is invalid", func() {
+			var (
+				currentCount int64
+			)
 			BeforeEach(func() {
+				currentCount = metrics.GetTokenErrors()
 				tokenValidator.DecodeTokenReturns(errors.New("kaboom"))
 			})
 
@@ -66,6 +70,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				Expect(err).NotTo(HaveOccurred())
 				routerGroupHandler.ListRouterGroups(responseRecorder, request)
 				Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
+				Expect(metrics.GetTokenErrors()).To(Equal(currentCount + 1))
 			})
 		})
 

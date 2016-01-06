@@ -100,7 +100,7 @@ var _ = Describe("Metrics", func() {
 		It("periodically gets total routes", func() {
 			tickChan <- time.Now()
 
-			Eventually(stats.GaugeCallCount).Should(Equal(4))
+			Eventually(stats.GaugeCallCount).Should(Equal(6))
 
 			verifyGaugeCall("total_routes", 5, 1.0, 2)
 			verifyGaugeCall("total_tcp_routes", 3, 1.0, 3)
@@ -201,5 +201,40 @@ var _ = Describe("Metrics", func() {
 				})
 			})
 		})
+
+		Context("When the token error counter is incremented", func() {
+			var (
+				currentTokenErrors int64
+			)
+
+			BeforeEach(func() {
+				currentTokenErrors = GetTokenErrors()
+				IncrementTokenError()
+			})
+
+			It("emits the incremented token error metric", func() {
+				tickChan <- time.Now()
+				Eventually(stats.GaugeCallCount).Should(Equal(6))
+				verifyGaugeCall("total_token_errors", currentTokenErrors+1, 1.0, 4)
+			})
+		})
+
+		Context("When the key verification refreshed counter is incremented", func() {
+			var (
+				currentKeyRefreshEventCount int64
+			)
+
+			BeforeEach(func() {
+				currentKeyRefreshEventCount = GetKeyVerificationRefreshCount()
+				IncrementKeyVerificationRefreshCount()
+			})
+
+			It("emits token error metrics", func() {
+				tickChan <- time.Now()
+				Eventually(stats.GaugeCallCount).Should(Equal(6))
+				verifyGaugeCall("key_refresh_events", currentKeyRefreshEventCount+1, 1.0, 5)
+			})
+		})
+
 	})
 })

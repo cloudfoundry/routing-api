@@ -2,20 +2,20 @@ package handlers_test
 
 import (
 	"errors"
-	"io"
-	"net/http"
-	"net/http/httptest"
-
 	fake_token "github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
+	"github.com/cloudfoundry-incubator/routing-api/metrics"
 	fake_statsd "github.com/cloudfoundry-incubator/routing-api/metrics/fakes"
 	"github.com/cloudfoundry/storeadapter"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-golang/lager/lagertest"
 	"github.com/vito/go-sse/sse"
+	"io"
+	"net/http"
+	"net/http/httptest"
 )
 
 var _ = Describe("EventsHandler", func() {
@@ -77,12 +77,17 @@ var _ = Describe("EventsHandler", func() {
 			})
 
 			Context("when the user has incorrect scopes", func() {
+				var (
+					currentCount int64
+				)
 				BeforeEach(func() {
+					currentCount = metrics.GetTokenErrors()
 					tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
 				})
 
 				It("returns an Unauthorized status code", func() {
 					Expect(response.StatusCode).To(Equal(http.StatusUnauthorized))
+					Expect(metrics.GetTokenErrors()).To(Equal(currentCount + 1))
 				})
 			})
 

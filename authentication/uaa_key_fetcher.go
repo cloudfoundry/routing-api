@@ -3,10 +3,10 @@ package authentication
 import (
 	"encoding/json"
 	"errors"
-	"net/http"
-
 	"github.com/cloudfoundry-incubator/cf_http"
+	"github.com/cloudfoundry-incubator/routing-api/metrics"
 	"github.com/pivotal-golang/lager"
+	"net/http"
 )
 
 //go:generate counterfeiter -o fakes/fake_uaa_key_fetcher.go . UaaKeyFetcher
@@ -37,6 +37,7 @@ func (f *uaaKeyFetcher) FetchKey() (string, error) {
 	logger := f.logger.Session("uaa-key-fetcher")
 	logger.Info("fetch-key-started")
 	defer logger.Info("fetch-key-completed")
+	defer metrics.IncrementKeyVerificationRefreshCount()
 
 	resp, err := f.httpClient.Get(f.uaaGetKeyEndpoint)
 	if err != nil {

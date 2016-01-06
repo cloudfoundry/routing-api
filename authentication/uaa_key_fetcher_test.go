@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	"github.com/cloudfoundry-incubator/routing-api/authentication"
+	"github.com/cloudfoundry-incubator/routing-api/metrics"
 	"github.com/pivotal-golang/lager/lagertest"
-
 	"net/http"
 
 	. "github.com/onsi/ginkgo"
@@ -42,6 +42,27 @@ var _ = Describe("UaaKeyFetcher", func() {
 		})
 
 		Context("when UAA is available and responsive", func() {
+
+			Context("and http request succeeds", func() {
+				var (
+					currentKeyRefreshCount int64
+				)
+
+				BeforeEach(func() {
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", TOKEN_KEY_ENDPOINT),
+							ghttp.RespondWith(http.StatusOK, `{}`),
+						),
+					)
+					currentKeyRefreshCount = metrics.GetKeyVerificationRefreshCount()
+				})
+				It("increments the KeyRefresh metric", func() {
+					Expect(err).NotTo(HaveOccurred())
+					Expect(metrics.GetKeyVerificationRefreshCount()).To(Equal(currentKeyRefreshCount + 1))
+				})
+			})
+
 			Context("and returns a valid uaa key", func() {
 				BeforeEach(func() {
 					server.AppendHandlers(
