@@ -4,9 +4,10 @@ import (
 	"os"
 	"time"
 
+	"sync/atomic"
+
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry/storeadapter"
-	"sync/atomic"
 )
 
 type PartialStatsdClient interface {
@@ -54,7 +55,7 @@ func (r *MetricsReporter) Run(signals <-chan os.Signal, ready chan<- struct{}) e
 			r.stats.GaugeDelta("total_tcp_subscriptions", 0, 1.0)
 
 			r.stats.Gauge("total_token_errors", GetTokenErrors(), 1.0)
-			r.stats.Gauge("key_refresh_events", GetTokenErrors(), 1.0)
+			r.stats.Gauge("key_refresh_events", GetKeyVerificationRefreshCount(), 1.0)
 		case <-signals:
 			return nil
 		case err := <-httpErrChan:
