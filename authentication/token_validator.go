@@ -131,6 +131,11 @@ func (accessToken *accessToken) getUaaTokenKey(logger lager.Logger, forceFetch b
 		if err != nil {
 			return "", err
 		}
+		if accessToken.getUaaPublicKey() == key {
+			logger.Info("Fetched the same verification key from UAA")
+		} else {
+			logger.Info("Fetched a different verification key from UAA")
+		}
 		accessToken.rwlock.Lock()
 		defer accessToken.rwlock.Unlock()
 		accessToken.uaaPublicKey = key
