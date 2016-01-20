@@ -712,6 +712,27 @@ var _ = Describe("Client", func() {
 			Expect(log).To(ContainSubstring("GET " + EVENTS_SSE_URL + " HTTP/1.1"))
 		})
 
+		Context("When the server responds with BadResponseError", func() {
+			BeforeEach(func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
+						ghttp.RespondWith(http.StatusUnauthorized, nil),
+					),
+				)
+			})
+
+			JustBeforeEach(func() {
+				eventSource, err = client.SubscribeToEvents()
+			})
+
+			It("propagates the error to the client", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(eventSource).To(BeNil())
+				Expect(err.Error()).To(ContainSubstring("unauthorized"))
+			})
+		})
+
 		Context("When the server responds with an error", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
