@@ -83,17 +83,17 @@ var _ = Describe("Metrics", func() {
 			Expect(rate).To(BeNumerically("==", expectedRate))
 		}
 
-		It("emits total_subscriptions on start", func() {
+		It("emits total_http_subscriptions on start", func() {
 			Eventually(stats.GaugeCallCount).Should(Equal(2))
-			verifyGaugeCall("total_subscriptions", 0, 1.0, 0)
+			verifyGaugeCall("total_http_subscriptions", 0, 1.0, 0)
 			verifyGaugeCall("total_tcp_subscriptions", 0, 1.0, 1)
 		})
 
-		It("periodically sends a delta of 0 to total_subscriptions", func() {
+		It("periodically sends a delta of 0 to total_http_subscriptions", func() {
 			tickChan <- time.Now()
 
 			Eventually(stats.GaugeDeltaCallCount).Should(Equal(2))
-			verifyGaugeDeltaCall("total_subscriptions", 0, 1.0, 0)
+			verifyGaugeDeltaCall("total_http_subscriptions", 0, 1.0, 0)
 			verifyGaugeDeltaCall("total_tcp_subscriptions", 0, 1.0, 1)
 		})
 
@@ -102,7 +102,7 @@ var _ = Describe("Metrics", func() {
 
 			Eventually(stats.GaugeCallCount).Should(Equal(6))
 
-			verifyGaugeCall("total_routes", 5, 1.0, 2)
+			verifyGaugeCall("total_http_routes", 5, 1.0, 2)
 			verifyGaugeCall("total_tcp_routes", 3, 1.0, 3)
 		})
 
@@ -115,7 +115,7 @@ var _ = Describe("Metrics", func() {
 
 				It("increments the gauge", func() {
 					Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
-					verifyGaugeDeltaCall("total_routes", 1, 1.0, 0)
+					verifyGaugeDeltaCall("total_http_routes", 1, 1.0, 0)
 				})
 			})
 
@@ -142,7 +142,7 @@ var _ = Describe("Metrics", func() {
 
 				It("doesn't modify the gauge", func() {
 					Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
-					verifyGaugeDeltaCall("total_routes", 0, 1.0, 0)
+					verifyGaugeDeltaCall("total_http_routes", 0, 1.0, 0)
 				})
 			})
 
@@ -170,7 +170,7 @@ var _ = Describe("Metrics", func() {
 				Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
 
 				updatedStat, count, rate := stats.GaugeDeltaArgsForCall(0)
-				Expect(updatedStat).To(Equal("total_routes"))
+				Expect(updatedStat).To(Equal("total_http_routes"))
 				Expect(count).To(BeNumerically("==", -1))
 				Expect(rate).To(BeNumerically("==", 1.0))
 			})
@@ -185,7 +185,7 @@ var _ = Describe("Metrics", func() {
 
 				It("decrements the gauge", func() {
 					Eventually(stats.GaugeDeltaCallCount).Should(Equal(1))
-					verifyGaugeDeltaCall("total_routes", -1, 1.0, 0)
+					verifyGaugeDeltaCall("total_http_routes", -1, 1.0, 0)
 				})
 			})
 

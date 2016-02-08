@@ -107,9 +107,9 @@ var _ = Describe("Routes API", func() {
 		Context("periodically receives total routes", func() {
 			It("Gets statsd messages for existing routes", func() {
 				//The first time is because we get the event of adding the self route
-				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:1|g")))
 				//Do it again to make sure it's not because of events
-				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:1|g")))
 			})
 		})
 
@@ -117,7 +117,7 @@ var _ = Describe("Routes API", func() {
 			It("Gets statsd messages for new routes", func() {
 				client.UpsertRoutes([]db.Route{route1})
 
-				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:+1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:+1|g")))
 			})
 		})
 
@@ -127,8 +127,8 @@ var _ = Describe("Routes API", func() {
 
 				client.DeleteRoutes([]db.Route{route1})
 
-				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:+1|g")))
-				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:-1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:+1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:-1|g")))
 			})
 		})
 
@@ -144,8 +144,8 @@ var _ = Describe("Routes API", func() {
 
 				client.UpsertRoutes([]db.Route{routeExpire})
 
-				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:+1|g")))
-				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_routes:-1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:+1|g")))
+				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:-1|g")))
 			})
 		})
 	})
