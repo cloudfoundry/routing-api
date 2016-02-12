@@ -754,6 +754,56 @@ var _ = Describe("Client", func() {
 		})
 	})
 
+	Context("SubscribeToEventsWithMaxRetries", func() {
+		var (
+			retryChannel chan struct{}
+		)
+
+		BeforeEach(func() {
+			retryChannel = make(chan struct{}, 3)
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
+					ghttp.VerifyHeader(http.Header{
+						"Authorization": []string{"bearer"},
+					}),
+					func(w http.ResponseWriter, req *http.Request) {
+						server.CloseClientConnections()
+						retryChannel <- struct{}{}
+					},
+				),
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
+					ghttp.VerifyHeader(http.Header{
+						"Authorization": []string{"bearer"},
+					}),
+					func(w http.ResponseWriter, req *http.Request) {
+						server.CloseClientConnections()
+						retryChannel <- struct{}{}
+					},
+				),
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
+					ghttp.VerifyHeader(http.Header{
+						"Authorization": []string{"bearer"},
+					}),
+					func(w http.ResponseWriter, req *http.Request) {
+						server.CloseClientConnections()
+						retryChannel <- struct{}{}
+					},
+				),
+			)
+		})
+
+		It("returns error", func() {
+			_, err := client.SubscribeToEventsWithMaxRetries(2)
+			Expect(err).To(HaveOccurred())
+			Expect(retryChannel).To(Receive())
+			Expect(retryChannel).To(Receive())
+			Expect(retryChannel).To(Receive())
+		})
+	})
+
 	Context("SubscribeToTcpEvents", func() {
 		var (
 			tcpEventSource routing_api.TcpEventSource
@@ -832,4 +882,55 @@ var _ = Describe("Client", func() {
 			})
 		})
 	})
+
+	Context("SubscribeToTcpEventsWithMaxRetries", func() {
+		var (
+			retryChannel chan struct{}
+		)
+
+		BeforeEach(func() {
+			retryChannel = make(chan struct{}, 3)
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", TCP_EVENTS_SSE_URL),
+					ghttp.VerifyHeader(http.Header{
+						"Authorization": []string{"bearer"},
+					}),
+					func(w http.ResponseWriter, req *http.Request) {
+						server.CloseClientConnections()
+						retryChannel <- struct{}{}
+					},
+				),
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", TCP_EVENTS_SSE_URL),
+					ghttp.VerifyHeader(http.Header{
+						"Authorization": []string{"bearer"},
+					}),
+					func(w http.ResponseWriter, req *http.Request) {
+						server.CloseClientConnections()
+						retryChannel <- struct{}{}
+					},
+				),
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", TCP_EVENTS_SSE_URL),
+					ghttp.VerifyHeader(http.Header{
+						"Authorization": []string{"bearer"},
+					}),
+					func(w http.ResponseWriter, req *http.Request) {
+						server.CloseClientConnections()
+						retryChannel <- struct{}{}
+					},
+				),
+			)
+		})
+
+		It("returns error", func() {
+			_, err := client.SubscribeToTcpEventsWithMaxRetries(2)
+			Expect(err).To(HaveOccurred())
+			Expect(retryChannel).To(Receive())
+			Expect(retryChannel).To(Receive())
+			Expect(retryChannel).To(Receive())
+		})
+	})
+
 })

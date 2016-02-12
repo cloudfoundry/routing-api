@@ -1,8 +1,10 @@
 package handlers_test
 
 import (
-	"fmt"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+
 	routing_api "github.com/cloudfoundry-incubator/routing-api"
 	fake_token "github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/db"
@@ -11,8 +13,6 @@ import (
 	fake_validator "github.com/cloudfoundry-incubator/routing-api/handlers/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/metrics"
 	"github.com/pivotal-golang/lager/lagertest"
-	"net/http"
-	"net/http/httptest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -373,7 +373,7 @@ var _ = Describe("RoutesHandler", func() {
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 					Expect(database.SaveRouteCallCount()).To(Equal(1))
-					
+
 					savedTags := database.SaveRouteArgsForCall(0).Tags
 					Expect(savedTags).To(Equal(tags))
 				})
@@ -476,7 +476,6 @@ var _ = Describe("RoutesHandler", func() {
 					Expect(logger.Logs()[1].Data["error"]).To(Equal("error message"))
 				})
 			})
-			
 
 			Context("when there are errors with the input json", func() {
 				It("returns http error code", func() {
@@ -484,14 +483,12 @@ var _ = Describe("RoutesHandler", func() {
 					request = handlers.NewTestRequest(json)
 					routesHandler.Upsert(responseRecorder, request)
 
-					fmt.Println(logger.Logs()[0].Message)
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("create-route.error"))
 					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
 					Expect(responseRecorder.Body.String()).To(ContainSubstring("Cannot process request"))
 				})
 
 			})
-
 
 			Context("when the UAA token is not valid", func() {
 				var (
