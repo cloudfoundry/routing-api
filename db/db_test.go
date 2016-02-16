@@ -196,38 +196,6 @@ var _ = Describe("DB", func() {
 					})
 				})
 
-				Context("when a route has tags", func() {
-					BeforeEach(func() {
-						route = db.Route{
-							Route:           "post_here",
-							Port:            7000,
-							IP:              "1.2.3.4",
-							TTL:             50,
-							LogGuid:         "my-guid",
-							RouteServiceUrl: "https://my-rs.com",
-							Tags : map[string]string{"myfirst-tag": "TAG1"},
-						}
-					})
-
-					It("Saves the tags", func() {
-						err := etcd.SaveRoute(route)
-						Expect(err).NotTo(HaveOccurred())
-
-						node, err := etcdClient.Get(`/routes/post_here,1.2.3.4:7000`)
-						Expect(err).NotTo(HaveOccurred())
-						Expect(node.TTL).To(Equal(uint64(50)))
-						Expect(node.Value).To(MatchJSON(`{
-							"ip": "1.2.3.4",
-							"route": "post_here",
-							"port": 7000,
-							"ttl": 50,
-							"log_guid": "my-guid",
-							"route_service_url":"https://my-rs.com",
-							"tags" : {"myfirst-tag":"TAG1"}
-						}`))
-					})
-				})
-
 				Context("when an entry already exists", func() {
 					BeforeEach(func() {
 						route.Route = "next-route"
