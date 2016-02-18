@@ -25,12 +25,12 @@ type DB interface {
 	WatchRouteChanges(filter string) (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error)
 }
 
-type RouterGroupTypes []string
+type RouterGroupType string
 
 type RouterGroup struct {
 	Guid string          `json:"guid"`
 	Name string          `json:"name"`
-	Types RouterGroupTypes `json:"types"`
+	Type RouterGroupType `json:"type"`
 }
 
 type Route struct {
