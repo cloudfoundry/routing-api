@@ -42,7 +42,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 			{
 				  "guid": "bad25cff-9332-48a6-8603-b619858e7992",
 					"name": "default-tcp",
-					"type": "tcp"
+					"types": ["tcp"]
 			}]`))
 		})
 

@@ -11,8 +11,9 @@ import (
 const (
 	DefaultRouterGroupGuid = "bad25cff-9332-48a6-8603-b619858e7992"
 	DefaultRouterGroupName = "default-tcp"
-	DefaultRouterGroupType = "tcp"
 )
+
+var DefaultRouterGroupTypes = []string{"tcp"}
 
 type RouteRegister struct {
 	database db.DB
@@ -57,6 +58,6 @@ func GetDefaultRouterGroup() db.RouterGroup {
 	return db.RouterGroup{
 		Guid: DefaultRouterGroupGuid,
 		Name: DefaultRouterGroupName,
-		Type: DefaultRouterGroupType,
+		Types: DefaultRouterGroupTypes,
 	}
 }

@@ -113,7 +113,7 @@ var _ = Describe("Helpers", func() {
 		It("returns default router group", func() {
 			Expect(helpers.GetDefaultRouterGroup()).To(Equal(db.RouterGroup{
 				Name: "default-tcp",
-				Type: "tcp",
+				Types: []string{"tcp"},
 				Guid: "bad25cff-9332-48a6-8603-b619858e7992",
 			}))
 		})
