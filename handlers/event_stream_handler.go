@@ -5,29 +5,29 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/cloudfoundry-incubator/routing-api/authentication"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/metrics"
+	uaaclient "github.com/cloudfoundry-incubator/uaa-go-client"
 	"github.com/cloudfoundry/storeadapter"
 	"github.com/pivotal-golang/lager"
 	"github.com/vito/go-sse/sse"
 )
 
 type EventStreamHandler struct {
-	tokenValidator authentication.TokenValidator
-	db             db.DB
-	logger         lager.Logger
-	stats          metrics.PartialStatsdClient
-	stopChan       <-chan struct{}
+	uaaClient uaaclient.Client
+	db        db.DB
+	logger    lager.Logger
+	stats     metrics.PartialStatsdClient
+	stopChan  <-chan struct{}
 }
 
-func NewEventStreamHandler(tokenValidator authentication.TokenValidator, database db.DB, logger lager.Logger, stats metrics.PartialStatsdClient, stopChan <-chan struct{}) *EventStreamHandler {
+func NewEventStreamHandler(uaaClient uaaclient.Client, database db.DB, logger lager.Logger, stats metrics.PartialStatsdClient, stopChan <-chan struct{}) *EventStreamHandler {
 	return &EventStreamHandler{
-		tokenValidator: tokenValidator,
-		db:             database,
-		logger:         logger,
-		stats:          stats,
-		stopChan:       stopChan,
+		uaaClient: uaaClient,
+		db:        database,
+		logger:    logger,
+		stats:     stats,
+		stopChan:  stopChan,
 	}
 }
 
@@ -48,7 +48,7 @@ func (h *EventStreamHandler) TcpEventStream(w http.ResponseWriter, req *http.Req
 func (h *EventStreamHandler) handleEventStream(log lager.Logger, filterKey string,
 	w http.ResponseWriter, req *http.Request) {
 
-	err := h.tokenValidator.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
+	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return

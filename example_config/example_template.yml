@@ -1,7 +1,8 @@
 # values in this example are only suitable for testing and are not recommended
 # for production systems
 log_guid: "my_logs"
-uaa_url: "http://localhost:{{.UAAPort}}"
+uaa_url: "https://localhost:{{.UAAPort}}"
+skip_uaa_tls_verification: true
 debug_address: "1.2.3.4:1234"
 metron_config:
   address: "1.2.3.4"

@@ -12,16 +12,18 @@ import (
 	"github.com/cactus/go-statsd-client/statsd"
 	"github.com/cloudfoundry-incubator/cf-debug-server"
 	routing_api "github.com/cloudfoundry-incubator/routing-api"
-	"github.com/cloudfoundry-incubator/routing-api/authentication"
 	"github.com/cloudfoundry-incubator/routing-api/config"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
 	"github.com/cloudfoundry-incubator/routing-api/helpers"
 	"github.com/cloudfoundry-incubator/routing-api/metrics"
+	uaaclient "github.com/cloudfoundry-incubator/uaa-go-client"
+	uaaconfig "github.com/cloudfoundry-incubator/uaa-go-client/config"
 	"github.com/cloudfoundry/dropsonde"
 	"github.com/pivotal-golang/lager"
 
 	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
+	"github.com/pivotal-golang/clock"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
@@ -150,30 +152,24 @@ func constructRouteRegister(logGuid string, database db.DB, logger lager.Logger)
 }
 
 func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.Statter, stopChan chan struct{}, logger lager.Logger) ifrit.Runner {
-	var tokenValidator authentication.TokenValidator
 
-	if *devMode {
-		tokenValidator = authentication.NullTokenValidator{}
-	} else {
-		uaaKeyFetcher := authentication.NewUaaKeyFetcher(logger, cfg.UAAEndpoint+"/token_key")
-		uaaPublicKey, err := uaaKeyFetcher.FetchKey()
-		if err != nil {
-			logger.Error("Failed to get verification key from UAA", err)
-			os.Exit(1)
-		}
-		tokenValidator = authentication.NewAccessTokenValidator(logger, uaaPublicKey, uaaKeyFetcher)
-		err = tokenValidator.CheckPublicToken()
-		if err != nil {
-			logger.Error("Failed to check public token", err)
-			os.Exit(1)
-		}
+	uaaClient, err := newUaaClient(logger, cfg)
+	if err != nil {
+		logger.Error("Failed to create uaa client", err)
+		os.Exit(1)
+	}
+
+	_, err = uaaClient.FetchKey()
+	if err != nil {
+		logger.Error("Failed to get verification key from UAA", err)
+		os.Exit(1)
 	}
 
 	validator := handlers.NewValidator()
-	routesHandler := handlers.NewRoutesHandler(tokenValidator, *maxTTL, validator, database, logger)
-	eventStreamHandler := handlers.NewEventStreamHandler(tokenValidator, database, logger, statsdClient, stopChan)
-	routeGroupsHandler := handlers.NewRouteGroupsHandler(tokenValidator, logger)
-	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(tokenValidator, validator, database, logger)
+	routesHandler := handlers.NewRoutesHandler(uaaClient, *maxTTL, validator, database, logger)
+	eventStreamHandler := handlers.NewEventStreamHandler(uaaClient, database, logger, statsdClient, stopChan)
+	routeGroupsHandler := handlers.NewRouteGroupsHandler(uaaClient, logger)
+	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(uaaClient, validator, database, logger)
 
 	actions := rata.Handlers{
 		routing_api.UpsertRoute:           route(routesHandler.Upsert),
@@ -195,6 +191,19 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 
 	handler = handlers.LogWrap(handler, logger)
 	return http_server.New(":"+strconv.Itoa(int(*port)), handler)
+}
+
+func newUaaClient(logger lager.Logger, routingApiConfig config.Config) (uaaclient.Client, error) {
+	if *devMode {
+		return uaaclient.NewNoOpUaaClient(), nil
+	}
+
+	cfg := &uaaconfig.Config{
+		UaaEndpoint:      routingApiConfig.UAAEndpoint,
+		SkipVerification: routingApiConfig.SkipUaaTLSVerification,
+	}
+	return uaaclient.NewClient(logger, cfg, clock.NewClock())
+
 }
 
 func initializeDatabase(cfg config.Config, logger lager.Logger) (db.DB, error) {

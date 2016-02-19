@@ -78,7 +78,7 @@ var _ = BeforeEach(func() {
 
 	client = routing_api.NewClient(routingAPIURL.String())
 
-	oauthServer = ghttp.NewServer()
+	oauthServer = ghttp.NewTLSServer()
 	oauthServer.AllowUnhandledRequests = true
 	oauthServer.UnhandledRequestStatusCode = http.StatusOK
 	oauthServerPort = getServerPort(oauthServer.URL())

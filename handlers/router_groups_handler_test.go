@@ -2,15 +2,16 @@ package handlers_test
 
 import (
 	"errors"
+	"net/http"
+	"net/http/httptest"
+
 	"github.com/cloudfoundry-incubator/routing-api"
-	fake_token "github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
 	"github.com/cloudfoundry-incubator/routing-api/metrics"
+	fake_client "github.com/cloudfoundry-incubator/uaa-go-client/fakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-golang/lager/lagertest"
-	"net/http"
-	"net/http/httptest"
 )
 
 var _ = Describe("RouterGroupsHandler", func() {
@@ -19,14 +20,14 @@ var _ = Describe("RouterGroupsHandler", func() {
 		routerGroupHandler *handlers.RouterGroupsHandler
 		request            *http.Request
 		responseRecorder   *httptest.ResponseRecorder
-		tokenValidator     *fake_token.FakeTokenValidator
+		fakeClient         *fake_client.FakeClient
 		logger             *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test-router-group")
-		tokenValidator = &fake_token.FakeTokenValidator{}
-		routerGroupHandler = handlers.NewRouteGroupsHandler(tokenValidator, logger)
+		fakeClient = &fake_client.FakeClient{}
+		routerGroupHandler = handlers.NewRouteGroupsHandler(fakeClient, logger)
 		responseRecorder = httptest.NewRecorder()
 	})
 
@@ -51,7 +52,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 			request, err = http.NewRequest("GET", routing_api.ListRouterGroups, nil)
 			Expect(err).NotTo(HaveOccurred())
 			routerGroupHandler.ListRouterGroups(responseRecorder, request)
-			_, permission := tokenValidator.DecodeTokenArgsForCall(0)
+			_, permission := fakeClient.DecodeTokenArgsForCall(0)
 			Expect(permission).To(ConsistOf(handlers.RouterGroupsReadScope))
 		})
 
@@ -61,7 +62,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 			)
 			BeforeEach(func() {
 				currentCount = metrics.GetTokenErrors()
-				tokenValidator.DecodeTokenReturns(errors.New("kaboom"))
+				fakeClient.DecodeTokenReturns(errors.New("kaboom"))
 			})
 
 			It("returns Unauthorized error", func() {

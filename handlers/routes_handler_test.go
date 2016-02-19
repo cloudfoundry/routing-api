@@ -6,12 +6,12 @@ import (
 	"net/http/httptest"
 
 	routing_api "github.com/cloudfoundry-incubator/routing-api"
-	fake_token "github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
 	fake_validator "github.com/cloudfoundry-incubator/routing-api/handlers/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/metrics"
+	fake_client "github.com/cloudfoundry-incubator/uaa-go-client/fakes"
 	"github.com/pivotal-golang/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
@@ -26,15 +26,15 @@ var _ = Describe("RoutesHandler", func() {
 		database         *fake_db.FakeDB
 		logger           *lagertest.TestLogger
 		validator        *fake_validator.FakeRouteValidator
-		tokenValidator   *fake_token.FakeTokenValidator
+		fakeClient       *fake_client.FakeClient
 	)
 
 	BeforeEach(func() {
 		database = &fake_db.FakeDB{}
 		validator = &fake_validator.FakeRouteValidator{}
-		tokenValidator = &fake_token.FakeTokenValidator{}
+		fakeClient = &fake_client.FakeClient{}
 		logger = lagertest.NewTestLogger("routing-api-test")
-		routesHandler = handlers.NewRoutesHandler(tokenValidator, 50, validator, database, logger)
+		routesHandler = handlers.NewRoutesHandler(fakeClient, 50, validator, database, logger)
 		responseRecorder = httptest.NewRecorder()
 	})
 
@@ -51,7 +51,7 @@ var _ = Describe("RoutesHandler", func() {
 			request = handlers.NewTestRequest("")
 
 			routesHandler.List(responseRecorder, request)
-			_, permission := tokenValidator.DecodeTokenArgsForCall(0)
+			_, permission := fakeClient.DecodeTokenArgsForCall(0)
 			Expect(permission).To(ConsistOf(handlers.RoutingRoutesReadScope))
 		})
 
@@ -61,7 +61,7 @@ var _ = Describe("RoutesHandler", func() {
 			)
 			BeforeEach(func() {
 				currentCount = metrics.GetTokenErrors()
-				tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
+				fakeClient.DecodeTokenReturns(errors.New("Not valid"))
 			})
 
 			It("returns an Unauthorized status code", func() {
@@ -209,7 +209,7 @@ var _ = Describe("RoutesHandler", func() {
 
 			routesHandler.Delete(responseRecorder, request)
 
-			_, permission := tokenValidator.DecodeTokenArgsForCall(0)
+			_, permission := fakeClient.DecodeTokenArgsForCall(0)
 			Expect(permission).To(ConsistOf(handlers.RoutingRoutesWriteScope))
 		})
 
@@ -293,7 +293,7 @@ var _ = Describe("RoutesHandler", func() {
 			)
 			BeforeEach(func() {
 				currentCount = metrics.GetTokenErrors()
-				tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
+				fakeClient.DecodeTokenReturns(errors.New("Not valid"))
 			})
 
 			It("returns an Unauthorized status code", func() {
@@ -328,7 +328,7 @@ var _ = Describe("RoutesHandler", func() {
 
 				routesHandler.Upsert(responseRecorder, request)
 
-				_, permission := tokenValidator.DecodeTokenArgsForCall(0)
+				_, permission := fakeClient.DecodeTokenArgsForCall(0)
 				Expect(permission).To(ConsistOf(handlers.RoutingRoutesWriteScope))
 			})
 
@@ -459,7 +459,7 @@ var _ = Describe("RoutesHandler", func() {
 				)
 				BeforeEach(func() {
 					currentCount = metrics.GetTokenErrors()
-					tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
+					fakeClient.DecodeTokenReturns(errors.New("Not valid"))
 				})
 
 				It("returns an Unauthorized status code", func() {

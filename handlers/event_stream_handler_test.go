@@ -2,7 +2,13 @@ package handlers_test
 
 import (
 	"errors"
-	fake_token "github.com/cloudfoundry-incubator/routing-api/authentication/fakes"
+
+	fake_client "github.com/cloudfoundry-incubator/uaa-go-client/fakes"
+
+	"io"
+	"net/http"
+	"net/http/httptest"
+
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
@@ -13,29 +19,26 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-golang/lager/lagertest"
 	"github.com/vito/go-sse/sse"
-	"io"
-	"net/http"
-	"net/http/httptest"
 )
 
 var _ = Describe("EventsHandler", func() {
 	var (
-		handler        handlers.EventStreamHandler
-		database       *fake_db.FakeDB
-		logger         *lagertest.TestLogger
-		tokenValidator *fake_token.FakeTokenValidator
-		server         *httptest.Server
-		stats          *fake_statsd.FakePartialStatsdClient
-		stopChan       chan struct{}
+		handler    handlers.EventStreamHandler
+		database   *fake_db.FakeDB
+		logger     *lagertest.TestLogger
+		fakeClient *fake_client.FakeClient
+		server     *httptest.Server
+		stats      *fake_statsd.FakePartialStatsdClient
+		stopChan   chan struct{}
 	)
 
 	BeforeEach(func() {
-		tokenValidator = &fake_token.FakeTokenValidator{}
+		fakeClient = &fake_client.FakeClient{}
 		database = &fake_db.FakeDB{}
 		logger = lagertest.NewTestLogger("event-handler-test")
 		stats = new(fake_statsd.FakePartialStatsdClient)
 		stopChan = make(chan struct{})
-		handler = *handlers.NewEventStreamHandler(tokenValidator, database, logger, stats, stopChan)
+		handler = *handlers.NewEventStreamHandler(fakeClient, database, logger, stats, stopChan)
 	})
 
 	AfterEach(func(done Done) {
@@ -72,7 +75,7 @@ var _ = Describe("EventsHandler", func() {
 			})
 
 			It("checks for routing.routes.read scope", func() {
-				_, permission := tokenValidator.DecodeTokenArgsForCall(0)
+				_, permission := fakeClient.DecodeTokenArgsForCall(0)
 				Expect(permission).To(ConsistOf(handlers.RoutingRoutesReadScope))
 			})
 
@@ -82,7 +85,7 @@ var _ = Describe("EventsHandler", func() {
 				)
 				BeforeEach(func() {
 					currentCount = metrics.GetTokenErrors()
-					tokenValidator.DecodeTokenReturns(errors.New("Not valid"))
+					fakeClient.DecodeTokenReturns(errors.New("Not valid"))
 				})
 
 				It("returns an Unauthorized status code", func() {

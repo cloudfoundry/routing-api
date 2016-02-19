@@ -4,31 +4,31 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/cloudfoundry-incubator/routing-api/authentication"
 	"github.com/cloudfoundry-incubator/routing-api/db"
+	uaaclient "github.com/cloudfoundry-incubator/uaa-go-client"
 	"github.com/pivotal-golang/lager"
 )
 
 type TcpRouteMappingsHandler struct {
-	tokenValidator authentication.TokenValidator
-	validator      RouteValidator
-	db             db.DB
-	logger         lager.Logger
+	uaaClient uaaclient.Client
+	validator RouteValidator
+	db        db.DB
+	logger    lager.Logger
 }
 
-func NewTcpRouteMappingsHandler(tokenValidator authentication.TokenValidator, validator RouteValidator, database db.DB, logger lager.Logger) *TcpRouteMappingsHandler {
+func NewTcpRouteMappingsHandler(uaaClient uaaclient.Client, validator RouteValidator, database db.DB, logger lager.Logger) *TcpRouteMappingsHandler {
 	return &TcpRouteMappingsHandler{
-		tokenValidator: tokenValidator,
-		validator:      validator,
-		db:             database,
-		logger:         logger,
+		uaaClient: uaaClient,
+		validator: validator,
+		db:        database,
+		logger:    logger,
 	}
 }
 
 func (h *TcpRouteMappingsHandler) List(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("list-tcp-route-mappings")
 
-	err := h.tokenValidator.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
+	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -55,7 +55,7 @@ func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Reques
 
 	log.Info("request", lager.Data{"tcp_mapping_creation": tcpMappings})
 
-	err = h.tokenValidator.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
+	err = h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -91,7 +91,7 @@ func (h *TcpRouteMappingsHandler) Delete(w http.ResponseWriter, req *http.Reques
 
 	log.Info("request", lager.Data{"tcp_mapping_deletion": tcpMappings})
 
-	err = h.tokenValidator.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
+	err = h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
