@@ -15,7 +15,7 @@ type MetronConfig struct {
 
 type Config struct {
 	UAAEndpoint                     string        `yaml:"uaa_url"`
-	SkipUaaTLSVerification          bool          `yaml:"skip_uaa_tls_verification"`
+	SkipOAuthTLSVerification        bool          `yaml:"skip_oauth_tls_verification"`
 	DebugAddress                    string        `yaml:"debug_address"`
 	LogGuid                         string        `yaml:"log_guid"`
 	MetronConfig                    MetronConfig  `yaml:"metron_config"`
