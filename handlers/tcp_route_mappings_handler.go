@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 	uaaclient "github.com/cloudfoundry-incubator/uaa-go-client"
 	"github.com/pivotal-golang/lager"
 )
@@ -46,7 +47,7 @@ func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Reques
 	log := h.logger.Session("create-tcp-route-mappings")
 	decoder := json.NewDecoder(req.Body)
 
-	var tcpMappings []db.TcpRouteMapping
+	var tcpMappings []models.TcpRouteMapping
 	err := decoder.Decode(&tcpMappings)
 	if err != nil {
 		handleProcessRequestError(w, err, log)
@@ -82,7 +83,7 @@ func (h *TcpRouteMappingsHandler) Delete(w http.ResponseWriter, req *http.Reques
 	log := h.logger.Session("delete-tcp-route-mappings")
 	decoder := json.NewDecoder(req.Body)
 
-	var tcpMappings []db.TcpRouteMapping
+	var tcpMappings []models.TcpRouteMapping
 	err := decoder.Decode(&tcpMappings)
 	if err != nil {
 		handleProcessRequestError(w, err, log)

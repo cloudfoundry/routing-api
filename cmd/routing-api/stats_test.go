@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/testrunner"
-	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
@@ -19,7 +19,7 @@ import (
 var _ = Describe("Routes API", func() {
 	var (
 		err               error
-		route1            db.Route
+		route1            models.Route
 		addr              *net.UDPAddr
 		fakeStatsdServer  *net.UDPConn
 		fakeStatsdChan    chan string
@@ -95,7 +95,7 @@ var _ = Describe("Routes API", func() {
 	Describe("Stats for total routes", func() {
 
 		BeforeEach(func() {
-			route1 = db.Route{
+			route1 = models.Route{
 				Route:   "a.b.c",
 				Port:    33,
 				IP:      "1.1.1.1",
@@ -115,7 +115,7 @@ var _ = Describe("Routes API", func() {
 
 		Context("when creating and updating a new route", func() {
 			It("Gets statsd messages for new routes", func() {
-				client.UpsertRoutes([]db.Route{route1})
+				client.UpsertRoutes([]models.Route{route1})
 
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:+1|g")))
 			})
@@ -123,9 +123,9 @@ var _ = Describe("Routes API", func() {
 
 		Context("when deleting a route", func() {
 			It("gets statsd messages for deleted routes", func() {
-				client.UpsertRoutes([]db.Route{route1})
+				client.UpsertRoutes([]models.Route{route1})
 
-				client.DeleteRoutes([]db.Route{route1})
+				client.DeleteRoutes([]models.Route{route1})
 
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:+1|g")))
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:-1|g")))
@@ -134,7 +134,7 @@ var _ = Describe("Routes API", func() {
 
 		Context("when expiring a route", func() {
 			It("gets statsd messages for expired routes", func() {
-				routeExpire := db.Route{
+				routeExpire := models.Route{
 					Route:   "z.a.k",
 					Port:    63,
 					IP:      "42.42.42.42",
@@ -142,7 +142,7 @@ var _ = Describe("Routes API", func() {
 					LogGuid: "Tomato",
 				}
 
-				client.UpsertRoutes([]db.Route{routeExpire})
+				client.UpsertRoutes([]models.Route{routeExpire})
 
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:+1|g")))
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:-1|g")))

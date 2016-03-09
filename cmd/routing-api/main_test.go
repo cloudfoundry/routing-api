@@ -9,8 +9,8 @@ import (
 
 	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/testrunner"
-	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/helpers"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -132,15 +132,15 @@ var _ = Describe("Main", func() {
 				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 				routerGroups, err := client.RouterGroups()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(routerGroups).To(Equal([]db.RouterGroup{helpers.GetDefaultRouterGroup()}))
+				Expect(routerGroups).To(Equal([]models.RouterGroup{helpers.GetDefaultRouterGroup()}))
 			})
 		})
 
 		Context("when tcp routes create endpoint is invoked", func() {
 			var (
 				proc             ifrit.Process
-				tcpRouteMapping1 db.TcpRouteMapping
-				tcpRouteMapping2 db.TcpRouteMapping
+				tcpRouteMapping1 models.TcpRouteMapping
+				tcpRouteMapping2 models.TcpRouteMapping
 			)
 
 			BeforeEach(func() {
@@ -155,10 +155,10 @@ var _ = Describe("Main", func() {
 			It("allows to create given tcp route mappings", func() {
 				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 
-				tcpRouteMapping1 = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52001, "1.2.3.5", 60001)
+				tcpRouteMapping1 = models.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
+				tcpRouteMapping2 = models.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52001, "1.2.3.5", 60001)
 
-				err := client.UpsertTcpRouteMappings([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+				err := client.UpsertTcpRouteMappings([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -166,9 +166,9 @@ var _ = Describe("Main", func() {
 		Context("when tcp routes delete endpoint is invoked", func() {
 			var (
 				proc             ifrit.Process
-				tcpRouteMapping1 db.TcpRouteMapping
-				tcpRouteMapping2 db.TcpRouteMapping
-				tcpRouteMappings []db.TcpRouteMapping
+				tcpRouteMapping1 models.TcpRouteMapping
+				tcpRouteMapping2 models.TcpRouteMapping
+				tcpRouteMappings []models.TcpRouteMapping
 				client           routing_api.Client
 			)
 
@@ -183,9 +183,9 @@ var _ = Describe("Main", func() {
 			})
 
 			JustBeforeEach(func() {
-				tcpRouteMapping1 = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52001, "1.2.3.5", 60001)
-				tcpRouteMappings = []db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
+				tcpRouteMapping1 = models.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
+				tcpRouteMapping2 = models.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52001, "1.2.3.5", 60001)
+				tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 				err := client.UpsertTcpRouteMappings(tcpRouteMappings)
 
 				Expect(err).NotTo(HaveOccurred())
@@ -204,9 +204,9 @@ var _ = Describe("Main", func() {
 		Context("when tcp routes endpoint is invoked", func() {
 			var (
 				proc             ifrit.Process
-				tcpRouteMapping1 db.TcpRouteMapping
-				tcpRouteMapping2 db.TcpRouteMapping
-				tcpRouteMappings []db.TcpRouteMapping
+				tcpRouteMapping1 models.TcpRouteMapping
+				tcpRouteMapping2 models.TcpRouteMapping
+				tcpRouteMappings []models.TcpRouteMapping
 				client           routing_api.Client
 			)
 
@@ -218,9 +218,9 @@ var _ = Describe("Main", func() {
 			JustBeforeEach(func() {
 				client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 
-				tcpRouteMapping1 = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52001, "1.2.3.5", 60001)
-				tcpRouteMappings = []db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
+				tcpRouteMapping1 = models.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
+				tcpRouteMapping2 = models.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52001, "1.2.3.5", 60001)
+				tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 				err := client.UpsertTcpRouteMappings(tcpRouteMappings)
 
 				Expect(err).NotTo(HaveOccurred())
@@ -246,8 +246,8 @@ var _ = Describe("Main", func() {
 			events, err := client.SubscribeToEvents()
 			Expect(err).ToNot(HaveOccurred())
 
-			client.UpsertRoutes([]db.Route{
-				db.Route{
+			client.UpsertRoutes([]models.Route{
+				models.Route{
 					Route:   "some-route",
 					Port:    1234,
 					IP:      "234.32.43.4",

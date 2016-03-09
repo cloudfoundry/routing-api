@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 )
 
 type MetronConfig struct {
@@ -22,16 +23,17 @@ type OAuthConfig struct {
 }
 
 type Config struct {
-	DebugAddress                    string        `yaml:"debug_address"`
-	LogGuid                         string        `yaml:"log_guid"`
-	MetronConfig                    MetronConfig  `yaml:"metron_config"`
-	MetricsReportingIntervalString  string        `yaml:"metrics_reporting_interval"`
-	MetricsReportingInterval        time.Duration `yaml:"-"`
-	StatsdEndpoint                  string        `yaml:"statsd_endpoint"`
-	StatsdClientFlushIntervalString string        `yaml:"statsd_client_flush_interval"`
-	StatsdClientFlushInterval       time.Duration `yaml:"-"`
-	MaxConcurrentETCDRequests       uint          `yaml:"max_concurrent_etcd_requests"`
-	OAuth                           OAuthConfig   `yaml:"oauth"`
+	DebugAddress                    string              `yaml:"debug_address"`
+	LogGuid                         string              `yaml:"log_guid"`
+	MetronConfig                    MetronConfig        `yaml:"metron_config"`
+	MetricsReportingIntervalString  string              `yaml:"metrics_reporting_interval"`
+	MetricsReportingInterval        time.Duration       `yaml:"-"`
+	StatsdEndpoint                  string              `yaml:"statsd_endpoint"`
+	StatsdClientFlushIntervalString string              `yaml:"statsd_client_flush_interval"`
+	StatsdClientFlushInterval       time.Duration       `yaml:"-"`
+	MaxConcurrentETCDRequests       uint                `yaml:"max_concurrent_etcd_requests"`
+	OAuth                           OAuthConfig         `yaml:"oauth"`
+	RouterGroups                    models.RouterGroups `yaml:"router_groups"`
 }
 
 func NewConfigFromFile(configFile string, authDisabled bool) (Config, error) {

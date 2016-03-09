@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 
 	"github.com/cloudfoundry-incubator/routing-api"
-	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/fake_routing_api"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 	trace "github.com/cloudfoundry-incubator/trace-logger"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -72,7 +72,7 @@ var _ = Describe("EventSource", func() {
 						}
 
 						expectedEvent := routing_api.Event{
-							Route:  db.Route{Route: "jim.com", Port: 8080, IP: "1.1.1.1", TTL: 60, LogGuid: "logs"},
+							Route:  models.Route{Route: "jim.com", Port: 8080, IP: "1.1.1.1", TTL: 60, LogGuid: "logs"},
 							Action: "Test",
 						}
 
@@ -167,7 +167,7 @@ var _ = Describe("EventSource", func() {
 							Retry: 1,
 						}
 
-						tcpMapping := db.NewTcpRouteMapping("rguid1", 52000, "1.1.1.1", 60000)
+						tcpMapping := models.NewTcpRouteMapping("rguid1", 52000, "1.1.1.1", 60000)
 						expectedEvent := routing_api.TcpEvent{
 							TcpRouteMapping: tcpMapping,
 							Action:          "Test",

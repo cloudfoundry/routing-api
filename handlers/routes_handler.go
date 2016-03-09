@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 	uaaclient "github.com/cloudfoundry-incubator/uaa-go-client"
 	"github.com/pivotal-golang/lager"
 )
@@ -48,7 +49,7 @@ func (h *RoutesHandler) Upsert(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("create-route")
 	decoder := json.NewDecoder(req.Body)
 
-	var routes []db.Route
+	var routes []models.Route
 	err := decoder.Decode(&routes)
 	if err != nil {
 		handleProcessRequestError(w, err, log)
@@ -84,7 +85,7 @@ func (h *RoutesHandler) Delete(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("delete-route")
 	decoder := json.NewDecoder(req.Body)
 
-	var routes []db.Route
+	var routes []models.Route
 	err := decoder.Decode(&routes)
 	if err != nil {
 		handleProcessRequestError(w, err, log)

@@ -3,11 +3,11 @@ package main_test
 import (
 	"fmt"
 
-	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
 	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/testrunner"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -25,12 +25,12 @@ var _ = Describe("Routes API", func() {
 	})
 
 	Describe("Routes", func() {
-		var routes []db.Route
+		var routes []models.Route
 		var getErr error
-		var route1, route2 db.Route
+		var route1, route2 models.Route
 
 		BeforeEach(func() {
-			route1 = db.Route{
+			route1 = models.Route{
 				Route:   "a.b.c",
 				Port:    33,
 				IP:      "1.1.1.1",
@@ -38,7 +38,7 @@ var _ = Describe("Routes API", func() {
 				LogGuid: "potato",
 			}
 
-			route2 = db.Route{
+			route2 = models.Route{
 				Route:   "d.e.f",
 				Port:    35,
 				IP:      "2.2.2.2",
@@ -46,7 +46,7 @@ var _ = Describe("Routes API", func() {
 				LogGuid: "banana",
 			}
 
-			routesToInsert := []db.Route{route1, route2}
+			routesToInsert := []models.Route{route1, route2}
 			upsertErr := client.UpsertRoutes(routesToInsert)
 			Expect(upsertErr).NotTo(HaveOccurred())
 			routes, getErr = client.Routes()
@@ -57,7 +57,7 @@ var _ = Describe("Routes API", func() {
 		})
 
 		It("fetches all of the routes", func() {
-			routingAPIRoute := db.Route{
+			routingAPIRoute := models.Route{
 				Route:   fmt.Sprintf("api.%s/routing", routingAPISystemDomain),
 				Port:    routingAPIPort,
 				IP:      routingAPIIP,
@@ -70,7 +70,7 @@ var _ = Describe("Routes API", func() {
 		})
 
 		It("deletes a route", func() {
-			err := client.DeleteRoutes([]db.Route{route1})
+			err := client.DeleteRoutes([]models.Route{route1})
 
 			Expect(err).NotTo(HaveOccurred())
 
@@ -80,7 +80,7 @@ var _ = Describe("Routes API", func() {
 		})
 
 		It("rejects bad routes", func() {
-			route3 := db.Route{
+			route3 := models.Route{
 				Route:   "/foo/b ar",
 				Port:    35,
 				IP:      "2.2.2.2",
@@ -88,7 +88,7 @@ var _ = Describe("Routes API", func() {
 				LogGuid: "banana",
 			}
 
-			err := client.UpsertRoutes([]db.Route{route3})
+			err := client.UpsertRoutes([]models.Route{route3})
 			Expect(err).To(HaveOccurred())
 
 			routes, err = client.Routes()
@@ -99,17 +99,17 @@ var _ = Describe("Routes API", func() {
 		})
 
 		Context("when a route has a context path", func() {
-			var routeWithPath db.Route
+			var routeWithPath models.Route
 
 			BeforeEach(func() {
-				routeWithPath = db.Route{
+				routeWithPath = models.Route{
 					Route:   "host.com/path",
 					Port:    51480,
 					IP:      "1.2.3.4",
 					TTL:     60,
 					LogGuid: "logguid",
 				}
-				err := client.UpsertRoutes([]db.Route{routeWithPath})
+				err := client.UpsertRoutes([]models.Route{routeWithPath})
 				Expect(err).ToNot(HaveOccurred())
 			})
 

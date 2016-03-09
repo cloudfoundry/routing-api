@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 	"github.com/pivotal-golang/lager"
 )
 
@@ -16,12 +17,12 @@ const (
 
 type RouteRegister struct {
 	database db.DB
-	route    db.Route
+	route    models.Route
 	ticker   *time.Ticker
 	logger   lager.Logger
 }
 
-func NewRouteRegister(database db.DB, route db.Route, ticker *time.Ticker, logger lager.Logger) *RouteRegister {
+func NewRouteRegister(database db.DB, route models.Route, ticker *time.Ticker, logger lager.Logger) *RouteRegister {
 	return &RouteRegister{
 		database: database,
 		route:    route,
@@ -53,8 +54,8 @@ func (r *RouteRegister) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 	}
 }
 
-func GetDefaultRouterGroup() db.RouterGroup {
-	return db.RouterGroup{
+func GetDefaultRouterGroup() models.RouterGroup {
+	return models.RouterGroup{
 		Guid: DefaultRouterGroupGuid,
 		Name: DefaultRouterGroupName,
 		Type: DefaultRouterGroupType,

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/routing-api/config"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -91,6 +92,49 @@ var _ = Describe("Config", func() {
 
 		BeforeEach(func() {
 			cfg = &config.Config{}
+		})
+
+		Context("when router groups are seeded in the configuration file", func() {
+			var expectedGroups models.RouterGroups
+
+			testConfig := func(ports string) string {
+				return `log_guid: "my_logs"
+metrics_reporting_interval: "500ms"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"
+router_groups:
+- name: router-group-1
+  reservable_ports: ` + ports + `
+  type: tcp
+- name: router-group-2
+  reservable_ports: 1024-10000,42000
+  type: udp`
+			}
+
+			It("populates the router groups", func() {
+				config := testConfig("12000")
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).NotTo(HaveOccurred())
+				expectedGroups = models.RouterGroups{
+					{
+						Name:            "router-group-1",
+						ReservablePorts: "12000",
+						Type:            "tcp",
+					},
+					{
+						Name:            "router-group-2",
+						ReservablePorts: "1024-10000,42000",
+						Type:            "udp",
+					},
+				}
+				Expect(cfg.RouterGroups).To(Equal(expectedGroups))
+			})
+
+			It("returns error for invalid ports", func() {
+				config := testConfig("abc")
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).To(HaveOccurred())
+			})
 		})
 
 		Context("when there are errors in the yml file", func() {

@@ -10,8 +10,8 @@ import (
 	"net/http"
 
 	"github.com/cloudfoundry-incubator/routing-api"
-	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/helpers"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 	trace "github.com/cloudfoundry-incubator/trace-logger"
 	"github.com/onsi/gomega/ghttp"
 	"github.com/vito/go-sse/sse"
@@ -30,8 +30,8 @@ var _ = Describe("Client", func() {
 
 	var server *ghttp.Server
 	var client routing_api.Client
-	var route1 db.Route
-	var route2 db.Route
+	var route1 models.Route
+	var route2 models.Route
 	var stdout *bytes.Buffer
 
 	BeforeEach(func() {
@@ -41,7 +41,7 @@ var _ = Describe("Client", func() {
 	})
 
 	BeforeEach(func() {
-		route1 = db.Route{
+		route1 = models.Route{
 			Route:   "a.b.c",
 			Port:    33,
 			IP:      "1.1.1.1",
@@ -49,7 +49,7 @@ var _ = Describe("Client", func() {
 			LogGuid: "potato",
 		}
 
-		route2 = db.Route{
+		route2 = models.Route{
 			Route:   "d.e.f",
 			Port:    35,
 			IP:      "2.2.2.2",
@@ -68,7 +68,7 @@ var _ = Describe("Client", func() {
 	Context("UpsertRoutes", func() {
 		var err error
 		JustBeforeEach(func() {
-			err = client.UpsertRoutes([]db.Route{route1, route2})
+			err = client.UpsertRoutes([]models.Route{route1, route2})
 		})
 
 		Context("when the server returns a valid response", func() {
@@ -87,7 +87,7 @@ var _ = Describe("Client", func() {
 			})
 
 			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.Route{route1, route2})
+				expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
 				r, err := ioutil.ReadAll(stdout)
 				log := string(r)
@@ -116,7 +116,7 @@ var _ = Describe("Client", func() {
 			})
 
 			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.Route{route1, route2})
+				expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
 				r, err := ioutil.ReadAll(stdout)
 				log := string(r)
@@ -135,16 +135,16 @@ var _ = Describe("Client", func() {
 
 		var (
 			err              error
-			tcpRouteMapping1 db.TcpRouteMapping
-			tcpRouteMapping2 db.TcpRouteMapping
+			tcpRouteMapping1 models.TcpRouteMapping
+			tcpRouteMapping2 models.TcpRouteMapping
 		)
 		BeforeEach(func() {
-			tcpRouteMapping1 = db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
-			tcpRouteMapping2 = db.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
+			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+			tcpRouteMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
 		})
 
 		JustBeforeEach(func() {
-			err = client.UpsertTcpRouteMappings([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+			err = client.UpsertTcpRouteMappings([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 		})
 
 		Context("when the server returns a valid response", func() {
@@ -163,7 +163,7 @@ var _ = Describe("Client", func() {
 			})
 
 			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+				expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
 				r, err := ioutil.ReadAll(stdout)
 				log := string(r)
@@ -193,7 +193,7 @@ var _ = Describe("Client", func() {
 				})
 
 				It("logs the request and response", func() {
-					expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+					expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
 					r, err := ioutil.ReadAll(stdout)
 					log := string(r)
@@ -223,7 +223,7 @@ var _ = Describe("Client", func() {
 				})
 
 				It("logs the request and response", func() {
-					expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+					expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
 					r, err := ioutil.ReadAll(stdout)
 					log := string(r)
@@ -242,7 +242,7 @@ var _ = Describe("Client", func() {
 	Context("DeleteRoutes", func() {
 		var err error
 		JustBeforeEach(func() {
-			err = client.DeleteRoutes([]db.Route{route1, route2})
+			err = client.DeleteRoutes([]models.Route{route1, route2})
 		})
 
 		Context("when the server returns a valid response", func() {
@@ -250,7 +250,7 @@ var _ = Describe("Client", func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("DELETE", ROUTES_API_URL),
-						ghttp.VerifyJSONRepresenting([]db.Route{route1, route2}),
+						ghttp.VerifyJSONRepresenting([]models.Route{route1, route2}),
 					),
 				)
 			})
@@ -264,7 +264,7 @@ var _ = Describe("Client", func() {
 			})
 
 			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.Route{route1, route2})
+				expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
 				r, err := ioutil.ReadAll(stdout)
 				log := string(r)
@@ -294,7 +294,7 @@ var _ = Describe("Client", func() {
 				})
 
 				It("logs the request and response", func() {
-					expectedBody, _ := json.Marshal([]db.Route{route1, route2})
+					expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
 					r, err := ioutil.ReadAll(stdout)
 					log := string(r)
@@ -324,7 +324,7 @@ var _ = Describe("Client", func() {
 				})
 
 				It("logs the request and response", func() {
-					expectedBody, _ := json.Marshal([]db.Route{route1, route2})
+					expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
 					r, err := ioutil.ReadAll(stdout)
 					log := string(r)
@@ -343,15 +343,15 @@ var _ = Describe("Client", func() {
 	Context("DeleteTcpRouteMappings", func() {
 		var (
 			err              error
-			tcpRouteMapping1 db.TcpRouteMapping
-			tcpRouteMapping2 db.TcpRouteMapping
+			tcpRouteMapping1 models.TcpRouteMapping
+			tcpRouteMapping2 models.TcpRouteMapping
 		)
 		BeforeEach(func() {
-			tcpRouteMapping1 = db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
-			tcpRouteMapping2 = db.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
+			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+			tcpRouteMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
 		})
 		JustBeforeEach(func() {
-			err = client.DeleteTcpRouteMappings([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+			err = client.DeleteTcpRouteMappings([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 		})
 
 		Context("when the server returns a valid response", func() {
@@ -375,7 +375,7 @@ var _ = Describe("Client", func() {
 			})
 
 			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+				expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
 				r, err := ioutil.ReadAll(stdout)
 				log := string(r)
@@ -404,7 +404,7 @@ var _ = Describe("Client", func() {
 			})
 
 			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+				expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
 				r, err := ioutil.ReadAll(stdout)
 				log := string(r)
@@ -420,7 +420,7 @@ var _ = Describe("Client", func() {
 	})
 
 	Context("Routes", func() {
-		var routes []db.Route
+		var routes []models.Route
 		var err error
 
 		JustBeforeEach(func() {
@@ -429,7 +429,7 @@ var _ = Describe("Client", func() {
 
 		Context("when the server returns a valid response", func() {
 			BeforeEach(func() {
-				data, _ := json.Marshal([]db.Route{route1, route2})
+				data, _ := json.Marshal([]models.Route{route1, route2})
 
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
@@ -445,11 +445,11 @@ var _ = Describe("Client", func() {
 
 			It("gets a list of routes from the server", func() {
 				Expect(err).NotTo(HaveOccurred())
-				Expect(routes).To(Equal([]db.Route{route1, route2}))
+				Expect(routes).To(Equal([]models.Route{route1, route2}))
 			})
 
 			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.Route{route1, route2})
+				expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
 				r, err := ioutil.ReadAll(stdout)
 				log := string(r)
@@ -479,7 +479,7 @@ var _ = Describe("Client", func() {
 			})
 
 			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.Route{route1, route2})
+				expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
 				r, err := ioutil.ReadAll(stdout)
 				log := string(r)
@@ -498,13 +498,13 @@ var _ = Describe("Client", func() {
 
 		var (
 			err              error
-			tcpRouteMapping1 db.TcpRouteMapping
-			tcpRouteMapping2 db.TcpRouteMapping
-			routes           []db.TcpRouteMapping
+			tcpRouteMapping1 models.TcpRouteMapping
+			tcpRouteMapping2 models.TcpRouteMapping
+			routes           []models.TcpRouteMapping
 		)
 		BeforeEach(func() {
-			tcpRouteMapping1 = db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
-			tcpRouteMapping2 = db.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
+			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+			tcpRouteMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
 		})
 
 		JustBeforeEach(func() {
@@ -513,7 +513,7 @@ var _ = Describe("Client", func() {
 
 		Context("when the server returns a valid response", func() {
 			BeforeEach(func() {
-				data, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+				data, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
@@ -529,11 +529,11 @@ var _ = Describe("Client", func() {
 
 			It("gets a list of routes from the server", func() {
 				Expect(err).NotTo(HaveOccurred())
-				Expect(routes).To(Equal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}))
+				Expect(routes).To(Equal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}))
 			})
 
 			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+				expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
 				r, err := ioutil.ReadAll(stdout)
 				log := string(r)
@@ -563,7 +563,7 @@ var _ = Describe("Client", func() {
 			})
 
 			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+				expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
 				r, err := ioutil.ReadAll(stdout)
 				log := string(r)
@@ -579,9 +579,9 @@ var _ = Describe("Client", func() {
 	})
 	Context("RouterGroups", func() {
 		var (
-			routerGroups []db.RouterGroup
+			routerGroups []models.RouterGroup
 			err          error
-			routerGroup1 db.RouterGroup
+			routerGroup1 models.RouterGroup
 		)
 
 		BeforeEach(func() {
@@ -594,7 +594,7 @@ var _ = Describe("Client", func() {
 
 		Context("when the server returns a valid response", func() {
 			BeforeEach(func() {
-				data, _ := json.Marshal([]db.RouterGroup{routerGroup1})
+				data, _ := json.Marshal([]models.RouterGroup{routerGroup1})
 
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
@@ -610,11 +610,11 @@ var _ = Describe("Client", func() {
 
 			It("gets a list of router groups from the server", func() {
 				Expect(err).NotTo(HaveOccurred())
-				Expect(routerGroups).To(Equal([]db.RouterGroup{routerGroup1}))
+				Expect(routerGroups).To(Equal([]models.RouterGroup{routerGroup1}))
 			})
 
 			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.RouterGroup{routerGroup1})
+				expectedBody, _ := json.Marshal([]models.RouterGroup{routerGroup1})
 
 				r, err := ioutil.ReadAll(stdout)
 				log := string(r)
@@ -644,7 +644,7 @@ var _ = Describe("Client", func() {
 			})
 
 			It("logs the request and response", func() {
-				expectedBody, _ := json.Marshal([]db.RouterGroup{routerGroup1})
+				expectedBody, _ := json.Marshal([]models.RouterGroup{routerGroup1})
 
 				r, err := ioutil.ReadAll(stdout)
 				log := string(r)
@@ -809,11 +809,11 @@ var _ = Describe("Client", func() {
 			tcpEventSource routing_api.TcpEventSource
 			err            error
 			event          sse.Event
-			tcpRoute1      db.TcpRouteMapping
+			tcpRoute1      models.TcpRouteMapping
 		)
 
 		BeforeEach(func() {
-			tcpRoute1 = db.NewTcpRouteMapping("rguid1", 52000, "1.1.1.1", 60000)
+			tcpRoute1 = models.NewTcpRouteMapping("rguid1", 52000, "1.1.1.1", 60000)
 
 			data, _ := json.Marshal(tcpRoute1)
 			event = sse.Event{
