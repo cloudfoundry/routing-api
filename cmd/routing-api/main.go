@@ -21,6 +21,7 @@ import (
 	uaaclient "github.com/cloudfoundry-incubator/uaa-go-client"
 	uaaconfig "github.com/cloudfoundry-incubator/uaa-go-client/config"
 	"github.com/cloudfoundry/dropsonde"
+	"github.com/nu7hatch/gouuid"
 	"github.com/pivotal-golang/lager"
 
 	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
@@ -85,6 +86,9 @@ func main() {
 	}
 	defer database.Disconnect()
 
+	// seed router groups (one time only)
+	seedRouterGroups(cfg, logger, database)
+
 	prefix := "routing_api"
 	statsdClient, err := statsd.NewBufferedClient(cfg.StatsdEndpoint, prefix, cfg.StatsdClientFlushInterval, 512)
 	if err != nil {
@@ -122,6 +126,30 @@ func main() {
 		os.Exit(1)
 	}
 	logger.Info("exited")
+}
+
+func seedRouterGroups(cfg config.Config, logger lager.Logger, database db.DB) {
+	// seed router groups from config
+	if len(cfg.RouterGroups) > 0 {
+		routerGroups, _ := database.ReadRouterGroups()
+		// if config not empty and db is empty, seed
+		if len(routerGroups) == 0 {
+			for _, rg := range cfg.RouterGroups {
+				guid, err := uuid.NewV4()
+				if err != nil {
+					logger.Error("failed to generate a guid for router group", err)
+					os.Exit(1)
+				}
+				rg.Guid = guid.String()
+				logger.Info("seeding", lager.Data{"router-group": rg})
+				err = database.SaveRouterGroup(rg)
+				if err != nil {
+					logger.Error("failed to save router group from config", err)
+					os.Exit(1)
+				}
+			}
+		}
+	}
 }
 
 func constructStopper(stopChan chan struct{}) ifrit.Runner {
@@ -169,7 +197,7 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 	validator := handlers.NewValidator()
 	routesHandler := handlers.NewRoutesHandler(uaaClient, *maxTTL, validator, database, logger)
 	eventStreamHandler := handlers.NewEventStreamHandler(uaaClient, database, logger, statsdClient, stopChan)
-	routeGroupsHandler := handlers.NewRouteGroupsHandler(uaaClient, logger)
+	routeGroupsHandler := handlers.NewRouteGroupsHandler(uaaClient, logger, database)
 	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(uaaClient, validator, database, logger)
 
 	actions := rata.Handlers{

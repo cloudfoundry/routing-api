@@ -8,6 +8,7 @@ import (
 	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
 	. "github.com/cloudfoundry-incubator/routing-api/metrics"
 	fake_statsd "github.com/cloudfoundry-incubator/routing-api/metrics/fakes"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 	"github.com/cloudfoundry/storeadapter"
 
 	. "github.com/onsi/ginkgo"
@@ -46,18 +47,18 @@ var _ = Describe("Metrics", func() {
 					return tcpResultsChan, nil, nil
 				}
 			}
-			database.ReadRoutesReturns([]db.Route{
-				db.Route{},
-				db.Route{},
-				db.Route{},
-				db.Route{},
-				db.Route{},
+			database.ReadRoutesReturns([]models.Route{
+				models.Route{},
+				models.Route{},
+				models.Route{},
+				models.Route{},
+				models.Route{},
 			}, nil)
 
-			database.ReadTcpRouteMappingsReturns([]db.TcpRouteMapping{
-				db.TcpRouteMapping{},
-				db.TcpRouteMapping{},
-				db.TcpRouteMapping{},
+			database.ReadTcpRouteMappingsReturns([]models.TcpRouteMapping{
+				models.TcpRouteMapping{},
+				models.TcpRouteMapping{},
+				models.TcpRouteMapping{},
 			}, nil)
 		})
 

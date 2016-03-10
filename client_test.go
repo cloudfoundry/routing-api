@@ -10,11 +10,16 @@ import (
 	"net/http"
 
 	"github.com/cloudfoundry-incubator/routing-api"
-	"github.com/cloudfoundry-incubator/routing-api/helpers"
 	"github.com/cloudfoundry-incubator/routing-api/models"
 	trace "github.com/cloudfoundry-incubator/trace-logger"
 	"github.com/onsi/gomega/ghttp"
 	"github.com/vito/go-sse/sse"
+)
+
+const (
+	DefaultRouterGroupGuid = "bad25cff-9332-48a6-8603-b619858e7992"
+	DefaultRouterGroupName = "default-tcp"
+	DefaultRouterGroupType = "tcp"
 )
 
 var _ = Describe("Client", func() {
@@ -585,7 +590,12 @@ var _ = Describe("Client", func() {
 		)
 
 		BeforeEach(func() {
-			routerGroup1 = helpers.GetDefaultRouterGroup()
+			routerGroup1 = models.RouterGroup{
+				Guid:            DefaultRouterGroupGuid,
+				Name:            DefaultRouterGroupName,
+				Type:            DefaultRouterGroupType,
+				ReservablePorts: "1024-65535",
+			}
 		})
 
 		JustBeforeEach(func() {

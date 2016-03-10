@@ -2,6 +2,7 @@ package db
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 
@@ -21,14 +22,18 @@ type DB interface {
 	SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error
 	DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error
 
+	ReadRouterGroups() (models.RouterGroups, error)
+	SaveRouterGroup(routerGroup models.RouterGroup) error
+
 	Connect() error
 	Disconnect() error
 	WatchRouteChanges(filter string) (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error)
 }
 
 const (
-	TCP_MAPPING_BASE_KEY string = "/v1/tcp_routes/router_groups"
-	HTTP_ROUTE_BASE_KEY  string = "/routes"
+	TCP_MAPPING_BASE_KEY  string = "/v1/tcp_routes/router_groups"
+	HTTP_ROUTE_BASE_KEY   string = "/routes"
+	ROUTER_GROUP_BASE_KEY string = "/v1/router_groups"
 )
 
 type etcd struct {
@@ -98,8 +103,62 @@ func (e *etcd) WatchRouteChanges(filter string) (<-chan storeadapter.WatchEvent,
 	return e.storeAdapter.Watch(filter)
 }
 
+func (e *etcd) SaveRouterGroup(routerGroup models.RouterGroup) error {
+	if routerGroup.Guid == "" {
+		return errors.New("Invalid router group: missing guid")
+	}
+
+	// fetch router groups
+	routerGroups, err := e.ReadRouterGroups()
+	if err != nil {
+		return err
+	}
+	// check for uniqueness of router group name
+	for _, rg := range routerGroups {
+		if rg.Guid != routerGroup.Guid && rg.Name == routerGroup.Name {
+			msg := fmt.Sprintf("The RouterGroup with name: %s already exists", routerGroup.Name)
+			return DBError{Type: UniqueField, Message: msg}
+		}
+	}
+
+	key := generateRouterGroupKey(routerGroup)
+	rg, err := e.storeAdapter.Get(key)
+	if err == nil {
+		current := models.RouterGroup{}
+		json.Unmarshal([]byte(rg.Value), &current)
+		if routerGroup.Name != current.Name {
+			return DBError{Type: NonUpdatableField, Message: "The RouterGroup Name cannot be updated"}
+		}
+	}
+	json, _ := json.Marshal(routerGroup)
+	node := storeadapter.StoreNode{
+		Key:   key,
+		Value: json,
+	}
+	return e.storeAdapter.SetMulti([]storeadapter.StoreNode{node})
+}
+
+func (e *etcd) ReadRouterGroups() (models.RouterGroups, error) {
+	routerGroups, err := e.storeAdapter.ListRecursively(ROUTER_GROUP_BASE_KEY)
+	if err != nil {
+		return models.RouterGroups{}, nil
+	}
+
+	results := []models.RouterGroup{}
+	for _, node := range routerGroups.ChildNodes {
+		routerGroup := models.RouterGroup{}
+		json.Unmarshal([]byte(node.Value), &routerGroup)
+		results = append(results, routerGroup)
+	}
+	return results, nil
+}
+
 func generateHttpRouteKey(route models.Route) string {
 	return fmt.Sprintf("%s/%s,%s:%d", HTTP_ROUTE_BASE_KEY, url.QueryEscape(route.Route), route.IP, route.Port)
+}
+
+func generateRouterGroupKey(routerGroup models.RouterGroup) string {
+	return fmt.Sprintf("%s/%s", ROUTER_GROUP_BASE_KEY, routerGroup.Guid)
 }
 
 func (e *etcd) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {

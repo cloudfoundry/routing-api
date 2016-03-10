@@ -13,3 +13,7 @@ metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:{{.Port}}"
 statsd_client_flush_interval: "10ms"
 max_concurrent_etcd_requests: 10
+router_groups:
+- name: "default-tcp"
+  type: "tcp"
+  reservable_ports: "1024-65535"

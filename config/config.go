@@ -91,5 +91,9 @@ func (cfg *Config) process() error {
 	}
 	cfg.StatsdClientFlushInterval = statsdClientFlushInterval
 
+	if err := cfg.RouterGroups.Validate(); err != nil {
+		return err
+	}
+
 	return nil
 }

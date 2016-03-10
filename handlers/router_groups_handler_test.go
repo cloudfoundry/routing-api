@@ -6,12 +6,20 @@ import (
 	"net/http/httptest"
 
 	"github.com/cloudfoundry-incubator/routing-api"
+	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
 	"github.com/cloudfoundry-incubator/routing-api/metrics"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 	fake_client "github.com/cloudfoundry-incubator/uaa-go-client/fakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-golang/lager/lagertest"
+)
+
+const (
+	DefaultRouterGroupGuid = "bad25cff-9332-48a6-8603-b619858e7992"
+	DefaultRouterGroupName = "default-tcp"
+	DefaultRouterGroupType = "tcp"
 )
 
 var _ = Describe("RouterGroupsHandler", func() {
@@ -21,14 +29,26 @@ var _ = Describe("RouterGroupsHandler", func() {
 		request            *http.Request
 		responseRecorder   *httptest.ResponseRecorder
 		fakeClient         *fake_client.FakeClient
+		fakeDb             *fake_db.FakeDB
 		logger             *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test-router-group")
 		fakeClient = &fake_client.FakeClient{}
-		routerGroupHandler = handlers.NewRouteGroupsHandler(fakeClient, logger)
+		fakeDb = &fake_db.FakeDB{}
+		routerGroupHandler = handlers.NewRouteGroupsHandler(fakeClient, logger, fakeDb)
 		responseRecorder = httptest.NewRecorder()
+
+		fakeRouterGroups := []models.RouterGroup{
+			{
+				Guid:            DefaultRouterGroupGuid,
+				Name:            DefaultRouterGroupName,
+				Type:            DefaultRouterGroupType,
+				ReservablePorts: "1024-65535",
+			},
+		}
+		fakeDb.ReadRouterGroupsReturns(fakeRouterGroups, nil)
 	})
 
 	Describe("ListRouterGroups", func() {
@@ -43,7 +63,8 @@ var _ = Describe("RouterGroupsHandler", func() {
 			{
 				  "guid": "bad25cff-9332-48a6-8603-b619858e7992",
 					"name": "default-tcp",
-					"type": "tcp"
+					"type": "tcp",
+					"reservable_ports": "1024-65535"
 			}]`))
 		})
 

@@ -9,7 +9,6 @@ import (
 
 	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/testrunner"
-	"github.com/cloudfoundry-incubator/routing-api/helpers"
 	"github.com/cloudfoundry-incubator/routing-api/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,7 +22,8 @@ import (
 var session *Session
 
 const (
-	TOKEN_KEY_ENDPOINT = "/token_key"
+	TOKEN_KEY_ENDPOINT     = "/token_key"
+	DefaultRouterGroupName = "default-tcp"
 )
 
 var _ = Describe("Main", func() {
@@ -86,6 +86,10 @@ var _ = Describe("Main", func() {
 	})
 
 	Context("when initialized correctly and etcd is running", func() {
+		var (
+			routerGroupGuid string
+		)
+
 		BeforeEach(func() {
 			oauthServer.AppendHandlers(
 				ghttp.CombineHandlers(
@@ -132,9 +136,21 @@ var _ = Describe("Main", func() {
 				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 				routerGroups, err := client.RouterGroups()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(routerGroups).To(Equal([]models.RouterGroup{helpers.GetDefaultRouterGroup()}))
+				Expect(len(routerGroups)).To(Equal(1))
+				Expect(routerGroups[0].Guid).ToNot(BeNil())
+				Expect(routerGroups[0].Name).To(Equal(DefaultRouterGroupName))
+				Expect(routerGroups[0].Type).To(Equal(models.RouterGroupType("tcp")))
+				Expect(routerGroups[0].ReservablePorts).To(Equal(models.ReservablePorts("1024-65535")))
 			})
 		})
+
+		getRouterGroupGuid := func() string {
+			client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
+			routerGroups, err := client.RouterGroups()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routerGroups).ToNot(HaveLen(0))
+			return routerGroups[0].Guid
+		}
 
 		Context("when tcp routes create endpoint is invoked", func() {
 			var (
@@ -146,6 +162,7 @@ var _ = Describe("Main", func() {
 			BeforeEach(func() {
 				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 				proc = ifrit.Invoke(routingAPIRunner)
+				routerGroupGuid = getRouterGroupGuid()
 			})
 
 			AfterEach(func() {
@@ -155,8 +172,8 @@ var _ = Describe("Main", func() {
 			It("allows to create given tcp route mappings", func() {
 				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 
-				tcpRouteMapping1 = models.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = models.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52001, "1.2.3.5", 60001)
+				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
+				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
 
 				err := client.UpsertTcpRouteMappings([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 				Expect(err).NotTo(HaveOccurred())
@@ -176,6 +193,7 @@ var _ = Describe("Main", func() {
 				client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 				proc = ifrit.Invoke(routingAPIRunner)
+				routerGroupGuid = getRouterGroupGuid()
 			})
 
 			AfterEach(func() {
@@ -183,8 +201,8 @@ var _ = Describe("Main", func() {
 			})
 
 			JustBeforeEach(func() {
-				tcpRouteMapping1 = models.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = models.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52001, "1.2.3.5", 60001)
+				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
+				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
 				tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 				err := client.UpsertTcpRouteMappings(tcpRouteMappings)
 
@@ -213,13 +231,14 @@ var _ = Describe("Main", func() {
 			BeforeEach(func() {
 				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 				proc = ifrit.Invoke(routingAPIRunner)
+				routerGroupGuid = getRouterGroupGuid()
 			})
 
 			JustBeforeEach(func() {
 				client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 
-				tcpRouteMapping1 = models.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = models.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52001, "1.2.3.5", 60001)
+				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
+				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
 				tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 				err := client.UpsertTcpRouteMappings(tcpRouteMappings)
 

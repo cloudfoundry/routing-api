@@ -4,9 +4,8 @@ import (
 	"fmt"
 
 	"github.com/cloudfoundry-incubator/routing-api"
-	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
-	"github.com/cloudfoundry-incubator/routing-api/helpers"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,7 +14,7 @@ import (
 var _ = Describe("Validator", func() {
 	var (
 		validator handlers.Validator
-		routes    []db.Route
+		routes    []models.Route
 		maxTTL    int
 	)
 
@@ -23,7 +22,7 @@ var _ = Describe("Validator", func() {
 		validator = handlers.NewValidator()
 		maxTTL = 50
 
-		routes = []db.Route{
+		routes = []models.Route{
 			{
 				Route:           "http://127.0.0.1/a/valid/route",
 				IP:              "127.0.0.1",
@@ -217,16 +216,25 @@ var _ = Describe("Validator", func() {
 
 	Describe("ValidateCreateTcpRouteMapping", func() {
 		var (
-			tcpMapping db.TcpRouteMapping
+			tcpMapping   models.TcpRouteMapping
+			routerGroups models.RouterGroups
 		)
 
 		BeforeEach(func() {
-			tcpMapping = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
+			routerGroups = models.RouterGroups{
+				{
+					Guid:            DefaultRouterGroupGuid,
+					Name:            "default-tcp",
+					Type:            "tcp",
+					ReservablePorts: "1024-65535",
+				},
+			}
+			tcpMapping = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
 		})
 
 		Context("when valid tcp mapping is passed", func() {
 			It("does not return error", func() {
-				err := validator.ValidateCreateTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups)
 				Expect(err).To(BeNil())
 			})
 		})
@@ -235,7 +243,7 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when a backend port is zero", func() {
 				tcpMapping.HostPort = 0
-				err := validator.ValidateCreateTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a positive backend port"))
@@ -243,7 +251,7 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when a external port is zero", func() {
 				tcpMapping.TcpRoute.ExternalPort = 0
-				err := validator.ValidateCreateTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a positive external port"))
@@ -251,7 +259,7 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when backend ip empty", func() {
 				tcpMapping.HostIP = ""
-				err := validator.ValidateCreateTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a non empty backend ip"))
@@ -259,7 +267,7 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when group guid is empty", func() {
 				tcpMapping.TcpRoute.RouterGroupGuid = ""
-				err := validator.ValidateCreateTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a non empty router group guid"))
@@ -267,7 +275,7 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when group guid is unknown", func() {
 				tcpMapping.TcpRoute.RouterGroupGuid = "unknown-router-group-guid"
-				err := validator.ValidateCreateTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("router_group_guid: unknown-router-group-guid not found"))
@@ -277,16 +285,16 @@ var _ = Describe("Validator", func() {
 
 	Describe("ValidateDeleteTcpRouteMapping", func() {
 		var (
-			tcpMapping db.TcpRouteMapping
+			tcpMapping models.TcpRouteMapping
 		)
 
 		BeforeEach(func() {
-			tcpMapping = db.NewTcpRouteMapping(helpers.DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
+			tcpMapping = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
 		})
 
 		Context("when valid tcp mapping is passed", func() {
 			It("does not return error", func() {
-				err := validator.ValidateDeleteTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
+				err := validator.ValidateDeleteTcpRouteMapping([]models.TcpRouteMapping{tcpMapping})
 				Expect(err).To(BeNil())
 			})
 		})
@@ -295,7 +303,7 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when a backend port is zero", func() {
 				tcpMapping.HostPort = 0
-				err := validator.ValidateDeleteTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
+				err := validator.ValidateDeleteTcpRouteMapping([]models.TcpRouteMapping{tcpMapping})
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a positive backend port"))
@@ -303,7 +311,7 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when a external port is zero", func() {
 				tcpMapping.TcpRoute.ExternalPort = 0
-				err := validator.ValidateDeleteTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
+				err := validator.ValidateDeleteTcpRouteMapping([]models.TcpRouteMapping{tcpMapping})
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a positive external port"))
@@ -311,7 +319,7 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when backend ip empty", func() {
 				tcpMapping.HostIP = ""
-				err := validator.ValidateDeleteTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
+				err := validator.ValidateDeleteTcpRouteMapping([]models.TcpRouteMapping{tcpMapping})
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a non empty backend ip"))
@@ -319,7 +327,7 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when group guid is empty", func() {
 				tcpMapping.TcpRoute.RouterGroupGuid = ""
-				err := validator.ValidateDeleteTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
+				err := validator.ValidateDeleteTcpRouteMapping([]models.TcpRouteMapping{tcpMapping})
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a non empty router group guid"))
@@ -327,7 +335,7 @@ var _ = Describe("Validator", func() {
 
 			It("does not blow up when group guid is unknown", func() {
 				tcpMapping.TcpRoute.RouterGroupGuid = "unknown-router-group-guid"
-				err := validator.ValidateDeleteTcpRouteMapping([]db.TcpRouteMapping{tcpMapping})
+				err := validator.ValidateDeleteTcpRouteMapping([]models.TcpRouteMapping{tcpMapping})
 				Expect(err).To(BeNil())
 			})
 		})

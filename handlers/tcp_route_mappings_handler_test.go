@@ -11,6 +11,7 @@ import (
 	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
 	fake_validator "github.com/cloudfoundry-incubator/routing-api/handlers/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/metrics"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 	fake_client "github.com/cloudfoundry-incubator/uaa-go-client/fakes"
 	"github.com/pivotal-golang/lager/lagertest"
 
@@ -50,13 +51,13 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 	Describe("Upsert", func() {
 		Context("POST", func() {
 			var (
-				tcpMapping  db.TcpRouteMapping
-				tcpMappings []db.TcpRouteMapping
+				tcpMapping  models.TcpRouteMapping
+				tcpMappings []models.TcpRouteMapping
 			)
 
 			BeforeEach(func() {
-				tcpMapping = db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
-				tcpMappings = []db.TcpRouteMapping{tcpMapping}
+				tcpMapping = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+				tcpMappings = []models.TcpRouteMapping{tcpMapping}
 			})
 
 			It("checks for routing.routes.write scope", func() {
@@ -94,7 +95,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					request = handlers.NewTestRequest(tcpMappings)
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
-					tcpMapping = db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+					tcpMapping = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
 
 					data := map[string]interface{}{
 						"port":              float64(52000),
@@ -219,13 +220,13 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 
 		Context("when db returns tcp route mappings", func() {
 			var (
-				tcpRoutes []db.TcpRouteMapping
+				tcpRoutes []models.TcpRouteMapping
 			)
 
 			BeforeEach(func() {
-				tcpRoutes = []db.TcpRouteMapping{
-					db.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000),
-					db.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001),
+				tcpRoutes = []models.TcpRouteMapping{
+					models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000),
+					models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001),
 				}
 				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
 			})
@@ -242,7 +243,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 
 		Context("when db returns empty tcp route mappings", func() {
 			BeforeEach(func() {
-				database.ReadTcpRouteMappingsReturns([]db.TcpRouteMapping{}, nil)
+				database.ReadTcpRouteMappingsReturns([]models.TcpRouteMapping{}, nil)
 			})
 
 			It("returns empty response", func() {
@@ -289,13 +290,13 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 	Describe("Delete", func() {
 		Context("POST", func() {
 			var (
-				tcpMapping  db.TcpRouteMapping
-				tcpMappings []db.TcpRouteMapping
+				tcpMapping  models.TcpRouteMapping
+				tcpMappings []models.TcpRouteMapping
 			)
 
 			BeforeEach(func() {
-				tcpMapping = db.NewTcpRouteMapping("router-group-guid-002", 52001, "1.2.3.4", 60000)
-				tcpMappings = []db.TcpRouteMapping{tcpMapping}
+				tcpMapping = models.NewTcpRouteMapping("router-group-guid-002", 52001, "1.2.3.4", 60000)
+				tcpMappings = []models.TcpRouteMapping{tcpMapping}
 			})
 
 			It("checks for routing.routes.write scope", func() {

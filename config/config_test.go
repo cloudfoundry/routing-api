@@ -135,6 +135,37 @@ router_groups:
 				err := cfg.Initialize([]byte(config), true)
 				Expect(err).To(HaveOccurred())
 			})
+
+			It("returns error for invalid range of ports", func() {
+				config := testConfig("1024-65535,10000-20000")
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("returns error for invalid router group type", func() {
+				missingType := `log_guid: "my_logs"
+metrics_reporting_interval: "500ms"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"
+router_groups:
+- name: router-group-1
+  reservable_ports: 1024-65535`
+				err := cfg.Initialize([]byte(missingType), true)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("returns error for invalid router group type", func() {
+				missingName := `log_guid: "my_logs"
+metrics_reporting_interval: "500ms"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"
+router_groups:
+- type: tcp
+  reservable_ports: 1024-65535`
+				err := cfg.Initialize([]byte(missingName), true)
+				Expect(err).To(HaveOccurred())
+			})
+
 		})
 
 		Context("when there are errors in the yml file", func() {

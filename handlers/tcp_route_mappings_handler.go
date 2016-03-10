@@ -62,7 +62,14 @@ func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	apiErr := h.validator.ValidateCreateTcpRouteMapping(tcpMappings)
+	// fetch current router groups
+	routerGroups, err := h.db.ReadRouterGroups()
+	if err != nil {
+		handleDBCommunicationError(w, err, log)
+		return
+	}
+
+	apiErr := h.validator.ValidateCreateTcpRouteMapping(tcpMappings, routerGroups)
 	if apiErr != nil {
 		handleProcessRequestError(w, apiErr, log)
 		return

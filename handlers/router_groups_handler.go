@@ -5,8 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/cloudfoundry-incubator/routing-api/helpers"
-	"github.com/cloudfoundry-incubator/routing-api/models"
+	"github.com/cloudfoundry-incubator/routing-api/db"
 	uaaclient "github.com/cloudfoundry-incubator/uaa-go-client"
 	"github.com/pivotal-golang/lager"
 )
@@ -14,12 +13,14 @@ import (
 type RouterGroupsHandler struct {
 	uaaClient uaaclient.Client
 	logger    lager.Logger
+	db        db.DB
 }
 
-func NewRouteGroupsHandler(uaaClient uaaclient.Client, logger lager.Logger) *RouterGroupsHandler {
+func NewRouteGroupsHandler(uaaClient uaaclient.Client, logger lager.Logger, db db.DB) *RouterGroupsHandler {
 	return &RouterGroupsHandler{
 		uaaClient: uaaClient,
 		logger:    logger,
+		db:        db,
 	}
 }
 
@@ -34,9 +35,12 @@ func (h *RouterGroupsHandler) ListRouterGroups(w http.ResponseWriter, req *http.
 		return
 	}
 
-	defaultRouterGroup := helpers.GetDefaultRouterGroup()
+	routerGroups, err := h.db.ReadRouterGroups()
+	if err != nil {
+		handleDBCommunicationError(w, err, log)
+	}
 
-	jsonBytes, err := json.Marshal([]models.RouterGroup{defaultRouterGroup})
+	jsonBytes, err := json.Marshal(routerGroups)
 	if err != nil {
 		log.Error("failed-to-marshal", err)
 	}

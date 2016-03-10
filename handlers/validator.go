@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	routing_api "github.com/cloudfoundry-incubator/routing-api"
-	"github.com/cloudfoundry-incubator/routing-api/helpers"
 	"github.com/cloudfoundry-incubator/routing-api/models"
 )
 
@@ -16,7 +15,7 @@ type RouteValidator interface {
 	ValidateCreate(routes []models.Route, maxTTL int) *routing_api.Error
 	ValidateDelete(routes []models.Route) *routing_api.Error
 
-	ValidateCreateTcpRouteMapping(tcpRouteMappings []models.TcpRouteMapping) *routing_api.Error
+	ValidateCreateTcpRouteMapping(tcpRouteMappings []models.TcpRouteMapping, routerGroups models.RouterGroups) *routing_api.Error
 	ValidateDeleteTcpRouteMapping(tcpRouteMappings []models.TcpRouteMapping) *routing_api.Error
 }
 
@@ -132,13 +131,22 @@ func validateUrl(urlToValidate string) error {
 	return nil
 }
 
-func (v Validator) ValidateCreateTcpRouteMapping(tcpRouteMappings []models.TcpRouteMapping) *routing_api.Error {
+func (v Validator) ValidateCreateTcpRouteMapping(tcpRouteMappings []models.TcpRouteMapping, routerGroups models.RouterGroups) *routing_api.Error {
 	for _, tcpRouteMapping := range tcpRouteMappings {
 		err := validateTcpRouteMapping(tcpRouteMapping)
 		if err != nil {
 			return err
 		}
-		if tcpRouteMapping.TcpRoute.RouterGroupGuid != helpers.DefaultRouterGroupGuid {
+
+		validGuid := false
+		for _, routerGroup := range routerGroups {
+			if tcpRouteMapping.TcpRoute.RouterGroupGuid == routerGroup.Guid {
+				validGuid = true
+				break
+			}
+		}
+
+		if !validGuid {
 			err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
 				"router_group_guid: "+tcpRouteMapping.TcpRoute.RouterGroupGuid+" not found")
 			return &err

@@ -5,9 +5,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cloudfoundry-incubator/routing-api/db"
 	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/helpers"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-golang/lager/lagertest"
@@ -19,7 +19,7 @@ var _ = Describe("Helpers", func() {
 		var (
 			routeRegister *helpers.RouteRegister
 			database      *fake_db.FakeDB
-			route         db.Route
+			route         models.Route
 			logger        *lagertest.TestLogger
 
 			timeChan chan time.Time
@@ -29,7 +29,7 @@ var _ = Describe("Helpers", func() {
 		var process ifrit.Process
 
 		BeforeEach(func() {
-			route = db.Route{
+			route = models.Route{
 				Route:   "i dont care",
 				Port:    3000,
 				IP:      "i dont care even more",
@@ -57,7 +57,7 @@ var _ = Describe("Helpers", func() {
 
 			Context("with no errors", func() {
 				BeforeEach(func() {
-					database.SaveRouteStub = func(route db.Route) error {
+					database.SaveRouteStub = func(route models.Route) error {
 						return nil
 					}
 
@@ -65,21 +65,21 @@ var _ = Describe("Helpers", func() {
 
 				It("registers the route for a routing api on init", func() {
 					Eventually(database.SaveRouteCallCount).Should(Equal(1))
-					Eventually(func() db.Route { return database.SaveRouteArgsForCall(0) }).Should(Equal(route))
+					Eventually(func() models.Route { return database.SaveRouteArgsForCall(0) }).Should(Equal(route))
 				})
 
 				It("registers on an interval", func() {
 					timeChan <- time.Now()
 
 					Eventually(database.SaveRouteCallCount).Should(Equal(2))
-					Eventually(func() db.Route { return database.SaveRouteArgsForCall(1) }).Should(Equal(route))
+					Eventually(func() models.Route { return database.SaveRouteArgsForCall(1) }).Should(Equal(route))
 					Eventually(logger.Logs).Should(HaveLen(0))
 				})
 			})
 
 			Context("when there are errors", func() {
 				BeforeEach(func() {
-					database.SaveRouteStub = func(route db.Route) error {
+					database.SaveRouteStub = func(route models.Route) error {
 						return errors.New("beep boop, self destruct mode engaged")
 					}
 				})
@@ -102,20 +102,11 @@ var _ = Describe("Helpers", func() {
 			It("unregisters the routing api when a SIGTERM is received", func() {
 				process.Signal(syscall.SIGTERM)
 				Eventually(database.DeleteRouteCallCount).Should(Equal(1))
-				Eventually(func() db.Route {
+				Eventually(func() models.Route {
 					return database.DeleteRouteArgsForCall(0)
 				}).Should(Equal(route))
 			})
 		})
 	})
 
-	Describe("GetDefaultRouterGroup", func() {
-		It("returns default router group", func() {
-			Expect(helpers.GetDefaultRouterGroup()).To(Equal(db.RouterGroup{
-				Name: "default-tcp",
-				Type: "tcp",
-				Guid: "bad25cff-9332-48a6-8603-b619858e7992",
-			}))
-		})
-	})
 })

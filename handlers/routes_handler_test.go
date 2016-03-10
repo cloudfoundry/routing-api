@@ -11,6 +11,7 @@ import (
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
 	fake_validator "github.com/cloudfoundry-incubator/routing-api/handlers/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/metrics"
+	"github.com/cloudfoundry-incubator/routing-api/models"
 	fake_client "github.com/cloudfoundry-incubator/uaa-go-client/fakes"
 	"github.com/pivotal-golang/lager/lagertest"
 
@@ -74,11 +75,11 @@ var _ = Describe("RoutesHandler", func() {
 
 		Context("when the database is empty", func() {
 			var (
-				routes []db.Route
+				routes []models.Route
 			)
 
 			BeforeEach(func() {
-				routes = []db.Route{}
+				routes = []models.Route{}
 
 				database.ReadRoutesReturns(routes, nil)
 			})
@@ -94,11 +95,11 @@ var _ = Describe("RoutesHandler", func() {
 
 		Context("when the database has one route", func() {
 			var (
-				routes []db.Route
+				routes []models.Route
 			)
 
 			BeforeEach(func() {
-				routes = []db.Route{
+				routes = []models.Route{
 					{
 						Route: "post_here",
 						IP:    "1.2.3.4",
@@ -128,11 +129,11 @@ var _ = Describe("RoutesHandler", func() {
 
 		Context("when the database has many routes", func() {
 			var (
-				routes []db.Route
+				routes []models.Route
 			)
 
 			BeforeEach(func() {
-				routes = []db.Route{
+				routes = []models.Route{
 					{
 						Route: "post_here",
 						IP:    "1.2.3.4",
@@ -191,11 +192,11 @@ var _ = Describe("RoutesHandler", func() {
 
 	Describe(".DeleteRoute", func() {
 		var (
-			route []db.Route
+			route []models.Route
 		)
 
 		BeforeEach(func() {
-			route = []db.Route{
+			route = []models.Route{
 				{
 					Route: "post_here",
 					IP:    "1.2.3.4",
@@ -309,11 +310,11 @@ var _ = Describe("RoutesHandler", func() {
 	Describe(".Upsert", func() {
 		Context("POST", func() {
 			var (
-				route []db.Route
+				route []models.Route
 			)
 
 			BeforeEach(func() {
-				route = []db.Route{
+				route = []models.Route{
 					{
 						Route: "post_here",
 						IP:    "1.2.3.4",

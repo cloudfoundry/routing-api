@@ -9,12 +9,6 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-const (
-	DefaultRouterGroupGuid = "bad25cff-9332-48a6-8603-b619858e7992"
-	DefaultRouterGroupName = "default-tcp"
-	DefaultRouterGroupType = "tcp"
-)
-
 type RouteRegister struct {
 	database db.DB
 	route    models.Route
@@ -51,13 +45,5 @@ func (r *RouteRegister) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			}
 			return nil
 		}
-	}
-}
-
-func GetDefaultRouterGroup() models.RouterGroup {
-	return models.RouterGroup{
-		Guid: DefaultRouterGroupGuid,
-		Name: DefaultRouterGroupName,
-		Type: DefaultRouterGroupType,
 	}
 }
