@@ -13,9 +13,15 @@ type MetronConfig struct {
 	Port    string
 }
 
+type OAuthConfig struct {
+	TokenEndpoint            string `yaml:"token_endpoint"`
+	Port                     int    `yaml:"port"`
+	SkipOAuthTLSVerification bool   `yaml:"skip_oauth_tls_verification"`
+	ClientName               string `yaml:"client_name"`
+	ClientSecret             string `yaml:"client_secret"`
+}
+
 type Config struct {
-	UAAEndpoint                     string        `yaml:"uaa_url"`
-	SkipOAuthTLSVerification        bool          `yaml:"skip_oauth_tls_verification"`
 	DebugAddress                    string        `yaml:"debug_address"`
 	LogGuid                         string        `yaml:"log_guid"`
 	MetronConfig                    MetronConfig  `yaml:"metron_config"`
@@ -25,6 +31,7 @@ type Config struct {
 	StatsdClientFlushIntervalString string        `yaml:"statsd_client_flush_interval"`
 	StatsdClientFlushInterval       time.Duration `yaml:"-"`
 	MaxConcurrentETCDRequests       uint          `yaml:"max_concurrent_etcd_requests"`
+	OAuth                           OAuthConfig   `yaml:"oauth"`
 }
 
 func NewConfigFromFile(configFile string, authDisabled bool) (Config, error) {
@@ -52,8 +59,12 @@ func (cfg *Config) Initialize(file []byte, authDisabled bool) error {
 		return errors.New("No log_guid specified")
 	}
 
-	if !authDisabled && cfg.UAAEndpoint == "" {
-		return errors.New("No UAA url specified")
+	if !authDisabled && cfg.OAuth.TokenEndpoint == "" {
+		return errors.New("No token endpoint specified")
+	}
+
+	if !authDisabled && cfg.OAuth.TokenEndpoint != "" && cfg.OAuth.Port == -1 {
+		return errors.New("Routing API requires TLS enabled to get OAuth token")
 	}
 
 	err = cfg.process()

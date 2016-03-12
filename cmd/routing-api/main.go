@@ -203,7 +203,6 @@ func newUaaClient(logger lager.Logger, routingApiConfig config.Config) (uaaclien
 		SkipVerification: routingApiConfig.SkipOAuthTLSVerification,
 	}
 	return uaaclient.NewClient(logger, cfg, clock.NewClock())
-
 }
 
 func initializeDatabase(cfg config.Config, logger lager.Logger) (db.DB, error) {

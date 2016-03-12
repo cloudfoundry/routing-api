@@ -24,10 +24,11 @@ var _ = Describe("Config", func() {
 					Expect(cfg.DebugAddress).To(Equal("1.2.3.4:1234"))
 					Expect(cfg.MaxConcurrentETCDRequests).To(Equal((uint)(10)))
 					Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
-					Expect(cfg.UAAEndpoint).To(Equal("http://localhost:3000"))
+					Expect(cfg.OAuth.TokenEndpoint).To(Equal("localhost"))
+					Expect(cfg.OAuth.Port).To(Equal("3000"))
 				})
 
-				Context("when there is no UAA url", func() {
+				Context("when there is no token endpoint specified", func() {
 					It("returns an error", func() {
 						cfg_file := "../example_config/missing_uaa_url.yml"
 						_, err := config.NewConfigFromFile(cfg_file, false)
@@ -59,10 +60,11 @@ var _ = Describe("Config", func() {
 					Expect(cfg.DebugAddress).To(Equal("1.2.3.4:1234"))
 					Expect(cfg.MaxConcurrentETCDRequests).To(Equal((uint)(10)))
 					Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
-					Expect(cfg.UAAEndpoint).To(Equal("http://localhost:3000"))
+					Expect(cfg.OAuth.TokenEndpoint).To(Equal("localhost"))
+					Expect(cfg.OAuth.Port).To(Equal("3000"))
 				})
 
-				Context("when there is no UAA url", func() {
+				Context("when there is no token endpoint url", func() {
 					It("returns a valid config", func() {
 						cfg_file := "../example_config/missing_uaa_url.yml"
 						cfg, err := config.NewConfigFromFile(cfg_file, true)
@@ -74,7 +76,8 @@ var _ = Describe("Config", func() {
 						Expect(cfg.DebugAddress).To(Equal("1.2.3.4:1234"))
 						Expect(cfg.MaxConcurrentETCDRequests).To(Equal((uint)(10)))
 						Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
-						Expect(cfg.UAAEndpoint).To(BeEmpty())
+						Expect(cfg.OAuth.TokenEndpoint).To(BeEmpty())
+						Expect(cfg.OAuth.Port).To(BeEmpty())
 					})
 				})
 			})
@@ -106,7 +109,7 @@ max_concurrent_etcd_requests: 10`
 				})
 
 				Context("when auth is enabled", func() {
-					It("errors if no uaa url is found", func() {
+					It("errors if no token endpoint url is found", func() {
 						err := cfg.Initialize([]byte(test_config), false)
 						Expect(err).To(HaveOccurred())
 					})
