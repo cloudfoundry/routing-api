@@ -25,7 +25,7 @@ var _ = Describe("Config", func() {
 					Expect(cfg.MaxConcurrentETCDRequests).To(Equal((uint)(10)))
 					Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
 					Expect(cfg.OAuth.TokenEndpoint).To(Equal("localhost"))
-					Expect(cfg.OAuth.Port).To(Equal("3000"))
+					Expect(cfg.OAuth.Port).To(Equal(3000))
 				})
 
 				Context("when there is no token endpoint specified", func() {
@@ -61,7 +61,7 @@ var _ = Describe("Config", func() {
 					Expect(cfg.MaxConcurrentETCDRequests).To(Equal((uint)(10)))
 					Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
 					Expect(cfg.OAuth.TokenEndpoint).To(Equal("localhost"))
-					Expect(cfg.OAuth.Port).To(Equal("3000"))
+					Expect(cfg.OAuth.Port).To(Equal(3000))
 				})
 
 				Context("when there is no token endpoint url", func() {
@@ -77,7 +77,7 @@ var _ = Describe("Config", func() {
 						Expect(cfg.MaxConcurrentETCDRequests).To(Equal((uint)(10)))
 						Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
 						Expect(cfg.OAuth.TokenEndpoint).To(BeEmpty())
-						Expect(cfg.OAuth.Port).To(BeEmpty())
+						Expect(cfg.OAuth.Port).To(Equal(0))
 					})
 				})
 			})

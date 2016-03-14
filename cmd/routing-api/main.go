@@ -198,9 +198,17 @@ func newUaaClient(logger lager.Logger, routingApiConfig config.Config) (uaaclien
 		return uaaclient.NewNoOpUaaClient(), nil
 	}
 
+	if routingApiConfig.OAuth.Port == -1 {
+		logger.Fatal("tls-not-enabled", errors.New("GoRouter requires TLS enabled to get OAuth token"), lager.Data{"token-endpoint": routingApiConfig.OAuth.TokenEndpoint, "port": routingApiConfig.OAuth.Port})
+	}
+
+	scheme := "https"
+	tokenURL := fmt.Sprintf("%s://%s:%d", scheme, routingApiConfig.OAuth.TokenEndpoint, routingApiConfig.OAuth.Port)
+
+	logger.Info(fmt.Sprintf("using-%s-scheme-for-uaa", scheme))
 	cfg := &uaaconfig.Config{
-		UaaEndpoint:      routingApiConfig.UAAEndpoint,
-		SkipVerification: routingApiConfig.SkipOAuthTLSVerification,
+		UaaEndpoint:      tokenURL,
+		SkipVerification: routingApiConfig.OAuth.SkipOAuthTLSVerification,
 	}
 	return uaaclient.NewClient(logger, cfg, clock.NewClock())
 }
