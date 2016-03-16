@@ -47,8 +47,9 @@ func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 }
 
 func main() {
-	flag.Parse()
 	cf_lager.AddFlags(flag.CommandLine)
+	flag.Parse()
+
 	logger, reconfigurableSink := cf_lager.New("routing-api")
 
 	err := checkFlags()
@@ -234,7 +235,6 @@ func newUaaClient(logger lager.Logger, routingApiConfig config.Config) (uaaclien
 	scheme := "https"
 	tokenURL := fmt.Sprintf("%s://%s:%d", scheme, routingApiConfig.OAuth.TokenEndpoint, routingApiConfig.OAuth.Port)
 
-	logger.Info(fmt.Sprintf("using-%s-scheme-for-uaa", scheme))
 	cfg := &uaaconfig.Config{
 		UaaEndpoint:      tokenURL,
 		SkipVerification: routingApiConfig.OAuth.SkipOAuthTLSVerification,
