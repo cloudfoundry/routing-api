@@ -16,7 +16,7 @@ var _ = Describe("Models", func() {
 				rg = RouterGroup{
 					Name:            "router-group-1",
 					Type:            "tcp",
-					ReservablePorts: "10-20",
+					ReservablePorts: "1025-2025",
 				}
 				err := rg.Validate()
 				Expect(err).NotTo(HaveOccurred())
@@ -48,23 +48,23 @@ var _ = Describe("Models", func() {
 		Describe("Validate", func() {
 
 			It("succeeds for valid reservable ports", func() {
-				ports = "1,5,10-20,21-30"
+				ports = "6001,6005,6010-6020,6021-6030"
 				err := ports.Validate()
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("fails for overlapping ranges", func() {
-				ports = "10-20,20-30"
+				ports = "6010-6020,6020-6030"
 				err := ports.Validate()
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("Overlapping values: [10-20] and [20-30]"))
+				Expect(err.Error()).To(Equal("Overlapping values: [6010-6020] and [6020-6030]"))
 			})
 
 			It("fails for overlapping values", func() {
-				ports = "1,1,2,3,3,4"
+				ports = "6001,6001,6002,6003,6003,6004"
 				err := ports.Validate()
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("Overlapping values: 1 and 1"))
+				Expect(err.Error()).To(Equal("Overlapping values: 6001 and 6001"))
 			})
 
 			It("fails for invalid reservable ports", func() {
@@ -101,23 +101,23 @@ var _ = Describe("Models", func() {
 			})
 
 			It("validates a range", func() {
-				ports = "1-10"
+				ports = "10241-10249"
 				r, err := ports.Parse()
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(len(r)).To(Equal(1))
 				start, end := r[0].Endpoints()
-				Expect(start).To(Equal(uint64(1)))
-				Expect(end).To(Equal(uint64(10)))
+				Expect(start).To(Equal(uint64(10241)))
+				Expect(end).To(Equal(uint64(10249)))
 			})
 
 			It("validates a list of ranges and integers", func() {
-				ports = "1-10,20-22,45,50-60"
+				ports = "6001-6010,6020-6022,6045,6050-6060"
 				r, err := ports.Parse()
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(len(r)).To(Equal(4))
-				expected := []uint64{1, 10, 20, 22, 45, 45, 50, 60}
+				expected := []uint64{6001, 6010, 6020, 6022, 6045, 6045, 6050, 6060}
 				for i := 0; i < len(r); i++ {
 					start, end := r[i].Endpoints()
 					Expect(start).To(Equal(expected[2*i]))
@@ -139,7 +139,7 @@ var _ = Describe("Models", func() {
 			})
 
 			It("errors on a incomplete range", func() {
-				ports = "1-"
+				ports = "1030-"
 				_, err := ports.Parse()
 				Expect(err).To(HaveOccurred())
 			})
@@ -161,46 +161,46 @@ var _ = Describe("Models", func() {
 
 	Describe("Range", func() {
 		Describe("Overlaps", func() {
-			testRange := NewRange(10, 20)
+			testRange, _ := NewRange(6010, 6020)
 
 			It("validates non-overlapping ranges", func() {
-				r := NewRange(21, 30)
+				r, _ := NewRange(6021, 6030)
 				Expect(testRange.Overlaps(r)).To(BeFalse())
 			})
 
 			It("finds overlapping ranges of single values", func() {
-				r1 := NewRange(10, 10)
-				r2 := NewRange(10, 10)
+				r1, _ := NewRange(6010, 6010)
+				r2, _ := NewRange(6010, 6010)
 				Expect(r1.Overlaps(r2)).To(BeTrue())
 			})
 
 			It("finds overlapping ranges of single value and range", func() {
-				r2 := NewRange(15, 15)
+				r2, _ := NewRange(6015, 6015)
 				Expect(testRange.Overlaps(r2)).To(BeTrue())
 			})
 
 			It("finds overlapping ranges of single value upper bound and range", func() {
-				r2 := NewRange(20, 20)
+				r2, _ := NewRange(6020, 6020)
 				Expect(testRange.Overlaps(r2)).To(BeTrue())
 			})
 
 			It("validates single value one above upper bound range", func() {
-				r2 := NewRange(21, 21)
+				r2, _ := NewRange(6021, 6021)
 				Expect(testRange.Overlaps(r2)).To(BeFalse())
 			})
 
 			It("finds overlapping ranges when start overlaps", func() {
-				r := NewRange(15, 30)
+				r, _ := NewRange(6015, 6030)
 				Expect(testRange.Overlaps(r)).To(BeTrue())
 			})
 
 			It("finds overlapping ranges when end overlaps", func() {
-				r := NewRange(5, 15)
+				r, _ := NewRange(6005, 6015)
 				Expect(testRange.Overlaps(r)).To(BeTrue())
 			})
 
 			It("finds overlapping ranges when the range is a superset", func() {
-				r := NewRange(9, 21)
+				r, _ := NewRange(6009, 6021)
 				Expect(testRange.Overlaps(r)).To(BeTrue())
 			})
 		})

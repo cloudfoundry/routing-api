@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+var InvalidPortError = errors.New("Port must be between 1024 and 65535")
+
 type RouterGroupType string
 type RouterGroup struct {
 	Guid            string          `json:"guid"`
@@ -27,12 +29,14 @@ func (g RouterGroups) Validate() error {
 }
 
 func (g RouterGroup) Validate() error {
-
 	if g.Name == "" {
 		return errors.New("Missing `name` in router group")
 	}
 	if g.Type == "" {
 		return errors.New("Missing `type` in router group")
+	}
+	if g.ReservablePorts == "" {
+		return errors.New(fmt.Sprintf("Missing `reservable_ports` in router group: %s", g.Name))
 	}
 
 	err := g.ReservablePorts.Validate()
@@ -88,11 +92,18 @@ type Range struct {
 }
 type Ranges []Range
 
-func NewRange(start, end uint64) Range {
-	return Range{
-		start: start,
-		end:   end,
+func portIsInRange(port uint64) bool {
+	return port >= 1024 && port <= 65535
+}
+
+func NewRange(start, end uint64) (Range, error) {
+	if portIsInRange(start) && portIsInRange(end) {
+		return Range{
+			start: start,
+			end:   end,
+		}, nil
 	}
+	return Range{}, InvalidPortError
 }
 
 func (r Range) Overlaps(other Range) bool {
@@ -142,25 +153,25 @@ func parseRange(r string) (Range, error) {
 	case 1:
 		n, err := strconv.ParseUint(endpoints[0], 10, 64)
 		if err != nil {
-			return Range{}, err
+			return Range{}, InvalidPortError
 		}
-		return Range{start: n, end: n}, nil
+		return NewRange(n, n)
 	case 2:
 		start, err := strconv.ParseUint(endpoints[0], 10, 64)
 		if err != nil {
-			return Range{}, err
+			return Range{}, errors.New(fmt.Sprintf("range (%s) requires a starting port", r))
 		}
 
 		end, err := strconv.ParseUint(endpoints[1], 10, 64)
 		if err != nil {
-			return Range{}, err
+			return Range{}, errors.New(fmt.Sprintf("range (%s) requires an ending port", r))
 		}
 
 		if start > end {
 			return Range{}, errors.New(fmt.Sprintf("range (%s) must be in ascending numeric order", r))
 		}
 
-		return Range{start: start, end: end}, nil
+		return NewRange(start, end)
 	default:
 		return Range{}, errors.New(fmt.Sprintf("range (%s) has too many '-' separators", r))
 	}

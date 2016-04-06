@@ -134,12 +134,42 @@ router_groups:
 				config := testConfig("abc")
 				err := cfg.Initialize([]byte(config), true)
 				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
 			})
 
-			It("returns error for invalid range of ports", func() {
+			It("returns error for invalid port", func() {
+				config := testConfig("70000")
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
+			})
+
+			It("returns error for invalid ranges of ports", func() {
 				config := testConfig("1024-65535,10000-20000")
 				err := cfg.Initialize([]byte(config), true)
 				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Overlapping values: [1024-65535] and [10000-20000]"))
+			})
+
+			It("returns error for invalid range of ports", func() {
+				config := testConfig("1023-65530")
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
+			})
+
+			It("returns error for invalid start range", func() {
+				config := testConfig("1024-65535,-10000")
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("range (-10000) requires a starting port"))
+			})
+
+			It("returns error for invalid end range", func() {
+				config := testConfig("10000-")
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("range (10000-) requires an ending port"))
 			})
 
 			It("returns error for invalid router group type", func() {
@@ -166,6 +196,18 @@ router_groups:
 				Expect(err).To(HaveOccurred())
 			})
 
+			It("returns error for missing reservable port range", func() {
+				missingRouterGroup := `log_guid: "my_logs"
+metrics_reporting_interval: "500ms"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"
+router_groups:
+- type: tcp
+  name: default-tcp`
+				err := cfg.Initialize([]byte(missingRouterGroup), true)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Missing `reservable_ports` in router group:"))
+			})
 		})
 
 		Context("when there are errors in the yml file", func() {
