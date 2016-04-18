@@ -85,7 +85,7 @@ func main() {
 		logger.Error("failed to connect to database", err)
 		os.Exit(1)
 	}
-	defer database.Disconnect()
+	defer database.CancelWatches()
 
 	// seed router groups (one time only)
 	seedRouterGroups(cfg, logger, database)
@@ -98,9 +98,8 @@ func main() {
 	}
 	defer statsdClient.Close()
 
-	stopChan := make(chan struct{})
-	apiServer := constructApiServer(cfg, database, statsdClient, stopChan, logger)
-	stopper := constructStopper(stopChan)
+	apiServer := constructApiServer(cfg, database, statsdClient, logger)
+	stopper := constructStopper(database)
 
 	routerRegister := constructRouteRegister(cfg.LogGuid, database, logger)
 
@@ -108,9 +107,9 @@ func main() {
 	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker)
 
 	members := grouper.Members{
-		{"metrics", metricsReporter},
 		{"api-server", apiServer},
 		{"conn-stopper", stopper},
+		{"metrics", metricsReporter},
 		{"route-register", routerRegister},
 	}
 
@@ -153,12 +152,12 @@ func seedRouterGroups(cfg config.Config, logger lager.Logger, database db.DB) {
 	}
 }
 
-func constructStopper(stopChan chan struct{}) ifrit.Runner {
+func constructStopper(database db.DB) ifrit.Runner {
 	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
 		close(ready)
 		select {
 		case <-signals:
-			close(stopChan)
+			database.CancelWatches()
 		}
 
 		return nil
@@ -181,7 +180,7 @@ func constructRouteRegister(logGuid string, database db.DB, logger lager.Logger)
 	return helpers.NewRouteRegister(database, route, ticker, logger)
 }
 
-func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.Statter, stopChan chan struct{}, logger lager.Logger) ifrit.Runner {
+func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.Statter, logger lager.Logger) ifrit.Runner {
 
 	uaaClient, err := newUaaClient(logger, cfg)
 	if err != nil {
@@ -197,7 +196,7 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 
 	validator := handlers.NewValidator()
 	routesHandler := handlers.NewRoutesHandler(uaaClient, *maxTTL, validator, database, logger)
-	eventStreamHandler := handlers.NewEventStreamHandler(uaaClient, database, logger, statsdClient, stopChan)
+	eventStreamHandler := handlers.NewEventStreamHandler(uaaClient, database, logger, statsdClient)
 	routeGroupsHandler := handlers.NewRouteGroupsHandler(uaaClient, logger, database)
 	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(uaaClient, validator, database, logger)
 
@@ -249,7 +248,7 @@ func initializeDatabase(cfg config.Config, logger lager.Logger) (db.DB, error) {
 		maxWorkers = DEFAULT_ETCD_WORKERS
 	}
 
-	return db.NewETCD(flag.Args(), maxWorkers)
+	return db.NewETCD(flag.Args())
 }
 
 func checkFlags() error {

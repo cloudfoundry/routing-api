@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	fake_client "github.com/cloudfoundry-incubator/uaa-go-client/fakes"
+	"github.com/coreos/etcd/client"
 
 	"io"
 	"net/http"
@@ -14,7 +15,6 @@ import (
 	"github.com/cloudfoundry-incubator/routing-api/handlers"
 	"github.com/cloudfoundry-incubator/routing-api/metrics"
 	fake_statsd "github.com/cloudfoundry-incubator/routing-api/metrics/fakes"
-	"github.com/cloudfoundry/storeadapter"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-golang/lager/lagertest"
@@ -29,16 +29,19 @@ var _ = Describe("EventsHandler", func() {
 		fakeClient *fake_client.FakeClient
 		server     *httptest.Server
 		stats      *fake_statsd.FakePartialStatsdClient
-		stopChan   chan struct{}
 	)
+
+	var emptyCancelFunc = func() {}
 
 	BeforeEach(func() {
 		fakeClient = &fake_client.FakeClient{}
+
 		database = &fake_db.FakeDB{}
+		database.WatchRouteChangesReturns(nil, nil, emptyCancelFunc)
+
 		logger = lagertest.NewTestLogger("event-handler-test")
 		stats = new(fake_statsd.FakePartialStatsdClient)
-		stopChan = make(chan struct{})
-		handler = *handlers.NewEventStreamHandler(fakeClient, database, logger, stats, stopChan)
+		handler = *handlers.NewEventStreamHandler(fakeClient, database, logger, stats)
 	})
 
 	AfterEach(func(done Done) {
@@ -96,10 +99,10 @@ var _ = Describe("EventsHandler", func() {
 
 			Context("when the user has routing.routes.read scope", func() {
 				BeforeEach(func() {
-					resultsChan := make(chan storeadapter.WatchEvent, 1)
-					storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode}
-					database.WatchRouteChangesReturns(resultsChan, nil, nil)
+					resultsChan := make(chan db.Event, 1)
+					storeNode := client.Node{Value: "valuable-string"}
+					resultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode}
+					database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
 				})
 
 				It("emits events from changes in the db", func() {
@@ -123,9 +126,9 @@ var _ = Describe("EventsHandler", func() {
 
 				Context("when the event is Invalid", func() {
 					BeforeEach(func() {
-						resultsChan := make(chan storeadapter.WatchEvent, 1)
-						resultsChan <- storeadapter.WatchEvent{Type: storeadapter.InvalidEvent}
-						database.WatchRouteChangesReturns(resultsChan, nil, nil)
+						resultsChan := make(chan db.Event, 1)
+						resultsChan <- db.Event{Type: db.InvalidEvent}
+						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
 					It("closes the event stream", func() {
@@ -137,10 +140,10 @@ var _ = Describe("EventsHandler", func() {
 
 				Context("when the event is of type Expire", func() {
 					BeforeEach(func() {
-						resultsChan := make(chan storeadapter.WatchEvent, 1)
-						storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-						resultsChan <- storeadapter.WatchEvent{Type: storeadapter.ExpireEvent, PrevNode: &storeNode}
-						database.WatchRouteChangesReturns(resultsChan, nil, nil)
+						resultsChan := make(chan db.Event, 1)
+						storeNode := client.Node{Value: "valuable-string"}
+						resultsChan <- db.Event{Type: db.ExpireEvent, PrevNode: &storeNode}
+						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
 					It("emits a Delete Event", func() {
@@ -155,10 +158,10 @@ var _ = Describe("EventsHandler", func() {
 
 				Context("when the event is of type Delete", func() {
 					BeforeEach(func() {
-						resultsChan := make(chan storeadapter.WatchEvent, 1)
-						storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-						resultsChan <- storeadapter.WatchEvent{Type: storeadapter.DeleteEvent, PrevNode: &storeNode}
-						database.WatchRouteChangesReturns(resultsChan, nil, nil)
+						resultsChan := make(chan db.Event, 1)
+						storeNode := client.Node{Value: "valuable-string"}
+						resultsChan <- db.Event{Type: db.DeleteEvent, PrevNode: &storeNode}
+						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
 					It("emits a Delete Event", func() {
@@ -173,10 +176,10 @@ var _ = Describe("EventsHandler", func() {
 
 				Context("when the event is of type Create", func() {
 					BeforeEach(func() {
-						resultsChan := make(chan storeadapter.WatchEvent, 1)
-						storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-						resultsChan <- storeadapter.WatchEvent{Type: storeadapter.CreateEvent, Node: &storeNode}
-						database.WatchRouteChangesReturns(resultsChan, nil, nil)
+						resultsChan := make(chan db.Event, 1)
+						storeNode := client.Node{Value: "valuable-string"}
+						resultsChan <- db.Event{Type: db.CreateEvent, Node: &storeNode}
+						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
 					It("emits a Upsert Event", func() {
@@ -191,10 +194,10 @@ var _ = Describe("EventsHandler", func() {
 
 				Context("when the event is of type Update", func() {
 					BeforeEach(func() {
-						resultsChan := make(chan storeadapter.WatchEvent, 1)
-						storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-						resultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode}
-						database.WatchRouteChangesReturns(resultsChan, nil, nil)
+						resultsChan := make(chan db.Event, 1)
+						storeNode := client.Node{Value: "valuable-string"}
+						resultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode}
+						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
 					It("emits a Upsert Event", func() {
@@ -207,35 +210,16 @@ var _ = Describe("EventsHandler", func() {
 					})
 				})
 
-				Context("when the api server is stopped", func() {
-					var cancelChan chan bool
-
-					BeforeEach(func() {
-						resultsChan := make(chan storeadapter.WatchEvent, 1)
-						storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-						resultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode}
-
-						cancelChan = make(chan bool)
-						database.WatchRouteChangesReturns(resultsChan, cancelChan, nil)
-					})
-
-					It("returns early", func() {
-						stopChan <- struct{}{}
-						Eventually(cancelChan).Should(Receive())
-						Eventually(eventStreamDone).Should(BeClosed())
-					})
-				})
-
 				Context("when the watch returns an error", func() {
 					var errChan chan error
 
 					BeforeEach(func() {
-						resultsChan := make(chan storeadapter.WatchEvent, 1)
-						storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-						resultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode}
+						resultsChan := make(chan db.Event, 1)
+						storeNode := client.Node{Value: "valuable-string"}
+						resultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode}
 
 						errChan = make(chan error)
-						database.WatchRouteChangesReturns(resultsChan, nil, errChan)
+						database.WatchRouteChangesReturns(resultsChan, errChan, emptyCancelFunc)
 					})
 
 					It("returns early", func() {
@@ -245,11 +229,20 @@ var _ = Describe("EventsHandler", func() {
 				})
 
 				Context("when the client closes the response body", func() {
+					var cancelTest chan struct{}
+					BeforeEach(func() {
+						resultsChan := make(chan db.Event, 1)
+						cancelTest = make(chan struct{}, 1)
+
+						cancelFunc := func() { cancelTest <- struct{}{} }
+						database.WatchRouteChangesReturns(resultsChan, nil, cancelFunc)
+					})
 					It("returns early", func() {
 						reader := sse.NewReadCloser(response.Body)
 
 						err := reader.Close()
 						Expect(err).NotTo(HaveOccurred())
+						Eventually(cancelTest).Should(Receive())
 						Eventually(eventStreamDone).Should(BeClosed())
 					})
 				})
@@ -269,10 +262,10 @@ var _ = Describe("EventsHandler", func() {
 			// that it puts watch on db with appropriate filter
 			Context("when there are changes in db", func() {
 				BeforeEach(func() {
-					resultsChan := make(chan storeadapter.WatchEvent, 1)
-					storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode}
-					database.WatchRouteChangesReturns(resultsChan, nil, nil)
+					resultsChan := make(chan db.Event, 1)
+					storeNode := client.Node{Value: "valuable-string"}
+					resultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode}
+					database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
 				})
 
 				It("emits events from changes in the db", func() {

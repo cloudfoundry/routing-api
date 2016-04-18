@@ -6,14 +6,14 @@ import (
 
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/models"
-	"github.com/cloudfoundry/storeadapter"
+	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 )
 
 type FakeDB struct {
 	ReadRoutesStub        func() ([]models.Route, error)
 	readRoutesMutex       sync.RWMutex
 	readRoutesArgsForCall []struct{}
-	readRoutesReturns     struct {
+	readRoutesReturns struct {
 		result1 []models.Route
 		result2 error
 	}
@@ -36,7 +36,7 @@ type FakeDB struct {
 	ReadTcpRouteMappingsStub        func() ([]models.TcpRouteMapping, error)
 	readTcpRouteMappingsMutex       sync.RWMutex
 	readTcpRouteMappingsArgsForCall []struct{}
-	readTcpRouteMappingsReturns     struct {
+	readTcpRouteMappingsReturns struct {
 		result1 []models.TcpRouteMapping
 		result2 error
 	}
@@ -59,7 +59,7 @@ type FakeDB struct {
 	ReadRouterGroupsStub        func() (models.RouterGroups, error)
 	readRouterGroupsMutex       sync.RWMutex
 	readRouterGroupsArgsForCall []struct{}
-	readRouterGroupsReturns     struct {
+	readRouterGroupsReturns struct {
 		result1 models.RouterGroups
 		result2 error
 	}
@@ -74,24 +74,21 @@ type FakeDB struct {
 	ConnectStub        func() error
 	connectMutex       sync.RWMutex
 	connectArgsForCall []struct{}
-	connectReturns     struct {
+	connectReturns struct {
 		result1 error
 	}
-	DisconnectStub        func() error
-	disconnectMutex       sync.RWMutex
-	disconnectArgsForCall []struct{}
-	disconnectReturns     struct {
-		result1 error
-	}
-	WatchRouteChangesStub        func(filter string) (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error)
+	CancelWatchesStub        func()
+	cancelWatchesMutex       sync.RWMutex
+	cancelWatchesArgsForCall []struct{}
+	WatchRouteChangesStub        func(filter string) (<-chan db.Event, <-chan error, context.CancelFunc)
 	watchRouteChangesMutex       sync.RWMutex
 	watchRouteChangesArgsForCall []struct {
 		filter string
 	}
 	watchRouteChangesReturns struct {
-		result1 <-chan storeadapter.WatchEvent
-		result2 chan<- bool
-		result3 <-chan error
+		result1 <-chan db.Event
+		result2 <-chan error
+		result3 context.CancelFunc
 	}
 }
 
@@ -354,31 +351,22 @@ func (fake *FakeDB) ConnectReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeDB) Disconnect() error {
-	fake.disconnectMutex.Lock()
-	fake.disconnectArgsForCall = append(fake.disconnectArgsForCall, struct{}{})
-	fake.disconnectMutex.Unlock()
-	if fake.DisconnectStub != nil {
-		return fake.DisconnectStub()
-	} else {
-		return fake.disconnectReturns.result1
+func (fake *FakeDB) CancelWatches() {
+	fake.cancelWatchesMutex.Lock()
+	fake.cancelWatchesArgsForCall = append(fake.cancelWatchesArgsForCall, struct{}{})
+	fake.cancelWatchesMutex.Unlock()
+	if fake.CancelWatchesStub != nil {
+		fake.CancelWatchesStub()
 	}
 }
 
-func (fake *FakeDB) DisconnectCallCount() int {
-	fake.disconnectMutex.RLock()
-	defer fake.disconnectMutex.RUnlock()
-	return len(fake.disconnectArgsForCall)
+func (fake *FakeDB) CancelWatchesCallCount() int {
+	fake.cancelWatchesMutex.RLock()
+	defer fake.cancelWatchesMutex.RUnlock()
+	return len(fake.cancelWatchesArgsForCall)
 }
 
-func (fake *FakeDB) DisconnectReturns(result1 error) {
-	fake.DisconnectStub = nil
-	fake.disconnectReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeDB) WatchRouteChanges(filter string) (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error) {
+func (fake *FakeDB) WatchRouteChanges(filter string) (<-chan db.Event, <-chan error, context.CancelFunc) {
 	fake.watchRouteChangesMutex.Lock()
 	fake.watchRouteChangesArgsForCall = append(fake.watchRouteChangesArgsForCall, struct {
 		filter string
@@ -403,12 +391,12 @@ func (fake *FakeDB) WatchRouteChangesArgsForCall(i int) string {
 	return fake.watchRouteChangesArgsForCall[i].filter
 }
 
-func (fake *FakeDB) WatchRouteChangesReturns(result1 <-chan storeadapter.WatchEvent, result2 chan<- bool, result3 <-chan error) {
+func (fake *FakeDB) WatchRouteChangesReturns(result1 <-chan db.Event, result2 <-chan error, result3 context.CancelFunc) {
 	fake.WatchRouteChangesStub = nil
 	fake.watchRouteChangesReturns = struct {
-		result1 <-chan storeadapter.WatchEvent
-		result2 chan<- bool
-		result3 <-chan error
+		result1 <-chan db.Event
+		result2 <-chan error
+		result3 context.CancelFunc
 	}{result1, result2, result3}
 }
 

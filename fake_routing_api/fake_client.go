@@ -25,7 +25,7 @@ type FakeClient struct {
 	RoutesStub        func() ([]models.Route, error)
 	routesMutex       sync.RWMutex
 	routesArgsForCall []struct{}
-	routesReturns struct {
+	routesReturns     struct {
 		result1 []models.Route
 		result2 error
 	}
@@ -40,7 +40,7 @@ type FakeClient struct {
 	RouterGroupsStub        func() ([]models.RouterGroup, error)
 	routerGroupsMutex       sync.RWMutex
 	routerGroupsArgsForCall []struct{}
-	routerGroupsReturns struct {
+	routerGroupsReturns     struct {
 		result1 []models.RouterGroup
 		result2 error
 	}
@@ -63,14 +63,14 @@ type FakeClient struct {
 	TcpRouteMappingsStub        func() ([]models.TcpRouteMapping, error)
 	tcpRouteMappingsMutex       sync.RWMutex
 	tcpRouteMappingsArgsForCall []struct{}
-	tcpRouteMappingsReturns struct {
+	tcpRouteMappingsReturns     struct {
 		result1 []models.TcpRouteMapping
 		result2 error
 	}
 	SubscribeToEventsStub        func() (routing_api.EventSource, error)
 	subscribeToEventsMutex       sync.RWMutex
 	subscribeToEventsArgsForCall []struct{}
-	subscribeToEventsReturns struct {
+	subscribeToEventsReturns     struct {
 		result1 routing_api.EventSource
 		result2 error
 	}
@@ -86,7 +86,7 @@ type FakeClient struct {
 	SubscribeToTcpEventsStub        func() (routing_api.TcpEventSource, error)
 	subscribeToTcpEventsMutex       sync.RWMutex
 	subscribeToTcpEventsArgsForCall []struct{}
-	subscribeToTcpEventsReturns struct {
+	subscribeToTcpEventsReturns     struct {
 		result1 routing_api.TcpEventSource
 		result2 error
 	}

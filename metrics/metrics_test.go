@@ -9,7 +9,8 @@ import (
 	. "github.com/cloudfoundry-incubator/routing-api/metrics"
 	fake_statsd "github.com/cloudfoundry-incubator/routing-api/metrics/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/models"
-	"github.com/cloudfoundry/storeadapter"
+	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/coreos/etcd/client"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,8 +23,8 @@ var _ = Describe("Metrics", func() {
 			database       *fake_db.FakeDB
 			reporter       *MetricsReporter
 			stats          *fake_statsd.FakePartialStatsdClient
-			resultsChan    chan storeadapter.WatchEvent
-			tcpResultsChan chan storeadapter.WatchEvent
+			resultsChan    chan db.Event
+			tcpResultsChan chan db.Event
 			sigChan        chan os.Signal
 			readyChan      chan struct{}
 			tickChan       chan time.Time
@@ -38,9 +39,9 @@ var _ = Describe("Metrics", func() {
 
 			sigChan = make(chan os.Signal, 1)
 			readyChan = make(chan struct{}, 1)
-			resultsChan = make(chan storeadapter.WatchEvent, 1)
-			tcpResultsChan = make(chan storeadapter.WatchEvent, 1)
-			database.WatchRouteChangesStub = func(filter string) (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error) {
+			resultsChan = make(chan db.Event, 1)
+			tcpResultsChan = make(chan db.Event, 1)
+			database.WatchRouteChangesStub = func(filter string) (<-chan db.Event, <-chan error, context.CancelFunc) {
 				if filter == db.HTTP_ROUTE_BASE_KEY {
 					return resultsChan, nil, nil
 				} else {
@@ -110,8 +111,8 @@ var _ = Describe("Metrics", func() {
 		Context("When a create event happens", func() {
 			Context("when event is for http route", func() {
 				BeforeEach(func() {
-					storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode}
+					storeNode := client.Node{Value: "valuable-string"}
+					resultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode}
 				})
 
 				It("increments the gauge", func() {
@@ -122,8 +123,8 @@ var _ = Describe("Metrics", func() {
 
 			Context("when event is for tcp route", func() {
 				BeforeEach(func() {
-					storeNode := storeadapter.StoreNode{Value: []byte("invaluable-string")}
-					tcpResultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode}
+					storeNode := client.Node{Value: "invaluable-string"}
+					tcpResultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode}
 				})
 
 				It("increments the gauge", func() {
@@ -136,9 +137,9 @@ var _ = Describe("Metrics", func() {
 		Context("When a update event happens", func() {
 			Context("when event is for http route", func() {
 				BeforeEach(func() {
-					storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-					prevNode := storeadapter.StoreNode{Value: []byte("older-valuable-string")}
-					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode, PrevNode: &prevNode}
+					storeNode := client.Node{Value: "valuable-string"}
+					prevNode := client.Node{Value: "older-valuable-string"}
+					resultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode, PrevNode: &prevNode}
 				})
 
 				It("doesn't modify the gauge", func() {
@@ -149,9 +150,9 @@ var _ = Describe("Metrics", func() {
 
 			Context("when event is for tcp route", func() {
 				BeforeEach(func() {
-					storeNode := storeadapter.StoreNode{Value: []byte("invaluable-string")}
-					prevNode := storeadapter.StoreNode{Value: []byte("older-invaluable-string")}
-					tcpResultsChan <- storeadapter.WatchEvent{Type: storeadapter.UpdateEvent, Node: &storeNode, PrevNode: &prevNode}
+					storeNode := client.Node{Value: "invaluable-string"}
+					prevNode := client.Node{Value: "older-invaluable-string"}
+					tcpResultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode, PrevNode: &prevNode}
 				})
 
 				It("doesn't modify the gauge", func() {
@@ -163,8 +164,8 @@ var _ = Describe("Metrics", func() {
 
 		Context("When a expire event happens", func() {
 			BeforeEach(func() {
-				storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-				resultsChan <- storeadapter.WatchEvent{Type: storeadapter.ExpireEvent, Node: &storeNode}
+				storeNode := client.Node{Value: "valuable-string"}
+				resultsChan <- db.Event{Type: db.ExpireEvent, Node: &storeNode}
 			})
 
 			It("decrements the gauge", func() {
@@ -180,8 +181,8 @@ var _ = Describe("Metrics", func() {
 		Context("When a delete event happens", func() {
 			Context("when event is for http route", func() {
 				BeforeEach(func() {
-					storeNode := storeadapter.StoreNode{Value: []byte("valuable-string")}
-					resultsChan <- storeadapter.WatchEvent{Type: storeadapter.DeleteEvent, Node: &storeNode}
+					storeNode := client.Node{Value: "valuable-string"}
+					resultsChan <- db.Event{Type: db.DeleteEvent, Node: &storeNode}
 				})
 
 				It("decrements the gauge", func() {
@@ -192,8 +193,8 @@ var _ = Describe("Metrics", func() {
 
 			Context("when event is for tcp route", func() {
 				BeforeEach(func() {
-					storeNode := storeadapter.StoreNode{Value: []byte("invaluable-string")}
-					tcpResultsChan <- storeadapter.WatchEvent{Type: storeadapter.DeleteEvent, Node: &storeNode}
+					storeNode := client.Node{Value: "invaluable-string"}
+					tcpResultsChan <- db.Event{Type: db.DeleteEvent, Node: &storeNode}
 				})
 
 				It("decrements the gauge", func() {

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/cloudfoundry-incubator/routing-api/models"
-	"github.com/cloudfoundry/gunk/workpool"
-	"github.com/cloudfoundry/storeadapter"
-	"github.com/cloudfoundry/storeadapter/etcdstoreadapter"
+	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/coreos/etcd/client"
 )
 
 //go:generate counterfeiter -o fakes/fake_db.go . DB
@@ -26,8 +26,9 @@ type DB interface {
 	SaveRouterGroup(routerGroup models.RouterGroup) error
 
 	Connect() error
-	Disconnect() error
-	WatchRouteChanges(filter string) (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error)
+
+	CancelWatches()
+	WatchRouteChanges(filter string) (<-chan Event, <-chan error, context.CancelFunc)
 }
 
 const (
@@ -37,40 +38,53 @@ const (
 )
 
 type etcd struct {
-	storeAdapter *etcdstoreadapter.ETCDStoreAdapter
+	client     client.Client
+	keysAPI    client.KeysAPI
+	ctx        context.Context
+	cancelFunc context.CancelFunc
 }
 
-func NewETCD(nodeURLs []string, maxWorkers uint) (*etcd, error) {
-	workpool, err := workpool.NewWorkPool(int(maxWorkers))
-	if err != nil {
-		return nil, err
+func NewETCD(nodeURLs []string) (*etcd, error) {
+	cfg := client.Config{
+		Endpoints: nodeURLs,
+		Transport: client.DefaultTransport,
 	}
 
-	storeAdapter, err := etcdstoreadapter.New(&etcdstoreadapter.ETCDOptions{ClusterUrls: nodeURLs}, workpool)
+	c, err := client.New(cfg)
 	if err != nil {
 		return nil, err
 	}
+	keysAPI := client.NewKeysAPI(c)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &etcd{
-		storeAdapter: storeAdapter,
+		client:     c,
+		keysAPI:    keysAPI,
+		ctx:        ctx,
+		cancelFunc: cancel,
 	}, nil
 }
 
 func (e *etcd) Connect() error {
-	return e.storeAdapter.Connect()
+	return e.client.Sync(e.ctx)
 }
 
-func (e *etcd) Disconnect() error {
-	return e.storeAdapter.Disconnect()
+func (e *etcd) CancelWatches() {
+	e.cancelFunc()
 }
 
 func (e *etcd) ReadRoutes() ([]models.Route, error) {
-	routes, err := e.storeAdapter.ListRecursively(HTTP_ROUTE_BASE_KEY)
+	getOpts := &client.GetOptions{
+		Recursive: true,
+	}
+	response, err := e.keysAPI.Get(context.Background(), HTTP_ROUTE_BASE_KEY, getOpts)
 	if err != nil {
 		return []models.Route{}, nil
 	}
 
 	listRoutes := []models.Route{}
-	for _, node := range routes.ChildNodes {
+	for _, node := range response.Node.Nodes {
 		route := models.Route{}
 		json.Unmarshal([]byte(node.Value), &route)
 		listRoutes = append(listRoutes, route)
@@ -81,26 +95,75 @@ func (e *etcd) ReadRoutes() ([]models.Route, error) {
 func (e *etcd) SaveRoute(route models.Route) error {
 	key := generateHttpRouteKey(route)
 	routeJSON, _ := json.Marshal(route)
-	node := storeadapter.StoreNode{
-		Key:   key,
-		Value: routeJSON,
-		TTL:   uint64(route.TTL),
-	}
 
-	return e.storeAdapter.SetMulti([]storeadapter.StoreNode{node})
+	setOpt := &client.SetOptions{
+		TTL: time.Duration(route.TTL) * time.Second,
+	}
+	_, err := e.keysAPI.Set(context.Background(), key, string(routeJSON), setOpt)
+
+	return err
 }
 
 func (e *etcd) DeleteRoute(route models.Route) error {
 	key := generateHttpRouteKey(route)
-	err := e.storeAdapter.Delete(key)
-	if err != nil && err.Error() == "the requested key could not be found" {
-		err = DBError{Type: KeyNotFound, Message: "The specified route could not be found."}
+
+	deleteOpt := &client.DeleteOptions{}
+	_, err := e.keysAPI.Delete(context.Background(), key, deleteOpt)
+	if err != nil {
+		cerr, ok := err.(client.Error)
+		if ok && cerr.Code == client.ErrorCodeKeyNotFound {
+			err = DBError{Type: KeyNotFound, Message: "The specified route could not be found."}
+		}
 	}
 	return err
 }
 
-func (e *etcd) WatchRouteChanges(filter string) (<-chan storeadapter.WatchEvent, chan<- bool, <-chan error) {
-	return e.storeAdapter.Watch(filter)
+func (e *etcd) WatchRouteChanges(filter string) (<-chan Event, <-chan error, context.CancelFunc) {
+	events := make(chan Event)
+	errors := make(chan error)
+
+	cxt, cancel := context.WithCancel(e.ctx)
+
+	go e.dispatchWatchEvents(cxt, filter, events, errors)
+
+	time.Sleep(100 * time.Millisecond) //give the watcher a chance to connect
+
+	return events, errors, cancel
+}
+
+func (e *etcd) dispatchWatchEvents(cxt context.Context, key string, events chan<- Event, errors chan<- error) {
+	watchOpt := &client.WatcherOptions{Recursive: true}
+	watcher := e.keysAPI.Watcher(key, watchOpt)
+
+	defer close(events)
+	defer close(errors)
+
+	for {
+		resp, err := watcher.Next(cxt)
+		if err != nil {
+			// if adapter.isEventIndexClearedError(err) {
+			// 	watchOpt = &client.WatcherOptions{Recursive: true}
+			// 	watcher = e.keysAPI.Watcher(key, watchOpt)
+			// 	continue
+			// }
+
+			// We do not currently handle context.Cancel error, since a bug exists in
+			// v2.1.1 of the etcd client. This was fixed in PR https://github.com/coreos/etcd/pull/3216.
+			// Since we are stuck on v2.1.1 of the etcd server currently, and are unsure whether upgrading
+			// the.keysAPI ahead of the server will cause any issues, we will handle the error when we next bump
+			// the etcd server/client.
+			errors <- err
+			return
+		}
+
+		event, err := NewEvent(resp)
+		if err != nil {
+			// errors <- err
+			return
+		} else {
+			events <- event
+		}
+	}
 }
 
 func (e *etcd) SaveRouterGroup(routerGroup models.RouterGroup) error {
@@ -122,30 +185,35 @@ func (e *etcd) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	}
 
 	key := generateRouterGroupKey(routerGroup)
-	rg, err := e.storeAdapter.Get(key)
+	getOpts := &client.GetOptions{
+		Recursive: true,
+	}
+	rg, err := e.keysAPI.Get(context.Background(), key, getOpts)
 	if err == nil {
 		current := models.RouterGroup{}
-		json.Unmarshal([]byte(rg.Value), &current)
+		json.Unmarshal([]byte(rg.Node.Value), &current)
 		if routerGroup.Name != current.Name {
 			return DBError{Type: NonUpdatableField, Message: "The RouterGroup Name cannot be updated"}
 		}
 	}
 	json, _ := json.Marshal(routerGroup)
-	node := storeadapter.StoreNode{
-		Key:   key,
-		Value: json,
-	}
-	return e.storeAdapter.SetMulti([]storeadapter.StoreNode{node})
+	setOpt := &client.SetOptions{}
+	_, err = e.keysAPI.Set(context.Background(), key, string(json), setOpt)
+
+	return err
 }
 
 func (e *etcd) ReadRouterGroups() (models.RouterGroups, error) {
-	routerGroups, err := e.storeAdapter.ListRecursively(ROUTER_GROUP_BASE_KEY)
+	getOpts := &client.GetOptions{
+		Recursive: true,
+	}
+	response, err := e.keysAPI.Get(context.Background(), ROUTER_GROUP_BASE_KEY, getOpts)
 	if err != nil {
 		return models.RouterGroups{}, nil
 	}
 
 	results := []models.RouterGroup{}
-	for _, node := range routerGroups.ChildNodes {
+	for _, node := range response.Node.Nodes {
 		routerGroup := models.RouterGroup{}
 		json.Unmarshal([]byte(node.Value), &routerGroup)
 		results = append(results, routerGroup)
@@ -162,15 +230,18 @@ func generateRouterGroupKey(routerGroup models.RouterGroup) string {
 }
 
 func (e *etcd) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
-	tcpMappings, err := e.storeAdapter.ListRecursively(TCP_MAPPING_BASE_KEY)
+	getOpts := &client.GetOptions{
+		Recursive: true,
+	}
+	tcpMappings, err := e.keysAPI.Get(context.Background(), TCP_MAPPING_BASE_KEY, getOpts)
 	if err != nil {
 		return []models.TcpRouteMapping{}, nil
 	}
 
 	listMappings := []models.TcpRouteMapping{}
-	for _, routerGroupNode := range tcpMappings.ChildNodes {
-		for _, externalPortNode := range routerGroupNode.ChildNodes {
-			for _, mappingNode := range externalPortNode.ChildNodes {
+	for _, routerGroupNode := range tcpMappings.Node.Nodes {
+		for _, externalPortNode := range routerGroupNode.Nodes {
+			for _, mappingNode := range externalPortNode.Nodes {
 				tcpMapping := models.TcpRouteMapping{}
 				json.Unmarshal([]byte(mappingNode.Value), &tcpMapping)
 				listMappings = append(listMappings, tcpMapping)
@@ -183,19 +254,20 @@ func (e *etcd) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
 func (e *etcd) SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 	key := generateTcpRouteMappingKey(tcpMapping)
 	tcpMappingJson, _ := json.Marshal(tcpMapping)
-	node := storeadapter.StoreNode{
-		Key:   key,
-		Value: tcpMappingJson,
-	}
-	return e.storeAdapter.SetMulti([]storeadapter.StoreNode{node})
+	setOpt := &client.SetOptions{}
+	_, err := e.keysAPI.Set(context.Background(), key, string(tcpMappingJson), setOpt)
+
+	return err
 }
 
 func (e *etcd) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 	key := generateTcpRouteMappingKey(tcpMapping)
-	err := e.storeAdapter.Delete(key)
-	if err != nil && err.Error() == "the requested key could not be found" {
+	deleteOpt := &client.DeleteOptions{}
+	_, err := e.keysAPI.Delete(context.Background(), key, deleteOpt)
+	if err != nil && err.(client.Error).Code == client.ErrorCodeKeyNotFound {
 		err = DBError{Type: KeyNotFound, Message: "The specified route (" + tcpMapping.String() + ") could not be found."}
 	}
+
 	return err
 }
 
