@@ -147,12 +147,9 @@ func (e *etcd) dispatchWatchEvents(cxt context.Context, key string, events chan<
 			// 	continue
 			// }
 
-			// We do not currently handle context.Cancel error, since a bug exists in
-			// v2.1.1 of the etcd client. This was fixed in PR https://github.com/coreos/etcd/pull/3216.
-			// Since we are stuck on v2.1.1 of the etcd server currently, and are unsure whether upgrading
-			// the.keysAPI ahead of the server will cause any issues, we will handle the error when we next bump
-			// the etcd server/client.
-			errors <- err
+			if err != context.Canceled {
+				errors <- err
+			}
 			return
 		}
 

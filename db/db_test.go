@@ -238,11 +238,10 @@ var _ = Describe("DB", func() {
 			})
 
 			Describe("WatchRouteChanges with http events", func() {
-				// TODO: it should not return an error when the etcd client returns a context.Cancel after bumping etcd to 2.3.1
 				It("does return an error when canceled", func() {
 					_, errors, cancel := etcd.WatchRouteChanges(db.HTTP_ROUTE_BASE_KEY)
 					cancel()
-					Eventually(errors).Should(Receive())
+					Consistently(errors).ShouldNot(Receive())
 					Eventually(errors).Should(BeClosed())
 				})
 
@@ -253,11 +252,8 @@ var _ = Describe("DB", func() {
 
 						etcd.CancelWatches()
 
-						Eventually(err).Should(Receive())
 						Eventually(err).Should(BeClosed())
-						Eventually(err2).Should(Receive())
 						Eventually(err2).Should(BeClosed())
-
 						Eventually(results).Should(BeClosed())
 						Eventually(results2).Should(BeClosed())
 					})
