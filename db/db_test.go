@@ -5,7 +5,10 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/cloudfoundry-incubator/routing-api/db/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/models"
+	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/coreos/etcd/client"
 	"github.com/nu7hatch/gouuid"
 
 	. "github.com/onsi/ginkgo"
@@ -46,9 +49,10 @@ var _ = Describe("DB", func() {
 	})
 
 	Describe("etcd", func() {
-
 		var (
 			etcd             db.DB
+			fakeEtcd         db.DB
+			fakeKeysAPI      *fakes.FakeKeysAPI
 			err              error
 			route            models.Route
 			tcpRouteMapping1 models.TcpRouteMapping
@@ -64,10 +68,11 @@ var _ = Describe("DB", func() {
 				TTL:     50,
 				LogGuid: "my-guid",
 			}
+			fakeKeysAPI = &fakes.FakeKeysAPI{}
+			fakeEtcd = setupFakeEtcd(fakeKeysAPI)
 
 			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-002", 52002, "2.3.4.5", 60002)
 		})
-
 		Describe("Http Routes", func() {
 			Describe("ReadRoutes", func() {
 				It("Returns a empty list of routes", func() {
@@ -256,6 +261,57 @@ var _ = Describe("DB", func() {
 						Eventually(err2).Should(BeClosed())
 						Eventually(results).Should(BeClosed())
 						Eventually(results2).Should(BeClosed())
+					})
+				})
+
+				Context("with wrong event type", func() {
+					BeforeEach(func() {
+						fakeresp := &client.Response{Action: "some-action"}
+						fakeWatcher := &fakes.FakeWatcher{}
+						fakeWatcher.NextReturns(fakeresp, nil)
+						fakeKeysAPI.WatcherReturns(fakeWatcher)
+					})
+
+					It("throws an error", func() {
+						event, err, _ := fakeEtcd.WatchRouteChanges("some-random-key")
+						Eventually(err).Should(Receive())
+						Eventually(err).Should(BeClosed())
+
+						Consistently(event).ShouldNot(Receive())
+						Eventually(event).Should(BeClosed())
+					})
+				})
+
+				Context("and have outdated index", func() {
+					var outdatedIndex = true
+
+					BeforeEach(func() {
+						fakeWatcher := &fakes.FakeWatcher{}
+						fakeWatcher.NextStub = func(context.Context) (*client.Response, error) {
+							if outdatedIndex {
+								outdatedIndex = false
+								return nil, client.Error{Code: client.ErrorCodeEventIndexCleared}
+							} else {
+								return &client.Response{Action: "create"}, nil
+							}
+						}
+
+						fakeKeysAPI.WatcherReturns(fakeWatcher)
+					})
+
+					It("resets the index", func() {
+						_, err, _ := fakeEtcd.WatchRouteChanges("some-key")
+						Expect(err).NotTo(Receive())
+						Expect(fakeKeysAPI.WatcherCallCount()).To(Equal(2))
+
+						_, resetOpts := fakeKeysAPI.WatcherArgsForCall(1)
+						Expect(resetOpts.AfterIndex).To(BeZero())
+						Expect(resetOpts.Recursive).To(BeTrue())
+					})
+
+					It("does not throws an error", func() {
+						_, err, _ := fakeEtcd.WatchRouteChanges("some-key")
+						Expect(err).NotTo(Receive())
 					})
 				})
 
@@ -554,3 +610,17 @@ var _ = Describe("DB", func() {
 		})
 	})
 })
+
+func setupFakeEtcd(keys client.KeysAPI) db.DB {
+	nodeURLs := []string{"127.0.0.1:5000"}
+
+	cfg := client.Config{
+		Endpoints: nodeURLs,
+		Transport: client.DefaultTransport,
+	}
+
+	client, err := client.New(cfg)
+	Expect(err).NotTo(HaveOccurred())
+	ctx, cancel := context.WithCancel(context.Background())
+	return db.New(client, keys, ctx, cancel)
+}

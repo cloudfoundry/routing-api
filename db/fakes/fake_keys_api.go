@@ -8,7 +8,7 @@ import (
 	"github.com/coreos/etcd/client"
 )
 
-type FakeKeyAPI struct {
+type FakeKeysAPI struct {
 	GetStub        func(ctx context.Context, key string, opts *client.GetOptions) (*client.Response, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
@@ -88,7 +88,7 @@ type FakeKeyAPI struct {
 	}
 }
 
-func (fake *FakeKeyAPI) Get(ctx context.Context, key string, opts *client.GetOptions) (*client.Response, error) {
+func (fake *FakeKeysAPI) Get(ctx context.Context, key string, opts *client.GetOptions) (*client.Response, error) {
 	fake.getMutex.Lock()
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
 		ctx  context.Context
@@ -103,19 +103,19 @@ func (fake *FakeKeyAPI) Get(ctx context.Context, key string, opts *client.GetOpt
 	}
 }
 
-func (fake *FakeKeyAPI) GetCallCount() int {
+func (fake *FakeKeysAPI) GetCallCount() int {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	return len(fake.getArgsForCall)
 }
 
-func (fake *FakeKeyAPI) GetArgsForCall(i int) (context.Context, string, *client.GetOptions) {
+func (fake *FakeKeysAPI) GetArgsForCall(i int) (context.Context, string, *client.GetOptions) {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	return fake.getArgsForCall[i].ctx, fake.getArgsForCall[i].key, fake.getArgsForCall[i].opts
 }
 
-func (fake *FakeKeyAPI) GetReturns(result1 *client.Response, result2 error) {
+func (fake *FakeKeysAPI) GetReturns(result1 *client.Response, result2 error) {
 	fake.GetStub = nil
 	fake.getReturns = struct {
 		result1 *client.Response
@@ -123,7 +123,7 @@ func (fake *FakeKeyAPI) GetReturns(result1 *client.Response, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeKeyAPI) Set(ctx context.Context, key string, value string, opts *client.SetOptions) (*client.Response, error) {
+func (fake *FakeKeysAPI) Set(ctx context.Context, key string, value string, opts *client.SetOptions) (*client.Response, error) {
 	fake.setMutex.Lock()
 	fake.setArgsForCall = append(fake.setArgsForCall, struct {
 		ctx   context.Context
@@ -139,19 +139,19 @@ func (fake *FakeKeyAPI) Set(ctx context.Context, key string, value string, opts 
 	}
 }
 
-func (fake *FakeKeyAPI) SetCallCount() int {
+func (fake *FakeKeysAPI) SetCallCount() int {
 	fake.setMutex.RLock()
 	defer fake.setMutex.RUnlock()
 	return len(fake.setArgsForCall)
 }
 
-func (fake *FakeKeyAPI) SetArgsForCall(i int) (context.Context, string, string, *client.SetOptions) {
+func (fake *FakeKeysAPI) SetArgsForCall(i int) (context.Context, string, string, *client.SetOptions) {
 	fake.setMutex.RLock()
 	defer fake.setMutex.RUnlock()
 	return fake.setArgsForCall[i].ctx, fake.setArgsForCall[i].key, fake.setArgsForCall[i].value, fake.setArgsForCall[i].opts
 }
 
-func (fake *FakeKeyAPI) SetReturns(result1 *client.Response, result2 error) {
+func (fake *FakeKeysAPI) SetReturns(result1 *client.Response, result2 error) {
 	fake.SetStub = nil
 	fake.setReturns = struct {
 		result1 *client.Response
@@ -159,7 +159,7 @@ func (fake *FakeKeyAPI) SetReturns(result1 *client.Response, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeKeyAPI) Delete(ctx context.Context, key string, opts *client.DeleteOptions) (*client.Response, error) {
+func (fake *FakeKeysAPI) Delete(ctx context.Context, key string, opts *client.DeleteOptions) (*client.Response, error) {
 	fake.deleteMutex.Lock()
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
 		ctx  context.Context
@@ -174,19 +174,19 @@ func (fake *FakeKeyAPI) Delete(ctx context.Context, key string, opts *client.Del
 	}
 }
 
-func (fake *FakeKeyAPI) DeleteCallCount() int {
+func (fake *FakeKeysAPI) DeleteCallCount() int {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeKeyAPI) DeleteArgsForCall(i int) (context.Context, string, *client.DeleteOptions) {
+func (fake *FakeKeysAPI) DeleteArgsForCall(i int) (context.Context, string, *client.DeleteOptions) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	return fake.deleteArgsForCall[i].ctx, fake.deleteArgsForCall[i].key, fake.deleteArgsForCall[i].opts
 }
 
-func (fake *FakeKeyAPI) DeleteReturns(result1 *client.Response, result2 error) {
+func (fake *FakeKeysAPI) DeleteReturns(result1 *client.Response, result2 error) {
 	fake.DeleteStub = nil
 	fake.deleteReturns = struct {
 		result1 *client.Response
@@ -194,7 +194,7 @@ func (fake *FakeKeyAPI) DeleteReturns(result1 *client.Response, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeKeyAPI) Create(ctx context.Context, key string, value string) (*client.Response, error) {
+func (fake *FakeKeysAPI) Create(ctx context.Context, key string, value string) (*client.Response, error) {
 	fake.createMutex.Lock()
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
 		ctx   context.Context
@@ -209,19 +209,19 @@ func (fake *FakeKeyAPI) Create(ctx context.Context, key string, value string) (*
 	}
 }
 
-func (fake *FakeKeyAPI) CreateCallCount() int {
+func (fake *FakeKeysAPI) CreateCallCount() int {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	return len(fake.createArgsForCall)
 }
 
-func (fake *FakeKeyAPI) CreateArgsForCall(i int) (context.Context, string, string) {
+func (fake *FakeKeysAPI) CreateArgsForCall(i int) (context.Context, string, string) {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	return fake.createArgsForCall[i].ctx, fake.createArgsForCall[i].key, fake.createArgsForCall[i].value
 }
 
-func (fake *FakeKeyAPI) CreateReturns(result1 *client.Response, result2 error) {
+func (fake *FakeKeysAPI) CreateReturns(result1 *client.Response, result2 error) {
 	fake.CreateStub = nil
 	fake.createReturns = struct {
 		result1 *client.Response
@@ -229,7 +229,7 @@ func (fake *FakeKeyAPI) CreateReturns(result1 *client.Response, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeKeyAPI) CreateInOrder(ctx context.Context, dir string, value string, opts *client.CreateInOrderOptions) (*client.Response, error) {
+func (fake *FakeKeysAPI) CreateInOrder(ctx context.Context, dir string, value string, opts *client.CreateInOrderOptions) (*client.Response, error) {
 	fake.createInOrderMutex.Lock()
 	fake.createInOrderArgsForCall = append(fake.createInOrderArgsForCall, struct {
 		ctx   context.Context
@@ -245,19 +245,19 @@ func (fake *FakeKeyAPI) CreateInOrder(ctx context.Context, dir string, value str
 	}
 }
 
-func (fake *FakeKeyAPI) CreateInOrderCallCount() int {
+func (fake *FakeKeysAPI) CreateInOrderCallCount() int {
 	fake.createInOrderMutex.RLock()
 	defer fake.createInOrderMutex.RUnlock()
 	return len(fake.createInOrderArgsForCall)
 }
 
-func (fake *FakeKeyAPI) CreateInOrderArgsForCall(i int) (context.Context, string, string, *client.CreateInOrderOptions) {
+func (fake *FakeKeysAPI) CreateInOrderArgsForCall(i int) (context.Context, string, string, *client.CreateInOrderOptions) {
 	fake.createInOrderMutex.RLock()
 	defer fake.createInOrderMutex.RUnlock()
 	return fake.createInOrderArgsForCall[i].ctx, fake.createInOrderArgsForCall[i].dir, fake.createInOrderArgsForCall[i].value, fake.createInOrderArgsForCall[i].opts
 }
 
-func (fake *FakeKeyAPI) CreateInOrderReturns(result1 *client.Response, result2 error) {
+func (fake *FakeKeysAPI) CreateInOrderReturns(result1 *client.Response, result2 error) {
 	fake.CreateInOrderStub = nil
 	fake.createInOrderReturns = struct {
 		result1 *client.Response
@@ -265,7 +265,7 @@ func (fake *FakeKeyAPI) CreateInOrderReturns(result1 *client.Response, result2 e
 	}{result1, result2}
 }
 
-func (fake *FakeKeyAPI) Update(ctx context.Context, key string, value string) (*client.Response, error) {
+func (fake *FakeKeysAPI) Update(ctx context.Context, key string, value string) (*client.Response, error) {
 	fake.updateMutex.Lock()
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
 		ctx   context.Context
@@ -280,19 +280,19 @@ func (fake *FakeKeyAPI) Update(ctx context.Context, key string, value string) (*
 	}
 }
 
-func (fake *FakeKeyAPI) UpdateCallCount() int {
+func (fake *FakeKeysAPI) UpdateCallCount() int {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeKeyAPI) UpdateArgsForCall(i int) (context.Context, string, string) {
+func (fake *FakeKeysAPI) UpdateArgsForCall(i int) (context.Context, string, string) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	return fake.updateArgsForCall[i].ctx, fake.updateArgsForCall[i].key, fake.updateArgsForCall[i].value
 }
 
-func (fake *FakeKeyAPI) UpdateReturns(result1 *client.Response, result2 error) {
+func (fake *FakeKeysAPI) UpdateReturns(result1 *client.Response, result2 error) {
 	fake.UpdateStub = nil
 	fake.updateReturns = struct {
 		result1 *client.Response
@@ -300,7 +300,7 @@ func (fake *FakeKeyAPI) UpdateReturns(result1 *client.Response, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeKeyAPI) Watcher(key string, opts *client.WatcherOptions) client.Watcher {
+func (fake *FakeKeysAPI) Watcher(key string, opts *client.WatcherOptions) client.Watcher {
 	fake.watcherMutex.Lock()
 	fake.watcherArgsForCall = append(fake.watcherArgsForCall, struct {
 		key  string
@@ -314,23 +314,23 @@ func (fake *FakeKeyAPI) Watcher(key string, opts *client.WatcherOptions) client.
 	}
 }
 
-func (fake *FakeKeyAPI) WatcherCallCount() int {
+func (fake *FakeKeysAPI) WatcherCallCount() int {
 	fake.watcherMutex.RLock()
 	defer fake.watcherMutex.RUnlock()
 	return len(fake.watcherArgsForCall)
 }
 
-func (fake *FakeKeyAPI) WatcherArgsForCall(i int) (string, *client.WatcherOptions) {
+func (fake *FakeKeysAPI) WatcherArgsForCall(i int) (string, *client.WatcherOptions) {
 	fake.watcherMutex.RLock()
 	defer fake.watcherMutex.RUnlock()
 	return fake.watcherArgsForCall[i].key, fake.watcherArgsForCall[i].opts
 }
 
-func (fake *FakeKeyAPI) WatcherReturns(result1 client.Watcher) {
+func (fake *FakeKeysAPI) WatcherReturns(result1 client.Watcher) {
 	fake.WatcherStub = nil
 	fake.watcherReturns = struct {
 		result1 client.Watcher
 	}{result1}
 }
 
-var _ client.KeysAPI = new(FakeKeyAPI)
+var _ client.KeysAPI = new(FakeKeysAPI)

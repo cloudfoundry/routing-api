@@ -12,6 +12,9 @@ import (
 	"github.com/coreos/etcd/client"
 )
 
+//go:generate counterfeiter -o fakes/fake_watcher.go ../../../coreos/etcd/client/keys.go Watcher
+//go:generate counterfeiter -o fakes/fake_client.go ../../../coreos/etcd/client/client.go Client
+//go:generate counterfeiter -o fakes/fake_keys_api.go ../../../coreos/etcd/client/keys.go KeysAPI
 //go:generate counterfeiter -o fakes/fake_db.go . DB
 type DB interface {
 	ReadRoutes() ([]models.Route, error)
@@ -44,7 +47,7 @@ type etcd struct {
 	cancelFunc context.CancelFunc
 }
 
-func NewETCD(nodeURLs []string) (*etcd, error) {
+func NewETCD(nodeURLs []string) (DB, error) {
 	cfg := client.Config{
 		Endpoints: nodeURLs,
 		Transport: client.DefaultTransport,
@@ -58,12 +61,19 @@ func NewETCD(nodeURLs []string) (*etcd, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	return New(c, keysAPI, ctx, cancel), nil
+}
+
+func New(client client.Client,
+	keys client.KeysAPI,
+	ctx context.Context,
+	cancelFunc context.CancelFunc) DB {
 	return &etcd{
-		client:     c,
-		keysAPI:    keysAPI,
+		client:     client,
+		keysAPI:    keys,
 		ctx:        ctx,
-		cancelFunc: cancel,
-	}, nil
+		cancelFunc: cancelFunc,
+	}
 }
 
 func (e *etcd) Connect() error {
@@ -141,11 +151,12 @@ func (e *etcd) dispatchWatchEvents(cxt context.Context, key string, events chan<
 	for {
 		resp, err := watcher.Next(cxt)
 		if err != nil {
-			// if adapter.isEventIndexClearedError(err) {
-			// 	watchOpt = &client.WatcherOptions{Recursive: true}
-			// 	watcher = e.keysAPI.Watcher(key, watchOpt)
-			// 	continue
-			// }
+			if err, ok := err.(client.Error); ok {
+				if err.Code == client.ErrorCodeEventIndexCleared {
+					watcher = e.keysAPI.Watcher(key, watchOpt)
+					continue
+				}
+			}
 
 			if err != context.Canceled {
 				errors <- err
@@ -155,7 +166,7 @@ func (e *etcd) dispatchWatchEvents(cxt context.Context, key string, events chan<
 
 		event, err := NewEvent(resp)
 		if err != nil {
-			// errors <- err
+			errors <- err
 			return
 		} else {
 			events <- event
