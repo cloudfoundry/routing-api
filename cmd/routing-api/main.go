@@ -74,7 +74,8 @@ func main() {
 		cf_debug_server.Run(cfg.DebugAddress, reconfigurableSink)
 	}
 
-	database, err := initializeDatabase(cfg, logger)
+	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
+	database, err := db.NewETCD(flag.Args())
 	if err != nil {
 		logger.Error("failed to initialize database", err)
 		os.Exit(1)
@@ -239,16 +240,6 @@ func newUaaClient(logger lager.Logger, routingApiConfig config.Config) (uaaclien
 		SkipVerification: routingApiConfig.OAuth.SkipOAuthTLSVerification,
 	}
 	return uaaclient.NewClient(logger, cfg, clock.NewClock())
-}
-
-func initializeDatabase(cfg config.Config, logger lager.Logger) (db.DB, error) {
-	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
-	maxWorkers := cfg.MaxConcurrentETCDRequests
-	if maxWorkers <= 0 {
-		maxWorkers = DEFAULT_ETCD_WORKERS
-	}
-
-	return db.NewETCD(flag.Args())
 }
 
 func checkFlags() error {

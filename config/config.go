@@ -31,7 +31,6 @@ type Config struct {
 	StatsdEndpoint                  string              `yaml:"statsd_endpoint"`
 	StatsdClientFlushIntervalString string              `yaml:"statsd_client_flush_interval"`
 	StatsdClientFlushInterval       time.Duration       `yaml:"-"`
-	MaxConcurrentETCDRequests       uint                `yaml:"max_concurrent_etcd_requests"`
 	OAuth                           OAuthConfig         `yaml:"oauth"`
 	RouterGroups                    models.RouterGroups `yaml:"router_groups"`
 }

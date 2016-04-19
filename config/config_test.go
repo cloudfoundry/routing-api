@@ -23,7 +23,6 @@ var _ = Describe("Config", func() {
 					Expect(cfg.MetronConfig.Address).To(Equal("1.2.3.4"))
 					Expect(cfg.MetronConfig.Port).To(Equal("4567"))
 					Expect(cfg.DebugAddress).To(Equal("1.2.3.4:1234"))
-					Expect(cfg.MaxConcurrentETCDRequests).To(Equal((uint)(10)))
 					Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
 					Expect(cfg.OAuth.TokenEndpoint).To(Equal("localhost"))
 					Expect(cfg.OAuth.Port).To(Equal(3000))
@@ -59,7 +58,6 @@ var _ = Describe("Config", func() {
 					Expect(cfg.MetronConfig.Address).To(Equal("1.2.3.4"))
 					Expect(cfg.MetronConfig.Port).To(Equal("4567"))
 					Expect(cfg.DebugAddress).To(Equal("1.2.3.4:1234"))
-					Expect(cfg.MaxConcurrentETCDRequests).To(Equal((uint)(10)))
 					Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
 					Expect(cfg.OAuth.TokenEndpoint).To(Equal("localhost"))
 					Expect(cfg.OAuth.Port).To(Equal(3000))
@@ -75,7 +73,6 @@ var _ = Describe("Config", func() {
 						Expect(cfg.MetronConfig.Address).To(Equal("1.2.3.4"))
 						Expect(cfg.MetronConfig.Port).To(Equal("4567"))
 						Expect(cfg.DebugAddress).To(Equal("1.2.3.4:1234"))
-						Expect(cfg.MaxConcurrentETCDRequests).To(Equal((uint)(10)))
 						Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
 						Expect(cfg.OAuth.TokenEndpoint).To(BeEmpty())
 						Expect(cfg.OAuth.Port).To(Equal(0))
@@ -221,8 +218,7 @@ metron_config:
   port: "4567"
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-max_concurrent_etcd_requests: 10`
+statsd_client_flush_interval: "10ms"`
 				})
 
 				Context("when auth is enabled", func() {
@@ -237,19 +233,6 @@ max_concurrent_etcd_requests: 10`
 						err := cfg.Initialize([]byte(test_config), true)
 						Expect(err).NotTo(HaveOccurred())
 					})
-				})
-			})
-
-			Context("MaxConcurrentETCDRequests errors", func() {
-				BeforeEach(func() {
-					test_config = `uaa_verification_key: "public_key"
-log_guid: "some-guid"
-max_concurrent_etcd_requests: '-1'`
-				})
-
-				It("errors if max concurrent requests is negative", func() {
-					err := cfg.Initialize([]byte(test_config), false)
-					Expect(err).To(HaveOccurred())
 				})
 			})
 		})
