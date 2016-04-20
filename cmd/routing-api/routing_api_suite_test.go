@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -38,6 +39,8 @@ var (
 	oauthServerPort        string
 )
 
+var etcdVersion = "etcdserver\":\"2.1.1"
+
 func TestMain(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Main Suite")
@@ -64,6 +67,17 @@ var _ = BeforeEach(func() {
 	etcdUrl = fmt.Sprintf("http://127.0.0.1:%d", etcdPort)
 	etcdRunner = etcdstorerunner.NewETCDClusterRunner(etcdPort, 1, nil)
 	etcdRunner.Start()
+
+	etcdVersionUrl := etcdRunner.NodeURLS()[0] + "/version"
+	resp, err := http.Get(etcdVersionUrl)
+	Expect(err).ToNot(HaveOccurred())
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	Expect(err).ToNot(HaveOccurred())
+
+	// response body: {"etcdserver":"2.1.1","etcdcluster":"2.1.0"}
+	Expect(string(body)).To(ContainSubstring(etcdVersion))
 
 	etcdAdapter = etcdRunner.Adapter(nil)
 	routingAPIPort = uint16(6900 + GinkgoParallelNode())
