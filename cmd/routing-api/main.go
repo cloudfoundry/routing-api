@@ -99,10 +99,10 @@ func main() {
 	}
 	defer statsdClient.Close()
 
-	apiServer := constructApiServer(cfg, database, statsdClient, logger)
+	apiServer := constructApiServer(cfg, database, statsdClient, logger.Session("api-server"))
 	stopper := constructStopper(database)
 
-	routerRegister := constructRouteRegister(cfg.LogGuid, database, logger)
+	routerRegister := constructRouteRegister(cfg.LogGuid, database, logger.Session("route-register"))
 
 	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
 	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker)

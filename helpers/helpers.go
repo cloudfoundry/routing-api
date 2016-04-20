@@ -28,7 +28,7 @@ func NewRouteRegister(database db.DB, route models.Route, ticker *time.Ticker, l
 func (r *RouteRegister) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	err := r.database.SaveRoute(r.route)
 	if err != nil {
-		r.logger.Error("Error registering self", err)
+		r.logger.Error("registration-error", err)
 	}
 	close(ready)
 
@@ -40,7 +40,7 @@ func (r *RouteRegister) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 		case <-signals:
 			err := r.database.DeleteRoute(r.route)
 			if err != nil {
-				r.logger.Error("Error deleting route registration", err)
+				r.logger.Error("unregistration-error", err)
 				return err
 			}
 			return nil
