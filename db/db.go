@@ -40,6 +40,8 @@ const (
 	ROUTER_GROUP_BASE_KEY string = "/v1/router_groups"
 )
 
+var ErrorConflict = errors.New("etcd failed to compare")
+
 type etcd struct {
 	client     client.Client
 	keysAPI    client.KeysAPI
@@ -102,16 +104,94 @@ func (e *etcd) ReadRoutes() ([]models.Route, error) {
 	return listRoutes, nil
 }
 
+func readOpts() *client.GetOptions {
+	return &client.GetOptions{
+		Recursive: true,
+	}
+}
+
+func createOpts(ttl int) *client.SetOptions {
+	return &client.SetOptions{
+		TTL:       time.Duration(ttl) * time.Second,
+		PrevExist: "false",
+	}
+}
+
+func updateOpts(ttl int, prevIndex uint64) *client.SetOptions {
+	return &client.SetOptions{
+		TTL:       time.Duration(ttl) * time.Second,
+		PrevIndex: prevIndex,
+	}
+
+}
+
+func ctx() context.Context {
+	return context.Background()
+}
+
 func (e *etcd) SaveRoute(route models.Route) error {
 	key := generateHttpRouteKey(route)
-	routeJSON, _ := json.Marshal(route)
 
-	setOpt := &client.SetOptions{
-		TTL: time.Duration(route.TTL) * time.Second,
+	// get existing route
+	//
+	// if not exist
+	// create
+	// else
+	// update with previous index
+	//
+	//
+	// if update fails
+	// retry 3 times
+	//
+	maxRetries := 3
+	retries := 0
+
+	for retries <= maxRetries {
+		response, err := e.keysAPI.Get(context.Background(), key, readOpts())
+
+		// Update
+		if response != nil && err == nil {
+			var newRoute models.Route
+			err = json.Unmarshal([]byte(response.Node.Value), &newRoute)
+			if err != nil {
+				return err
+			}
+
+			newRoute.ModificationTag.Increment()
+			routeJSON, _ := json.Marshal(newRoute)
+			_, err = e.keysAPI.Set(context.Background(), key, string(routeJSON), updateOpts(route.TTL, response.Node.ModifiedIndex))
+			if err == nil {
+				break
+			}
+		} else if cerr, ok := err.(client.Error); ok && cerr.Code == client.ErrorCodeKeyNotFound { //create
+			if retries > 0 {
+				return ErrorConflict
+			}
+
+			var tag models.ModificationTag
+			tag, err = models.NewModificationTag()
+			if err != nil {
+				return err
+			}
+			route.ModificationTag = tag
+			routeJSON, _ := json.Marshal(route)
+			_, err = e.keysAPI.Set(ctx(), key, string(routeJSON), createOpts(route.TTL))
+			if err == nil {
+				break
+			}
+		}
+
+		if cerr, ok := err.(client.Error); ok && cerr.Code == client.ErrorCodeTestFailed {
+			retries++
+		} else {
+			return err
+		}
 	}
-	_, err := e.keysAPI.Set(context.Background(), key, string(routeJSON), setOpt)
 
-	return err
+	if retries > maxRetries {
+		return ErrorConflict
+	}
+	return nil
 }
 
 func (e *etcd) DeleteRoute(route models.Route) error {

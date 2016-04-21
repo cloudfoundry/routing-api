@@ -8,6 +8,75 @@ import (
 )
 
 var _ = Describe("Models", func() {
+	Describe("ModificationTag", func() {
+		var tag ModificationTag
+
+		BeforeEach(func() {
+			tag = ModificationTag{"guid1", 5}
+		})
+
+		Describe("Increment", func() {
+			BeforeEach(func() {
+				tag.Increment()
+			})
+
+			It("Increments the index", func() {
+				Expect(tag.Index).To(Equal(uint32(6)))
+			})
+		})
+
+		Describe("SucceededBy", func() {
+			var tag2 ModificationTag
+
+			Context("when the guid is the different", func() {
+				BeforeEach(func() {
+					tag2 = ModificationTag{"guid5", 0}
+				})
+				It("new tag should succeed", func() {
+					Expect(tag.SucceededBy(&tag2)).To(BeTrue())
+				})
+			})
+
+			Context("when the guid is the same", func() {
+
+				Context("when the index is the same as the original tag", func() {
+					BeforeEach(func() {
+						tag2 = ModificationTag{"guid1", 5}
+					})
+
+					It("new tag should not succeed", func() {
+						Expect(tag.SucceededBy(&tag2)).To(BeFalse())
+					})
+
+				})
+
+				Context("when the index is less than original tag Index", func() {
+
+					BeforeEach(func() {
+						tag2 = ModificationTag{"guid1", 4}
+					})
+
+					It("new tag should not succeed", func() {
+						Expect(tag.SucceededBy(&tag2)).To(BeFalse())
+					})
+				})
+
+				Context("when the index is greater than original tag Index", func() {
+					BeforeEach(func() {
+						tag2 = ModificationTag{"guid1", 6}
+					})
+
+					It("new tag should succeed", func() {
+						Expect(tag.SucceededBy(&tag2)).To(BeTrue())
+					})
+
+				})
+
+			})
+
+		})
+	})
+
 	Describe("RouterGroup", func() {
 		var rg RouterGroup
 
