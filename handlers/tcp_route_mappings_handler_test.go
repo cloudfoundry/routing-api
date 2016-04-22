@@ -53,12 +53,17 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			var (
 				tcpMapping  models.TcpRouteMapping
 				tcpMappings []models.TcpRouteMapping
-				err         error
 			)
 
 			BeforeEach(func() {
-				tcpMapping, err = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
-				Expect(err).NotTo(HaveOccurred())
+				tcpMapping = models.TcpRouteMapping{
+					TcpRoute: models.TcpRoute{
+						RouterGroupGuid: "router-group-guid-001",
+						ExternalPort:    52000,
+					},
+					HostIP:   "1.2.3.4",
+					HostPort: 60000,
+				}
 				tcpMappings = []models.TcpRouteMapping{tcpMapping}
 			})
 
@@ -97,14 +102,12 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					request = handlers.NewTestRequest(tcpMappings)
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
-					tcpMapping, err = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
-					Expect(err).NotTo(HaveOccurred())
-
 					data := map[string]interface{}{
 						"port":              float64(52000),
 						"router_group_guid": "router-group-guid-001",
 						"backend_ip":        "1.2.3.4",
 						"backend_port":      float64(60000),
+						"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
 					}
 					log_data := map[string][]interface{}{"tcp_mapping_creation": []interface{}{data}}
 
@@ -116,6 +119,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					BeforeEach(func() {
 						database.SaveTcpRouteMappingReturns(errors.New("stuff broke"))
 					})
+
 					It("responds with a server error", func() {
 						request = handlers.NewTestRequest(tcpMappings)
 						tcpRouteMappingsHandler.Upsert(responseRecorder, request)
@@ -124,10 +128,23 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						Expect(responseRecorder.Body.String()).To(ContainSubstring("stuff broke"))
 					})
 				})
+
+				Context("when conflict error is returned", func() {
+					BeforeEach(func() {
+						database.SaveTcpRouteMappingReturns(db.ErrorConflict)
+					})
+
+					It("responds with a 409 conflict error", func() {
+						request = handlers.NewTestRequest(tcpMappings)
+						tcpRouteMappingsHandler.Upsert(responseRecorder, request)
+
+						Expect(responseRecorder.Code).To(Equal(http.StatusConflict))
+						Expect(responseRecorder.Body.String()).To(ContainSubstring("DBConflictError"))
+					})
+				})
 			})
 
 			Context("when there are errors with the input ports", func() {
-
 				It("blows up when a external port is negative", func() {
 					request = handlers.NewTestRequest(`[{"router_group_guid": "tcp-default", "port": -1, "backend_ip": "10.1.1.12", "backend_port": 60000}]`)
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
@@ -170,7 +187,6 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
 
 				})
-
 			})
 
 			Context("when validator returns error", func() {
@@ -227,10 +243,22 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			)
 
 			BeforeEach(func() {
-				mapping1, err := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
-				Expect(err).ToNot(HaveOccurred())
-				mapping2, err := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
-				Expect(err).ToNot(HaveOccurred())
+				mapping1 := models.TcpRouteMapping{
+					TcpRoute: models.TcpRoute{
+						RouterGroupGuid: "router-group-guid-001",
+						ExternalPort:    52000,
+					},
+					HostIP:   "1.2.3.4",
+					HostPort: 60000,
+				}
+				mapping2 := models.TcpRouteMapping{
+					TcpRoute: models.TcpRoute{
+						RouterGroupGuid: "router-group-guid-001",
+						ExternalPort:    52001,
+					},
+					HostIP:   "1.2.3.5",
+					HostPort: 60001,
+				}
 				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
 				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
 			})
@@ -240,8 +268,28 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				tcpRouteMappingsHandler.List(responseRecorder, request)
 
 				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
-				Expect(responseRecorder.Body.String()).To(MatchJSON(`[{"router_group_guid": "router-group-guid-001", "port": 52000, "backend_ip": "1.2.3.4", "backend_port": 60000},
-					{"router_group_guid": "router-group-guid-001", "port": 52001, "backend_ip": "1.2.3.5", "backend_port": 60001}]`))
+				expectedJson := `[
+							{
+								"router_group_guid": "router-group-guid-001",
+								"port": 52000,
+								"backend_ip": "1.2.3.4",
+								"backend_port": 60000,
+								"modification_tag": {
+									"guid": "",
+									"index": 0
+								}
+							},
+							{
+								"router_group_guid": "router-group-guid-001",
+								"port": 52001,
+								"backend_ip": "1.2.3.5",
+								"backend_port": 60001,
+								"modification_tag": {
+									"guid": "",
+									"index": 0
+								}
+							}]`
+				Expect(responseRecorder.Body.String()).To(MatchJSON(expectedJson))
 			})
 		})
 
@@ -296,12 +344,18 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			var (
 				tcpMapping  models.TcpRouteMapping
 				tcpMappings []models.TcpRouteMapping
-				err         error
 			)
 
 			BeforeEach(func() {
-				tcpMapping, err = models.NewTcpRouteMapping("router-group-guid-002", 52001, "1.2.3.4", 60000)
-				Expect(err).ToNot(HaveOccurred())
+
+				tcpMapping = models.TcpRouteMapping{
+					TcpRoute: models.TcpRoute{
+						RouterGroupGuid: "router-group-guid-002",
+						ExternalPort:    52001,
+					},
+					HostIP:   "1.2.3.4",
+					HostPort: 60000,
+				}
 				tcpMappings = []models.TcpRouteMapping{tcpMapping}
 			})
 
@@ -345,6 +399,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						"router_group_guid": "router-group-guid-002",
 						"backend_ip":        "1.2.3.4",
 						"backend_port":      float64(60000),
+						"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
 					}
 					log_data := map[string][]interface{}{"tcp_mapping_deletion": []interface{}{data}}
 

@@ -92,7 +92,7 @@ var _ = Describe("Routes API", func() {
 		})
 	})
 
-	FDescribe("Stats for total routes", func() {
+	Describe("Stats for total routes", func() {
 
 		BeforeEach(func() {
 			route1 = models.Route{

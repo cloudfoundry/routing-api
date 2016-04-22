@@ -78,7 +78,11 @@ func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Reques
 	for _, tcpMapping := range tcpMappings {
 		err = h.db.SaveTcpRouteMapping(tcpMapping)
 		if err != nil {
-			handleDBCommunicationError(w, err, log)
+			if err == db.ErrorConflict {
+				handleDBConflictError(w, err, log)
+			} else {
+				handleDBCommunicationError(w, err, log)
+			}
 			return
 		}
 	}

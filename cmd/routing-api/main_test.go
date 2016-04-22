@@ -173,10 +173,8 @@ var _ = Describe("Main", func() {
 			It("allows to create given tcp route mappings", func() {
 				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 				var err error
-				tcpRouteMapping1, err = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
-				Expect(err).ToNot(HaveOccurred())
-				tcpRouteMapping2, err = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
-				Expect(err).ToNot(HaveOccurred())
+				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
+				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
 
 				err = client.UpsertTcpRouteMappings([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 				Expect(err).NotTo(HaveOccurred())
@@ -205,10 +203,8 @@ var _ = Describe("Main", func() {
 			})
 
 			JustBeforeEach(func() {
-				tcpRouteMapping1, err = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
-				Expect(err).ToNot(HaveOccurred())
-				tcpRouteMapping2, err = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
-				Expect(err).ToNot(HaveOccurred())
+				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
+				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
 				tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 				err = client.UpsertTcpRouteMappings(tcpRouteMappings)
 
@@ -244,10 +240,8 @@ var _ = Describe("Main", func() {
 			JustBeforeEach(func() {
 				client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 
-				tcpRouteMapping1, err = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
-				Expect(err).ToNot(HaveOccurred())
-				tcpRouteMapping2, err = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
-				Expect(err).ToNot(HaveOccurred())
+				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
+				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
 				tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 				err = client.UpsertTcpRouteMappings(tcpRouteMappings)
 
