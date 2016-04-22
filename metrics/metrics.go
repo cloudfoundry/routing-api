@@ -85,7 +85,7 @@ func (r MetricsReporter) getTotalTcpRoutes() int64 {
 }
 
 func getStatsEventType(event db.Event) int64 {
-	if event.PrevNode == nil && event.Type == db.UpdateEvent {
+	if event.PrevNode == nil && (event.Type == db.UpdateEvent || event.Type == db.CreateEvent) {
 		return 1
 	} else if event.Type == db.ExpireEvent || event.Type == db.DeleteEvent {
 		return -1

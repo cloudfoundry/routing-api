@@ -36,6 +36,11 @@ func (m *ModificationTag) SucceededBy(other *ModificationTag) bool {
 	return m.Guid != other.Guid || m.Index < other.Index
 }
 
+func (r Route) Matches(other Route) bool {
+	return r.Route == other.Route && r.Port == other.Port && r.IP == other.IP &&
+		r.TTL == other.TTL && r.LogGuid == other.LogGuid && r.RouteServiceUrl == other.RouteServiceUrl
+}
+
 type ModificationTag struct {
 	Guid  string `json:"guid"`
 	Index uint32 `json:"index"`

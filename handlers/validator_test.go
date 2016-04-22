@@ -218,6 +218,7 @@ var _ = Describe("Validator", func() {
 		var (
 			tcpMapping   models.TcpRouteMapping
 			routerGroups models.RouterGroups
+			err          error
 		)
 
 		BeforeEach(func() {
@@ -229,7 +230,8 @@ var _ = Describe("Validator", func() {
 					ReservablePorts: "1024-65535",
 				},
 			}
-			tcpMapping = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
+			tcpMapping, err = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		Context("when valid tcp mapping is passed", func() {
@@ -286,10 +288,12 @@ var _ = Describe("Validator", func() {
 	Describe("ValidateDeleteTcpRouteMapping", func() {
 		var (
 			tcpMapping models.TcpRouteMapping
+			err        error
 		)
 
 		BeforeEach(func() {
-			tcpMapping = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
+			tcpMapping, err = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		Context("when valid tcp mapping is passed", func() {

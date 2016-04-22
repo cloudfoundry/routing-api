@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/routing-api"
+	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/test_helpers"
 	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/testrunner"
 	"github.com/cloudfoundry-incubator/routing-api/models"
 	. "github.com/onsi/ginkgo"
@@ -171,11 +172,13 @@ var _ = Describe("Main", func() {
 
 			It("allows to create given tcp route mappings", func() {
 				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
+				var err error
+				tcpRouteMapping1, err = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
+				Expect(err).ToNot(HaveOccurred())
+				tcpRouteMapping2, err = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
+				Expect(err).ToNot(HaveOccurred())
 
-				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
-
-				err := client.UpsertTcpRouteMappings([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+				err = client.UpsertTcpRouteMappings([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -187,6 +190,7 @@ var _ = Describe("Main", func() {
 				tcpRouteMapping2 models.TcpRouteMapping
 				tcpRouteMappings []models.TcpRouteMapping
 				client           routing_api.Client
+				err              error
 			)
 
 			BeforeEach(func() {
@@ -201,10 +205,12 @@ var _ = Describe("Main", func() {
 			})
 
 			JustBeforeEach(func() {
-				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
+				tcpRouteMapping1, err = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
+				Expect(err).ToNot(HaveOccurred())
+				tcpRouteMapping2, err = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
+				Expect(err).ToNot(HaveOccurred())
 				tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
-				err := client.UpsertTcpRouteMappings(tcpRouteMappings)
+				err = client.UpsertTcpRouteMappings(tcpRouteMappings)
 
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -226,6 +232,7 @@ var _ = Describe("Main", func() {
 				tcpRouteMapping2 models.TcpRouteMapping
 				tcpRouteMappings []models.TcpRouteMapping
 				client           routing_api.Client
+				err              error
 			)
 
 			BeforeEach(func() {
@@ -237,10 +244,12 @@ var _ = Describe("Main", func() {
 			JustBeforeEach(func() {
 				client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 
-				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
+				tcpRouteMapping1, err = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
+				Expect(err).ToNot(HaveOccurred())
+				tcpRouteMapping2, err = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
+				Expect(err).ToNot(HaveOccurred())
 				tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
-				err := client.UpsertTcpRouteMappings(tcpRouteMappings)
+				err = client.UpsertTcpRouteMappings(tcpRouteMappings)
 
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -253,7 +262,7 @@ var _ = Describe("Main", func() {
 				tcpRouteMappingsResponse, err := client.TcpRouteMappings()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(tcpRouteMappingsResponse).NotTo(BeNil())
-				Expect(tcpRouteMappingsResponse).To(ConsistOf(tcpRouteMappings))
+				Expect(test_helpers.TcpRouteMappings(tcpRouteMappingsResponse).ContainsAll(tcpRouteMappings...)).To(BeTrue())
 			})
 		})
 

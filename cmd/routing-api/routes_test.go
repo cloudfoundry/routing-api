@@ -6,6 +6,7 @@ import (
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
+	. "github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/test_helpers"
 	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/testrunner"
 	"github.com/cloudfoundry-incubator/routing-api/models"
 	. "github.com/onsi/ginkgo"
@@ -66,7 +67,7 @@ var _ = Describe("Routes API", func() {
 			}
 
 			Expect(routes).To(HaveLen(3))
-			Expect(routes).To(ConsistOf(route1, route2, routingAPIRoute))
+			Expect(Routes(routes).ContainsAll(route1, route2, routingAPIRoute)).To(BeTrue())
 		})
 
 		It("deletes a route", func() {
@@ -76,7 +77,7 @@ var _ = Describe("Routes API", func() {
 
 			routes, err = client.Routes()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(routes).NotTo(ContainElement(route1))
+			Expect(Routes(routes).Contains(route1)).To(BeFalse())
 		})
 
 		It("rejects bad routes", func() {
@@ -92,10 +93,11 @@ var _ = Describe("Routes API", func() {
 			Expect(err).To(HaveOccurred())
 
 			routes, err = client.Routes()
+
 			Expect(err).ToNot(HaveOccurred())
-			Expect(routes).NotTo(ContainElement(route3))
-			Expect(routes).To(ContainElement(route1))
-			Expect(routes).To(ContainElement(route2))
+			Expect(Routes(routes).Contains(route1)).To(BeTrue())
+			Expect(Routes(routes).Contains(route2)).To(BeTrue())
+			Expect(Routes(routes).Contains(route3)).To(BeFalse())
 		})
 
 		Context("when a route has a context path", func() {
@@ -117,7 +119,7 @@ var _ = Describe("Routes API", func() {
 				var err error
 				routes, err = client.Routes()
 				Expect(err).ToNot(HaveOccurred())
-				Expect(routes).To(ContainElement(routeWithPath))
+				Expect(Routes(routes).Contains(routeWithPath)).To(BeTrue())
 			})
 		})
 	})

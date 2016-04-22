@@ -55,11 +55,11 @@ var _ = Describe("Routes API", func() {
 			routesToInsert := []models.Route{route1}
 			client.UpsertRoutes(routesToInsert)
 
-			Eventually(func() routing_api.Event {
+			Eventually(func() bool {
 				event, err := eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
-				return event
-			}).Should(Equal(expectedEvent))
+				return event.Action == expectedEvent.Action && event.Route.Matches(expectedEvent.Route)
+			}).Should(BeTrue())
 		})
 
 		It("gets events for updated routes", func() {
@@ -72,18 +72,18 @@ var _ = Describe("Routes API", func() {
 			}
 
 			client.UpsertRoutes([]models.Route{route1})
-			Eventually(func() models.Route {
+			Eventually(func() bool {
 				event, err := eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
-				return event.Route
-			}).Should(Equal(route1))
+				return event.Action == "Upsert" && event.Route.Matches(route1)
+			}).Should(BeTrue())
 
 			client.UpsertRoutes([]models.Route{routeUpdated})
-			Eventually(func() models.Route {
+			Eventually(func() bool {
 				event, err := eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
-				return event.Route
-			}).Should(Equal(routeUpdated))
+				return event.Action == "Upsert" && event.Route.Matches(routeUpdated)
+			}).Should(BeTrue())
 		})
 
 		It("gets events for deleted routes", func() {
@@ -94,11 +94,11 @@ var _ = Describe("Routes API", func() {
 				Route:  route1,
 			}
 			client.DeleteRoutes([]models.Route{route1})
-			Eventually(func() routing_api.Event {
+			Eventually(func() bool {
 				event, err := eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
-				return event
-			}).Should(Equal(expectedEvent))
+				return event.Action == expectedEvent.Action && event.Route.Matches(expectedEvent.Route)
+			}).Should(BeTrue())
 		})
 
 		It("gets events for expired routes", func() {
@@ -117,11 +117,11 @@ var _ = Describe("Routes API", func() {
 				Route:  routeExpire,
 			}
 
-			Eventually(func() routing_api.Event {
+			Eventually(func() bool {
 				event, err := eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
-				return event
-			}).Should(Equal(expectedEvent))
+				return event.Action == expectedEvent.Action && event.Route.Matches(expectedEvent.Route)
+			}).Should(BeTrue())
 		})
 	})
 })

@@ -38,6 +38,8 @@ const (
 	TCP_MAPPING_BASE_KEY  string = "/v1/tcp_routes/router_groups"
 	HTTP_ROUTE_BASE_KEY   string = "/routes"
 	ROUTER_GROUP_BASE_KEY string = "/v1/router_groups"
+
+	maxRetries = 3
 )
 
 var ErrorConflict = errors.New("etcd failed to compare")
@@ -117,12 +119,17 @@ func createOpts(ttl int) *client.SetOptions {
 	}
 }
 
-func updateOpts(ttl int, prevIndex uint64) *client.SetOptions {
+func updateOptsWithTTL(ttl int, prevIndex uint64) *client.SetOptions {
 	return &client.SetOptions{
 		TTL:       time.Duration(ttl) * time.Second,
 		PrevIndex: prevIndex,
 	}
+}
 
+func updateOpts(prevIndex uint64) *client.SetOptions {
+	return &client.SetOptions{
+		PrevIndex: prevIndex,
+	}
 }
 
 func ctx() context.Context {
@@ -132,18 +139,6 @@ func ctx() context.Context {
 func (e *etcd) SaveRoute(route models.Route) error {
 	key := generateHttpRouteKey(route)
 
-	// get existing route
-	//
-	// if not exist
-	// create
-	// else
-	// update with previous index
-	//
-	//
-	// if update fails
-	// retry 3 times
-	//
-	maxRetries := 3
 	retries := 0
 
 	for retries <= maxRetries {
@@ -151,19 +146,22 @@ func (e *etcd) SaveRoute(route models.Route) error {
 
 		// Update
 		if response != nil && err == nil {
-			var newRoute models.Route
-			err = json.Unmarshal([]byte(response.Node.Value), &newRoute)
+			var existingRoute models.Route
+			err = json.Unmarshal([]byte(response.Node.Value), &existingRoute)
 			if err != nil {
 				return err
 			}
 
-			newRoute.ModificationTag.Increment()
-			routeJSON, _ := json.Marshal(newRoute)
-			_, err = e.keysAPI.Set(context.Background(), key, string(routeJSON), updateOpts(route.TTL, response.Node.ModifiedIndex))
+			route.ModificationTag = existingRoute.ModificationTag
+			route.ModificationTag.Increment()
+
+			routeJSON, _ := json.Marshal(route)
+			_, err = e.keysAPI.Set(context.Background(), key, string(routeJSON), updateOptsWithTTL(route.TTL, response.Node.ModifiedIndex))
 			if err == nil {
 				break
 			}
 		} else if cerr, ok := err.(client.Error); ok && cerr.Code == client.ErrorCodeKeyNotFound { //create
+			// Delete came in between a read and an update
 			if retries > 0 {
 				return ErrorConflict
 			}
@@ -181,6 +179,7 @@ func (e *etcd) SaveRoute(route models.Route) error {
 			}
 		}
 
+		// only retry on a compare and swap error
 		if cerr, ok := err.(client.Error); ok && cerr.Code == client.ErrorCodeTestFailed {
 			retries++
 		} else {
@@ -341,19 +340,69 @@ func (e *etcd) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
 
 func (e *etcd) SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 	key := generateTcpRouteMappingKey(tcpMapping)
-	tcpMappingJson, _ := json.Marshal(tcpMapping)
-	setOpt := &client.SetOptions{}
-	_, err := e.keysAPI.Set(context.Background(), key, string(tcpMappingJson), setOpt)
 
-	return err
+	retries := 0
+	for retries <= maxRetries {
+		response, err := e.keysAPI.Get(context.Background(), key, readOpts())
+
+		// Update
+		if response != nil && err == nil {
+			var existingTcpRouteMapping models.TcpRouteMapping
+
+			err = json.Unmarshal([]byte(response.Node.Value), &existingTcpRouteMapping)
+			if err != nil {
+				return err
+			}
+
+			tcpMapping.ModificationTag = existingTcpRouteMapping.ModificationTag
+			tcpMapping.ModificationTag.Increment()
+
+			tcpRouteJSON, _ := json.Marshal(tcpMapping)
+			_, err = e.keysAPI.Set(context.Background(), key, string(tcpRouteJSON), updateOpts(response.Node.ModifiedIndex))
+		} else if cerr, ok := err.(client.Error); ok && cerr.Code == client.ErrorCodeKeyNotFound { //create
+			// Delete came in between a read and update
+			if retries > 0 {
+				return ErrorConflict
+			}
+
+			var tag models.ModificationTag
+			tag, err = models.NewModificationTag()
+			if err != nil {
+				return err
+			}
+
+			tcpMapping.ModificationTag = tag
+			tcpRouteMappingJSON, _ := json.Marshal(tcpMapping)
+			_, err = e.keysAPI.Create(ctx(), key, string(tcpRouteMappingJSON))
+		}
+
+		// return when create or update is successful
+		if err == nil {
+			return nil
+		}
+
+		// only retry on a compare and swap error
+		if cerr, ok := err.(client.Error); ok && cerr.Code == client.ErrorCodeTestFailed {
+			retries++
+		} else {
+			return err
+		}
+	}
+
+	// number of retries exceeded
+	return ErrorConflict
 }
 
 func (e *etcd) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 	key := generateTcpRouteMappingKey(tcpMapping)
 	deleteOpt := &client.DeleteOptions{}
 	_, err := e.keysAPI.Delete(context.Background(), key, deleteOpt)
-	if err != nil && err.(client.Error).Code == client.ErrorCodeKeyNotFound {
-		err = DBError{Type: KeyNotFound, Message: "The specified route (" + tcpMapping.String() + ") could not be found."}
+
+	if err != nil {
+		cerr, ok := err.(client.Error)
+		if ok && cerr.Code == client.ErrorCodeKeyNotFound {
+			err = DBError{Type: KeyNotFound, Message: "The specified route (" + tcpMapping.String() + ") could not be found."}
+		}
 	}
 
 	return err

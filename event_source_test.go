@@ -163,11 +163,22 @@ var _ = Describe("EventSource", func() {
 						rawEvent := sse.Event{
 							ID:    "1",
 							Name:  "Test",
-							Data:  []byte(`{"router_group_guid": "rguid1", "port":52000, "backend_port":60000,"backend_ip":"1.1.1.1"}`),
+							Data:  []byte(`{"router_group_guid": "rguid1", "port":52000, "backend_port":60000,"backend_ip":"1.1.1.1","modification_tag":{"guid":"my-guid","index":5}}`),
 							Retry: 1,
 						}
 
-						tcpMapping := models.NewTcpRouteMapping("rguid1", 52000, "1.1.1.1", 60000)
+						tcpMapping := models.TcpRouteMapping{
+							TcpRoute: models.TcpRoute{
+								RouterGroupGuid: "rguid1",
+								ExternalPort:    52000},
+							HostPort: 60000,
+							HostIP:   "1.1.1.1",
+							ModificationTag: models.ModificationTag{
+								Guid:  "my-guid",
+								Index: 5,
+							},
+						}
+
 						expectedEvent := routing_api.TcpEvent{
 							TcpRouteMapping: tcpMapping,
 							Action:          "Test",

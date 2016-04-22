@@ -53,10 +53,12 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			var (
 				tcpMapping  models.TcpRouteMapping
 				tcpMappings []models.TcpRouteMapping
+				err         error
 			)
 
 			BeforeEach(func() {
-				tcpMapping = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+				tcpMapping, err = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+				Expect(err).NotTo(HaveOccurred())
 				tcpMappings = []models.TcpRouteMapping{tcpMapping}
 			})
 
@@ -95,7 +97,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					request = handlers.NewTestRequest(tcpMappings)
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
-					tcpMapping = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+					tcpMapping, err = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+					Expect(err).NotTo(HaveOccurred())
 
 					data := map[string]interface{}{
 						"port":              float64(52000),
@@ -224,10 +227,11 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			)
 
 			BeforeEach(func() {
-				tcpRoutes = []models.TcpRouteMapping{
-					models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000),
-					models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001),
-				}
+				mapping1, err := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+				Expect(err).ToNot(HaveOccurred())
+				mapping2, err := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
+				Expect(err).ToNot(HaveOccurred())
+				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
 				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
 			})
 
@@ -292,10 +296,12 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			var (
 				tcpMapping  models.TcpRouteMapping
 				tcpMappings []models.TcpRouteMapping
+				err         error
 			)
 
 			BeforeEach(func() {
-				tcpMapping = models.NewTcpRouteMapping("router-group-guid-002", 52001, "1.2.3.4", 60000)
+				tcpMapping, err = models.NewTcpRouteMapping("router-group-guid-002", 52001, "1.2.3.4", 60000)
+				Expect(err).ToNot(HaveOccurred())
 				tcpMappings = []models.TcpRouteMapping{tcpMapping}
 			})
 

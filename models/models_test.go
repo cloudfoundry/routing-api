@@ -274,4 +274,70 @@ var _ = Describe("Models", func() {
 			})
 		})
 	})
+	Describe("Route", func() {
+		var (
+			route      Route
+			otherRoute Route
+			matches    bool
+		)
+
+		BeforeEach(func() {
+			tag, err := NewModificationTag()
+			Expect(err).ToNot(HaveOccurred())
+			route = Route{
+				Route:           "/foo/bar",
+				Port:            35,
+				IP:              "2.2.2.2",
+				TTL:             66,
+				LogGuid:         "banana",
+				ModificationTag: tag,
+			}
+		})
+
+		JustBeforeEach(func() {
+			matches = route.Matches(otherRoute)
+		})
+
+		Context("Matches", func() {
+			Context("when all properties matches", func() {
+				BeforeEach(func() {
+					otherRoute = route
+				})
+
+				It("returns true", func() {
+					Expect(matches).To(BeTrue())
+				})
+			})
+
+			Context("when all properties but modification tag matches", func() {
+				BeforeEach(func() {
+					otherRoute = route
+					tag1, err := NewModificationTag()
+					Expect(err).ToNot(HaveOccurred())
+					otherRoute.ModificationTag = tag1
+				})
+
+				It("returns true", func() {
+					Expect(matches).To(BeTrue())
+				})
+			})
+			Context("when some properties don't match", func() {
+
+				BeforeEach(func() {
+					otherRoute = Route{
+						Route:   "/foo/brah",
+						Port:    35,
+						IP:      "3.3.3.3",
+						LogGuid: "banana",
+					}
+				})
+
+				It("returns false", func() {
+					Expect(matches).To(BeFalse())
+				})
+
+			})
+		})
+
+	})
 })

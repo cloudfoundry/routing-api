@@ -13,7 +13,7 @@ type FakeDB struct {
 	ReadRoutesStub        func() ([]models.Route, error)
 	readRoutesMutex       sync.RWMutex
 	readRoutesArgsForCall []struct{}
-	readRoutesReturns struct {
+	readRoutesReturns     struct {
 		result1 []models.Route
 		result2 error
 	}
@@ -36,7 +36,7 @@ type FakeDB struct {
 	ReadTcpRouteMappingsStub        func() ([]models.TcpRouteMapping, error)
 	readTcpRouteMappingsMutex       sync.RWMutex
 	readTcpRouteMappingsArgsForCall []struct{}
-	readTcpRouteMappingsReturns struct {
+	readTcpRouteMappingsReturns     struct {
 		result1 []models.TcpRouteMapping
 		result2 error
 	}
@@ -59,7 +59,7 @@ type FakeDB struct {
 	ReadRouterGroupsStub        func() (models.RouterGroups, error)
 	readRouterGroupsMutex       sync.RWMutex
 	readRouterGroupsArgsForCall []struct{}
-	readRouterGroupsReturns struct {
+	readRouterGroupsReturns     struct {
 		result1 models.RouterGroups
 		result2 error
 	}
@@ -74,12 +74,12 @@ type FakeDB struct {
 	ConnectStub        func() error
 	connectMutex       sync.RWMutex
 	connectArgsForCall []struct{}
-	connectReturns struct {
+	connectReturns     struct {
 		result1 error
 	}
-	CancelWatchesStub        func()
-	cancelWatchesMutex       sync.RWMutex
-	cancelWatchesArgsForCall []struct{}
+	CancelWatchesStub            func()
+	cancelWatchesMutex           sync.RWMutex
+	cancelWatchesArgsForCall     []struct{}
 	WatchRouteChangesStub        func(filter string) (<-chan db.Event, <-chan error, context.CancelFunc)
 	watchRouteChangesMutex       sync.RWMutex
 	watchRouteChangesArgsForCall []struct {
