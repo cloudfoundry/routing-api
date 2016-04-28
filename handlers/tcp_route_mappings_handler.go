@@ -15,14 +15,16 @@ type TcpRouteMappingsHandler struct {
 	validator RouteValidator
 	db        db.DB
 	logger    lager.Logger
+	maxTTL    int
 }
 
-func NewTcpRouteMappingsHandler(uaaClient uaaclient.Client, validator RouteValidator, database db.DB, logger lager.Logger) *TcpRouteMappingsHandler {
+func NewTcpRouteMappingsHandler(uaaClient uaaclient.Client, validator RouteValidator, database db.DB, ttl int, logger lager.Logger) *TcpRouteMappingsHandler {
 	return &TcpRouteMappingsHandler{
 		uaaClient: uaaClient,
 		validator: validator,
 		db:        database,
 		logger:    logger,
+		maxTTL:    ttl,
 	}
 }
 
@@ -69,7 +71,7 @@ func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	apiErr := h.validator.ValidateCreateTcpRouteMapping(tcpMappings, routerGroups)
+	apiErr := h.validator.ValidateCreateTcpRouteMapping(tcpMappings, routerGroups, uint16(h.maxTTL))
 	if apiErr != nil {
 		handleProcessRequestError(w, apiErr, log)
 		return

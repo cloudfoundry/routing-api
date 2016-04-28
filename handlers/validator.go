@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	routing_api "github.com/cloudfoundry-incubator/routing-api"
@@ -15,7 +16,7 @@ type RouteValidator interface {
 	ValidateCreate(routes []models.Route, maxTTL int) *routing_api.Error
 	ValidateDelete(routes []models.Route) *routing_api.Error
 
-	ValidateCreateTcpRouteMapping(tcpRouteMappings []models.TcpRouteMapping, routerGroups models.RouterGroups) *routing_api.Error
+	ValidateCreateTcpRouteMapping(tcpRouteMappings []models.TcpRouteMapping, routerGroups models.RouterGroups, maxTTL uint16) *routing_api.Error
 	ValidateDeleteTcpRouteMapping(tcpRouteMappings []models.TcpRouteMapping) *routing_api.Error
 }
 
@@ -131,9 +132,9 @@ func validateUrl(urlToValidate string) error {
 	return nil
 }
 
-func (v Validator) ValidateCreateTcpRouteMapping(tcpRouteMappings []models.TcpRouteMapping, routerGroups models.RouterGroups) *routing_api.Error {
+func (v Validator) ValidateCreateTcpRouteMapping(tcpRouteMappings []models.TcpRouteMapping, routerGroups models.RouterGroups, maxTTL uint16) *routing_api.Error {
 	for _, tcpRouteMapping := range tcpRouteMappings {
-		err := validateTcpRouteMapping(tcpRouteMapping)
+		err := validateTcpRouteMapping(tcpRouteMapping, true, maxTTL)
 		if err != nil {
 			return err
 		}
@@ -157,7 +158,7 @@ func (v Validator) ValidateCreateTcpRouteMapping(tcpRouteMappings []models.TcpRo
 
 func (v Validator) ValidateDeleteTcpRouteMapping(tcpRouteMappings []models.TcpRouteMapping) *routing_api.Error {
 	for _, tcpRouteMapping := range tcpRouteMappings {
-		err := validateTcpRouteMapping(tcpRouteMapping)
+		err := validateTcpRouteMapping(tcpRouteMapping, false, 0)
 		if err != nil {
 			return err
 		}
@@ -165,7 +166,7 @@ func (v Validator) ValidateDeleteTcpRouteMapping(tcpRouteMappings []models.TcpRo
 	return nil
 }
 
-func validateTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) *routing_api.Error {
+func validateTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping, checkTTL bool, maxTTL uint16) *routing_api.Error {
 	if tcpRouteMapping.TcpRoute.RouterGroupGuid == "" {
 		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
 			"Each tcp mapping requires a non empty router group guid. RouteMapping=["+tcpRouteMapping.String()+"]")
@@ -187,6 +188,12 @@ func validateTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) *routing_ap
 	if tcpRouteMapping.HostPort <= 0 {
 		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
 			"Each tcp mapping requires a positive backend port. RouteMapping=["+tcpRouteMapping.String()+"]")
+		return &err
+	}
+
+	if checkTTL && tcpRouteMapping.TTL > maxTTL {
+		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
+			"Each tcp mapping requires TTL to be less than or equal to "+strconv.Itoa(int(maxTTL))+". RouteMapping=["+tcpRouteMapping.String()+"]")
 		return &err
 	}
 

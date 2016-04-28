@@ -35,7 +35,7 @@ import (
 
 const DEFAULT_ETCD_WORKERS = 25
 
-var maxTTL = flag.Int("maxTTL", 120, "Maximum TTL on the route")
+var maxTTL = flag.Duration("maxTTL", 2*time.Minute, "Maximum TTL on the route")
 var port = flag.Uint("port", 8080, "Port to run rounting-api server on")
 var configPath = flag.String("config", "", "Configuration for routing-api")
 var devMode = flag.Bool("devMode", false, "Disable authentication for easier development iteration")
@@ -171,7 +171,7 @@ func constructRouteRegister(logGuid string, database db.DB, logger lager.Logger)
 		Route:   host,
 		Port:    uint16(*port),
 		IP:      *ip,
-		TTL:     *maxTTL,
+		TTL:     int(maxTTL.Seconds()),
 		LogGuid: logGuid,
 	}
 
@@ -196,10 +196,10 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 	}
 
 	validator := handlers.NewValidator()
-	routesHandler := handlers.NewRoutesHandler(uaaClient, *maxTTL, validator, database, logger)
+	routesHandler := handlers.NewRoutesHandler(uaaClient, int(maxTTL.Seconds()), validator, database, logger)
 	eventStreamHandler := handlers.NewEventStreamHandler(uaaClient, database, logger, statsdClient)
 	routeGroupsHandler := handlers.NewRouteGroupsHandler(uaaClient, logger, database)
-	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(uaaClient, validator, database, logger)
+	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(uaaClient, validator, database, int(maxTTL.Seconds()), logger)
 
 	actions := rata.Handlers{
 		routing_api.UpsertRoute:           route(routesHandler.Upsert),

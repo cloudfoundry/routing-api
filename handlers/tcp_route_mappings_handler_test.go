@@ -44,7 +44,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 		fakeClient = &fake_client.FakeClient{}
 		validator = &fake_validator.FakeRouteValidator{}
 		logger = lagertest.NewTestLogger("routing-api-test")
-		tcpRouteMappingsHandler = handlers.NewTcpRouteMappingsHandler(fakeClient, validator, database, logger)
+		tcpRouteMappingsHandler = handlers.NewTcpRouteMappingsHandler(fakeClient, validator, database, 120, logger)
 		responseRecorder = httptest.NewRecorder()
 	})
 

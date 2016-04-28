@@ -234,7 +234,7 @@ var _ = Describe("Validator", func() {
 
 		Context("when valid tcp mapping is passed", func() {
 			It("does not return error", func() {
-				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups)
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
 				Expect(err).To(BeNil())
 			})
 		})
@@ -243,7 +243,7 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when a backend port is zero", func() {
 				tcpMapping.HostPort = 0
-				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups)
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a positive backend port"))
@@ -251,7 +251,7 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when a external port is zero", func() {
 				tcpMapping.TcpRoute.ExternalPort = 0
-				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups)
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a positive external port"))
@@ -259,7 +259,7 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when backend ip empty", func() {
 				tcpMapping.HostIP = ""
-				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups)
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a non empty backend ip"))
@@ -267,7 +267,7 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when group guid is empty", func() {
 				tcpMapping.TcpRoute.RouterGroupGuid = ""
-				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups)
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a non empty router group guid"))
@@ -275,10 +275,18 @@ var _ = Describe("Validator", func() {
 
 			It("blows up when group guid is unknown", func() {
 				tcpMapping.TcpRoute.RouterGroupGuid = "unknown-router-group-guid"
-				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups)
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("router_group_guid: unknown-router-group-guid not found"))
+			})
+
+			It("blows up when TTL is greaer than 120", func() {
+				tcpMapping.TTL = 200
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
+				Expect(err).ToNot(BeNil())
+				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
+				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires TTL to be less than or equal to 120"))
 			})
 		})
 	})
