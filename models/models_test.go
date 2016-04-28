@@ -274,6 +274,7 @@ var _ = Describe("Models", func() {
 			})
 		})
 	})
+
 	Describe("Route", func() {
 		var (
 			route      Route
@@ -340,4 +341,77 @@ var _ = Describe("Models", func() {
 		})
 
 	})
+
+	Describe("TcpRouteMapping", func() {
+		var (
+			route      TcpRouteMapping
+			otherRoute TcpRouteMapping
+			matches    bool
+		)
+
+		BeforeEach(func() {
+			tag, err := NewModificationTag()
+			Expect(err).ToNot(HaveOccurred())
+			route = TcpRouteMapping{
+				TcpRoute: TcpRoute{
+					RouterGroupGuid: "router-group-1",
+					ExternalPort:    60000,
+				},
+				HostIP:          "2.2.2.2",
+				HostPort:        64000,
+				TTL:             66,
+				ModificationTag: tag,
+			}
+		})
+
+		JustBeforeEach(func() {
+			matches = route.Matches(otherRoute)
+		})
+
+		Context("Matches", func() {
+			Context("when all properties matches", func() {
+				BeforeEach(func() {
+					otherRoute = route
+				})
+
+				It("returns true", func() {
+					Expect(matches).To(BeTrue())
+				})
+			})
+
+			Context("when all properties but modification tag matches", func() {
+				BeforeEach(func() {
+					otherRoute = route
+					tag1, err := NewModificationTag()
+					Expect(err).ToNot(HaveOccurred())
+					otherRoute.ModificationTag = tag1
+				})
+
+				It("returns true", func() {
+					Expect(matches).To(BeTrue())
+				})
+			})
+
+			Context("when some properties don't match", func() {
+
+				BeforeEach(func() {
+					otherRoute = TcpRouteMapping{
+						TcpRoute: TcpRoute{
+							RouterGroupGuid: "router-group-1",
+							ExternalPort:    60000,
+						},
+						HostIP:   "2.2.2.2",
+						HostPort: 64000,
+						TTL:      67,
+					}
+				})
+
+				It("returns false", func() {
+					Expect(matches).To(BeFalse())
+				})
+
+			})
+		})
+	})
+
 })

@@ -108,6 +108,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						"backend_ip":        "1.2.3.4",
 						"backend_port":      float64(60000),
 						"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
+						"ttl":               float64(0),
 					}
 					log_data := map[string][]interface{}{"tcp_mapping_creation": []interface{}{data}}
 
@@ -250,6 +251,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					},
 					HostIP:   "1.2.3.4",
 					HostPort: 60000,
+					TTL:      55,
 				}
 				mapping2 := models.TcpRouteMapping{
 					TcpRoute: models.TcpRoute{
@@ -258,6 +260,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					},
 					HostIP:   "1.2.3.5",
 					HostPort: 60001,
+					TTL:      55,
 				}
 				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
 				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
@@ -277,7 +280,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"modification_tag": {
 									"guid": "",
 									"index": 0
-								}
+								},
+								"ttl": 55
 							},
 							{
 								"router_group_guid": "router-group-guid-001",
@@ -287,7 +291,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"modification_tag": {
 									"guid": "",
 									"index": 0
-								}
+								},
+								"ttl": 55
 							}]`
 				Expect(responseRecorder.Body.String()).To(MatchJSON(expectedJson))
 			})
@@ -400,6 +405,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						"backend_ip":        "1.2.3.4",
 						"backend_port":      float64(60000),
 						"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
+						"ttl":               float64(0),
 					}
 					log_data := map[string][]interface{}{"tcp_mapping_deletion": []interface{}{data}}
 

@@ -144,8 +144,8 @@ var _ = Describe("Client", func() {
 			tcpRouteMapping2 models.TcpRouteMapping
 		)
 		BeforeEach(func() {
-			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
-			tcpRouteMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
+			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
+			tcpRouteMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60)
 		})
 
 		JustBeforeEach(func() {
@@ -352,8 +352,8 @@ var _ = Describe("Client", func() {
 			tcpRouteMapping2 models.TcpRouteMapping
 		)
 		BeforeEach(func() {
-			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
-			tcpRouteMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
+			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
+			tcpRouteMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60)
 		})
 		JustBeforeEach(func() {
 			err = client.DeleteTcpRouteMappings([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
@@ -508,8 +508,8 @@ var _ = Describe("Client", func() {
 			routes           []models.TcpRouteMapping
 		)
 		BeforeEach(func() {
-			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
-			tcpRouteMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001)
+			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
+			tcpRouteMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60)
 		})
 
 		JustBeforeEach(func() {
@@ -823,7 +823,7 @@ var _ = Describe("Client", func() {
 		)
 
 		BeforeEach(func() {
-			tcpRoute1 = models.NewTcpRouteMapping("rguid1", 52000, "1.1.1.1", 60000)
+			tcpRoute1 = models.NewTcpRouteMapping("rguid1", 52000, "1.1.1.1", 60000, 60)
 
 			data, _ := json.Marshal(tcpRoute1)
 			event = sse.Event{

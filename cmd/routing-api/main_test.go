@@ -173,12 +173,27 @@ var _ = Describe("Main", func() {
 			It("allows to create given tcp route mappings", func() {
 				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 				var err error
-				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
+				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
+				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 1)
 
-				err = client.UpsertTcpRouteMappings([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+				tcpRouteMappings := []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
+				err = client.UpsertTcpRouteMappings(tcpRouteMappings)
 				Expect(err).NotTo(HaveOccurred())
+				tcpRouteMappingsResponse, err := client.TcpRouteMappings()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(tcpRouteMappingsResponse).NotTo(BeNil())
+				mappings := test_helpers.TcpRouteMappings(tcpRouteMappingsResponse)
+				Expect(mappings.ContainsAll(tcpRouteMappings...)).To(BeTrue())
+
+				By("letting route expire")
+				Eventually(func() bool {
+					tcpRouteMappingsResponse, err := client.TcpRouteMappings()
+					Expect(err).NotTo(HaveOccurred())
+					mappings := test_helpers.TcpRouteMappings(tcpRouteMappingsResponse)
+					return mappings.Contains(tcpRouteMapping2)
+				}, 3, 1).Should(BeFalse())
 			})
+
 		})
 
 		Context("when tcp routes delete endpoint is invoked", func() {
@@ -203,8 +218,8 @@ var _ = Describe("Main", func() {
 			})
 
 			JustBeforeEach(func() {
-				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
+				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
+				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 60)
 				tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 				err = client.UpsertTcpRouteMappings(tcpRouteMappings)
 
@@ -240,8 +255,8 @@ var _ = Describe("Main", func() {
 			JustBeforeEach(func() {
 				client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
 
-				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000)
-				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001)
+				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
+				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 60)
 				tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 				err = client.UpsertTcpRouteMappings(tcpRouteMappings)
 
@@ -273,7 +288,7 @@ var _ = Describe("Main", func() {
 					Route:   "some-route",
 					Port:    1234,
 					IP:      "234.32.43.4",
-					TTL:     5,
+					TTL:     1,
 					LogGuid: "some-guid",
 				},
 			})
@@ -282,6 +297,11 @@ var _ = Describe("Main", func() {
 				event, _ := events.Next()
 				return event.Action
 			}).Should(Equal("Upsert"))
+
+			Eventually(func() string {
+				event, _ := events.Next()
+				return event.Action
+			}, 3, 1).Should(Equal("Delete"))
 
 			ginkgomon.Interrupt(proc)
 

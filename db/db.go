@@ -358,7 +358,7 @@ func (e *etcd) SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 			tcpMapping.ModificationTag.Increment()
 
 			tcpRouteJSON, _ := json.Marshal(tcpMapping)
-			_, err = e.keysAPI.Set(context.Background(), key, string(tcpRouteJSON), updateOpts(response.Node.ModifiedIndex))
+			_, err = e.keysAPI.Set(ctx(), key, string(tcpRouteJSON), updateOptsWithTTL(int(tcpMapping.TTL), response.Node.ModifiedIndex))
 		} else if cerr, ok := err.(client.Error); ok && cerr.Code == client.ErrorCodeKeyNotFound { //create
 			// Delete came in between a read and update
 			if retries > 0 {
@@ -373,7 +373,7 @@ func (e *etcd) SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 
 			tcpMapping.ModificationTag = tag
 			tcpRouteMappingJSON, _ := json.Marshal(tcpMapping)
-			_, err = e.keysAPI.Create(ctx(), key, string(tcpRouteMappingJSON))
+			_, err = e.keysAPI.Set(ctx(), key, string(tcpRouteMappingJSON), createOpts(int(tcpMapping.TTL)))
 		}
 
 		// return when create or update is successful

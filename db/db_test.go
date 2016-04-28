@@ -73,7 +73,7 @@ var _ = Describe("DB", func() {
 			fakeKeysAPI = &fakes.FakeKeysAPI{}
 			fakeEtcd = setupFakeEtcd(fakeKeysAPI)
 
-			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-002", 52002, "2.3.4.5", 60002)
+			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-002", 52002, "2.3.4.5", 60002, 50)
 		})
 
 		Describe("Http Routes", func() {
@@ -433,7 +433,7 @@ var _ = Describe("DB", func() {
 			)
 
 			BeforeEach(func() {
-				tcpMapping = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+				tcpMapping = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 50)
 			})
 
 			Describe("SaveTcpRouteMapping", func() {
@@ -447,13 +447,15 @@ var _ = Describe("DB", func() {
 						err := fakeEtcd.SaveTcpRouteMapping(tcpMapping)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(fakeKeysAPI.GetCallCount()).To(Equal(1))
-						Expect(fakeKeysAPI.CreateCallCount()).To(Equal(1))
-						_, _, json := fakeKeysAPI.CreateArgsForCall(0)
+						Expect(fakeKeysAPI.SetCallCount()).To(Equal(1))
+						_, _, json, opts := fakeKeysAPI.SetArgsForCall(0)
 						Expect(json).To(ContainSubstring("\"index\":0"))
 						Expect(json).To(ContainSubstring(`"router_group_guid":"router-group-guid-001"`))
 						Expect(json).To(ContainSubstring(`"port":52000`))
 						Expect(json).To(ContainSubstring(`"backend_port":60000`))
 						Expect(json).To(ContainSubstring(`"backend_ip":"1.2.3.4"`))
+						Expect(json).To(ContainSubstring(`"ttl":50`))
+						Expect(opts.TTL).To(Equal(50 * time.Second))
 					})
 
 					Context("when an entry already exists", func() {
@@ -466,7 +468,7 @@ var _ = Describe("DB", func() {
 						})
 
 						It("Updates the route and increments the tag index", func() {
-							newTcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000)
+							newTcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 50)
 							err := fakeEtcd.SaveTcpRouteMapping(newTcpMapping)
 							Expect(err).NotTo(HaveOccurred())
 							Expect(fakeKeysAPI.GetCallCount()).To(Equal(1))
@@ -573,7 +575,7 @@ var _ = Describe("DB", func() {
 					)
 
 					BeforeEach(func() {
-						tcpMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.5", 60001)
+						tcpMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.5", 60001, 50)
 
 						tcpMappingJson, err := json.Marshal(tcpMapping)
 						Expect(err).NotTo(HaveOccurred())
@@ -607,6 +609,7 @@ var _ = Describe("DB", func() {
 						Eventually(results).Should((Receive(&event)))
 						Expect(event).NotTo(BeNil())
 						Expect(event.Type).To(Equal(db.CreateEvent))
+						Expect(event.Node.Value).To(ContainSubstring(`"ttl":50`))
 
 						By("when http route is upserted")
 						err := etcd.SaveRoute(route)
