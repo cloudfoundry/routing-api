@@ -281,12 +281,20 @@ var _ = Describe("Validator", func() {
 				Expect(err.Error()).To(ContainSubstring("router_group_guid: unknown-router-group-guid not found"))
 			})
 
-			It("blows up when TTL is greaer than 120", func() {
+			It("blows up when TTL is greater than 120", func() {
 				tcpMapping.TTL = 200
 				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
 				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires TTL to be less than or equal to 120"))
+			})
+
+			It("blows up when TTL is equal to 0", func() {
+				tcpMapping.TTL = 0
+				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
+				Expect(err).ToNot(BeNil())
+				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
+				Expect(err.Error()).To(ContainSubstring("Each tcp route mapping requires a ttl greater than 0"))
 			})
 		})
 	})

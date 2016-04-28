@@ -175,7 +175,7 @@ func constructRouteRegister(logGuid string, database db.DB, logger lager.Logger)
 		LogGuid: logGuid,
 	}
 
-	registerInterval := *maxTTL / 2
+	registerInterval := int(maxTTL.Seconds()) / 2
 	ticker := time.NewTicker(time.Duration(registerInterval) * time.Second)
 
 	return helpers.NewRouteRegister(database, route, ticker, logger)

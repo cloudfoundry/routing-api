@@ -197,5 +197,11 @@ func validateTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping, checkTTL bo
 		return &err
 	}
 
+	if checkTTL && tcpRouteMapping.TTL <= 0 {
+		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
+			"Each tcp route mapping requires a ttl greater than 0")
+		return &err
+	}
+
 	return nil
 }
