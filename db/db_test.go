@@ -299,9 +299,8 @@ var _ = Describe("DB", func() {
 				})
 
 				Context("and have outdated index", func() {
-					var outdatedIndex = true
-
 					BeforeEach(func() {
+						outdatedIndex := true
 						fakeWatcher := &fakes.FakeWatcher{}
 						fakeWatcher.NextStub = func(context.Context) (*client.Response, error) {
 							if outdatedIndex {
