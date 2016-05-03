@@ -153,6 +153,8 @@ go tool pprof http://localhost:8080/debug/pprof/profile
 
 The Routing API uses OAuth tokens to authenticate clients. To obtain a token from UAA an OAuth client must first be created for the API client in UAA. For instructions on registering OAuth clients, see [Server Configuration](#oauth-clients).
 
+Additional API documentation can be found [here](docs/README.md).
+
 ### Using the API with the `rtr` CLI
 
 A CLI client called `rtr` has been created for the Routing API that simplifies interactions by abstracting authentication.
