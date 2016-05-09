@@ -56,13 +56,18 @@ func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	log.Info("request", lager.Data{"tcp_mapping_creation": tcpMappings})
-
 	err = h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
 	}
+
+	// set defaults
+	for i := 0; i < len(tcpMappings); i++ {
+		tcpMappings[i].SetDefaults(h.maxTTL)
+	}
+
+	log.Info("request", lager.Data{"tcp_mapping_creation": tcpMappings})
 
 	// fetch current router groups
 	routerGroups, err := h.db.ReadRouterGroups()
@@ -71,7 +76,7 @@ func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	apiErr := h.validator.ValidateCreateTcpRouteMapping(tcpMappings, routerGroups, uint16(h.maxTTL))
+	apiErr := h.validator.ValidateCreateTcpRouteMapping(tcpMappings, routerGroups, h.maxTTL)
 	if apiErr != nil {
 		handleProcessRequestError(w, apiErr, log)
 		return

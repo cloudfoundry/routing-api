@@ -282,7 +282,7 @@ var _ = Describe("Validator", func() {
 			})
 
 			It("blows up when TTL is greater than 120", func() {
-				tcpMapping.TTL = 200
+				*tcpMapping.TTL = 200
 				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
@@ -290,7 +290,7 @@ var _ = Describe("Validator", func() {
 			})
 
 			It("blows up when TTL is equal to 0", func() {
-				tcpMapping.TTL = 0
+				*tcpMapping.TTL = 0
 				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))

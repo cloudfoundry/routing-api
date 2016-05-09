@@ -37,6 +37,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 		database                *fake_db.FakeDB
 		logger                  *lagertest.TestLogger
 		fakeClient              *fake_client.FakeClient
+		maxTTL                  int
 	)
 
 	BeforeEach(func() {
@@ -44,7 +45,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 		fakeClient = &fake_client.FakeClient{}
 		validator = &fake_validator.FakeRouteValidator{}
 		logger = lagertest.NewTestLogger("routing-api-test")
-		tcpRouteMappingsHandler = handlers.NewTcpRouteMappingsHandler(fakeClient, validator, database, 120, logger)
+		maxTTL = 120
+		tcpRouteMappingsHandler = handlers.NewTcpRouteMappingsHandler(fakeClient, validator, database, maxTTL, logger)
 		responseRecorder = httptest.NewRecorder()
 	})
 
@@ -55,52 +57,25 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				tcpMappings []models.TcpRouteMapping
 			)
 
-			BeforeEach(func() {
-				tcpMapping = models.TcpRouteMapping{
-					TcpRoute: models.TcpRoute{
-						RouterGroupGuid: "router-group-guid-001",
-						ExternalPort:    52000,
-					},
-					HostIP:   "1.2.3.4",
-					HostPort: 60000,
-				}
-				tcpMappings = []models.TcpRouteMapping{tcpMapping}
-			})
+			Context("when ttl is not present", func() {
 
-			It("checks for routing.routes.write scope", func() {
-				request = handlers.NewTestRequest(tcpMappings)
-
-				tcpRouteMappingsHandler.Upsert(responseRecorder, request)
-				Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
-
-				_, permission := fakeClient.DecodeTokenArgsForCall(0)
-				Expect(permission).To(ConsistOf(handlers.RoutingRoutesWriteScope))
-			})
-
-			Context("when all inputs are present and correct", func() {
-				It("returns an http status created", func() {
-					request = handlers.NewTestRequest(tcpMappings)
-					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
-
-					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+				BeforeEach(func() {
+					tcpMapping := models.TcpRouteMapping{
+						TcpRoute: models.TcpRoute{
+							RouterGroupGuid: "router-group-guid-001",
+							ExternalPort:    52000,
+						},
+						HostIP:   "1.2.3.4",
+						HostPort: 60000,
+					}
+					tcpMappings = []models.TcpRouteMapping{tcpMapping}
 				})
 
-				It("accepts a list of routes in the body", func() {
-					tcpMappings = append(tcpMappings, tcpMappings[0])
-					tcpMappings[1].HostIP = "5.4.3.2"
-
+				It("sets a default ttl", func() {
 					request = handlers.NewTestRequest(tcpMappings)
-					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
+					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
-					Expect(database.SaveTcpRouteMappingCallCount()).To(Equal(2))
-					Expect(database.SaveTcpRouteMappingArgsForCall(0)).To(Equal(tcpMappings[0]))
-					Expect(database.SaveTcpRouteMappingArgsForCall(1)).To(Equal(tcpMappings[1]))
-				})
-
-				It("logs the route declaration", func() {
-					request = handlers.NewTestRequest(tcpMappings)
-					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
 					data := map[string]interface{}{
 						"port":              float64(52000),
@@ -108,39 +83,99 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						"backend_ip":        "1.2.3.4",
 						"backend_port":      float64(60000),
 						"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
-						"ttl":               float64(0),
+						"ttl":               float64(maxTTL),
 					}
 					log_data := map[string][]interface{}{"tcp_mapping_creation": []interface{}{data}}
 
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("request"))
 					Expect(logger.Logs()[0].Data["tcp_mapping_creation"]).To(Equal(log_data["tcp_mapping_creation"]))
+
 				})
 
-				Context("when database fails to save", func() {
-					BeforeEach(func() {
-						database.SaveTcpRouteMappingReturns(errors.New("stuff broke"))
-					})
+			})
 
-					It("responds with a server error", func() {
+			Context("when ttl is present", func() {
+
+				BeforeEach(func() {
+					tcpMapping = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
+					tcpMappings = []models.TcpRouteMapping{tcpMapping}
+				})
+
+				It("checks for routing.routes.write scope", func() {
+					request = handlers.NewTestRequest(tcpMappings)
+
+					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
+					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+
+					_, permission := fakeClient.DecodeTokenArgsForCall(0)
+					Expect(permission).To(ConsistOf(handlers.RoutingRoutesWriteScope))
+				})
+
+				Context("when all inputs are present and correct", func() {
+					It("returns an http status created", func() {
 						request = handlers.NewTestRequest(tcpMappings)
 						tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
-						Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
-						Expect(responseRecorder.Body.String()).To(ContainSubstring("stuff broke"))
-					})
-				})
-
-				Context("when conflict error is returned", func() {
-					BeforeEach(func() {
-						database.SaveTcpRouteMappingReturns(db.ErrorConflict)
+						Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 					})
 
-					It("responds with a 409 conflict error", func() {
+					It("accepts a list of routes in the body", func() {
+						tcpMappings = append(tcpMappings, tcpMappings[0])
+						tcpMappings[1].HostIP = "5.4.3.2"
+
 						request = handlers.NewTestRequest(tcpMappings)
 						tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
-						Expect(responseRecorder.Code).To(Equal(http.StatusConflict))
-						Expect(responseRecorder.Body.String()).To(ContainSubstring("DBConflictError"))
+						Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+						Expect(database.SaveTcpRouteMappingCallCount()).To(Equal(2))
+						Expect(database.SaveTcpRouteMappingArgsForCall(0)).To(Equal(tcpMappings[0]))
+						Expect(database.SaveTcpRouteMappingArgsForCall(1)).To(Equal(tcpMappings[1]))
+					})
+
+					It("logs the route declaration", func() {
+						request = handlers.NewTestRequest(tcpMappings)
+						tcpRouteMappingsHandler.Upsert(responseRecorder, request)
+
+						data := map[string]interface{}{
+							"port":              float64(52000),
+							"router_group_guid": "router-group-guid-001",
+							"backend_ip":        "1.2.3.4",
+							"backend_port":      float64(60000),
+							"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
+							"ttl":               float64(60),
+						}
+						log_data := map[string][]interface{}{"tcp_mapping_creation": []interface{}{data}}
+
+						Expect(logger.Logs()[0].Message).To(ContainSubstring("request"))
+						Expect(logger.Logs()[0].Data["tcp_mapping_creation"]).To(Equal(log_data["tcp_mapping_creation"]))
+					})
+
+					Context("when database fails to save", func() {
+						BeforeEach(func() {
+							database.SaveTcpRouteMappingReturns(errors.New("stuff broke"))
+						})
+
+						It("responds with a server error", func() {
+							request = handlers.NewTestRequest(tcpMappings)
+							tcpRouteMappingsHandler.Upsert(responseRecorder, request)
+
+							Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+							Expect(responseRecorder.Body.String()).To(ContainSubstring("stuff broke"))
+						})
+					})
+
+					Context("when conflict error is returned", func() {
+						BeforeEach(func() {
+							database.SaveTcpRouteMappingReturns(db.ErrorConflict)
+						})
+
+						It("responds with a 409 conflict error", func() {
+							request = handlers.NewTestRequest(tcpMappings)
+							tcpRouteMappingsHandler.Upsert(responseRecorder, request)
+
+							Expect(responseRecorder.Code).To(Equal(http.StatusConflict))
+							Expect(responseRecorder.Body.String()).To(ContainSubstring("DBConflictError"))
+						})
 					})
 				})
 			})
@@ -244,24 +279,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			)
 
 			BeforeEach(func() {
-				mapping1 := models.TcpRouteMapping{
-					TcpRoute: models.TcpRoute{
-						RouterGroupGuid: "router-group-guid-001",
-						ExternalPort:    52000,
-					},
-					HostIP:   "1.2.3.4",
-					HostPort: 60000,
-					TTL:      55,
-				}
-				mapping2 := models.TcpRouteMapping{
-					TcpRoute: models.TcpRoute{
-						RouterGroupGuid: "router-group-guid-001",
-						ExternalPort:    52001,
-					},
-					HostIP:   "1.2.3.5",
-					HostPort: 60001,
-					TTL:      55,
-				}
+				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 55)
+				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 55)
 				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
 				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
 			})
@@ -352,15 +371,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			)
 
 			BeforeEach(func() {
-
-				tcpMapping = models.TcpRouteMapping{
-					TcpRoute: models.TcpRoute{
-						RouterGroupGuid: "router-group-guid-002",
-						ExternalPort:    52001,
-					},
-					HostIP:   "1.2.3.4",
-					HostPort: 60000,
-				}
+				tcpMapping = models.NewTcpRouteMapping("router-group-guid-002", 52001, "1.2.3.4", 60000, 60)
 				tcpMappings = []models.TcpRouteMapping{tcpMapping}
 			})
 
@@ -405,7 +416,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						"backend_ip":        "1.2.3.4",
 						"backend_port":      float64(60000),
 						"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
-						"ttl":               float64(0),
+						"ttl":               float64(60),
 					}
 					log_data := map[string][]interface{}{"tcp_mapping_deletion": []interface{}{data}}
 
