@@ -62,14 +62,7 @@ var _ = Describe("DB", func() {
 		BeforeEach(func() {
 			etcd, err = db.NewETCD(etcdRunner.NodeURLS())
 			Expect(err).NotTo(HaveOccurred())
-			route = models.Route{
-				Route:           "post_here",
-				Port:            7000,
-				IP:              "1.2.3.4",
-				TTL:             50,
-				LogGuid:         "my-guid",
-				RouteServiceUrl: "https://rs.com",
-			}
+			route = models.NewRoute("post_here", 7000, "1.2.3.4", "my-guid", "https://rs.com", 50)
 			fakeKeysAPI = &fakes.FakeKeysAPI{}
 			fakeEtcd = setupFakeEtcd(fakeKeysAPI)
 
@@ -109,14 +102,8 @@ var _ = Describe("DB", func() {
 					var route2 models.Route
 
 					BeforeEach(func() {
-						route2 = models.Route{
-							Route:           "some-route/path",
-							Port:            5500,
-							IP:              "3.1.5.7",
-							TTL:             1000,
-							LogGuid:         "your-guid",
-							RouteServiceUrl: "https://my-rs.com",
-						}
+						route2 = models.NewRoute("some-route/path", 5500, "3.1.5.7", "your-guid", "https://rs.com", 1000)
+
 						routeJson, err := json.Marshal(route)
 						Expect(err).NotTo(HaveOccurred())
 						var route2Json []byte
@@ -163,14 +150,7 @@ var _ = Describe("DB", func() {
 					})
 
 					It("Updates the route and increments the tag index", func() {
-						route2 := models.Route{
-							Route:           "some-route/path",
-							Port:            5500,
-							IP:              "3.1.5.7",
-							TTL:             1000,
-							LogGuid:         "your-guid",
-							RouteServiceUrl: "https://new-rs.com",
-						}
+						route2 := models.NewRoute("some-route/path", 5500, "3.1.5.7", "your-guid", "https://new-rs.com", 1000)
 
 						err := fakeEtcd.SaveRoute(route2)
 						Expect(err).NotTo(HaveOccurred())
@@ -179,7 +159,7 @@ var _ = Describe("DB", func() {
 						_, _, json, opts := fakeKeysAPI.SetArgsForCall(0)
 						Expect(json).To(ContainSubstring("\"index\":6"))
 						Expect(json).To(ContainSubstring("https://new-rs.com"))
-						Expect(opts.TTL).To(Equal(time.Duration(route2.TTL) * time.Second))
+						Expect(opts.TTL).To(Equal(time.Duration(*route2.TTL) * time.Second))
 					})
 
 					Context("when Set operation fails with a compare error", func() {
@@ -368,7 +348,7 @@ var _ = Describe("DB", func() {
 
 				Context("when a route is expired", func() {
 					It("should return an expire watch event", func() {
-						route.TTL = 1
+						*route.TTL = 1
 						err := etcd.SaveRoute(route)
 						Expect(err).NotTo(HaveOccurred())
 						results, _, _ := etcd.WatchRouteChanges(db.HTTP_ROUTE_BASE_KEY)

@@ -46,22 +46,8 @@ var _ = Describe("Client", func() {
 	})
 
 	BeforeEach(func() {
-		route1 = models.Route{
-			Route:   "a.b.c",
-			Port:    33,
-			IP:      "1.1.1.1",
-			TTL:     55,
-			LogGuid: "potato",
-		}
-
-		route2 = models.Route{
-			Route:   "d.e.f",
-			Port:    35,
-			IP:      "2.2.2.2",
-			TTL:     66,
-			LogGuid: "banana",
-		}
-
+		route1 = models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 55)
+		route2 = models.NewRoute("d.e.f", 35, "2.2.2.2", "banana", "", 66)
 		server = ghttp.NewServer()
 		client = routing_api.NewClient(server.URL())
 	})

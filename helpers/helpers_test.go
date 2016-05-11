@@ -33,9 +33,10 @@ var _ = Describe("Helpers", func() {
 				Route:   "i dont care",
 				Port:    3000,
 				IP:      "i dont care even more",
-				TTL:     120,
 				LogGuid: "i care a little bit more now",
+				TTL:     new(int),
 			}
+			*route.TTL = 120
 			database = &fake_db.FakeDB{}
 			logger = lagertest.NewTestLogger("event-handler-test")
 

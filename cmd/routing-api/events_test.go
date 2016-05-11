@@ -34,13 +34,7 @@ var _ = Describe("Routes API", func() {
 			eventStream, err = client.SubscribeToEvents()
 			Expect(err).NotTo(HaveOccurred())
 
-			route1 = models.Route{
-				Route:   "a.b.c",
-				Port:    33,
-				IP:      "1.1.1.1",
-				TTL:     55,
-				LogGuid: "potato",
-			}
+			route1 = models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 55)
 		})
 
 		AfterEach(func() {
@@ -63,13 +57,7 @@ var _ = Describe("Routes API", func() {
 		})
 
 		It("gets events for updated routes", func() {
-			routeUpdated := models.Route{
-				Route:   "a.b.c",
-				Port:    33,
-				IP:      "1.1.1.1",
-				TTL:     85,
-				LogGuid: "potato",
-			}
+			routeUpdated := models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 85)
 
 			client.UpsertRoutes([]models.Route{route1})
 			Eventually(func() bool {
@@ -102,13 +90,7 @@ var _ = Describe("Routes API", func() {
 		})
 
 		It("gets events for expired routes", func() {
-			routeExpire := models.Route{
-				Route:   "z.a.k",
-				Port:    63,
-				IP:      "42.42.42.42",
-				TTL:     1,
-				LogGuid: "Tomato",
-			}
+			routeExpire := models.NewRoute("z.a.k", 63, "42.42.42.42", "Tomato", "", 1)
 
 			client.UpsertRoutes([]models.Route{routeExpire})
 

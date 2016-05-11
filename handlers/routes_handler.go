@@ -64,6 +64,11 @@ func (h *RoutesHandler) Upsert(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// set defaults
+	for i := 0; i < len(routes); i++ {
+		routes[i].SetDefaults(h.maxTTL)
+	}
+
 	apiErr := h.validator.ValidateCreate(routes, h.maxTTL)
 	if apiErr != nil {
 		handleApiError(w, apiErr, log)

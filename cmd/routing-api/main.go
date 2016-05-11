@@ -167,13 +167,7 @@ func constructStopper(database db.DB) ifrit.Runner {
 
 func constructRouteRegister(logGuid string, database db.DB, logger lager.Logger) ifrit.Runner {
 	host := fmt.Sprintf("api.%s/routing", *systemDomain)
-	route := models.Route{
-		Route:   host,
-		Port:    uint16(*port),
-		IP:      *ip,
-		TTL:     int(maxTTL.Seconds()),
-		LogGuid: logGuid,
-	}
+	route := models.NewRoute(host, uint16(*port), *ip, logGuid, "", int(maxTTL.Seconds()))
 
 	registerInterval := int(maxTTL.Seconds()) / 2
 	ticker := time.NewTicker(time.Duration(registerInterval) * time.Second)

@@ -31,21 +31,8 @@ var _ = Describe("Routes API", func() {
 		var route1, route2 models.Route
 
 		BeforeEach(func() {
-			route1 = models.Route{
-				Route:   "a.b.c",
-				Port:    33,
-				IP:      "1.1.1.1",
-				TTL:     55,
-				LogGuid: "potato",
-			}
-
-			route2 = models.Route{
-				Route:   "d.e.f",
-				Port:    35,
-				IP:      "2.2.2.2",
-				TTL:     66,
-				LogGuid: "banana",
-			}
+			route1 = models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 55)
+			route2 = models.NewRoute("d.e.f", 35, "1.1.1.1", "banana", "", 66)
 
 			routesToInsert := []models.Route{route1, route2}
 			upsertErr := client.UpsertRoutes(routesToInsert)
@@ -58,13 +45,7 @@ var _ = Describe("Routes API", func() {
 		})
 
 		It("fetches all of the routes", func() {
-			routingAPIRoute := models.Route{
-				Route:   fmt.Sprintf("api.%s/routing", routingAPISystemDomain),
-				Port:    routingAPIPort,
-				IP:      routingAPIIP,
-				TTL:     120,
-				LogGuid: "my_logs",
-			}
+			routingAPIRoute := models.NewRoute(fmt.Sprintf("api.%s/routing", routingAPISystemDomain), routingAPIPort, routingAPIIP, "my_logs", "", 120)
 
 			Expect(routes).To(HaveLen(3))
 			Expect(Routes(routes).ContainsAll(route1, route2, routingAPIRoute)).To(BeTrue())
@@ -81,13 +62,7 @@ var _ = Describe("Routes API", func() {
 		})
 
 		It("rejects bad routes", func() {
-			route3 := models.Route{
-				Route:   "/foo/b ar",
-				Port:    35,
-				IP:      "2.2.2.2",
-				TTL:     66,
-				LogGuid: "banana",
-			}
+			route3 := models.NewRoute("foo/b ar", 35, "2.2.2.2", "banana", "", 66)
 
 			err := client.UpsertRoutes([]models.Route{route3})
 			Expect(err).To(HaveOccurred())
@@ -104,13 +79,7 @@ var _ = Describe("Routes API", func() {
 			var routeWithPath models.Route
 
 			BeforeEach(func() {
-				routeWithPath = models.Route{
-					Route:   "host.com/path",
-					Port:    51480,
-					IP:      "1.2.3.4",
-					TTL:     60,
-					LogGuid: "logguid",
-				}
+				routeWithPath = models.NewRoute("host.com/path", 51480, "1.2.3.4", "logguid", "", 60)
 				err := client.UpsertRoutes([]models.Route{routeWithPath})
 				Expect(err).ToNot(HaveOccurred())
 			})

@@ -283,15 +283,8 @@ var _ = Describe("Main", func() {
 			events, err := client.SubscribeToEvents()
 			Expect(err).ToNot(HaveOccurred())
 
-			client.UpsertRoutes([]models.Route{
-				models.Route{
-					Route:   "some-route",
-					Port:    1234,
-					IP:      "234.32.43.4",
-					TTL:     1,
-					LogGuid: "some-guid",
-				},
-			})
+			route := models.NewRoute("some-route", 1234, "234.32.43.4", "some-guid", "", 1)
+			client.UpsertRoutes([]models.Route{route})
 
 			Eventually(func() string {
 				event, _ := events.Next()

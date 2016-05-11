@@ -33,12 +33,12 @@ func (v Validator) ValidateCreate(routes []models.Route, maxTTL int) *routing_ap
 			return err
 		}
 
-		if route.TTL > maxTTL {
+		if *route.TTL > maxTTL {
 			err := routing_api.NewError(routing_api.RouteInvalidError, fmt.Sprintf("Max ttl is %d", maxTTL))
 			return &err
 		}
 
-		if route.TTL <= 0 {
+		if *route.TTL <= 0 {
 			err := routing_api.NewError(routing_api.RouteInvalidError, "Request requires a ttl greater than 0")
 			return &err
 		}

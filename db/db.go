@@ -156,7 +156,7 @@ func (e *etcd) SaveRoute(route models.Route) error {
 			route.ModificationTag.Increment()
 
 			routeJSON, _ := json.Marshal(route)
-			_, err = e.keysAPI.Set(context.Background(), key, string(routeJSON), updateOptsWithTTL(route.TTL, response.Node.ModifiedIndex))
+			_, err = e.keysAPI.Set(context.Background(), key, string(routeJSON), updateOptsWithTTL(*route.TTL, response.Node.ModifiedIndex))
 			if err == nil {
 				break
 			}
@@ -173,7 +173,7 @@ func (e *etcd) SaveRoute(route models.Route) error {
 			}
 			route.ModificationTag = tag
 			routeJSON, _ := json.Marshal(route)
-			_, err = e.keysAPI.Set(ctx(), key, string(routeJSON), createOpts(route.TTL))
+			_, err = e.keysAPI.Set(ctx(), key, string(routeJSON), createOpts(*route.TTL))
 			if err == nil {
 				break
 			}

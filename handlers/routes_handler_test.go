@@ -28,6 +28,7 @@ var _ = Describe("RoutesHandler", func() {
 		logger           *lagertest.TestLogger
 		validator        *fake_validator.FakeRouteValidator
 		fakeClient       *fake_client.FakeClient
+		defaultTTL       int
 	)
 
 	BeforeEach(func() {
@@ -35,7 +36,8 @@ var _ = Describe("RoutesHandler", func() {
 		validator = &fake_validator.FakeRouteValidator{}
 		fakeClient = &fake_client.FakeClient{}
 		logger = lagertest.NewTestLogger("routing-api-test")
-		routesHandler = handlers.NewRoutesHandler(fakeClient, 50, validator, database, logger)
+		defaultTTL = 50
+		routesHandler = handlers.NewRoutesHandler(fakeClient, defaultTTL, validator, database, logger)
 		responseRecorder = httptest.NewRecorder()
 	})
 
@@ -99,13 +101,8 @@ var _ = Describe("RoutesHandler", func() {
 			)
 
 			BeforeEach(func() {
-				routes = []models.Route{
-					{
-						Route: "post_here",
-						IP:    "1.2.3.4",
-						Port:  7000,
-					},
-				}
+				route := models.NewRoute("post_here", 7000, "1.2.3.4", "log", "rsurl", 60)
+				routes = []models.Route{route}
 
 				database.ReadRoutesReturns(routes, nil)
 			})
@@ -120,8 +117,9 @@ var _ = Describe("RoutesHandler", func() {
 								"route": "post_here",
 								"port": 7000,
 								"ip": "1.2.3.4",
-								"ttl": 0,
-								"log_guid": "",
+								"ttl": 60,
+								"log_guid": "log",
+								"route_service_url": "rsurl",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -137,20 +135,9 @@ var _ = Describe("RoutesHandler", func() {
 			)
 
 			BeforeEach(func() {
-				routes = []models.Route{
-					{
-						Route: "post_here",
-						IP:    "1.2.3.4",
-						Port:  7000,
-					},
-					{
-						Route:   "post_there",
-						IP:      "1.2.3.5",
-						Port:    2000,
-						TTL:     23,
-						LogGuid: "Something",
-					},
-				}
+				route1 := models.NewRoute("post_here", 7000, "1.2.3.4", "", "", 0)
+				route2 := models.NewRoute("post_there", 2000, "1.2.3.5", "Something", "", 23)
+				routes = []models.Route{route1, route2}
 
 				database.ReadRoutesReturns(routes, nil)
 			})
@@ -206,21 +193,16 @@ var _ = Describe("RoutesHandler", func() {
 
 	Describe(".DeleteRoute", func() {
 		var (
-			route []models.Route
+			routes []models.Route
 		)
 
 		BeforeEach(func() {
-			route = []models.Route{
-				{
-					Route: "post_here",
-					IP:    "1.2.3.4",
-					Port:  7000,
-				},
-			}
+			route := models.NewRoute("post_here", 7000, "1.2.3.4", "", "", 60)
+			routes = []models.Route{route}
 		})
 
 		It("checks for routing.routes.write scope", func() {
-			request = handlers.NewTestRequest(route)
+			request = handlers.NewTestRequest(routes)
 
 			routesHandler.Delete(responseRecorder, request)
 
@@ -230,30 +212,30 @@ var _ = Describe("RoutesHandler", func() {
 
 		Context("when all inputs are present and correct", func() {
 			It("returns a status not found when deleting a route", func() {
-				request = handlers.NewTestRequest(route)
+				request = handlers.NewTestRequest(routes)
 
 				routesHandler.Delete(responseRecorder, request)
 
 				Expect(responseRecorder.Code).To(Equal(http.StatusNoContent))
 				Expect(database.DeleteRouteCallCount()).To(Equal(1))
-				Expect(database.DeleteRouteArgsForCall(0)).To(Equal(route[0]))
+				Expect(database.DeleteRouteArgsForCall(0)).To(Equal(routes[0]))
 			})
 
 			It("accepts an array of routes in the body", func() {
-				route = append(route, route[0])
-				route[1].IP = "5.4.3.2"
+				routes = append(routes, routes[0])
+				routes[1].IP = "5.4.3.2"
 
-				request = handlers.NewTestRequest(route)
+				request = handlers.NewTestRequest(routes)
 				routesHandler.Delete(responseRecorder, request)
 
 				Expect(responseRecorder.Code).To(Equal(http.StatusNoContent))
 				Expect(database.DeleteRouteCallCount()).To(Equal(2))
-				Expect(database.DeleteRouteArgsForCall(0)).To(Equal(route[0]))
-				Expect(database.DeleteRouteArgsForCall(1)).To(Equal(route[1]))
+				Expect(database.DeleteRouteArgsForCall(0)).To(Equal(routes[0]))
+				Expect(database.DeleteRouteArgsForCall(1)).To(Equal(routes[1]))
 			})
 
-			It("logs the route deletion", func() {
-				request = handlers.NewTestRequest(route)
+			It("logs the routes deletion", func() {
+				request = handlers.NewTestRequest(routes)
 				routesHandler.Delete(responseRecorder, request)
 
 				data := map[string]interface{}{
@@ -261,7 +243,7 @@ var _ = Describe("RoutesHandler", func() {
 					"log_guid": "",
 					"port":     float64(7000),
 					"route":    "post_here",
-					"ttl":      float64(0),
+					"ttl":      float64(60),
 					"modification_tag": map[string]interface{}{
 						"guid":  "",
 						"index": float64(0),
@@ -277,7 +259,7 @@ var _ = Describe("RoutesHandler", func() {
 				It("returns a 204 if the key was not found", func() {
 					database.DeleteRouteReturns(db.DBError{Type: db.KeyNotFound, Message: "The specified route could not be found."})
 
-					request = handlers.NewTestRequest(route)
+					request = handlers.NewTestRequest(routes)
 					routesHandler.Delete(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusNoContent))
@@ -286,7 +268,7 @@ var _ = Describe("RoutesHandler", func() {
 				It("responds with a server error", func() {
 					database.DeleteRouteReturns(errors.New("stuff broke"))
 
-					request = handlers.NewTestRequest(route)
+					request = handlers.NewTestRequest(routes)
 					routesHandler.Delete(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
@@ -316,7 +298,7 @@ var _ = Describe("RoutesHandler", func() {
 			})
 
 			It("returns an Unauthorized status code", func() {
-				request = handlers.NewTestRequest(route)
+				request = handlers.NewTestRequest(routes)
 				routesHandler.Delete(responseRecorder, request)
 
 				Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
@@ -328,22 +310,17 @@ var _ = Describe("RoutesHandler", func() {
 	Describe(".Upsert", func() {
 		Context("POST", func() {
 			var (
-				route []models.Route
+				route  models.Route
+				routes []models.Route
 			)
 
 			BeforeEach(func() {
-				route = []models.Route{
-					{
-						Route: "post_here",
-						IP:    "1.2.3.4",
-						Port:  7000,
-						TTL:   50,
-					},
-				}
+				route = models.NewRoute("post_here", 7000, "1.2.3.4", "logGuid", "rs.com", 40)
+				routes = []models.Route{route}
 			})
 
 			It("checks for routing.routes.write scope", func() {
-				request = handlers.NewTestRequest(route)
+				request = handlers.NewTestRequest(routes)
 
 				routesHandler.Upsert(responseRecorder, request)
 
@@ -351,47 +328,52 @@ var _ = Describe("RoutesHandler", func() {
 				Expect(permission).To(ConsistOf(handlers.RoutingRoutesWriteScope))
 			})
 
+			Context("when TTL is not set", func() {
+				BeforeEach(func() {
+					route.TTL = nil
+				})
+
+				It("sets the default TTL", func() {
+					request = handlers.NewTestRequest([]models.Route{route})
+					routesHandler.Upsert(responseRecorder, request)
+					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+					Expect(database.SaveRouteCallCount()).To(Equal(1))
+					Expect(*database.SaveRouteArgsForCall(0).TTL).To(Equal(defaultTTL))
+				})
+			})
+
 			Context("when all inputs are present and correct", func() {
 				It("returns an http status created", func() {
-					request = handlers.NewTestRequest(route)
+					request = handlers.NewTestRequest(routes)
 					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 				})
 
 				It("accepts a list of routes in the body", func() {
-					route = append(route, route[0])
-					route[1].IP = "5.4.3.2"
+					route.IP = "5.4.3.2"
+					routes = append(routes, route)
 
-					request = handlers.NewTestRequest(route)
+					request = handlers.NewTestRequest(routes)
 					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 					Expect(database.SaveRouteCallCount()).To(Equal(2))
-					Expect(database.SaveRouteArgsForCall(0)).To(Equal(route[0]))
-					Expect(database.SaveRouteArgsForCall(1)).To(Equal(route[1]))
-				})
-
-				It("accepts route_service_url parameters", func() {
-					route[0].RouteServiceUrl = "https://my-rs.com"
-					request = handlers.NewTestRequest(route)
-					routesHandler.Upsert(responseRecorder, request)
-
-					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
-					Expect(database.SaveRouteCallCount()).To(Equal(1))
-					Expect(database.SaveRouteArgsForCall(0)).To(Equal(route[0]))
+					Expect(database.SaveRouteArgsForCall(0)).To(Equal(routes[0]))
+					Expect(database.SaveRouteArgsForCall(1)).To(Equal(routes[1]))
 				})
 
 				It("logs the route declaration", func() {
-					request = handlers.NewTestRequest(route)
+					request = handlers.NewTestRequest(routes)
 					routesHandler.Upsert(responseRecorder, request)
 
 					data := map[string]interface{}{
-						"ip":       "1.2.3.4",
-						"log_guid": "",
-						"port":     float64(7000),
-						"route":    "post_here",
-						"ttl":      float64(50),
+						"ip":                "1.2.3.4",
+						"log_guid":          "logGuid",
+						"port":              float64(7000),
+						"route":             "post_here",
+						"ttl":               float64(40),
+						"route_service_url": "rs.com",
 						"modification_tag": map[string]interface{}{
 							"guid":  "",
 							"index": float64(0),
@@ -404,31 +386,20 @@ var _ = Describe("RoutesHandler", func() {
 				})
 
 				It("does not require route_service_url on the request", func() {
-					route[0].RouteServiceUrl = ""
-
-					request = handlers.NewTestRequest(route)
+					route.RouteServiceUrl = "rs.com"
+					request = handlers.NewTestRequest([]models.Route{route})
 					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 				})
 
 				It("does not require log guid on the request", func() {
-					route[0].LogGuid = ""
+					route.LogGuid = ""
 
-					request = handlers.NewTestRequest(route)
+					request = handlers.NewTestRequest([]models.Route{route})
 					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
-				})
-
-				It("writes to database backend", func() {
-					route[0].LogGuid = "my-guid"
-
-					request = handlers.NewTestRequest(route)
-					routesHandler.Upsert(responseRecorder, request)
-
-					Expect(database.SaveRouteCallCount()).To(Equal(1))
-					Expect(database.SaveRouteArgsForCall(0)).To(Equal(route[0]))
 				})
 
 				Context("when database fails to save", func() {
@@ -437,7 +408,7 @@ var _ = Describe("RoutesHandler", func() {
 					})
 
 					It("responds with a server error", func() {
-						request = handlers.NewTestRequest(route)
+						request = handlers.NewTestRequest([]models.Route{route})
 						routesHandler.Upsert(responseRecorder, request)
 
 						Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
@@ -451,7 +422,7 @@ var _ = Describe("RoutesHandler", func() {
 					})
 
 					It("responds with a 409 conflict error", func() {
-						request = handlers.NewTestRequest(route)
+						request = handlers.NewTestRequest([]models.Route{route})
 						routesHandler.Upsert(responseRecorder, request)
 
 						Expect(responseRecorder.Code).To(Equal(http.StatusConflict))
@@ -475,14 +446,14 @@ var _ = Describe("RoutesHandler", func() {
 				})
 
 				It("does not write to the key-value store backend", func() {
-					request = handlers.NewTestRequest(route)
+					request = handlers.NewTestRequest([]models.Route{route})
 					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 				})
 
 				It("logs the error", func() {
-					request = handlers.NewTestRequest(route)
+					request = handlers.NewTestRequest([]models.Route{route})
 					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(logger.Logs()[1].Message).To(ContainSubstring("error"))
@@ -500,7 +471,7 @@ var _ = Describe("RoutesHandler", func() {
 				})
 
 				It("returns an Unauthorized status code", func() {
-					request = handlers.NewTestRequest(route)
+					request = handlers.NewTestRequest([]models.Route{route})
 					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))

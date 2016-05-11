@@ -285,21 +285,37 @@ var _ = Describe("Models", func() {
 		BeforeEach(func() {
 			tag, err := NewModificationTag()
 			Expect(err).ToNot(HaveOccurred())
-			route = Route{
-				Route:           "/foo/bar",
-				Port:            35,
-				IP:              "2.2.2.2",
-				TTL:             66,
-				LogGuid:         "banana",
-				ModificationTag: tag,
-			}
+			route = NewRoute("/foo/bar", 35, "2.2.2.2", "", "banana", 66)
+			route.ModificationTag = tag
 		})
 
-		JustBeforeEach(func() {
-			matches = route.Matches(otherRoute)
+		Describe("SetDefaults", func() {
+			JustBeforeEach(func() {
+				route.SetDefaults(120)
+			})
+
+			Context("when ttl is nil", func() {
+				BeforeEach(func() {
+					route.TTL = nil
+				})
+
+				It("sets the default ttl", func() {
+					Expect(*route.TTL).To(Equal(120))
+				})
+			})
+
+			Context("when ttl is not nil", func() {
+				It("does not change ttl", func() {
+					Expect(*route.TTL).To(Equal(66))
+				})
+			})
 		})
 
-		Context("Matches", func() {
+		Describe("Matches", func() {
+			JustBeforeEach(func() {
+				matches = route.Matches(otherRoute)
+			})
+
 			Context("when all properties matches", func() {
 				BeforeEach(func() {
 					otherRoute = route
@@ -325,12 +341,7 @@ var _ = Describe("Models", func() {
 			Context("when some properties don't match", func() {
 
 				BeforeEach(func() {
-					otherRoute = Route{
-						Route:   "/foo/brah",
-						Port:    35,
-						IP:      "3.3.3.3",
-						LogGuid: "banana",
-					}
+					otherRoute = NewRoute("/foo/brah", 35, "3.3.3.3", "", "banana", 66)
 				})
 
 				It("returns false", func() {
@@ -356,44 +367,33 @@ var _ = Describe("Models", func() {
 			route.ModificationTag = tag
 		})
 
-		JustBeforeEach(func() {
-			matches = route.Matches(otherRoute)
-		})
-
-		Context("when ttl is nil", func() {
-			var tcpRoute TcpRouteMapping
-
-			BeforeEach(func() {
-				tcpRoute = TcpRouteMapping{
-					TcpRoute: TcpRoute{
-						RouterGroupGuid: "router-group-guid-001",
-						ExternalPort:    52000,
-					},
-					HostIP:   "1.2.3.4",
-					HostPort: 60000,
-				}
-				tcpRoute.SetDefaults(120)
+		Describe("SetDefaults", func() {
+			JustBeforeEach(func() {
+				route.SetDefaults(120)
 			})
 
-			It("sets default ttl", func() {
-				Expect(*tcpRoute.TTL).To(Equal(120))
+			Context("when ttl is nil", func() {
+				BeforeEach(func() {
+					route.TTL = nil
+				})
+
+				It("sets default ttl", func() {
+					Expect(*route.TTL).To(Equal(120))
+				})
+			})
+
+			Context("when ttl is not nil", func() {
+				It("doesn't change ttl", func() {
+					Expect(*route.TTL).To(Equal(66))
+				})
 			})
 		})
 
-		Context("when ttl is not nil", func() {
-			var tcpRoute TcpRouteMapping
-
-			BeforeEach(func() {
-				tcpRoute = NewTcpRouteMapping("router-group-1", 60000, "2.2.2.2", 64000, 66)
-				tcpRoute.SetDefaults(120)
+		Describe("Matches", func() {
+			JustBeforeEach(func() {
+				matches = route.Matches(otherRoute)
 			})
 
-			It("doesn't change ttl", func() {
-				Expect(*tcpRoute.TTL).To(Equal(66))
-			})
-		})
-
-		Context("Matches", func() {
 			Context("when all properties matches", func() {
 				BeforeEach(func() {
 					otherRoute = route
@@ -418,7 +418,6 @@ var _ = Describe("Models", func() {
 			})
 
 			Context("when some properties don't match", func() {
-
 				BeforeEach(func() {
 					otherRoute = NewTcpRouteMapping("router-group-1", 60000, "2.2.2.2", 64000, 67)
 				})
@@ -426,7 +425,6 @@ var _ = Describe("Models", func() {
 				It("returns false", func() {
 					Expect(matches).To(BeFalse())
 				})
-
 			})
 		})
 	})

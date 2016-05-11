@@ -22,16 +22,8 @@ var _ = Describe("Validator", func() {
 		validator = handlers.NewValidator()
 		maxTTL = 50
 
-		routes = []models.Route{
-			{
-				Route:           "http://127.0.0.1/a/valid/route",
-				IP:              "127.0.0.1",
-				Port:            8080,
-				TTL:             maxTTL,
-				LogGuid:         "log_guid",
-				RouteServiceUrl: "https://my-rs.example.com",
-			},
-		}
+		route := models.NewRoute("http://127.0.0.1/a/valid/route", 8080, "127.0.0.1", "log_guid", "https://my-rs.example.com", maxTTL)
+		routes = []models.Route{route}
 	})
 
 	Describe(".ValidateCreate", func() {
@@ -46,7 +38,7 @@ var _ = Describe("Validator", func() {
 			})
 
 			It("returns an error if any ttl is greater than max ttl", func() {
-				routes[1].TTL = maxTTL + 1
+				*routes[1].TTL = maxTTL + 1
 
 				err := validator.ValidateCreate(routes, maxTTL)
 				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
@@ -54,7 +46,7 @@ var _ = Describe("Validator", func() {
 			})
 
 			It("returns an error if any ttl is less than 1", func() {
-				routes[1].TTL = 0
+				*routes[1].TTL = 0
 
 				err := validator.ValidateCreate(routes, maxTTL)
 				Expect(err.Type).To(Equal(routing_api.RouteInvalidError))

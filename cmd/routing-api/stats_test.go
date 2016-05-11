@@ -95,13 +95,7 @@ var _ = Describe("Routes API", func() {
 	Describe("Stats for total routes", func() {
 
 		BeforeEach(func() {
-			route1 = models.Route{
-				Route:   "a.b.c",
-				Port:    33,
-				IP:      "1.1.1.1",
-				TTL:     55,
-				LogGuid: "potato",
-			}
+			route1 = models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 55)
 		})
 
 		Context("periodically receives total routes", func() {
@@ -134,13 +128,7 @@ var _ = Describe("Routes API", func() {
 
 		Context("when expiring a route", func() {
 			It("gets statsd messages for expired routes", func() {
-				routeExpire := models.Route{
-					Route:   "z.a.k",
-					Port:    63,
-					IP:      "42.42.42.42",
-					TTL:     1,
-					LogGuid: "Tomato",
-				}
+				routeExpire := models.NewRoute("z.a.k", 63, "42.42.42.42", "Tomato", "", 1)
 
 				client.UpsertRoutes([]models.Route{routeExpire})
 

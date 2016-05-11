@@ -71,8 +71,9 @@ var _ = Describe("EventSource", func() {
 							Retry: 1,
 						}
 
+						route := models.NewRoute("jim.com", 8080, "1.1.1.1", "logs", "", 60)
 						expectedEvent := routing_api.Event{
-							Route:  models.Route{Route: "jim.com", Port: 8080, IP: "1.1.1.1", TTL: 60, LogGuid: "logs"},
+							Route:  route,
 							Action: "Test",
 						}
 
