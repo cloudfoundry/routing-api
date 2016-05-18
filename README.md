@@ -9,12 +9,12 @@ The purpose of the Routing API is to present a RESTful interface for registering
 ### External Dependencies
 
 - Go should be installed and in the PATH
-- This repo is part of [cf-routing-release](https://github.com/cloudfoundry-incubator/cf-routing-release) bosh release repo, which also acts as cannonical GOPATH. So to work on routing-api you will need to checkout [cf-routing-release](https://github.com/cloudfoundry-incubator/cf-routing-release) and follow instructions in its [README](https://github.com/cloudfoundry-incubator/cf-routing-release/blob/develop/README.md) to setup GOPATH.
+- This repo is part of [routing-release](https://github.com/cloudfoundry-incubator/routing-release) bosh release repo, which also acts as cannonical GOPATH. So to work on routing-api you will need to checkout [routing-release](https://github.com/cloudfoundry-incubator/routing-release) and follow instructions in its [README](https://github.com/cloudfoundry-incubator/routing-release/blob/develop/README.md) to setup GOPATH.
 
 
 ### Development Setup
 
-Refer to cf-routing-release [README](https://github.com/cloudfoundry-incubator/cf-routing-release/blob/develop/README.md) for development setup.
+Refer to routing-release [README](https://github.com/cloudfoundry-incubator/routing-release/blob/develop/README.md) for development setup.
 
 ## Development
 
