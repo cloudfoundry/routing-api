@@ -231,7 +231,7 @@ func newUaaClient(logger lager.Logger, routingApiConfig config.Config) (uaaclien
 
 	cfg := &uaaconfig.Config{
 		UaaEndpoint:      tokenURL,
-		SkipVerification: routingApiConfig.OAuth.SkipOAuthTLSVerification,
+		SkipVerification: routingApiConfig.OAuth.SkipSSLValidation,
 	}
 	return uaaclient.NewClient(logger, cfg, clock.NewClock())
 }

@@ -15,11 +15,11 @@ type MetronConfig struct {
 }
 
 type OAuthConfig struct {
-	TokenEndpoint            string `yaml:"token_endpoint"`
-	Port                     int    `yaml:"port"`
-	SkipOAuthTLSVerification bool   `yaml:"skip_oauth_tls_verification"`
-	ClientName               string `yaml:"client_name"`
-	ClientSecret             string `yaml:"client_secret"`
+	TokenEndpoint     string `yaml:"token_endpoint"`
+	Port              int    `yaml:"port"`
+	SkipSSLValidation bool   `yaml:"skip_ssl_validation"`
+	ClientName        string `yaml:"client_name"`
+	ClientSecret      string `yaml:"client_secret"`
 }
 
 type Config struct {
