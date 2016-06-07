@@ -3,8 +3,10 @@ package db_test
 import (
 	"encoding/json"
 	"errors"
+	"path/filepath"
 	"time"
 
+	"github.com/cloudfoundry-incubator/routing-api/config"
 	"github.com/cloudfoundry-incubator/routing-api/db"
 	"github.com/cloudfoundry-incubator/routing-api/db/fakes"
 	"github.com/cloudfoundry-incubator/routing-api/models"
@@ -24,7 +26,7 @@ var _ = Describe("DB", func() {
 		)
 
 		BeforeEach(func() {
-			etcd, err = db.NewETCD([]string{})
+			etcd, err = db.NewETCD([]string{}, config.Etcd{})
 		})
 
 		It("should not return an etcd instance", func() {
@@ -40,7 +42,7 @@ var _ = Describe("DB", func() {
 		)
 
 		BeforeEach(func() {
-			etcd, err = db.NewETCD([]string{"im-not-really-running"})
+			etcd, err = db.NewETCD([]string{"im-not-really-running"}, config.Etcd{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -57,10 +59,17 @@ var _ = Describe("DB", func() {
 			err              error
 			route            models.Route
 			tcpRouteMapping1 models.TcpRouteMapping
+			etcdConfig       config.Etcd
 		)
 
 		BeforeEach(func() {
-			etcd, err = db.NewETCD(etcdRunner.NodeURLS())
+			etcdConfig = config.Etcd{
+				RequireSSL: true,
+				CertFile:   filepath.Join(basePath, "client.crt"),
+				KeyFile:    filepath.Join(basePath, "client.key"),
+				CAFile:     filepath.Join(basePath, "etcd-ca.crt"),
+			}
+			etcd, err = db.NewETCD(etcdRunner.NodeURLS(), etcdConfig)
 			Expect(err).NotTo(HaveOccurred())
 			route = models.NewRoute("post_here", 7000, "1.2.3.4", "my-guid", "https://rs.com", 50)
 			fakeKeysAPI = &fakes.FakeKeysAPI{}
@@ -163,7 +172,6 @@ var _ = Describe("DB", func() {
 					})
 
 					Context("when Set operation fails with a compare error", func() {
-
 						BeforeEach(func() {
 							count := 0
 							fakeKeysAPI.SetStub = func(ctx context.Context, key, value string, opts *client.SetOptions) (*client.Response, error) {

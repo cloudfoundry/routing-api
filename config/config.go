@@ -22,6 +22,13 @@ type OAuthConfig struct {
 	ClientSecret      string `yaml:"client_secret"`
 }
 
+type Etcd struct {
+	CertFile   string
+	KeyFile    string
+	CAFile     string
+	RequireSSL bool `yaml:"require_ssl"`
+}
+
 type Config struct {
 	DebugAddress                    string              `yaml:"debug_address"`
 	LogGuid                         string              `yaml:"log_guid"`
@@ -33,6 +40,7 @@ type Config struct {
 	StatsdClientFlushInterval       time.Duration       `yaml:"-"`
 	OAuth                           OAuthConfig         `yaml:"oauth"`
 	RouterGroups                    models.RouterGroups `yaml:"router_groups"`
+	Etcd                            Etcd                `yaml:"etcd"`
 }
 
 func NewConfigFromFile(configFile string, authDisabled bool) (Config, error) {

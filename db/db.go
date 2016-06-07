@@ -7,9 +7,11 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/cloudfoundry-incubator/routing-api/config"
 	"github.com/cloudfoundry-incubator/routing-api/models"
 	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/coreos/etcd/client"
+	"github.com/coreos/etcd/pkg/transport"
 )
 
 //go:generate counterfeiter -o fakes/fake_watcher.go ../../../coreos/etcd/client/keys.go Watcher
@@ -38,8 +40,8 @@ const (
 	TCP_MAPPING_BASE_KEY  string = "/v1/tcp_routes/router_groups"
 	HTTP_ROUTE_BASE_KEY   string = "/routes"
 	ROUTER_GROUP_BASE_KEY string = "/v1/router_groups"
-
-	maxRetries = 3
+	defaultDialTimeout           = 30 * time.Second
+	maxRetries                   = 3
 )
 
 var ErrorConflict = errors.New("etcd failed to compare")
@@ -51,10 +53,26 @@ type etcd struct {
 	cancelFunc context.CancelFunc
 }
 
-func NewETCD(nodeURLs []string) (DB, error) {
+func NewETCD(nodeURLs []string, conf config.Etcd) (DB, error) {
+	var tr client.CancelableTransport
+	var err error
+	if conf.RequireSSL {
+		tr, err = transport.NewTransport(
+			transport.TLSInfo{
+				CertFile: conf.CertFile,
+				KeyFile:  conf.KeyFile,
+				CAFile:   conf.CAFile,
+			}, defaultDialTimeout)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		tr = client.DefaultTransport
+	}
+
 	cfg := client.Config{
 		Endpoints: nodeURLs,
-		Transport: client.DefaultTransport,
+		Transport: tr,
 	}
 
 	c, err := client.New(cfg)

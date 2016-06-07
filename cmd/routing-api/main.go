@@ -75,7 +75,7 @@ func main() {
 	}
 
 	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
-	database, err := db.NewETCD(flag.Args())
+	database, err := db.NewETCD(flag.Args(), cfg.Etcd)
 	if err != nil {
 		logger.Error("failed to initialize database", err)
 		os.Exit(1)
