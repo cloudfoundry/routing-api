@@ -23,10 +23,10 @@ type OAuthConfig struct {
 }
 
 type Etcd struct {
-	CertFile   string
-	KeyFile    string
-	CAFile     string
-	RequireSSL bool `yaml:"require_ssl"`
+	CertFile   string `yaml:"cert_file"`
+	KeyFile    string `yaml:"key_file"`
+	CAFile     string `yaml:"ca_file"`
+	RequireSSL bool   `yaml:"require_ssl"`
 }
 
 type Config struct {
