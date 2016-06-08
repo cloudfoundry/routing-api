@@ -97,13 +97,14 @@ var _ = Describe("Client", func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("POST", ROUTES_API_URL),
-						ghttp.RespondWith(http.StatusBadRequest, nil),
+						ghttp.RespondWith(http.StatusBadRequest, "random error message"),
 					),
 				)
 			})
 
 			It("receives an error", func() {
 				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("400: random error message"))
 			})
 
 			It("logs the request and response", func() {

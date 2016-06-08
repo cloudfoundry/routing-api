@@ -17,6 +17,7 @@ func NewError(errType string, message string) Error {
 }
 
 const (
+	ResponseError               = "ResponseError"
 	ProcessRequestError         = "ProcessRequestError"
 	RouteInvalidError           = "RouteInvalidError"
 	RouteServiceUrlInvalidError = "RouteServiceUrlInvalidError"

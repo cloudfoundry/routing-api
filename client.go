@@ -3,6 +3,8 @@ package routing_api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
@@ -202,13 +204,11 @@ func (c *client) do(req *http.Request, response interface{}) error {
 	trace.DumpResponse(res)
 
 	if res.StatusCode == http.StatusUnauthorized {
-		return Error{Type: "unauthorized", Message: "unauthorized"}
+		return NewError(UnauthorizedError, "unauthorized")
 	}
 
 	if res.StatusCode > 299 {
-		errResponse := Error{}
-		json.NewDecoder(res.Body).Decode(&errResponse)
-		return errResponse
+		return transformResponseError(res)
 	}
 
 	if response != nil {
@@ -216,4 +216,18 @@ func (c *client) do(req *http.Request, response interface{}) error {
 	}
 
 	return nil
+}
+
+func transformResponseError(res *http.Response) error {
+	errResponse := Error{}
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return NewError(ResponseError, fmt.Sprintf("%d: %s", res.StatusCode, "failed to read response body"))
+	}
+
+	err = json.Unmarshal(data, &errResponse)
+	if err != nil {
+		return NewError(ResponseError, fmt.Sprintf("%d: %s", res.StatusCode, data))
+	}
+	return errResponse
 }
