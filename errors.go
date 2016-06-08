@@ -1,7 +1,8 @@
 package routing_api
 
+type Type string
 type Error struct {
-	Type    string `json:"name"`
+	Type    Type   `json:"name"`
 	Message string `json:"message"`
 }
 
@@ -9,7 +10,7 @@ func (err Error) Error() string {
 	return err.Message
 }
 
-func NewError(errType string, message string) Error {
+func NewError(errType Type, message string) Error {
 	return Error{
 		Type:    errType,
 		Message: message,
@@ -17,12 +18,12 @@ func NewError(errType string, message string) Error {
 }
 
 const (
-	ResponseError               = "ResponseError"
-	ProcessRequestError         = "ProcessRequestError"
-	RouteInvalidError           = "RouteInvalidError"
-	RouteServiceUrlInvalidError = "RouteServiceUrlInvalidError"
-	DBCommunicationError        = "DBCommunicationError"
-	UnauthorizedError           = "UnauthorizedError"
-	TcpRouteMappingInvalidError = "TcpRouteMappingInvalidError"
-	DBConflictError             = "DBConflictError"
+	ResponseError               Type = "ResponseError"
+	ProcessRequestError         Type = "ProcessRequestError"
+	RouteInvalidError           Type = "RouteInvalidError"
+	RouteServiceUrlInvalidError Type = "RouteServiceUrlInvalidError"
+	DBCommunicationError        Type = "DBCommunicationError"
+	UnauthorizedError           Type = "UnauthorizedError"
+	TcpRouteMappingInvalidError Type = "TcpRouteMappingInvalidError"
+	DBConflictError             Type = "DBConflictError"
 )
