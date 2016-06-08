@@ -120,6 +120,22 @@ var _ = Describe("Client", func() {
 				Expect(log).To(ContainSubstring("RESPONSE: "))
 				Expect(log).To(ContainSubstring("HTTP/1.1 400 Bad Request"))
 			})
+
+			Context("when the error is valid JSON but not a routing api error", func() {
+				BeforeEach(func() {
+					server.SetHandler(0,
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("POST", ROUTES_API_URL),
+							ghttp.RespondWith(http.StatusNotFound, `{"code": 100000}`),
+						),
+					)
+				})
+
+				It("returns a useful error message", func() {
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(Equal(`404: {"code": 100000}`))
+				})
+			})
 		})
 	})
 

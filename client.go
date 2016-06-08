@@ -229,5 +229,9 @@ func transformResponseError(res *http.Response) error {
 	if err != nil {
 		return NewError(ResponseError, fmt.Sprintf("%d: %s", res.StatusCode, data))
 	}
+
+	if errResponse.Type == "" {
+		return NewError(ResponseError, fmt.Sprintf("%d: %s", res.StatusCode, data))
+	}
 	return errResponse
 }
