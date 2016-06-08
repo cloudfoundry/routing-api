@@ -3,7 +3,6 @@ package routing_api
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -222,16 +221,16 @@ func transformResponseError(res *http.Response) error {
 	errResponse := Error{}
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return NewError(ResponseError, fmt.Sprintf("%d: %s", res.StatusCode, "failed to read response body"))
+		return NewError(ResponseError, "failed to read response body")
 	}
 
 	err = json.Unmarshal(data, &errResponse)
 	if err != nil {
-		return NewError(ResponseError, fmt.Sprintf("%d: %s", res.StatusCode, data))
+		return NewError(ResponseError, string(data))
 	}
 
 	if errResponse.Type == "" {
-		return NewError(ResponseError, fmt.Sprintf("%d: %s", res.StatusCode, data))
+		return NewError(ResponseError, string(data))
 	}
 	return errResponse
 }

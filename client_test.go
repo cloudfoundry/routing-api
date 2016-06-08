@@ -104,7 +104,7 @@ var _ = Describe("Client", func() {
 
 			It("receives an error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("400: random error message"))
+				Expect(err.Error()).To(Equal("random error message"))
 			})
 
 			It("logs the request and response", func() {
@@ -133,7 +133,7 @@ var _ = Describe("Client", func() {
 
 				It("returns a useful error message", func() {
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(Equal(`404: {"code": 100000}`))
+					Expect(err.Error()).To(Equal(`{"code": 100000}`))
 				})
 			})
 		})
