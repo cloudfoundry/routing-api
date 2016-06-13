@@ -98,8 +98,8 @@ var _ = Describe("Models", func() {
 				}
 				err := rg.Validate()
 				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("Missing type in router group"))
 			})
-
 			It("fails for missing name", func() {
 				rg = RouterGroup{
 					Type:            "tcp",
@@ -107,6 +107,17 @@ var _ = Describe("Models", func() {
 				}
 				err := rg.Validate()
 				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("Missing name in router group"))
+			})
+
+			It("fails for missing name", func() {
+				rg = RouterGroup{
+					Type: "tcp",
+					Name: "router-group-1",
+				}
+				err := rg.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("Missing reservable_ports in router group: router-group-1"))
 			})
 		})
 	})

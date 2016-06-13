@@ -30,13 +30,13 @@ func (g RouterGroups) Validate() error {
 
 func (g RouterGroup) Validate() error {
 	if g.Name == "" {
-		return errors.New("Missing `name` in router group")
+		return errors.New("Missing name in router group")
 	}
 	if g.Type == "" {
-		return errors.New("Missing `type` in router group")
+		return errors.New("Missing type in router group")
 	}
 	if g.ReservablePorts == "" {
-		return errors.New(fmt.Sprintf("Missing `reservable_ports` in router group: %s", g.Name))
+		return errors.New(fmt.Sprintf("Missing reservable_ports in router group: %s", g.Name))
 	}
 
 	err := g.ReservablePorts.Validate()

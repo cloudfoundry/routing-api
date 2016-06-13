@@ -203,7 +203,7 @@ router_groups:
   name: default-tcp`
 				err := cfg.Initialize([]byte(missingRouterGroup), true)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Missing `reservable_ports` in router group:"))
+				Expect(err.Error()).To(ContainSubstring("Missing reservable_ports in router group:"))
 			})
 		})
 
