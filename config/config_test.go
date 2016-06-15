@@ -24,8 +24,9 @@ var _ = Describe("Config", func() {
 					Expect(cfg.MetronConfig.Port).To(Equal("4567"))
 					Expect(cfg.DebugAddress).To(Equal("1.2.3.4:1234"))
 					Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
-					Expect(cfg.OAuth.TokenEndpoint).To(Equal("localhost"))
+					Expect(cfg.OAuth.TokenEndpoint).To(Equal("127.0.0.1"))
 					Expect(cfg.OAuth.Port).To(Equal(3000))
+					Expect(cfg.OAuth.CACerts).To(Equal("some-ca-cert"))
 				})
 
 				Context("when there is no token endpoint specified", func() {
@@ -59,8 +60,9 @@ var _ = Describe("Config", func() {
 					Expect(cfg.MetronConfig.Port).To(Equal("4567"))
 					Expect(cfg.DebugAddress).To(Equal("1.2.3.4:1234"))
 					Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
-					Expect(cfg.OAuth.TokenEndpoint).To(Equal("localhost"))
+					Expect(cfg.OAuth.TokenEndpoint).To(Equal("127.0.0.1"))
 					Expect(cfg.OAuth.Port).To(Equal(3000))
+					Expect(cfg.OAuth.CACerts).To(Equal("some-ca-cert"))
 				})
 
 				Context("when there is no token endpoint url", func() {

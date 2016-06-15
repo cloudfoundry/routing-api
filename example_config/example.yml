@@ -2,8 +2,9 @@
 # for production systems
 log_guid: "my_logs"
 oauth:
-  token_endpoint: "localhost"
+  token_endpoint: "127.0.0.1"
   port: "3000"
+  ca_certs: "some-ca-cert"
 debug_address: "1.2.3.4:1234"
 metron_config:
   address: "1.2.3.4"

@@ -1,11 +1,14 @@
 package main_test
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -92,9 +95,18 @@ var _ = BeforeEach(func() {
 
 	client = routing_api.NewClient(routingAPIURL.String())
 
-	oauthServer = ghttp.NewTLSServer()
+	oauthServer = ghttp.NewUnstartedServer()
+	var basePath = path.Join(os.Getenv("GOPATH"), "src", "github.com", "cloudfoundry-incubator", "routing-api", "fixtures", "uaa-certs")
+	cert, err := tls.LoadX509KeyPair(filepath.Join(basePath, "server.pem"), filepath.Join(basePath, "server.key"))
+	Expect(err).ToNot(HaveOccurred())
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}
+	oauthServer.HTTPTestServer.TLS = tlsConfig
 	oauthServer.AllowUnhandledRequests = true
 	oauthServer.UnhandledRequestStatusCode = http.StatusOK
+	oauthServer.HTTPTestServer.StartTLS()
+
 	oauthServerPort = getServerPort(oauthServer.URL())
 
 	routingAPIArgs = testrunner.Args{
@@ -118,8 +130,11 @@ func createConfig() string {
 	type customConfig struct {
 		Port    int
 		UAAPort string
+		CACerts string
 	}
-	actualStatsdConfig := customConfig{Port: 8125 + GinkgoParallelNode(), UAAPort: oauthServerPort}
+	caCertsPath := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "cloudfoundry-incubator", "tcp-emitter", "fixtures", "certs", "uaa-ca.pem")
+
+	actualStatsdConfig := customConfig{Port: 8125 + GinkgoParallelNode(), UAAPort: oauthServerPort, CACerts: caCertsPath}
 	workingDir, _ := os.Getwd()
 	template, err := template.ParseFiles(workingDir + "/../../example_config/example_template.yml")
 	Expect(err).NotTo(HaveOccurred())
