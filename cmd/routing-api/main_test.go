@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/routing-api"
-	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/test_helpers"
 	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/testrunner"
 	"github.com/cloudfoundry-incubator/routing-api/models"
 	. "github.com/onsi/ginkgo"
@@ -87,10 +86,6 @@ var _ = Describe("Main", func() {
 	})
 
 	Context("when initialized correctly and etcd is running", func() {
-		var (
-			routerGroupGuid string
-		)
-
 		BeforeEach(func() {
 			oauthServer.AppendHandlers(
 				ghttp.CombineHandlers(
@@ -119,160 +114,6 @@ var _ = Describe("Main", func() {
 
 			Eventually(getRoutes).ShouldNot(ContainSubstring("api.example.com/routing"))
 			Eventually(routingAPIRunner.ExitCode()).Should(Equal(0))
-		})
-
-		Context("when router groups endpoint is invoked", func() {
-			var proc ifrit.Process
-
-			BeforeEach(func() {
-				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
-				proc = ifrit.Invoke(routingAPIRunner)
-			})
-
-			AfterEach(func() {
-				ginkgomon.Interrupt(proc)
-			})
-
-			It("returns router groups", func() {
-				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
-				routerGroups, err := client.RouterGroups()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(len(routerGroups)).To(Equal(1))
-				Expect(routerGroups[0].Guid).ToNot(BeNil())
-				Expect(routerGroups[0].Name).To(Equal(DefaultRouterGroupName))
-				Expect(routerGroups[0].Type).To(Equal(models.RouterGroupType("tcp")))
-				Expect(routerGroups[0].ReservablePorts).To(Equal(models.ReservablePorts("1024-65535")))
-			})
-		})
-
-		getRouterGroupGuid := func() string {
-			client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
-			routerGroups, err := client.RouterGroups()
-			Expect(err).NotTo(HaveOccurred())
-			Expect(routerGroups).ToNot(HaveLen(0))
-			return routerGroups[0].Guid
-		}
-
-		Context("when tcp routes create endpoint is invoked", func() {
-			var (
-				proc             ifrit.Process
-				tcpRouteMapping1 models.TcpRouteMapping
-				tcpRouteMapping2 models.TcpRouteMapping
-			)
-
-			BeforeEach(func() {
-				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
-				proc = ifrit.Invoke(routingAPIRunner)
-				routerGroupGuid = getRouterGroupGuid()
-			})
-
-			AfterEach(func() {
-				ginkgomon.Interrupt(proc)
-			})
-
-			It("allows to create given tcp route mappings", func() {
-				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
-				var err error
-				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
-				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 1)
-
-				tcpRouteMappings := []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
-				err = client.UpsertTcpRouteMappings(tcpRouteMappings)
-				Expect(err).NotTo(HaveOccurred())
-				tcpRouteMappingsResponse, err := client.TcpRouteMappings()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(tcpRouteMappingsResponse).NotTo(BeNil())
-				mappings := test_helpers.TcpRouteMappings(tcpRouteMappingsResponse)
-				Expect(mappings.ContainsAll(tcpRouteMappings...)).To(BeTrue())
-
-				By("letting route expire")
-				Eventually(func() bool {
-					tcpRouteMappingsResponse, err := client.TcpRouteMappings()
-					Expect(err).NotTo(HaveOccurred())
-					mappings := test_helpers.TcpRouteMappings(tcpRouteMappingsResponse)
-					return mappings.Contains(tcpRouteMapping2)
-				}, 3, 1).Should(BeFalse())
-			})
-
-		})
-
-		Context("when tcp routes delete endpoint is invoked", func() {
-			var (
-				proc             ifrit.Process
-				tcpRouteMapping1 models.TcpRouteMapping
-				tcpRouteMapping2 models.TcpRouteMapping
-				tcpRouteMappings []models.TcpRouteMapping
-				client           routing_api.Client
-				err              error
-			)
-
-			BeforeEach(func() {
-				client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
-				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
-				proc = ifrit.Invoke(routingAPIRunner)
-				routerGroupGuid = getRouterGroupGuid()
-			})
-
-			AfterEach(func() {
-				ginkgomon.Interrupt(proc)
-			})
-
-			JustBeforeEach(func() {
-				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
-				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 60)
-				tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
-				err = client.UpsertTcpRouteMappings(tcpRouteMappings)
-
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("allows to delete given tcp route mappings", func() {
-				err := client.DeleteTcpRouteMappings(tcpRouteMappings)
-				Expect(err).NotTo(HaveOccurred())
-
-				tcpRouteMappingsResponse, err := client.TcpRouteMappings()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(tcpRouteMappingsResponse).NotTo(BeNil())
-				Expect(tcpRouteMappingsResponse).NotTo(ConsistOf(tcpRouteMappings))
-			})
-		})
-		Context("when tcp routes endpoint is invoked", func() {
-			var (
-				proc             ifrit.Process
-				tcpRouteMapping1 models.TcpRouteMapping
-				tcpRouteMapping2 models.TcpRouteMapping
-				tcpRouteMappings []models.TcpRouteMapping
-				client           routing_api.Client
-				err              error
-			)
-
-			BeforeEach(func() {
-				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
-				proc = ifrit.Invoke(routingAPIRunner)
-				routerGroupGuid = getRouterGroupGuid()
-			})
-
-			JustBeforeEach(func() {
-				client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
-
-				tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
-				tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 60)
-				tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
-				err = client.UpsertTcpRouteMappings(tcpRouteMappings)
-
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			AfterEach(func() {
-				ginkgomon.Interrupt(proc)
-			})
-
-			It("allows to retrieve tcp route mappings", func() {
-				tcpRouteMappingsResponse, err := client.TcpRouteMappings()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(tcpRouteMappingsResponse).NotTo(BeNil())
-				Expect(test_helpers.TcpRouteMappings(tcpRouteMappingsResponse).ContainsAll(tcpRouteMappings...)).To(BeTrue())
-			})
 		})
 
 		It("closes open event streams when the process exits", func() {

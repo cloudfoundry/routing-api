@@ -124,6 +124,7 @@ var _ = AfterEach(func() {
 	etcdRunner.Reset()
 	etcdRunner.Stop()
 	oauthServer.Close()
+	etcdRunner.KillWithFire()
 })
 
 func createConfig() string {
