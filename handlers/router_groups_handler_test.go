@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 
 	"github.com/cloudfoundry-incubator/routing-api"
 	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
@@ -127,6 +128,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 		var (
 			existingRouterGroup models.RouterGroup
 			handler             http.Handler
+			body                io.Reader
 		)
 
 		BeforeEach(func() {
@@ -146,23 +148,23 @@ var _ = Describe("RouterGroupsHandler", func() {
 				routing_api.UpdateRouterGroup: http.HandlerFunc(routerGroupHandler.UpdateRouterGroup),
 			})
 			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("saves the router group", func() {
-			var err error
-
 			queryGroup := models.RouterGroup{
 				ReservablePorts: "8000",
 			}
 			bodyBytes, err := json.Marshal(queryGroup)
 			Expect(err).ToNot(HaveOccurred())
-			body := bytes.NewReader(bodyBytes)
+			body = bytes.NewReader(bodyBytes)
+		})
+
+		It("saves the router group", func() {
+			var err error
 			request, err = http.NewRequest(
 				"PUT",
 				fmt.Sprintf("/routing/v1/router_groups/%s", DefaultRouterGroupGuid),
 				body,
 			)
 			Expect(err).NotTo(HaveOccurred())
+
 			handler.ServeHTTP(responseRecorder, request)
 
 			Expect(fakeDb.ReadRouterGroupCallCount()).To(Equal(1))
@@ -190,11 +192,21 @@ var _ = Describe("RouterGroupsHandler", func() {
 			}`))
 		})
 
-		Context("when reservable port field is invalid", func() {
-			var (
-				body io.Reader
+		It("adds X-Cf-Warnings header", func() {
+			var err error
+			request, err = http.NewRequest(
+				"PUT",
+				fmt.Sprintf("/routing/v1/router_groups/%s", DefaultRouterGroupGuid),
+				body,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
+			handler.ServeHTTP(responseRecorder, request)
+			warning := responseRecorder.HeaderMap.Get("X-Cf-Warnings")
+			Expect(url.QueryUnescape(warning)).To(ContainSubstring("routes becoming inaccessible"))
+		})
+
+		Context("when reservable port field is invalid", func() {
 			BeforeEach(func() {
 				queryGroup := models.RouterGroup{
 					ReservablePorts: "fadfadfasdf",

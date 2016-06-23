@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/cloudfoundry-incubator/routing-api/db"
@@ -12,6 +13,10 @@ import (
 	"github.com/pivotal-golang/lager"
 	"github.com/tedsuo/rata"
 )
+
+const portWarning = "Warning: if routes are registered for ports that are not " +
+	"in the new range, modifying your load balancer to remove these ports will " +
+	"result in backends for those routes becoming inaccessible."
 
 type RouterGroupsHandler struct {
 	uaaClient uaaclient.Client
@@ -105,8 +110,14 @@ func (h *RouterGroupsHandler) UpdateRouterGroup(w http.ResponseWriter, req *http
 	if err != nil {
 		log.Error("failed-to-marshal", err)
 	}
+
+	addWarningsHeader(w)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonBytes)
 	w.Header().Set("Content-Length", strconv.Itoa(len(jsonBytes)))
+}
+
+func addWarningsHeader(w http.ResponseWriter) {
+	w.Header().Set("X-Cf-Warnings", url.QueryEscape(portWarning))
 }
