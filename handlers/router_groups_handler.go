@@ -88,6 +88,11 @@ func (h *RouterGroupsHandler) UpdateRouterGroup(w http.ResponseWriter, req *http
 
 	if updatedGroup.ReservablePorts != "" && rg.ReservablePorts != updatedGroup.ReservablePorts {
 		rg.ReservablePorts = updatedGroup.ReservablePorts
+		err = rg.Validate()
+		if err != nil {
+			handleProcessRequestError(w, err, log)
+			return
+		}
 
 		err = h.db.SaveRouterGroup(rg)
 		if err != nil {

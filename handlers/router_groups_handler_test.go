@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 
@@ -187,6 +188,59 @@ var _ = Describe("RouterGroupsHandler", func() {
 			"type": "tcp",
 			"reservable_ports": "8000"
 			}`))
+		})
+
+		Context("when reservable port field is invalid", func() {
+			var (
+				body io.Reader
+			)
+
+			BeforeEach(func() {
+				queryGroup := models.RouterGroup{
+					ReservablePorts: "fadfadfasdf",
+				}
+				bodyBytes, err := json.Marshal(queryGroup)
+				Expect(err).ToNot(HaveOccurred())
+				body = bytes.NewReader(bodyBytes)
+			})
+
+			It("does not save the router group", func() {
+				var err error
+				request, err = http.NewRequest(
+					"PUT",
+					fmt.Sprintf("/routing/v1/router_groups/%s", DefaultRouterGroupGuid),
+					body,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				handler.ServeHTTP(responseRecorder, request)
+
+				Expect(fakeDb.ReadRouterGroupCallCount()).To(Equal(1))
+				guid := fakeDb.ReadRouterGroupArgsForCall(0)
+				Expect(guid).To(Equal(DefaultRouterGroupGuid))
+
+				Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
+			})
+
+			It("returns a 400 Bad Request", func() {
+				var err error
+				request, err = http.NewRequest(
+					"PUT",
+					fmt.Sprintf("/routing/v1/router_groups/%s", DefaultRouterGroupGuid),
+					body,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				handler.ServeHTTP(responseRecorder, request)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+				payload := responseRecorder.Body.String()
+				Expect(payload).To(MatchJSON(`
+				{
+					"name": "ProcessRequestError",
+					"message": "Cannot process request: Port must be between 1024 and 65535"
+				}`))
+			})
 		})
 
 		Context("when reservable port field is the empty string", func() {
