@@ -11,8 +11,8 @@ import (
 
 func handleProcessRequestError(w http.ResponseWriter, procErr error, log lager.Logger) {
 	log.Error("error", procErr)
-
-	retErr, _ := json.Marshal(routing_api.NewError(routing_api.ProcessRequestError, "Cannot process request: "+procErr.Error()))
+	err := routing_api.NewError(routing_api.ProcessRequestError, "Cannot process request: "+procErr.Error())
+	retErr := marshalRoutingApiError(err, log)
 
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write(retErr)
@@ -20,8 +20,7 @@ func handleProcessRequestError(w http.ResponseWriter, procErr error, log lager.L
 
 func handleNotFoundError(w http.ResponseWriter, err error, log lager.Logger) {
 	log.Error("error", err)
-
-	retErr, _ := json.Marshal(routing_api.NewError(routing_api.ResourceNotFoundError, err.Error()))
+	retErr := marshalRoutingApiError(routing_api.NewError(routing_api.ResourceNotFoundError, err.Error()), log)
 
 	w.WriteHeader(http.StatusNotFound)
 	w.Write(retErr)
@@ -29,8 +28,7 @@ func handleNotFoundError(w http.ResponseWriter, err error, log lager.Logger) {
 
 func handleApiError(w http.ResponseWriter, apiErr *routing_api.Error, log lager.Logger) {
 	log.Error("error", apiErr)
-
-	retErr, _ := json.Marshal(apiErr)
+	retErr := marshalRoutingApiError(*apiErr, log)
 
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write(retErr)
@@ -38,8 +36,7 @@ func handleApiError(w http.ResponseWriter, apiErr *routing_api.Error, log lager.
 
 func handleDBCommunicationError(w http.ResponseWriter, err error, log lager.Logger) {
 	log.Error("error", err)
-
-	retErr, _ := json.Marshal(routing_api.NewError(routing_api.DBCommunicationError, err.Error()))
+	retErr := marshalRoutingApiError(routing_api.NewError(routing_api.DBCommunicationError, err.Error()), log)
 
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Write(retErr)
@@ -48,8 +45,7 @@ func handleDBCommunicationError(w http.ResponseWriter, err error, log lager.Logg
 func handleUnauthorizedError(w http.ResponseWriter, err error, log lager.Logger) {
 	log.Error("error", err)
 
-	retErr, _ := json.Marshal(routing_api.NewError(routing_api.UnauthorizedError, err.Error()))
-
+	retErr := marshalRoutingApiError(routing_api.NewError(routing_api.UnauthorizedError, err.Error()), log)
 	metrics.IncrementTokenError()
 
 	w.WriteHeader(http.StatusUnauthorized)
@@ -58,9 +54,17 @@ func handleUnauthorizedError(w http.ResponseWriter, err error, log lager.Logger)
 
 func handleDBConflictError(w http.ResponseWriter, err error, log lager.Logger) {
 	log.Error("error", err)
-
-	retErr, _ := json.Marshal(routing_api.NewError(routing_api.DBConflictError, err.Error()))
+	retErr := marshalRoutingApiError(routing_api.NewError(routing_api.DBConflictError, err.Error()), log)
 
 	w.WriteHeader(http.StatusConflict)
 	w.Write(retErr)
+}
+
+func marshalRoutingApiError(err routing_api.Error, log lager.Logger) []byte {
+	retErr, jsonErr := json.Marshal(err)
+	if jsonErr != nil {
+		log.Error("could-not-marshal-json", jsonErr)
+	}
+
+	return retErr
 }
