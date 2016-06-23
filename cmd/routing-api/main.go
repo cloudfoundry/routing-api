@@ -201,13 +201,14 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 		routing_api.ListRoute:             route(routesHandler.List),
 		routing_api.EventStreamRoute:      route(eventStreamHandler.EventStream),
 		routing_api.ListRouterGroups:      route(routeGroupsHandler.ListRouterGroups),
+		routing_api.UpdateRouterGroup:      route(routeGroupsHandler.UpdateRouterGroup),
 		routing_api.UpsertTcpRouteMapping: route(tcpMappingsHandler.Upsert),
 		routing_api.DeleteTcpRouteMapping: route(tcpMappingsHandler.Delete),
 		routing_api.ListTcpRouteMapping:   route(tcpMappingsHandler.List),
 		routing_api.EventStreamTcpRoute:   route(eventStreamHandler.TcpEventStream),
 	}
 
-	handler, err := rata.NewRouter(routing_api.Routes, actions)
+	handler, err := rata.NewRouter(routing_api.Routes(), actions)
 	if err != nil {
 		logger.Error("failed to create router", err)
 		os.Exit(1)

@@ -15,7 +15,6 @@ import (
 )
 
 //go:generate counterfeiter -o fakes/fake_watcher.go ../../../coreos/etcd/client/keys.go Watcher
-//go:generate counterfeiter -o fakes/fake_client.go ../../../coreos/etcd/client/client.go Client
 //go:generate counterfeiter -o fakes/fake_keys_api.go ../../../coreos/etcd/client/keys.go KeysAPI
 //go:generate counterfeiter -o fakes/fake_db.go . DB
 type DB interface {
@@ -28,6 +27,7 @@ type DB interface {
 	DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error
 
 	ReadRouterGroups() (models.RouterGroups, error)
+	ReadRouterGroup(guid string) (models.RouterGroup, error)
 	SaveRouterGroup(routerGroup models.RouterGroup) error
 
 	Connect() error
@@ -308,13 +308,35 @@ func (e *etcd) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	return err
 }
 
+// Returns a zero-value struct and nil error when Router Group with guid could not be found.
+func (e *etcd) ReadRouterGroup(guid string) (models.RouterGroup, error) {
+	getOpts := &client.GetOptions{
+		Recursive: true,
+	}
+	query := models.RouterGroup{Guid: guid}
+	response, err := e.keysAPI.Get(context.Background(), generateRouterGroupKey(query), getOpts)
+	if err != nil {
+		if clientErr, ok := err.(client.Error); ok && clientErr.Code == client.ErrorCodeKeyNotFound {
+			return models.RouterGroup{}, nil
+		}
+		return models.RouterGroup{}, err
+	}
+	result := models.RouterGroup{}
+	err = json.Unmarshal([]byte(response.Node.Value), &result)
+
+	return result, err
+}
+
 func (e *etcd) ReadRouterGroups() (models.RouterGroups, error) {
 	getOpts := &client.GetOptions{
 		Recursive: true,
 	}
 	response, err := e.keysAPI.Get(context.Background(), ROUTER_GROUP_BASE_KEY, getOpts)
 	if err != nil {
-		return models.RouterGroups{}, nil
+		if clientErr, ok := err.(client.Error); ok && clientErr.Code == client.ErrorCodeKeyNotFound {
+			return models.RouterGroups{}, nil
+		}
+		return models.RouterGroups{}, err
 	}
 
 	results := []models.RouterGroup{}

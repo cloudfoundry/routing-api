@@ -18,6 +18,15 @@ func handleProcessRequestError(w http.ResponseWriter, procErr error, log lager.L
 	w.Write(retErr)
 }
 
+func handleNotFoundError(w http.ResponseWriter, err error, log lager.Logger) {
+	log.Error("error", err)
+
+	retErr, _ := json.Marshal(routing_api.NewError(routing_api.ResourceNotFoundError, err.Error()))
+
+	w.WriteHeader(http.StatusNotFound)
+	w.Write(retErr)
+}
+
 func handleApiError(w http.ResponseWriter, apiErr *routing_api.Error, log lager.Logger) {
 	log.Error("error", apiErr)
 

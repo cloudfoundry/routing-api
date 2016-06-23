@@ -27,6 +27,7 @@ type Client interface {
 	Routes() ([]models.Route, error)
 	DeleteRoutes([]models.Route) error
 	RouterGroups() ([]models.RouterGroup, error)
+	UpdateRouterGroup(models.RouterGroup) error
 	UpsertTcpRouteMappings([]models.TcpRouteMapping) error
 	DeleteTcpRouteMappings([]models.TcpRouteMapping) error
 	TcpRouteMappings() ([]models.TcpRouteMapping, error)
@@ -44,7 +45,7 @@ func NewClient(url string) Client {
 
 		tokenMutex: &sync.RWMutex{},
 
-		reqGen: rata.NewRequestGenerator(url, Routes),
+		reqGen: rata.NewRequestGenerator(url, Routes()),
 	}
 }
 
@@ -72,6 +73,10 @@ func (c *client) Routes() ([]models.Route, error) {
 	var routes []models.Route
 	err := c.doRequest(ListRoute, nil, nil, nil, &routes)
 	return routes, err
+}
+
+func (c *client) UpdateRouterGroup(group models.RouterGroup) error {
+	return c.doRequest(UpdateRouterGroup, rata.Params{"guid": group.Guid}, nil, group, nil)
 }
 
 func (c *client) RouterGroups() ([]models.RouterGroup, error) {

@@ -13,7 +13,7 @@ type FakeDB struct {
 	ReadRoutesStub        func() ([]models.Route, error)
 	readRoutesMutex       sync.RWMutex
 	readRoutesArgsForCall []struct{}
-	readRoutesReturns     struct {
+	readRoutesReturns struct {
 		result1 []models.Route
 		result2 error
 	}
@@ -36,7 +36,7 @@ type FakeDB struct {
 	ReadTcpRouteMappingsStub        func() ([]models.TcpRouteMapping, error)
 	readTcpRouteMappingsMutex       sync.RWMutex
 	readTcpRouteMappingsArgsForCall []struct{}
-	readTcpRouteMappingsReturns     struct {
+	readTcpRouteMappingsReturns struct {
 		result1 []models.TcpRouteMapping
 		result2 error
 	}
@@ -59,8 +59,17 @@ type FakeDB struct {
 	ReadRouterGroupsStub        func() (models.RouterGroups, error)
 	readRouterGroupsMutex       sync.RWMutex
 	readRouterGroupsArgsForCall []struct{}
-	readRouterGroupsReturns     struct {
+	readRouterGroupsReturns struct {
 		result1 models.RouterGroups
+		result2 error
+	}
+	ReadRouterGroupStub        func(guid string) (models.RouterGroup, error)
+	readRouterGroupMutex       sync.RWMutex
+	readRouterGroupArgsForCall []struct {
+		guid string
+	}
+	readRouterGroupReturns struct {
+		result1 models.RouterGroup
 		result2 error
 	}
 	SaveRouterGroupStub        func(routerGroup models.RouterGroup) error
@@ -74,12 +83,12 @@ type FakeDB struct {
 	ConnectStub        func() error
 	connectMutex       sync.RWMutex
 	connectArgsForCall []struct{}
-	connectReturns     struct {
+	connectReturns struct {
 		result1 error
 	}
-	CancelWatchesStub            func()
-	cancelWatchesMutex           sync.RWMutex
-	cancelWatchesArgsForCall     []struct{}
+	CancelWatchesStub        func()
+	cancelWatchesMutex       sync.RWMutex
+	cancelWatchesArgsForCall []struct{}
 	WatchRouteChangesStub        func(filter string) (<-chan db.Event, <-chan error, context.CancelFunc)
 	watchRouteChangesMutex       sync.RWMutex
 	watchRouteChangesArgsForCall []struct {
@@ -291,6 +300,39 @@ func (fake *FakeDB) ReadRouterGroupsReturns(result1 models.RouterGroups, result2
 	fake.ReadRouterGroupsStub = nil
 	fake.readRouterGroupsReturns = struct {
 		result1 models.RouterGroups
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeDB) ReadRouterGroup(guid string) (models.RouterGroup, error) {
+	fake.readRouterGroupMutex.Lock()
+	fake.readRouterGroupArgsForCall = append(fake.readRouterGroupArgsForCall, struct {
+		guid string
+	}{guid})
+	fake.readRouterGroupMutex.Unlock()
+	if fake.ReadRouterGroupStub != nil {
+		return fake.ReadRouterGroupStub(guid)
+	} else {
+		return fake.readRouterGroupReturns.result1, fake.readRouterGroupReturns.result2
+	}
+}
+
+func (fake *FakeDB) ReadRouterGroupCallCount() int {
+	fake.readRouterGroupMutex.RLock()
+	defer fake.readRouterGroupMutex.RUnlock()
+	return len(fake.readRouterGroupArgsForCall)
+}
+
+func (fake *FakeDB) ReadRouterGroupArgsForCall(i int) string {
+	fake.readRouterGroupMutex.RLock()
+	defer fake.readRouterGroupMutex.RUnlock()
+	return fake.readRouterGroupArgsForCall[i].guid
+}
+
+func (fake *FakeDB) ReadRouterGroupReturns(result1 models.RouterGroup, result2 error) {
+	fake.ReadRouterGroupStub = nil
+	fake.readRouterGroupReturns = struct {
+		result1 models.RouterGroup
 		result2 error
 	}{result1, result2}
 }

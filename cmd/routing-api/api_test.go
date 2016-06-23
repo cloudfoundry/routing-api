@@ -211,6 +211,23 @@ var _ = Describe("Routes API", func() {
 					Expect(routerGroups[0].ReservablePorts).To(Equal(models.ReservablePorts("1024-65535")))
 				})
 			})
+
+			Context("PUT", func() {
+				It("returns router groups", func() {
+					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
+					routerGroups, err := client.RouterGroups()
+					Expect(err).NotTo(HaveOccurred())
+					routerGroup := routerGroups[0]
+
+					routerGroup.ReservablePorts = "6000-8000"
+					err = client.UpdateRouterGroup(routerGroup)
+					Expect(err).NotTo(HaveOccurred())
+
+					routerGroups, err = client.RouterGroups()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(routerGroups[0].ReservablePorts).To(Equal(models.ReservablePorts("6000-8000")))
+				})
+			})
 		})
 	})
 })

@@ -650,121 +650,224 @@ var _ = Describe("DB", func() {
 			})
 		})
 
-		Context("RouterGroup", func() {
-			Context("Save", func() {
-				Context("when router group is missing a guid", func() {
-					It("does not save the router group", func() {
-						routerGroup := models.RouterGroup{
-							Name:            "router-group-1",
-							Type:            "tcp",
-							ReservablePorts: "10-20,25",
-						}
-						err = etcd.SaveRouterGroup(routerGroup)
-						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring("missing guid"))
-					})
+		Describe("ReadRouterGroups", func() {
+			var (
+				routerGroup models.RouterGroup
+			)
+
+			BeforeEach(func() {
+				g, err := uuid.NewV4()
+				Expect(err).NotTo(HaveOccurred())
+				guid := g.String()
+
+				routerGroup = models.RouterGroup{
+					Name:            "router-group-1",
+					Type:            "tcp",
+					Guid:            guid,
+					ReservablePorts: "10-20,25",
+				}
+				err = etcd.SaveRouterGroup(routerGroup)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("can list the router groups", func() {
+				rg, err := etcd.ReadRouterGroups()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(rg)).To(Equal(1))
+				Expect(rg[0]).Should(Equal(routerGroup))
+			})
+
+			Context("when etcd client returns an error", func() {
+				BeforeEach(func() {
+					fakeKeysAPI.GetReturns(nil, errors.New("some error"))
 				})
 
-				Context("when router group does not exist", func() {
-					It("saves the router group", func() {
-						g, err := uuid.NewV4()
-						Expect(err).NotTo(HaveOccurred())
-						guid := g.String()
+				It("returns an error", func() {
+					_, err := fakeEtcd.ReadRouterGroups()
+					Expect(err).To(HaveOccurred())
+				})
 
-						routerGroup := models.RouterGroup{
-							Name:            "router-group-1",
-							Type:            "tcp",
-							Guid:            guid,
-							ReservablePorts: "10-20,25",
-						}
-						err = etcd.SaveRouterGroup(routerGroup)
-						Expect(err).NotTo(HaveOccurred())
+				Context("and the error is a KeyNotFound error", func() {
+					BeforeEach(func() {
+						fakeKeysAPI.GetReturns(nil, client.Error{Code: client.ErrorCodeKeyNotFound})
+					})
 
-						node, err := etcdClient.Get(db.ROUTER_GROUP_BASE_KEY + "/" + guid)
+					It("returns an empty array", func() {
+						groups, err := fakeEtcd.ReadRouterGroups()
 						Expect(err).NotTo(HaveOccurred())
-						Expect(node.TTL).To(Equal(uint64(0)))
-						expected := `{
+						Expect(groups).To(BeEmpty())
+					})
+				})
+			})
+		})
+
+		Describe("ReadRouterGroup", func() {
+			var (
+				routerGroup models.RouterGroup
+			)
+
+			BeforeEach(func() {
+				g, err := uuid.NewV4()
+				Expect(err).NotTo(HaveOccurred())
+				guid := g.String()
+
+				routerGroup = models.RouterGroup{
+					Name:            "router-group-1",
+					Type:            "tcp",
+					Guid:            guid,
+					ReservablePorts: "10-20,25",
+				}
+				err = etcd.SaveRouterGroup(routerGroup)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("can read a router group", func() {
+				rg, err := etcd.ReadRouterGroup(routerGroup.Guid)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(rg).Should(Equal(routerGroup))
+			})
+
+			Context("when etcd client returns an error", func() {
+				BeforeEach(func() {
+					fakeKeysAPI.GetReturns(nil, errors.New("some error"))
+				})
+
+				It("returns an error", func() {
+					_, err := fakeEtcd.ReadRouterGroup(routerGroup.Guid)
+					Expect(err).To(HaveOccurred())
+				})
+
+				Context("and the error is a KeyNotFound error", func() {
+					It("returns an zero-value struct", func() {
+						group, err := etcd.ReadRouterGroup("does-not-exist")
+						Expect(err).NotTo(HaveOccurred())
+						Expect(group).To(Equal(models.RouterGroup{}))
+					})
+				})
+			})
+
+			Context("when the etcd Node fails unmarshal", func() {
+				BeforeEach(func() {
+					resp := &client.Response{
+						Node: &client.Node{
+							Value: "{{}{{{{",
+						},
+					}
+					fakeKeysAPI.GetReturns(resp, nil)
+				})
+
+				It("returns an error", func() {
+					_, err := fakeEtcd.ReadRouterGroup(routerGroup.Guid)
+					Expect(err).To(HaveOccurred())
+				})
+			})
+		})
+
+		Describe("SaveRouterGroup", func() {
+			Context("when router group is missing a guid", func() {
+				It("does not save the router group", func() {
+					routerGroup := models.RouterGroup{
+						Name:            "router-group-1",
+						Type:            "tcp",
+						ReservablePorts: "10-20,25",
+					}
+					err = etcd.SaveRouterGroup(routerGroup)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("missing guid"))
+				})
+			})
+
+			Context("when router group does not exist", func() {
+				It("saves the router group", func() {
+					g, err := uuid.NewV4()
+					Expect(err).NotTo(HaveOccurred())
+					guid := g.String()
+
+					routerGroup := models.RouterGroup{
+						Name:            "router-group-1",
+						Type:            "tcp",
+						Guid:            guid,
+						ReservablePorts: "10-20,25",
+					}
+					err = etcd.SaveRouterGroup(routerGroup)
+					Expect(err).NotTo(HaveOccurred())
+
+					node, err := etcdClient.Get(db.ROUTER_GROUP_BASE_KEY + "/" + guid)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(node.TTL).To(Equal(uint64(0)))
+					expected := `{
 							"name": "router-group-1",
 							"type": "tcp",
 							"guid": "` + guid + `",
 							"reservable_ports": "10-20,25"
 						}`
-						Expect(node.Value).To(MatchJSON(expected))
-					})
+					Expect(node.Value).To(MatchJSON(expected))
+				})
+			})
+
+			Context("when router group does exist", func() {
+				var (
+					guid        string
+					routerGroup models.RouterGroup
+				)
+
+				BeforeEach(func() {
+					g, err := uuid.NewV4()
+					Expect(err).NotTo(HaveOccurred())
+					guid = g.String()
+
+					routerGroup = models.RouterGroup{
+						Name:            "router-group-1",
+						Type:            "tcp",
+						Guid:            guid,
+						ReservablePorts: "10-20,25",
+					}
+					err = etcd.SaveRouterGroup(routerGroup)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
-				Context("when router group does exist", func() {
-					var (
-						guid        string
-						routerGroup models.RouterGroup
-					)
+				It("updates the router group", func() {
+					routerGroup.Type = "http"
+					routerGroup.ReservablePorts = "10-20,25,30"
 
-					BeforeEach(func() {
-						g, err := uuid.NewV4()
-						Expect(err).NotTo(HaveOccurred())
-						guid = g.String()
+					err := etcd.SaveRouterGroup(routerGroup)
+					Expect(err).NotTo(HaveOccurred())
 
-						routerGroup = models.RouterGroup{
-							Name:            "router-group-1",
-							Type:            "tcp",
-							Guid:            guid,
-							ReservablePorts: "10-20,25",
-						}
-						err = etcd.SaveRouterGroup(routerGroup)
-						Expect(err).NotTo(HaveOccurred())
-					})
-
-					It("can list the router groups", func() {
-						rg, err := etcd.ReadRouterGroups()
-						Expect(err).NotTo(HaveOccurred())
-						Expect(len(rg)).To(Equal(1))
-						Expect(rg[0]).Should(Equal(routerGroup))
-					})
-
-					It("updates the router group", func() {
-						routerGroup.Type = "http"
-						routerGroup.ReservablePorts = "10-20,25,30"
-
-						err := etcd.SaveRouterGroup(routerGroup)
-						Expect(err).NotTo(HaveOccurred())
-
-						node, err := etcdClient.Get(db.ROUTER_GROUP_BASE_KEY + "/" + guid)
-						Expect(err).NotTo(HaveOccurred())
-						Expect(node.TTL).To(Equal(uint64(0)))
-						expected := `{
+					node, err := etcdClient.Get(db.ROUTER_GROUP_BASE_KEY + "/" + guid)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(node.TTL).To(Equal(uint64(0)))
+					expected := `{
 							"name": "router-group-1",
 							"type": "http",
 							"guid": "` + guid + `",
 							"reservable_ports": "10-20,25,30"
 						}`
-						Expect(node.Value).To(MatchJSON(expected))
-					})
+					Expect(node.Value).To(MatchJSON(expected))
+				})
 
-					It("does not allow name to be updated", func() {
-						routerGroup.Name = "not-updatable-name"
-						err := etcd.SaveRouterGroup(routerGroup)
-						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring("Name cannot be updated"))
-					})
+				It("does not allow name to be updated", func() {
+					routerGroup.Name = "not-updatable-name"
+					err := etcd.SaveRouterGroup(routerGroup)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Name cannot be updated"))
+				})
 
-					It("does not allow duplicate router groups with same name", func() {
-						guid, err := uuid.NewV4()
-						Expect(err).ToNot(HaveOccurred())
-						routerGroup.Guid = guid.String()
-						err = etcd.SaveRouterGroup(routerGroup)
-						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring("already exists"))
-					})
+				It("does not allow duplicate router groups with same name", func() {
+					guid, err := uuid.NewV4()
+					Expect(err).ToNot(HaveOccurred())
+					routerGroup.Guid = guid.String()
+					err = etcd.SaveRouterGroup(routerGroup)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("already exists"))
+				})
 
-					It("does not allow name to be empty", func() {
-						routerGroup.Name = ""
-						err := etcd.SaveRouterGroup(routerGroup)
-						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring("Name cannot be updated"))
-					})
+				It("does not allow name to be empty", func() {
+					routerGroup.Name = ""
+					err := etcd.SaveRouterGroup(routerGroup)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Name cannot be updated"))
 				})
 			})
-
 		})
 	})
 })
