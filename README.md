@@ -281,12 +281,12 @@ To update a Router Group:
 curl -vvv -H "Authorization: bearer [token with uaa routing.router_groups.write scope]" http://127.0.0.1:8080/routing/v1/router_groups/f7392031-a488-4890-8835-c4a038a3bded -X PUT -d '{"reservable_ports":"9000-10000"}'
 
 Sample response:
-[{
+{
     "guid": "f7392031-a488-4890-8835-c4a038a3bded",
     "name": "default-tcp",
     "reservable_ports":"9000-10000"
     "type": "tcp"
-}]
+}
 ```
 
 **Warning:** If routes are registered for ports that are not in the new range, modifying your load balancer to remove these ports will result in backends for those routes becoming inaccessible.
