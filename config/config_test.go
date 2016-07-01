@@ -136,6 +136,12 @@ router_groups:
 				Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
 			})
 
+			It("does not returns error for ports prefixed with zero", func() {
+				config := testConfig("00003202-4000")
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
 			It("returns error for invalid port", func() {
 				config := testConfig("70000")
 				err := cfg.Initialize([]byte(config), true)
