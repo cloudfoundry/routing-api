@@ -276,7 +276,7 @@ Sample response:
 }]
 ```
 
-To update a Router Group:
+To update a Router Group's `reservable_ports` field with a new port range:
 ```sh
 curl -vvv -H "Authorization: bearer [token with uaa routing.router_groups.write scope]" http://127.0.0.1:8080/routing/v1/router_groups/f7392031-a488-4890-8835-c4a038a3bded -X PUT -d '{"reservable_ports":"9000-10000"}'
 
@@ -289,7 +289,9 @@ Sample response:
 }
 ```
 
-**Warning:** If routes are registered for ports that are not in the new range, modifying your load balancer to remove these ports will result in backends for those routes becoming inaccessible.
+> **Warning:** If routes are registered for ports that are not in the new range,
+> modifying your load balancer to remove these ports will result in backends for
+> those routes becoming inaccessible.
 
 ## Known issues
 
