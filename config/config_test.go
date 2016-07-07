@@ -244,5 +244,19 @@ statsd_client_flush_interval: "10ms"`
 				})
 			})
 		})
+		Context("when there are no router groups seeded in the configuration file", func() {
+
+			testConfig := `log_guid: "my_logs"
+metrics_reporting_interval: "500ms"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"`
+
+			It("does not populates the router group", func() {
+				err := cfg.Initialize([]byte(testConfig), true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.RouterGroups).To(BeNil())
+			})
+
+		})
 	})
 })
