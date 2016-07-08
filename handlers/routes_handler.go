@@ -42,7 +42,11 @@ func (h *RoutesHandler) List(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	encoder := json.NewEncoder(w)
-	encoder.Encode(routes)
+	err = encoder.Encode(routes)
+	if err != nil {
+		handleProcessRequestError(w, err, log)
+		return
+	}
 }
 
 func (h *RoutesHandler) Upsert(w http.ResponseWriter, req *http.Request) {

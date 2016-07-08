@@ -42,7 +42,10 @@ func (h *TcpRouteMappingsHandler) List(w http.ResponseWriter, req *http.Request)
 		return
 	}
 	encoder := json.NewEncoder(w)
-	encoder.Encode(routes)
+	err = encoder.Encode(routes)
+	if err != nil {
+		handleProcessRequestError(w, err, log)
+	}
 }
 
 func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Request) {

@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 
 	"github.com/cloudfoundry-incubator/routing-api/db"
+	"github.com/pivotal-golang/lager"
 )
 
 const (
@@ -28,6 +29,7 @@ type MetricsReporter struct {
 	stats    PartialStatsdClient
 	ticker   *time.Ticker
 	doneChan chan bool
+	logger   lager.Logger
 }
 
 var (
@@ -35,8 +37,8 @@ var (
 	totalKeyRefreshEventCount int64
 )
 
-func NewMetricsReporter(database db.DB, stats PartialStatsdClient, ticker *time.Ticker) *MetricsReporter {
-	return &MetricsReporter{db: database, stats: stats, ticker: ticker}
+func NewMetricsReporter(database db.DB, stats PartialStatsdClient, ticker *time.Ticker, logger lager.Logger) *MetricsReporter {
+	return &MetricsReporter{db: database, stats: stats, ticker: ticker, logger: logger}
 }
 
 func (r *MetricsReporter) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
@@ -45,25 +47,37 @@ func (r *MetricsReporter) Run(signals <-chan os.Signal, ready chan<- struct{}) e
 	close(ready)
 	ready = nil
 
-	r.stats.Gauge(TotalHttpSubscriptions, 0, 1.0)
-	r.stats.Gauge(TotalTcpSubscriptions, 0, 1.0)
+	err := r.stats.Gauge(TotalHttpSubscriptions, 0, 1.0)
+	if err != nil {
+		r.logger.Info("error-streaming-totalhttpsubscriptions-metrics", lager.Data{"error": err})
+	}
+	err = r.stats.Gauge(TotalTcpSubscriptions, 0, 1.0)
+	if err != nil {
+		r.logger.Info("error-streaming-totaltcpsubscriptions-metrics", lager.Data{"error": err})
+	}
 
 	for {
 		select {
 		case event := <-httpEventChan:
 			statsDelta := getStatsEventType(event)
-			r.stats.GaugeDelta(TotalHttpRoutes, statsDelta, 1.0)
+			err = r.stats.GaugeDelta(TotalHttpRoutes, statsDelta, 1.0)
+			if err != nil {
+				r.logger.Info("error-streaming-totalhttpsubscriptions-metrics", lager.Data{"error": err})
+			}
 		case event := <-tcpEventChan:
 			statsDelta := getStatsEventType(event)
-			r.stats.GaugeDelta(TotalTcpRoutes, statsDelta, 1.0)
+			err = r.stats.GaugeDelta(TotalTcpRoutes, statsDelta, 1.0)
+			if err != nil {
+				r.logger.Info("error-streaming-totaltcpsubscriptions-metrics", lager.Data{"error": err})
+			}
 		case <-r.ticker.C:
-			r.stats.Gauge(TotalHttpRoutes, r.getTotalRoutes(), 1.0)
-			r.stats.GaugeDelta(TotalHttpSubscriptions, 0, 1.0)
-			r.stats.Gauge(TotalTcpRoutes, r.getTotalTcpRoutes(), 1.0)
-			r.stats.GaugeDelta(TotalTcpSubscriptions, 0, 1.0)
-
-			r.stats.Gauge(TotalTokenErrors, GetTokenErrors(), 1.0)
-			r.stats.Gauge(KeyRefreshEvents, GetKeyVerificationRefreshCount(), 1.0)
+			err = r.stats.Gauge(TotalHttpRoutes, r.getTotalRoutes(), 1.0)
+			err = r.stats.GaugeDelta(TotalHttpSubscriptions, 0, 1.0)
+			err = r.stats.Gauge(TotalTcpRoutes, r.getTotalTcpRoutes(), 1.0)
+			err = r.stats.GaugeDelta(TotalTcpSubscriptions, 0, 1.0)
+			err = r.stats.Gauge(TotalTokenErrors, GetTokenErrors(), 1.0)
+			err = r.stats.Gauge(KeyRefreshEvents, GetKeyVerificationRefreshCount(), 1.0)
+			r.logger.Info("error-emitting-metrics", lager.Data{"error": err})
 		case <-signals:
 			return nil
 		case err := <-httpErrChan:

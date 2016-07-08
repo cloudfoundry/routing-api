@@ -11,6 +11,7 @@ import (
 	"github.com/cloudfoundry-incubator/routing-api/models"
 	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/coreos/etcd/client"
+	"github.com/pivotal-golang/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -35,7 +36,8 @@ var _ = Describe("Metrics", func() {
 			stats = &fake_statsd.FakePartialStatsdClient{}
 
 			tickChan = make(chan time.Time, 1)
-			reporter = NewMetricsReporter(database, stats, &time.Ticker{C: tickChan})
+			logger := lagertest.NewTestLogger("metrics")
+			reporter = NewMetricsReporter(database, stats, &time.Ticker{C: tickChan}, logger)
 
 			sigChan = make(chan os.Signal, 1)
 			readyChan = make(chan struct{}, 1)

@@ -29,15 +29,23 @@ func NewEventStreamHandler(uaaClient uaaclient.Client, database db.DB, logger la
 }
 
 func (h *EventStreamHandler) EventStream(w http.ResponseWriter, req *http.Request) {
-	h.stats.GaugeDelta(metrics.TotalHttpSubscriptions, 1, 1.0)
-	defer h.stats.GaugeDelta(metrics.TotalHttpSubscriptions, -1, 1.0)
+	err := h.stats.GaugeDelta(metrics.TotalHttpSubscriptions, 1, 1.0)
+	h.logger.Info("error-streaming-totalhttpsubscriptions", lager.Data{"error": err})
+	defer func() {
+		err = h.stats.GaugeDelta(metrics.TotalHttpSubscriptions, -1, 1.0)
+		h.logger.Info("error-streaming-totalhttpsubscriptions", lager.Data{"error": err})
+	}()
 	log := h.logger.Session("event-stream-handler")
 	h.handleEventStream(log, db.HTTP_ROUTE_BASE_KEY, w, req)
 }
 
 func (h *EventStreamHandler) TcpEventStream(w http.ResponseWriter, req *http.Request) {
-	h.stats.GaugeDelta(metrics.TotalTcpSubscriptions, 1, 1.0)
-	defer h.stats.GaugeDelta(metrics.TotalTcpSubscriptions, -1, 1.0)
+	err := h.stats.GaugeDelta(metrics.TotalTcpSubscriptions, 1, 1.0)
+	h.logger.Info("error-streaming-totaltcpsubscriptions", lager.Data{"error": err})
+	defer func() {
+		err = h.stats.GaugeDelta(metrics.TotalTcpSubscriptions, -1, 1.0)
+		h.logger.Info("error-streaming-totaltcpsubscriptions", lager.Data{"error": err})
+	}()
 	log := h.logger.Session("tcp-event-stream-handler")
 	h.handleEventStream(log, db.TCP_MAPPING_BASE_KEY, w, req)
 }

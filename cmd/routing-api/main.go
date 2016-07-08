@@ -71,7 +71,10 @@ func main() {
 	}
 
 	if cfg.DebugAddress != "" {
-		cf_debug_server.Run(cfg.DebugAddress, reconfigurableSink)
+		_, err := cf_debug_server.Run(cfg.DebugAddress, reconfigurableSink)
+		if err != nil {
+			logger.Error("failed to initialize cf debug server", err, lager.Data{"debug_address": cfg.DebugAddress})
+		}
 	}
 
 	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
@@ -105,7 +108,7 @@ func main() {
 	routerRegister := constructRouteRegister(cfg.LogGuid, database, logger.Session("route-register"))
 
 	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
-	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker)
+	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker, logger.Session("metrics"))
 
 	members := grouper.Members{
 		{"api-server", apiServer},
@@ -201,7 +204,7 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 		routing_api.ListRoute:             route(routesHandler.List),
 		routing_api.EventStreamRoute:      route(eventStreamHandler.EventStream),
 		routing_api.ListRouterGroups:      route(routeGroupsHandler.ListRouterGroups),
-		routing_api.UpdateRouterGroup:      route(routeGroupsHandler.UpdateRouterGroup),
+		routing_api.UpdateRouterGroup:     route(routeGroupsHandler.UpdateRouterGroup),
 		routing_api.UpsertTcpRouteMapping: route(tcpMappingsHandler.Upsert),
 		routing_api.DeleteTcpRouteMapping: route(tcpMappingsHandler.Delete),
 		routing_api.ListTcpRouteMapping:   route(tcpMappingsHandler.List),

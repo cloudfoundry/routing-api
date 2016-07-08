@@ -55,7 +55,10 @@ func (h *RouterGroupsHandler) ListRouterGroups(w http.ResponseWriter, req *http.
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonBytes)
+	_, err = w.Write(jsonBytes)
+	if err != nil {
+		log.Error("failed-to-write-to-response", err)
+	}
 	w.Header().Set("Content-Length", strconv.Itoa(len(jsonBytes)))
 }
 
@@ -114,7 +117,10 @@ func (h *RouterGroupsHandler) UpdateRouterGroup(w http.ResponseWriter, req *http
 	addWarningsHeader(w)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonBytes)
+	_, err = w.Write(jsonBytes)
+	if err != nil {
+		log.Error("failed-to-write-to-response", err)
+	}
 	w.Header().Set("Content-Length", strconv.Itoa(len(jsonBytes)))
 }
 

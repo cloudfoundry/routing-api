@@ -118,7 +118,11 @@ func (e *etcd) ReadRoutes() ([]models.Route, error) {
 	listRoutes := []models.Route{}
 	for _, node := range response.Node.Nodes {
 		route := models.Route{}
-		json.Unmarshal([]byte(node.Value), &route)
+		err = json.Unmarshal([]byte(node.Value), &route)
+		if err != nil {
+			return []models.Route{}, nil
+		}
+
 		listRoutes = append(listRoutes, route)
 	}
 	return listRoutes, nil
@@ -296,7 +300,10 @@ func (e *etcd) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	rg, err := e.keysAPI.Get(context.Background(), key, getOpts)
 	if err == nil {
 		current := models.RouterGroup{}
-		json.Unmarshal([]byte(rg.Node.Value), &current)
+		err = json.Unmarshal([]byte(rg.Node.Value), &current)
+		if err != nil {
+			return err
+		}
 		if routerGroup.Name != current.Name {
 			return DBError{Type: NonUpdatableField, Message: "The RouterGroup Name cannot be updated"}
 		}
@@ -342,7 +349,10 @@ func (e *etcd) ReadRouterGroups() (models.RouterGroups, error) {
 	results := []models.RouterGroup{}
 	for _, node := range response.Node.Nodes {
 		routerGroup := models.RouterGroup{}
-		json.Unmarshal([]byte(node.Value), &routerGroup)
+		err = json.Unmarshal([]byte(node.Value), &routerGroup)
+		if err != nil {
+			return models.RouterGroups{}, err
+		}
 		results = append(results, routerGroup)
 	}
 	return results, nil
@@ -370,7 +380,10 @@ func (e *etcd) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
 		for _, externalPortNode := range routerGroupNode.Nodes {
 			for _, mappingNode := range externalPortNode.Nodes {
 				tcpMapping := models.TcpRouteMapping{}
-				json.Unmarshal([]byte(mappingNode.Value), &tcpMapping)
+				err = json.Unmarshal([]byte(mappingNode.Value), &tcpMapping)
+				if err != nil {
+					return []models.TcpRouteMapping{}, nil
+				}
 				listMappings = append(listMappings, tcpMapping)
 			}
 		}

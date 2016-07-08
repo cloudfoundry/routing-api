@@ -15,7 +15,8 @@ func handleProcessRequestError(w http.ResponseWriter, procErr error, log lager.L
 	retErr := marshalRoutingApiError(err, log)
 
 	w.WriteHeader(http.StatusBadRequest)
-	w.Write(retErr)
+	_, writeErr := w.Write(retErr)
+	log.Error("error writing to request", writeErr)
 }
 
 func handleNotFoundError(w http.ResponseWriter, err error, log lager.Logger) {
@@ -23,7 +24,8 @@ func handleNotFoundError(w http.ResponseWriter, err error, log lager.Logger) {
 	retErr := marshalRoutingApiError(routing_api.NewError(routing_api.ResourceNotFoundError, err.Error()), log)
 
 	w.WriteHeader(http.StatusNotFound)
-	w.Write(retErr)
+	_, writeErr := w.Write(retErr)
+	log.Error("error writing to request", writeErr)
 }
 
 func handleApiError(w http.ResponseWriter, apiErr *routing_api.Error, log lager.Logger) {
@@ -31,7 +33,8 @@ func handleApiError(w http.ResponseWriter, apiErr *routing_api.Error, log lager.
 	retErr := marshalRoutingApiError(*apiErr, log)
 
 	w.WriteHeader(http.StatusBadRequest)
-	w.Write(retErr)
+	_, writeErr := w.Write(retErr)
+	log.Error("error writing to request", writeErr)
 }
 
 func handleDBCommunicationError(w http.ResponseWriter, err error, log lager.Logger) {
@@ -39,7 +42,8 @@ func handleDBCommunicationError(w http.ResponseWriter, err error, log lager.Logg
 	retErr := marshalRoutingApiError(routing_api.NewError(routing_api.DBCommunicationError, err.Error()), log)
 
 	w.WriteHeader(http.StatusInternalServerError)
-	w.Write(retErr)
+	_, writeErr := w.Write(retErr)
+	log.Error("error writing to request", writeErr)
 }
 
 func handleUnauthorizedError(w http.ResponseWriter, err error, log lager.Logger) {
@@ -49,7 +53,8 @@ func handleUnauthorizedError(w http.ResponseWriter, err error, log lager.Logger)
 	metrics.IncrementTokenError()
 
 	w.WriteHeader(http.StatusUnauthorized)
-	w.Write(retErr)
+	_, writeErr := w.Write(retErr)
+	log.Error("error writing to request", writeErr)
 }
 
 func handleDBConflictError(w http.ResponseWriter, err error, log lager.Logger) {
@@ -57,7 +62,8 @@ func handleDBConflictError(w http.ResponseWriter, err error, log lager.Logger) {
 	retErr := marshalRoutingApiError(routing_api.NewError(routing_api.DBConflictError, err.Error()), log)
 
 	w.WriteHeader(http.StatusConflict)
-	w.Write(retErr)
+	_, writeErr := w.Write(retErr)
+	log.Error("error writing to request", writeErr)
 }
 
 func marshalRoutingApiError(err routing_api.Error, log lager.Logger) []byte {
