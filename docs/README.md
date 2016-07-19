@@ -224,7 +224,8 @@ curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://127.0.0.1:8080/r
   "router_group_guid": "xyz789",
   "port": 5200,
   "backend_ip": "10.1.1.12",
-  "backend_port": 60000
+  "backend_port": 60000,
+  "ttl": 30
 }]'
 ```
 
@@ -282,7 +283,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v
   Status `200 OK`
 
 #### Expected JSON-Encoded Response Body
-  An array of [`TCP Route Mapping`](#tcp-route-mapping) objects.
+  An array of [`TCP Route Mapping`](#tcp-route-mapping-2) objects.
 
 #### Example Response:
 ```
