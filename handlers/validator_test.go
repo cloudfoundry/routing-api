@@ -129,7 +129,7 @@ var _ = Describe("Validator", func() {
 				err := validator.ValidateCreate(routes, maxTTL)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.RouteServiceUrlInvalidError))
-				Expect(err.Error()).To(ContainSubstring("percent-encoded characters in host"))
+				Expect(err.Error()).To(ContainSubstring("invalid URL escape"))
 			})
 
 			It("returns an error if the route service url path is not valid", func() {
