@@ -39,9 +39,9 @@ func TestDB(t *testing.T) {
 	etcdRunner.Start()
 
 	clientSSLConfig := &etcdstorerunner.SSLConfig{
-		filepath.Join(basePath, "client.crt"),
-		filepath.Join(basePath, "client.key"),
-		filepath.Join(basePath, "etcd-ca.crt"),
+		CertFile: filepath.Join(basePath, "client.crt"),
+		KeyFile:  filepath.Join(basePath, "client.key"),
+		CAFile:   filepath.Join(basePath, "etcd-ca.crt"),
 	}
 	etcdClient = etcdRunner.Adapter(clientSSLConfig)
 
