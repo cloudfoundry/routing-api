@@ -2,8 +2,10 @@ package routing_api
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"sync"
@@ -38,9 +40,23 @@ type Client interface {
 	SubscribeToTcpEventsWithMaxRetries(retries uint16) (TcpEventSource, error)
 }
 
-func NewClient(url string) Client {
+func NewClient(url string, skipTLSVerification bool) Client {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: skipTLSVerification,
+	}
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout:   5 * time.Second,
+				KeepAlive: 0,
+			}).Dial,
+			TLSClientConfig: tlsConfig,
+		},
+		Timeout: 0,
+	}
+
 	return &client{
-		httpClient:          cf_http.NewClient(),
+		httpClient:          httpClient,
 		streamingHTTPClient: cf_http.NewStreamingClient(),
 
 		tokenMutex: &sync.RWMutex{},

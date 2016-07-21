@@ -28,7 +28,7 @@ var _ = Describe("Routes API", func() {
 
 	Describe("API", func() {
 		getRouterGroupGuid := func() string {
-			client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
+			client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 			routerGroups, err := client.RouterGroups()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routerGroups).ToNot(HaveLen(0))
@@ -116,7 +116,7 @@ var _ = Describe("Routes API", func() {
 			})
 			Context("POST", func() {
 				It("allows to create given tcp route mappings", func() {
-					client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
+					client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 					var err error
 					tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
 					tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 1)
@@ -148,7 +148,7 @@ var _ = Describe("Routes API", func() {
 				)
 
 				BeforeEach(func() {
-					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
+					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 					routerGroupGuid = getRouterGroupGuid()
 				})
 
@@ -179,7 +179,7 @@ var _ = Describe("Routes API", func() {
 				)
 
 				JustBeforeEach(func() {
-					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
+					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 
 					tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
 					tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 60)
@@ -201,7 +201,7 @@ var _ = Describe("Routes API", func() {
 		Context("Router Groups", func() {
 			Context("GET (LIST)", func() {
 				It("returns router groups", func() {
-					client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
+					client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 					routerGroups, err := client.RouterGroups()
 					Expect(err).NotTo(HaveOccurred())
 					Expect(len(routerGroups)).To(Equal(1))
@@ -214,7 +214,7 @@ var _ = Describe("Routes API", func() {
 
 			Context("PUT", func() {
 				It("returns router groups", func() {
-					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
+					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 					routerGroups, err := client.RouterGroups()
 					Expect(err).NotTo(HaveOccurred())
 					routerGroup := routerGroups[0]

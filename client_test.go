@@ -51,7 +51,7 @@ var _ = Describe("Client", func() {
 		route1 = models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 55)
 		route2 = models.NewRoute("d.e.f", 35, "2.2.2.2", "banana", "", 66)
 		server = ghttp.NewServer()
-		client = routing_api.NewClient(server.URL())
+		client = routing_api.NewClient(server.URL(), false)
 	})
 
 	AfterEach(func() {

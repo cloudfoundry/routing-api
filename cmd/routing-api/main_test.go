@@ -119,7 +119,7 @@ var _ = Describe("Main", func() {
 		It("closes open event streams when the process exits", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
-			client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort))
+			client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 
 			events, err := client.SubscribeToEvents()
 			Expect(err).ToNot(HaveOccurred())

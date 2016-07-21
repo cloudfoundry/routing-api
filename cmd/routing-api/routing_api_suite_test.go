@@ -93,7 +93,7 @@ var _ = BeforeEach(func() {
 		Host:   routingAPIAddress,
 	}
 
-	client = routing_api.NewClient(routingAPIURL.String())
+	client = routing_api.NewClient(routingAPIURL.String(), false)
 
 	oauthServer = ghttp.NewUnstartedServer()
 	var basePath = path.Join(os.Getenv("GOPATH"), "src", "github.com", "cloudfoundry-incubator", "routing-api", "fixtures", "uaa-certs")
