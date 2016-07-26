@@ -8,6 +8,7 @@ import (
 	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry-incubator/routing-api/models"
 	"github.com/cloudfoundry-incubator/trace-logger"
+	"github.com/vito/go-sse/sse"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,6 +18,7 @@ import (
 var _ = Describe("Client", func() {
 	const (
 		ROUTES_API_URL = "/routing/v1/routes"
+		EVENTS_SSE_URL = "/routing/v1/events"
 	)
 	var server *ghttp.Server
 	var client routing_api.Client
@@ -31,10 +33,26 @@ var _ = Describe("Client", func() {
 	BeforeEach(func() {
 		server = ghttp.NewTLSServer()
 		data, _ := json.Marshal([]models.Route{})
-		server.AppendHandlers(
+		server.RouteToHandler("GET", ROUTES_API_URL,
 			ghttp.CombineHandlers(
 				ghttp.VerifyRequest("GET", ROUTES_API_URL),
 				ghttp.RespondWith(http.StatusOK, data),
+			),
+		)
+
+		event := sse.Event{
+			ID:   "1",
+			Name: "Upsert",
+			Data: data,
+		}
+
+		headers := make(http.Header)
+		headers.Set("Content-Type", "text/event-stream; charset=utf-8")
+
+		server.RouteToHandler("GET", EVENTS_SSE_URL,
+			ghttp.CombineHandlers(
+				ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
+				ghttp.RespondWith(http.StatusOK, event.Encode(), headers),
 			),
 		)
 	})
@@ -53,6 +71,12 @@ var _ = Describe("Client", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("x509: certificate signed by unknown authority"))
 		})
+
+		It("fails to stream events from the Routing API", func() {
+			_, err := client.SubscribeToEventsWithMaxRetries(1)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("x509: certificate signed by unknown authority"))
+		})
 	})
 
 	Context("with skip SSL validation", func() {
@@ -63,6 +87,11 @@ var _ = Describe("Client", func() {
 		It("successfully connect to the Routing API", func() {
 			_, err := client.Routes()
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("streams events from the Routing API", func() {
+			_, err := client.SubscribeToEventsWithMaxRetries(1)
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 })

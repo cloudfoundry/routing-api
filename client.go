@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudfoundry-incubator/cf_http"
 	"github.com/cloudfoundry-incubator/routing-api/models"
 	trace "github.com/cloudfoundry-incubator/trace-logger"
 	"github.com/tedsuo/rata"
@@ -47,17 +46,24 @@ func NewClient(url string, skipTLSVerification bool) Client {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			Dial: (&net.Dialer{
-				Timeout:   5 * time.Second,
-				KeepAlive: 0,
+				Timeout: 5 * time.Second,
 			}).Dial,
 			TLSClientConfig: tlsConfig,
 		},
-		Timeout: 0,
+	}
+	streamingClient := &http.Client{
+		Transport: &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout:   5 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).Dial,
+			TLSClientConfig: tlsConfig,
+		},
 	}
 
 	return &client{
 		httpClient:          httpClient,
-		streamingHTTPClient: cf_http.NewStreamingClient(),
+		streamingHTTPClient: streamingClient,
 
 		tokenMutex: &sync.RWMutex{},
 
