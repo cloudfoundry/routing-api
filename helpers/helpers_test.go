@@ -55,39 +55,37 @@ var _ = Describe("Helpers", func() {
 		})
 
 		Context("registration", func() {
+			It("registers the route for a routing api on init", func() {
+				Eventually(database.SaveRouteCallCount).Should(Equal(1))
+				Eventually(func() models.Route { return database.SaveRouteArgsForCall(0) }).Should(Equal(route))
+			})
 
-			Context("with no errors", func() {
-				BeforeEach(func() {
-					database.SaveRouteStub = func(route models.Route) error {
-						return nil
-					}
+			It("registers on an interval", func() {
+				timeChan <- time.Now()
 
-				})
-
-				It("registers the route for a routing api on init", func() {
-					Eventually(database.SaveRouteCallCount).Should(Equal(1))
-					Eventually(func() models.Route { return database.SaveRouteArgsForCall(0) }).Should(Equal(route))
-				})
-
-				It("registers on an interval", func() {
-					timeChan <- time.Now()
-
-					Eventually(database.SaveRouteCallCount).Should(Equal(2))
-					Eventually(func() models.Route { return database.SaveRouteArgsForCall(1) }).Should(Equal(route))
-					Eventually(logger.Logs).Should(HaveLen(0))
-				})
+				Eventually(database.SaveRouteCallCount).Should(Equal(2))
+				Eventually(func() models.Route { return database.SaveRouteArgsForCall(1) }).Should(Equal(route))
+				Eventually(logger.Logs).Should(HaveLen(0))
 			})
 
 			Context("when there are errors", func() {
 				BeforeEach(func() {
+					var counter int
+					// Do not error during setup phase
 					database.SaveRouteStub = func(route models.Route) error {
-						return errors.New("beep boop, self destruct mode engaged")
+						if counter > 0 {
+							return errors.New("beep boop, self destruct mode engaged")
+						}
+						counter++
+						return nil
 					}
 				})
 
-				It("only logs the error once for each attempt", func() {
+				It("logs the error for each attempt", func() {
+					Consistently(func() int { return len(logger.Logs()) }).Should(Equal(0))
 
-					Consistently(func() int { return len(logger.Logs()) }).Should(BeNumerically("<=", 1))
+					timeChan <- time.Now()
+					Eventually(func() int { return len(logger.Logs()) }).Should(Equal(1))
 					Eventually(func() string {
 						if len(logger.Logs()) > 0 {
 							return logger.Logs()[0].Data["error"].(string)
@@ -95,6 +93,23 @@ var _ = Describe("Helpers", func() {
 							return ""
 						}
 					}).Should(ContainSubstring("beep boop, self destruct mode engaged"))
+
+					timeChan <- time.Now()
+					Eventually(func() int { return len(logger.Logs()) }).Should(Equal(2))
+				})
+
+				Context("during startup", func() {
+					BeforeEach(func() {
+						database.SaveRouteReturns(errors.New("startup error"))
+					})
+
+					It("returns an error immediately", func() {
+						var err error
+						Expect(database.SaveRouteCallCount()).To(Equal(1))
+						waitChan := process.Wait()
+						Eventually(waitChan).Should(Receive(&err))
+						Expect(err.Error()).To(ContainSubstring("startup error"))
+					})
 				})
 			})
 		})

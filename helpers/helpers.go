@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -28,15 +29,17 @@ func NewRouteRegister(database db.DB, route models.Route, ticker *time.Ticker, l
 func (r *RouteRegister) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	err := r.database.SaveRoute(r.route)
 	if err != nil {
-		r.logger.Error("registration-error", err)
+		return fmt.Errorf("registration error: %s", err.Error())
 	}
 	close(ready)
 
 	for {
-
 		select {
 		case <-r.ticker.C:
 			err = r.database.SaveRoute(r.route)
+			if err != nil {
+				r.logger.Error("registration-error", err)
+			}
 		case <-signals:
 			err := r.database.DeleteRoute(r.route)
 			if err != nil {
