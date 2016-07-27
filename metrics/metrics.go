@@ -77,7 +77,9 @@ func (r *MetricsReporter) Run(signals <-chan os.Signal, ready chan<- struct{}) e
 			err = r.stats.GaugeDelta(TotalTcpSubscriptions, 0, 1.0)
 			err = r.stats.Gauge(TotalTokenErrors, GetTokenErrors(), 1.0)
 			err = r.stats.Gauge(KeyRefreshEvents, GetKeyVerificationRefreshCount(), 1.0)
-			r.logger.Info("error-emitting-metrics", lager.Data{"error": err})
+			if err != nil {
+				r.logger.Info("error-emitting-metrics", lager.Data{"error": err})
+			}
 		case <-signals:
 			return nil
 		case err := <-httpErrChan:
