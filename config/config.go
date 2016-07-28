@@ -5,7 +5,8 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/cloudfoundry-incubator/candiedyaml"
+	"gopkg.in/yaml.v2"
+
 	"github.com/cloudfoundry-incubator/routing-api/models"
 )
 
@@ -60,7 +61,7 @@ func NewConfigFromFile(configFile string, authDisabled bool) (Config, error) {
 }
 
 func (cfg *Config) Initialize(file []byte, authDisabled bool) error {
-	err := candiedyaml.Unmarshal(file, &cfg)
+	err := yaml.Unmarshal(file, &cfg)
 	if err != nil {
 		return err
 	}

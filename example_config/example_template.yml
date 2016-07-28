@@ -3,7 +3,7 @@
 log_guid: "my_logs"
 oauth:
   token_endpoint: "127.0.0.1"
-  port: "{{.UAAPort}}"
+  port: {{.UAAPort}}
   skip_ssl_validation: false
   ca_certs: "{{.CACerts}}"
 debug_address: "1.2.3.4:1234"
