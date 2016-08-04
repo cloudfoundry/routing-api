@@ -821,52 +821,27 @@ var _ = Describe("Client", func() {
 	})
 
 	Context("SubscribeToEventsWithMaxRetries", func() {
-		var (
-			retryChannel chan struct{}
-		)
+		var numAttempts int
 
 		BeforeEach(func() {
-			retryChannel = make(chan struct{}, 3)
-			server.AppendHandlers(
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
-					ghttp.VerifyHeader(http.Header{
-						"Authorization": []string{"bearer"},
-					}),
-					func(w http.ResponseWriter, req *http.Request) {
-						server.CloseClientConnections()
-						retryChannel <- struct{}{}
-					},
-				),
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
-					ghttp.VerifyHeader(http.Header{
-						"Authorization": []string{"bearer"},
-					}),
-					func(w http.ResponseWriter, req *http.Request) {
-						server.CloseClientConnections()
-						retryChannel <- struct{}{}
-					},
-				),
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
-					ghttp.VerifyHeader(http.Header{
-						"Authorization": []string{"bearer"},
-					}),
-					func(w http.ResponseWriter, req *http.Request) {
-						server.CloseClientConnections()
-						retryChannel <- struct{}{}
-					},
-				),
+			numAttempts = 0
+			handler := ghttp.CombineHandlers(
+				ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
+				ghttp.VerifyHeader(http.Header{
+					"Authorization": []string{"bearer"},
+				}),
+				func(w http.ResponseWriter, req *http.Request) {
+					numAttempts += 1
+					server.CloseClientConnections()
+				},
 			)
+			server.AppendHandlers(handler, handler, handler)
 		})
 
 		It("returns error", func() {
 			_, err := client.SubscribeToEventsWithMaxRetries(2)
 			Expect(err).To(HaveOccurred())
-			Expect(retryChannel).To(Receive())
-			Expect(retryChannel).To(Receive())
-			Expect(retryChannel).To(Receive())
+			Expect(numAttempts).To(Equal(3))
 		})
 	})
 
@@ -950,53 +925,27 @@ var _ = Describe("Client", func() {
 	})
 
 	Context("SubscribeToTcpEventsWithMaxRetries", func() {
-		var (
-			retryChannel chan struct{}
-		)
+		var numAttempts int
 
 		BeforeEach(func() {
-			retryChannel = make(chan struct{}, 3)
-			server.AppendHandlers(
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", TCP_EVENTS_SSE_URL),
-					ghttp.VerifyHeader(http.Header{
-						"Authorization": []string{"bearer"},
-					}),
-					func(w http.ResponseWriter, req *http.Request) {
-						server.CloseClientConnections()
-						retryChannel <- struct{}{}
-					},
-				),
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", TCP_EVENTS_SSE_URL),
-					ghttp.VerifyHeader(http.Header{
-						"Authorization": []string{"bearer"},
-					}),
-					func(w http.ResponseWriter, req *http.Request) {
-						server.CloseClientConnections()
-						retryChannel <- struct{}{}
-					},
-				),
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", TCP_EVENTS_SSE_URL),
-					ghttp.VerifyHeader(http.Header{
-						"Authorization": []string{"bearer"},
-					}),
-					func(w http.ResponseWriter, req *http.Request) {
-						server.CloseClientConnections()
-						retryChannel <- struct{}{}
-					},
-				),
+			numAttempts = 0
+			handler := ghttp.CombineHandlers(
+				ghttp.VerifyRequest("GET", TCP_EVENTS_SSE_URL),
+				ghttp.VerifyHeader(http.Header{
+					"Authorization": []string{"bearer"},
+				}),
+				func(w http.ResponseWriter, req *http.Request) {
+					numAttempts += 1
+					server.CloseClientConnections()
+				},
 			)
+			server.AppendHandlers(handler, handler, handler)
 		})
 
 		It("returns error", func() {
 			_, err := client.SubscribeToTcpEventsWithMaxRetries(2)
 			Expect(err).To(HaveOccurred())
-			Expect(retryChannel).To(Receive())
-			Expect(retryChannel).To(Receive())
-			Expect(retryChannel).To(Receive())
+			Expect(numAttempts).To(Equal(3))
 		})
 	})
-
 })
