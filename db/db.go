@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/cloudfoundry-incubator/routing-api/config"
-	"github.com/cloudfoundry-incubator/routing-api/models"
+	"code.cloudfoundry.org/routing-api/config"
+	"code.cloudfoundry.org/routing-api/models"
 	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/coreos/etcd/client"
 	"github.com/coreos/etcd/pkg/transport"

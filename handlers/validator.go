@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	routing_api "github.com/cloudfoundry-incubator/routing-api"
-	"github.com/cloudfoundry-incubator/routing-api/models"
+	"code.cloudfoundry.org/routing-api"
+	"code.cloudfoundry.org/routing-api/models"
 )
 
 //go:generate counterfeiter -o fakes/fake_validator.go . RouteValidator

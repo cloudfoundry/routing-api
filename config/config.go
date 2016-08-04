@@ -7,7 +7,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/cloudfoundry-incubator/routing-api/models"
+	"code.cloudfoundry.org/routing-api/models"
 )
 
 type MetronConfig struct {

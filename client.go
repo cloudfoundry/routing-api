@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudfoundry-incubator/routing-api/models"
-	trace "github.com/cloudfoundry-incubator/trace-logger"
+	"code.cloudfoundry.org/routing-api/models"
+	trace "code.cloudfoundry.org/trace-logger"
 	"github.com/tedsuo/rata"
 	"github.com/vito/go-sse/sse"
 )

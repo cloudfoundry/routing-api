@@ -3,8 +3,8 @@ package config_test
 import (
 	"time"
 
-	"github.com/cloudfoundry-incubator/routing-api/config"
-	"github.com/cloudfoundry-incubator/routing-api/models"
+	"code.cloudfoundry.org/routing-api/config"
+	"code.cloudfoundry.org/routing-api/models"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/cloudfoundry-incubator/routing-api/db"
-	"github.com/cloudfoundry-incubator/routing-api/models"
+	"code.cloudfoundry.org/routing-api/db"
+	"code.cloudfoundry.org/routing-api/models"
 	"github.com/pivotal-golang/lager"
 )
 

@@ -4,7 +4,7 @@ package fakes
 import (
 	"sync"
 
-	"github.com/cloudfoundry-incubator/routing-api/metrics"
+	"code.cloudfoundry.org/routing-api/metrics"
 )
 
 type FakePartialStatsdClient struct {

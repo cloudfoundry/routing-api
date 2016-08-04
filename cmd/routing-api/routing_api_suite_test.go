@@ -12,8 +12,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/cloudfoundry-incubator/routing-api"
-	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/testrunner"
+	"code.cloudfoundry.org/routing-api"
+	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"github.com/cloudfoundry/storeadapter"
 	"github.com/cloudfoundry/storeadapter/storerunner/etcdstorerunner"
 	. "github.com/onsi/ginkgo"
@@ -51,7 +51,7 @@ func TestMain(t *testing.T) {
 
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
-		routingAPIBin, err := gexec.Build("github.com/cloudfoundry-incubator/routing-api/cmd/routing-api", "-race")
+		routingAPIBin, err := gexec.Build("code.cloudfoundry.org/routing-api/cmd/routing-api", "-race")
 		Expect(err).NotTo(HaveOccurred())
 		return []byte(routingAPIBin)
 	},
@@ -96,7 +96,9 @@ var _ = BeforeEach(func() {
 	client = routing_api.NewClient(routingAPIURL.String(), false)
 
 	oauthServer = ghttp.NewUnstartedServer()
-	var basePath = path.Join(os.Getenv("GOPATH"), "src", "github.com", "cloudfoundry-incubator", "routing-api", "fixtures", "uaa-certs")
+	basePath, err := filepath.Abs(path.Join("..", "..", "fixtures", "uaa-certs"))
+	Expect(err).ToNot(HaveOccurred())
+
 	cert, err := tls.LoadX509KeyPair(filepath.Join(basePath, "server.pem"), filepath.Join(basePath, "server.key"))
 	Expect(err).ToNot(HaveOccurred())
 	tlsConfig := &tls.Config{
@@ -133,7 +135,8 @@ func createConfig() string {
 		UAAPort string
 		CACerts string
 	}
-	caCertsPath := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "cloudfoundry-incubator", "tcp-emitter", "fixtures", "certs", "uaa-ca.pem")
+	caCertsPath, err := filepath.Abs(filepath.Join("..", "..", "fixtures", "uaa-certs", "uaa-ca.pem"))
+	Expect(err).NotTo(HaveOccurred())
 
 	actualStatsdConfig := customConfig{Port: 8125 + GinkgoParallelNode(), UAAPort: oauthServerPort, CACerts: caCertsPath}
 	workingDir, _ := os.Getwd()

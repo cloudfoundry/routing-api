@@ -6,7 +6,7 @@ import (
 
 	"sync/atomic"
 
-	"github.com/cloudfoundry-incubator/routing-api/db"
+	"code.cloudfoundry.org/routing-api/db"
 	"github.com/pivotal-golang/lager"
 )
 

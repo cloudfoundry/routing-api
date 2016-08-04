@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	routing_api "github.com/cloudfoundry-incubator/routing-api"
-	"github.com/cloudfoundry-incubator/routing-api/metrics"
+	"code.cloudfoundry.org/routing-api"
+	"code.cloudfoundry.org/routing-api/metrics"
 	"github.com/pivotal-golang/lager"
 )
 

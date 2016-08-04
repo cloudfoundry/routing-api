@@ -3,18 +3,18 @@ package handlers_test
 import (
 	"errors"
 
-	fake_client "github.com/cloudfoundry-incubator/uaa-go-client/fakes"
+	fake_client "code.cloudfoundry.org/uaa-go-client/fakes"
 	"github.com/coreos/etcd/client"
 
 	"io"
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/cloudfoundry-incubator/routing-api/db"
-	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
-	"github.com/cloudfoundry-incubator/routing-api/handlers"
-	"github.com/cloudfoundry-incubator/routing-api/metrics"
-	fake_statsd "github.com/cloudfoundry-incubator/routing-api/metrics/fakes"
+	"code.cloudfoundry.org/routing-api/db"
+	fake_db "code.cloudfoundry.org/routing-api/db/fakes"
+	"code.cloudfoundry.org/routing-api/handlers"
+	"code.cloudfoundry.org/routing-api/metrics"
+	fake_statsd "code.cloudfoundry.org/routing-api/metrics/fakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-golang/lager/lagertest"

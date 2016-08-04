@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/cloudfoundry-incubator/routing-api/db"
-	"github.com/cloudfoundry-incubator/routing-api/models"
-	uaaclient "github.com/cloudfoundry-incubator/uaa-go-client"
+	"code.cloudfoundry.org/routing-api/db"
+	"code.cloudfoundry.org/routing-api/models"
+	uaaclient "code.cloudfoundry.org/uaa-go-client"
 	"github.com/pivotal-golang/lager"
 )
 

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path"
 	"path/filepath"
 
@@ -23,10 +22,15 @@ var etcdUrl string
 var etcdRunner *etcdstorerunner.ETCDClusterRunner
 var etcdVersion = "etcdserver\":\"2.1.1"
 var routingAPIBinPath string
-var basePath = path.Join(os.Getenv("GOPATH"), "src", "github.com", "cloudfoundry-incubator", "routing-api", "fixtures", "etcd-certs")
+var basePath string
 
 func TestDB(t *testing.T) {
+	var err error
 	RegisterFailHandler(Fail)
+
+	basePath, err = filepath.Abs(path.Join("..", "fixtures", "etcd-certs"))
+	Expect(err).NotTo(HaveOccurred())
+
 	serverSSLConfig := &etcdstorerunner.SSLConfig{
 		CertFile: filepath.Join(basePath, "server.crt"),
 		KeyFile:  filepath.Join(basePath, "server.key"),

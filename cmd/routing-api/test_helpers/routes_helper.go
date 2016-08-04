@@ -1,6 +1,6 @@
 package test_helpers
 
-import "github.com/cloudfoundry-incubator/routing-api/models"
+import "code.cloudfoundry.org/routing-api/models"
 
 type Routes []models.Route
 

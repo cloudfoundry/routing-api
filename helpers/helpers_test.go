@@ -5,9 +5,9 @@ import (
 	"syscall"
 	"time"
 
-	fake_db "github.com/cloudfoundry-incubator/routing-api/db/fakes"
-	"github.com/cloudfoundry-incubator/routing-api/helpers"
-	"github.com/cloudfoundry-incubator/routing-api/models"
+	fake_db "code.cloudfoundry.org/routing-api/db/fakes"
+	"code.cloudfoundry.org/routing-api/helpers"
+	"code.cloudfoundry.org/routing-api/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-golang/lager/lagertest"

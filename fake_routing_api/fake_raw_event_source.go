@@ -4,7 +4,7 @@ package fake_routing_api
 import (
 	"sync"
 
-	"github.com/cloudfoundry-incubator/routing-api"
+	"code.cloudfoundry.org/routing-api"
 	"github.com/vito/go-sse/sse"
 )
 

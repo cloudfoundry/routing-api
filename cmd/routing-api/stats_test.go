@@ -7,8 +7,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/cloudfoundry-incubator/routing-api/cmd/routing-api/testrunner"
-	"github.com/cloudfoundry-incubator/routing-api/models"
+	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
+	"code.cloudfoundry.org/routing-api/models"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
