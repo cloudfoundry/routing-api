@@ -4,6 +4,8 @@ The initial release of this API server is currently in development and subject t
 
 The purpose of the Routing API is to present a RESTful interface for registering and deregistering routes for both internal and external clients. This allows easier consumption by different clients as well as the ability to register routes from outside of the CF deployment.
 
+**Note**: This repository should be imported as `code.cloudfoundry.org/routing-api`.
+
 ## Downloading and Installing
 
 ### External Dependencies
