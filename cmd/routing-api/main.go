@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"code.cloudfoundry.org/debugserver"
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
@@ -19,17 +21,16 @@ import (
 	uaaclient "code.cloudfoundry.org/uaa-go-client"
 	uaaconfig "code.cloudfoundry.org/uaa-go-client/config"
 	"github.com/cactus/go-statsd-client/statsd"
-	"github.com/cloudfoundry-incubator/cf-debug-server"
 	"github.com/cloudfoundry/dropsonde"
 	"github.com/nu7hatch/gouuid"
-	"github.com/pivotal-golang/lager"
 
-	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
-	"github.com/pivotal-golang/clock"
+	cf_lager "code.cloudfoundry.org/cflager"
+	"code.cloudfoundry.org/clock"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
+
 	"github.com/tedsuo/rata"
 )
 
@@ -71,7 +72,7 @@ func main() {
 	}
 
 	if cfg.DebugAddress != "" {
-		_, err := cf_debug_server.Run(cfg.DebugAddress, reconfigurableSink)
+		_, err := debugserver.Run(cfg.DebugAddress, reconfigurableSink)
 		if err != nil {
 			logger.Error("failed to initialize cf debug server", err, lager.Data{"debug_address": cfg.DebugAddress})
 		}

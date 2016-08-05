@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
 	uaaclient "code.cloudfoundry.org/uaa-go-client"
-	"github.com/pivotal-golang/lager"
 )
 
 type RoutesHandler struct {

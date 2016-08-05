@@ -7,7 +7,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/cloudfoundry-incubator/cf_http"
+	"code.cloudfoundry.org/cfhttp"
 	"github.com/cloudfoundry/storeadapter"
 	"github.com/cloudfoundry/storeadapter/storerunner/etcdstorerunner"
 	. "github.com/onsi/ginkgo"
@@ -57,7 +57,7 @@ func TestDB(t *testing.T) {
 var _ = BeforeSuite(func() {
 	Expect(len(etcdRunner.NodeURLS())).Should(BeNumerically(">=", 1))
 
-	tlsConfig, err := cf_http.NewTLSConfig(
+	tlsConfig, err := cfhttp.NewTLSConfig(
 		filepath.Join(basePath, "client.crt"),
 		filepath.Join(basePath, "client.key"),
 		filepath.Join(basePath, "etcd-ca.crt"))

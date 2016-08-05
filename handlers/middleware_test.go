@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/routing-api/handlers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-golang/lager/lagertest"
 )
 
 var _ = Describe("Middleware", func() {

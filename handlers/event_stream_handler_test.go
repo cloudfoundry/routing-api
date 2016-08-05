@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/routing-api/db"
 	fake_db "code.cloudfoundry.org/routing-api/db/fakes"
 	"code.cloudfoundry.org/routing-api/handlers"
@@ -17,7 +18,6 @@ import (
 	fake_statsd "code.cloudfoundry.org/routing-api/metrics/fakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-golang/lager/lagertest"
 	"github.com/vito/go-sse/sse"
 )
 

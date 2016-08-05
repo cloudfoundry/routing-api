@@ -5,12 +5,12 @@ import (
 	"syscall"
 	"time"
 
+	"code.cloudfoundry.org/lager/lagertest"
 	fake_db "code.cloudfoundry.org/routing-api/db/fakes"
 	"code.cloudfoundry.org/routing-api/helpers"
 	"code.cloudfoundry.org/routing-api/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-golang/lager/lagertest"
 	"github.com/tedsuo/ifrit"
 )
 

@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/routing-api/db"
 	fake_db "code.cloudfoundry.org/routing-api/db/fakes"
 	. "code.cloudfoundry.org/routing-api/metrics"
@@ -11,7 +12,6 @@ import (
 	"code.cloudfoundry.org/routing-api/models"
 	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/coreos/etcd/client"
-	"github.com/pivotal-golang/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

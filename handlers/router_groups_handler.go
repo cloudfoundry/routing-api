@@ -7,10 +7,10 @@ import (
 	"net/url"
 	"strconv"
 
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
 	uaaclient "code.cloudfoundry.org/uaa-go-client"
-	"github.com/pivotal-golang/lager"
 	"github.com/tedsuo/rata"
 )
 

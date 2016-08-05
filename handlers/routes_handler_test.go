@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/db"
 	fake_db "code.cloudfoundry.org/routing-api/db/fakes"
@@ -13,7 +14,6 @@ import (
 	"code.cloudfoundry.org/routing-api/metrics"
 	"code.cloudfoundry.org/routing-api/models"
 	fake_client "code.cloudfoundry.org/uaa-go-client/fakes"
-	"github.com/pivotal-golang/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

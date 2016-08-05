@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/cloudfoundry/dropsonde"
-	"github.com/pivotal-golang/lager"
 )
 
 func LogWrap(handler http.Handler, logger lager.Logger) http.HandlerFunc {

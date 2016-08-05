@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
-	"github.com/pivotal-golang/lager"
 )
 
 type RouteRegister struct {

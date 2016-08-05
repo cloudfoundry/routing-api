@@ -6,8 +6,8 @@ import (
 
 	"sync/atomic"
 
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api/db"
-	"github.com/pivotal-golang/lager"
 )
 
 const (

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/metrics"
-	"github.com/pivotal-golang/lager"
 )
 
 func handleProcessRequestError(w http.ResponseWriter, procErr error, log lager.Logger) {
