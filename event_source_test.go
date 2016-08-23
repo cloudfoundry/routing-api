@@ -18,17 +18,17 @@ import (
 
 var _ = Describe("EventSource", func() {
 
-	var fakeRawEventSource fake_routing_api.FakeRawEventSource
+	var fakeRawEventSource *fake_routing_api.FakeRawEventSource
 
 	BeforeEach(func() {
-		fakeRawEventSource = fake_routing_api.FakeRawEventSource{}
+		fakeRawEventSource = &fake_routing_api.FakeRawEventSource{}
 	})
 
 	Describe("Http events", func() {
 		var eventSource routing_api.EventSource
 
 		BeforeEach(func() {
-			eventSource = routing_api.NewEventSource(&fakeRawEventSource)
+			eventSource = routing_api.NewEventSource(fakeRawEventSource)
 		})
 
 		Describe("Next", func() {
@@ -125,7 +125,7 @@ var _ = Describe("EventSource", func() {
 		var tcpEventSource routing_api.TcpEventSource
 
 		BeforeEach(func() {
-			tcpEventSource = routing_api.NewTcpEventSource(&fakeRawEventSource)
+			tcpEventSource = routing_api.NewTcpEventSource(fakeRawEventSource)
 		})
 
 		Describe("Next", func() {
