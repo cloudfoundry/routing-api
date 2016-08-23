@@ -9,32 +9,15 @@ import (
 	"code.cloudfoundry.org/routing-api"
 	. "code.cloudfoundry.org/routing-api/cmd/routing-api/test_helpers"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
+	"code.cloudfoundry.org/routing-api/config"
+	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Routes API", func() {
-	var routingAPIProcess ifrit.Process
-
-	BeforeEach(func() {
-		routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
-		routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
-	})
-
-	AfterEach(func() {
-		ginkgomon.Kill(routingAPIProcess)
-	})
-
-	Describe("API", func() {
-		getRouterGroupGuid := func() string {
-			client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
-			routerGroups, err := client.RouterGroups()
-			Expect(err).NotTo(HaveOccurred())
-			Expect(routerGroups).ToNot(HaveLen(0))
-			return routerGroups[0].Guid
-		}
-
+	TestHTTPRoutes := func() {
 		Context("HTTP Routes", func() {
 			var routes []models.Route
 			var getErr error
@@ -102,7 +85,8 @@ var _ = Describe("Routes API", func() {
 				})
 			})
 		})
-
+	}
+	TestTCPRoutes := func() {
 		Context("TCP Routes", func() {
 			var (
 				routerGroupGuid string
@@ -110,6 +94,14 @@ var _ = Describe("Routes API", func() {
 				tcpRouteMapping1 models.TcpRouteMapping
 				tcpRouteMapping2 models.TcpRouteMapping
 			)
+
+			getRouterGroupGuid := func() string {
+				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
+				routerGroups, err := client.RouterGroups()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(routerGroups).ToNot(HaveLen(0))
+				return routerGroups[0].Guid
+			}
 
 			BeforeEach(func() {
 				routerGroupGuid = getRouterGroupGuid()
@@ -197,10 +189,11 @@ var _ = Describe("Routes API", func() {
 				})
 			})
 		})
-
+	}
+	TestRouterGroups := func() {
 		Context("Router Groups", func() {
 			Context("GET (LIST)", func() {
-				It("returns router groups", func() {
+				It("returns seeded router groups", func() {
 					client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 					routerGroups, err := client.RouterGroups()
 					Expect(err).NotTo(HaveOccurred())
@@ -213,10 +206,11 @@ var _ = Describe("Routes API", func() {
 			})
 
 			Context("PUT", func() {
-				It("returns router groups", func() {
+				It("returns updated router groups", func() {
 					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 					routerGroups, err := client.RouterGroups()
 					Expect(err).NotTo(HaveOccurred())
+					Expect(len(routerGroups)).To(Equal(1))
 					routerGroup := routerGroups[0]
 
 					routerGroup.ReservablePorts = "6000-8000"
@@ -225,9 +219,74 @@ var _ = Describe("Routes API", func() {
 
 					routerGroups, err = client.RouterGroups()
 					Expect(err).NotTo(HaveOccurred())
+					Expect(len(routerGroups)).To(Equal(1))
 					Expect(routerGroups[0].ReservablePorts).To(Equal(models.ReservablePorts("6000-8000")))
 				})
 			})
 		})
+	}
+
+	cleanupSQLRouterGroups := func() {
+		sqlCfg := config.SqlDB{
+			Username: "root",
+			Password: "password",
+			Schema:   "routing_api",
+			Host:     "localhost",
+			Port:     3306,
+			Type:     "mysql",
+		}
+		dbSQLInterface, err := db.NewSqlDB(&sqlCfg)
+		Expect(err).ToNot(HaveOccurred())
+		dbSQL := dbSQLInterface.(*db.SqlDB)
+		dbSQL.Client.Where("type = ?", "tcp").Delete(models.RouterGroupsDB{})
+	}
+
+	Describe("API with ETCD + MySQL", func() {
+		var routingAPIProcess ifrit.Process
+
+		BeforeEach(func() {
+			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
+		})
+
+		AfterEach(func() {
+			ginkgomon.Kill(routingAPIProcess)
+			cleanupSQLRouterGroups()
+		})
+
+		TestTCPRoutes()
+	})
+
+	Describe("API with MySQL Only", func() {
+		var routingAPIProcess ifrit.Process
+
+		BeforeEach(func() {
+			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
+		})
+
+		AfterEach(func() {
+			ginkgomon.Kill(routingAPIProcess)
+			cleanupSQLRouterGroups()
+		})
+
+		TestRouterGroups()
+	})
+
+	Describe("API with ETCD Only", func() {
+		var routingAPIProcess ifrit.Process
+
+		BeforeEach(func() {
+			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgsNoSQL)
+			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
+		})
+
+		AfterEach(func() {
+			ginkgomon.Kill(routingAPIProcess)
+		})
+
+		TestHTTPRoutes()
+		TestTCPRoutes()
+		TestRouterGroups()
 	})
 })

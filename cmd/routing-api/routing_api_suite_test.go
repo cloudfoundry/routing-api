@@ -35,6 +35,7 @@ var (
 	routingAPIBinPath      string
 	routingAPIAddress      string
 	routingAPIArgs         testrunner.Args
+	routingAPIArgsNoSQL    testrunner.Args
 	routingAPIPort         uint16
 	routingAPIIP           string
 	routingAPISystemDomain string
@@ -65,7 +66,7 @@ var _ = SynchronizedAfterSuite(func() {}, func() {
 	gexec.CleanupBuildArtifacts()
 })
 
-var _ = BeforeEach(func() {
+func setupETCD() {
 	etcdPort = 4001 + GinkgoParallelNode()
 	etcdUrl = fmt.Sprintf("http://127.0.0.1:%d", etcdPort)
 	etcdRunner = etcdstorerunner.NewETCDClusterRunner(etcdPort, 1, nil)
@@ -83,6 +84,17 @@ var _ = BeforeEach(func() {
 	Expect(string(body)).To(ContainSubstring(etcdVersion))
 
 	etcdAdapter = etcdRunner.Adapter(nil)
+
+}
+
+func teardownETCD() {
+	etcdAdapter.Disconnect()
+	etcdRunner.Reset()
+	etcdRunner.Stop()
+	etcdRunner.KillWithFire()
+}
+
+var _ = BeforeEach(func() {
 	routingAPIPort = uint16(6900 + GinkgoParallelNode())
 	routingAPIIP = "127.0.0.1"
 	routingAPISystemDomain = "example.com"
@@ -111,25 +123,33 @@ var _ = BeforeEach(func() {
 
 	oauthServerPort = getServerPort(oauthServer.URL())
 
+	setupETCD()
+
 	routingAPIArgs = testrunner.Args{
 		Port:         routingAPIPort,
 		IP:           routingAPIIP,
 		SystemDomain: routingAPISystemDomain,
-		ConfigPath:   createConfig(),
+		ConfigPath:   createConfig(true),
+		EtcdCluster:  etcdUrl,
+		DevMode:      true,
+	}
+
+	routingAPIArgsNoSQL = testrunner.Args{
+		Port:         routingAPIPort,
+		IP:           routingAPIIP,
+		SystemDomain: routingAPISystemDomain,
+		ConfigPath:   createConfig(false),
 		EtcdCluster:  etcdUrl,
 		DevMode:      true,
 	}
 })
 
 var _ = AfterEach(func() {
-	etcdAdapter.Disconnect()
-	etcdRunner.Reset()
-	etcdRunner.Stop()
 	oauthServer.Close()
-	etcdRunner.KillWithFire()
+	teardownETCD()
 })
 
-func createConfig() string {
+func createConfig(useSQL bool) string {
 	type customConfig struct {
 		Port    int
 		UAAPort string
@@ -139,14 +159,28 @@ func createConfig() string {
 	Expect(err).NotTo(HaveOccurred())
 
 	actualStatsdConfig := customConfig{Port: 8125 + GinkgoParallelNode(), UAAPort: oauthServerPort, CACerts: caCertsPath}
-	workingDir, _ := os.Getwd()
-	template, err := template.ParseFiles(workingDir + "/../../example_config/example_template.yml")
+
+	var templatePath string
+	if useSQL {
+		templatePath, err = filepath.Abs(filepath.Join("..", "..", "example_config", "example_template_sql.yml"))
+	} else {
+		templatePath, err = filepath.Abs(filepath.Join("..", "..", "example_config", "example_template.yml"))
+	}
 	Expect(err).NotTo(HaveOccurred())
-	configFilePath := fmt.Sprintf("/tmp/example_%d.yml", GinkgoParallelNode())
+
+	tmpl, err := template.ParseFiles(templatePath)
+	Expect(err).NotTo(HaveOccurred())
+
+	var configFilePath string
+	if useSQL {
+		configFilePath = fmt.Sprintf("/tmp/example_sql_%d.yml", GinkgoParallelNode())
+	} else {
+		configFilePath = fmt.Sprintf("/tmp/example_%d.yml", GinkgoParallelNode())
+	}
 	configFile, err := os.Create(configFilePath)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = template.Execute(configFile, actualStatsdConfig)
+	err = tmpl.Execute(configFile, actualStatsdConfig)
 	configFile.Close()
 	Expect(err).NotTo(HaveOccurred())
 

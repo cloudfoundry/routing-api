@@ -27,6 +27,9 @@ var _ = Describe("Config", func() {
 					Expect(cfg.OAuth.TokenEndpoint).To(Equal("127.0.0.1"))
 					Expect(cfg.OAuth.Port).To(Equal(3000))
 					Expect(cfg.OAuth.CACerts).To(Equal("some-ca-cert"))
+					Expect(cfg.SqlDB.Username).To(Equal("username"))
+					Expect(cfg.SqlDB.Password).To(Equal("password"))
+					Expect(cfg.SqlDB.Port).To(Equal(1234))
 				})
 
 				Context("when there is no token endpoint specified", func() {

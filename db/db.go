@@ -46,6 +46,50 @@ const (
 
 var ErrorConflict = errors.New("etcd failed to compare")
 
+// jointDB is a database that can choose between querying ETCD or SQL
+type jointDB struct {
+	*etcd
+	sql *SqlDB
+}
+
+var _ DB = jointDB{}
+
+func NewJointDB(etcdDatabase DB, sqlDatabase DB) (DB, error) {
+	e, ok := etcdDatabase.(*etcd)
+	if !ok {
+		return nil, errors.New("JointDB: etcdDatabase is not an ETCD DB")
+	}
+	var s *SqlDB
+	if sqlDatabase != nil {
+		s, ok = sqlDatabase.(*SqlDB)
+		if !ok {
+			return nil, errors.New("JointDB: sqlDatabase is not a SQL DB")
+		}
+	}
+	return jointDB{etcd: e, sql: s}, nil
+}
+
+func (j jointDB) ReadRouterGroups() (models.RouterGroups, error) {
+	if j.sql != nil {
+		return j.sql.ReadRouterGroups()
+	}
+	return j.etcd.ReadRouterGroups()
+}
+
+func (j jointDB) ReadRouterGroup(guid string) (models.RouterGroup, error) {
+	if j.sql != nil {
+		return j.sql.ReadRouterGroup(guid)
+	}
+	return j.etcd.ReadRouterGroup(guid)
+}
+
+func (j jointDB) SaveRouterGroup(routerGroup models.RouterGroup) error {
+	if j.sql != nil {
+		return j.sql.SaveRouterGroup(routerGroup)
+	}
+	return j.etcd.SaveRouterGroup(routerGroup)
+}
+
 type etcd struct {
 	client     client.Client
 	keysAPI    client.KeysAPI

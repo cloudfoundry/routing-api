@@ -1,19 +1,22 @@
 package db_test
 
 import (
+	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"path"
 	"path/filepath"
 
+	"testing"
+
 	"code.cloudfoundry.org/cfhttp"
+	"code.cloudfoundry.org/routing-api/config"
 	"github.com/cloudfoundry/storeadapter"
 	"github.com/cloudfoundry/storeadapter/storerunner/etcdstorerunner"
+	_ "github.com/go-sql-driver/mysql"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"testing"
 )
 
 var etcdClient storeadapter.StoreAdapter
@@ -23,6 +26,9 @@ var etcdRunner *etcdstorerunner.ETCDClusterRunner
 var etcdVersion = "etcdserver\":\"2.1.1"
 var routingAPIBinPath string
 var basePath string
+var sqlCfg *config.SqlDB
+var sqlDBName string
+var sqlDB *sql.DB
 
 func TestDB(t *testing.T) {
 	var err error
@@ -55,6 +61,16 @@ func TestDB(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	sqlDBName = fmt.Sprintf("test%d", GinkgoParallelNode())
+	var err error
+	sqlDB, err = sql.Open("mysql", "root:password@/")
+	Expect(err).NotTo(HaveOccurred())
+	Expect(sqlDB).NotTo(BeNil())
+	Expect(sqlDB.Ping()).NotTo(HaveOccurred())
+
+	_, err = sqlDB.Exec(fmt.Sprintf("CREATE DATABASE %s", sqlDBName))
+	Expect(err).NotTo(HaveOccurred())
+
 	Expect(len(etcdRunner.NodeURLS())).Should(BeNumerically(">=", 1))
 
 	tlsConfig, err := cfhttp.NewTLSConfig(
@@ -78,6 +94,12 @@ var _ = BeforeSuite(func() {
 
 	// response body: {"etcdserver":"2.1.1","etcdcluster":"2.1.0"}
 	Expect(string(body)).To(ContainSubstring(etcdVersion))
+})
+
+var _ = AfterSuite(func() {
+	defer sqlDB.Close()
+	_, err := sqlDB.Exec(fmt.Sprintf("DROP DATABASE %s", sqlDBName))
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = BeforeEach(func() {

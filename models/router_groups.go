@@ -10,11 +10,47 @@ import (
 var InvalidPortError = errors.New("Port must be between 1024 and 65535")
 
 type RouterGroupType string
+
+type RouterGroupsDB []RouterGroupDB
+
+type RouterGroupDB struct {
+	Guid            string `gorm:"primary_key"`
+	Name            string
+	Type            string
+	ReservablePorts string
+}
+
 type RouterGroup struct {
 	Guid            string          `json:"guid"`
 	Name            string          `json:"name"`
 	Type            RouterGroupType `json:"type"`
 	ReservablePorts ReservablePorts `json:"reservable_ports" yaml:"reservable_ports"`
+}
+
+func NewRouterGroupDB(routerGroup RouterGroup) RouterGroupDB {
+	return RouterGroupDB{
+		Guid:            routerGroup.Guid,
+		Name:            routerGroup.Name,
+		Type:            string(routerGroup.Type),
+		ReservablePorts: string(routerGroup.ReservablePorts),
+	}
+}
+
+func (rg *RouterGroupDB) ToRouterGroup() RouterGroup {
+	return RouterGroup{
+		Guid:            rg.Guid,
+		Name:            rg.Name,
+		Type:            RouterGroupType(rg.Type),
+		ReservablePorts: ReservablePorts(rg.ReservablePorts),
+	}
+}
+
+func (rgs RouterGroupsDB) ToRouterGroups() RouterGroups {
+	routerGroups := RouterGroups{}
+	for _, routerGroupDB := range rgs {
+		routerGroups = append(routerGroups, routerGroupDB.ToRouterGroup())
+	}
+	return routerGroups
 }
 
 type RouterGroups []RouterGroup

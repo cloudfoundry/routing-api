@@ -78,21 +78,36 @@ func main() {
 		}
 	}
 
+	var sqlDatabase db.DB
+	var etcdDatabase db.DB
+
 	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
-	database, err := db.NewETCD(flag.Args(), cfg.Etcd)
+	etcdDatabase, err = db.NewETCD(flag.Args(), cfg.Etcd)
 	if err != nil {
-		logger.Error("failed to initialize database", err)
+		logger.Error("failed to initialize etcd database", err)
 		os.Exit(1)
 	}
 
-	err = database.Connect()
+	err = etcdDatabase.Connect()
 	if err != nil {
-		logger.Error("failed to connect to database", err)
+		logger.Error("failed to connect to etcd database", err)
 		os.Exit(1)
 	}
-	defer database.CancelWatches()
+	defer etcdDatabase.CancelWatches()
 
-	// seed router groups (one time only)
+	// Use SQL database if available, otherwise use ETCD
+	if cfg.SqlDB.Host != "" && cfg.SqlDB.Port > 0 && cfg.SqlDB.Schema != "" {
+		sqlDatabase, err = db.NewSqlDB(&cfg.SqlDB)
+		if err != nil {
+			logger.Error("failed to initialize sql db", err)
+		}
+	}
+
+	database, err := db.NewJointDB(etcdDatabase, sqlDatabase)
+	if err != nil {
+		logger.Error("failed to initialize joint (etcd+sql) database", err)
+		os.Exit(1)
+	}
 	seedRouterGroups(cfg, logger, database)
 
 	prefix := "routing_api"
@@ -196,7 +211,7 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 	validator := handlers.NewValidator()
 	routesHandler := handlers.NewRoutesHandler(uaaClient, int(maxTTL.Seconds()), validator, database, logger)
 	eventStreamHandler := handlers.NewEventStreamHandler(uaaClient, database, logger, statsdClient)
-	routeGroupsHandler := handlers.NewRouteGroupsHandler(uaaClient, logger, database)
+	routerGroupsHandler := handlers.NewRouteGroupsHandler(uaaClient, logger, database)
 	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(uaaClient, validator, database, int(maxTTL.Seconds()), logger)
 
 	actions := rata.Handlers{
@@ -204,8 +219,8 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 		routing_api.DeleteRoute:           route(routesHandler.Delete),
 		routing_api.ListRoute:             route(routesHandler.List),
 		routing_api.EventStreamRoute:      route(eventStreamHandler.EventStream),
-		routing_api.ListRouterGroups:      route(routeGroupsHandler.ListRouterGroups),
-		routing_api.UpdateRouterGroup:     route(routeGroupsHandler.UpdateRouterGroup),
+		routing_api.ListRouterGroups:      route(routerGroupsHandler.ListRouterGroups),
+		routing_api.UpdateRouterGroup:     route(routerGroupsHandler.UpdateRouterGroup),
 		routing_api.UpsertTcpRouteMapping: route(tcpMappingsHandler.Upsert),
 		routing_api.DeleteTcpRouteMapping: route(tcpMappingsHandler.Delete),
 		routing_api.ListTcpRouteMapping:   route(tcpMappingsHandler.List),

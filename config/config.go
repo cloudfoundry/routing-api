@@ -24,6 +24,15 @@ type OAuthConfig struct {
 	CACerts           string `yaml:"ca_certs"`
 }
 
+type SqlDB struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Schema   string `yaml:"schema"`
+	Type     string `yaml:"type"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
+
 type Etcd struct {
 	CertFile   string `yaml:"cert_file"`
 	KeyFile    string `yaml:"key_file"`
@@ -43,6 +52,7 @@ type Config struct {
 	OAuth                           OAuthConfig         `yaml:"oauth"`
 	RouterGroups                    models.RouterGroups `yaml:"router_groups"`
 	Etcd                            Etcd                `yaml:"etcd"`
+	SqlDB                           SqlDB               `yaml:"sqldb"`
 }
 
 func NewConfigFromFile(configFile string, authDisabled bool) (Config, error) {

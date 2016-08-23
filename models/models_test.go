@@ -1,6 +1,8 @@
 package models_test
 
 import (
+	"encoding/json"
+
 	. "code.cloudfoundry.org/routing-api/models"
 
 	. "github.com/onsi/ginkgo"
@@ -437,7 +439,22 @@ var _ = Describe("Models", func() {
 					Expect(matches).To(BeFalse())
 				})
 			})
+
+			Context("multiple annotations", func() {
+				It("return router group object", func() {
+					jsonStr :=
+						`
+{ "guid": "some-guid",
+	"name": "name"
+}
+`
+					rg := RouterGroup{}
+					err := json.Unmarshal([]byte(jsonStr), &rg)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(rg.Guid).To(Equal("some-guid"))
+					Expect(rg.Name).To(Equal("name"))
+				})
+			})
 		})
 	})
-
 })
