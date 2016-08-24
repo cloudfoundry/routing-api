@@ -55,57 +55,57 @@ func main() {
 
 	err := checkFlags()
 	if err != nil {
-		logger.Error("failed to start", err)
+		logger.Error("failed-check-flags", err)
 		os.Exit(1)
 	}
 
 	cfg, err := config.NewConfigFromFile(*configPath, *devMode)
 	if err != nil {
-		logger.Error("failed to start", err)
+		logger.Error("failed-load-config", err)
 		os.Exit(1)
 	}
 
 	err = dropsonde.Initialize(cfg.MetronConfig.Address+":"+cfg.MetronConfig.Port, cfg.LogGuid)
 	if err != nil {
-		logger.Error("failed to initialize Dropsonde", err)
+		logger.Error("failed-initialize-dropsonde", err)
 		os.Exit(1)
 	}
 
 	if cfg.DebugAddress != "" {
 		_, err := debugserver.Run(cfg.DebugAddress, reconfigurableSink)
 		if err != nil {
-			logger.Error("failed to initialize cf debug server", err, lager.Data{"debug_address": cfg.DebugAddress})
+			logger.Error("failed-debug-server", err, lager.Data{"debug_address": cfg.DebugAddress})
 		}
 	}
 
 	var sqlDatabase db.DB
 	var etcdDatabase db.DB
 
+	// Use SQL database if available, otherwise use ETCD
+	if cfg.SqlDB.Host != "" && cfg.SqlDB.Port > 0 && cfg.SqlDB.Schema != "" {
+		sqlDatabase, err = db.NewSqlDB(&cfg.SqlDB)
+		if err != nil {
+			logger.Error("failed-initialize-sql-connection", err, lager.Data{"host": cfg.SqlDB.Host, "port": cfg.SqlDB.Port})
+		}
+	}
+
 	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
 	etcdDatabase, err = db.NewETCD(flag.Args(), cfg.Etcd)
 	if err != nil {
-		logger.Error("failed to initialize etcd database", err)
+		logger.Error("failed-initialize-etcd-db", err)
 		os.Exit(1)
 	}
 
 	err = etcdDatabase.Connect()
 	if err != nil {
-		logger.Error("failed to connect to etcd database", err)
+		logger.Error("failed-etcd-connection", err)
 		os.Exit(1)
 	}
 	defer etcdDatabase.CancelWatches()
 
-	// Use SQL database if available, otherwise use ETCD
-	if cfg.SqlDB.Host != "" && cfg.SqlDB.Port > 0 && cfg.SqlDB.Schema != "" {
-		sqlDatabase, err = db.NewSqlDB(&cfg.SqlDB)
-		if err != nil {
-			logger.Error("failed to initialize sql db", err)
-		}
-	}
-
 	database, err := db.NewJointDB(etcdDatabase, sqlDatabase)
 	if err != nil {
-		logger.Error("failed to initialize joint (etcd+sql) database", err)
+		logger.Error("failed-initialize-database", err)
 		os.Exit(1)
 	}
 	seedRouterGroups(cfg, logger, database)

@@ -85,6 +85,12 @@ var _ = Describe("Main", func() {
 		Eventually(session).Should(Say("Failed to get verification key from UAA"))
 	})
 
+	It("exits 1 if the SQL db fails to initialize", func() {
+		session = RoutingApi("-config=../../example_config/example.yml", "-ip='1.1.1.1'", "--systemDomain=example.com", "1.1.1.1:1111")
+		Eventually(session).Should(Exit(1))
+		Eventually(session).Should(Say("failed-initialize-sql-connection"))
+	})
+
 	Context("when initialized correctly and etcd is running", func() {
 		BeforeEach(func() {
 			oauthServer.AppendHandlers(
