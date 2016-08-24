@@ -20,7 +20,7 @@ router_groups:
 sqldb:
   username: "root"
   password: "password"
-  schema: "routing_api"
+  schema: "routing_api_test"
   port: 3306
   host: "localhost"
   type: "mysql"

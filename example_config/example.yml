@@ -14,6 +14,6 @@ statsd_client_flush_interval: "10ms"
 sqldb:
   username: "username"
   password: "password"
-  schema: "routing_api"
+  schema: "routing_api_test"
   port: 1234
   host: "localhost"
