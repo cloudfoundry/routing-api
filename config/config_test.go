@@ -29,6 +29,7 @@ var _ = Describe("Config", func() {
 					Expect(cfg.SqlDB.Username).To(Equal("username"))
 					Expect(cfg.SqlDB.Password).To(Equal("password"))
 					Expect(cfg.SqlDB.Port).To(Equal(1234))
+					Expect(cfg.Etcd.NodeURLS).To(Equal([]string{"http://localhost:1234"}))
 				})
 
 				Context("when there is no token endpoint specified", func() {

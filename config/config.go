@@ -34,10 +34,11 @@ type SqlDB struct {
 }
 
 type Etcd struct {
-	CertFile   string `yaml:"cert_file"`
-	KeyFile    string `yaml:"key_file"`
-	CAFile     string `yaml:"ca_file"`
-	RequireSSL bool   `yaml:"require_ssl"`
+	CertFile   string   `yaml:"cert_file"`
+	KeyFile    string   `yaml:"key_file"`
+	CAFile     string   `yaml:"ca_file"`
+	RequireSSL bool     `yaml:"require_ssl"`
+	NodeURLS   []string `yaml:"node_urls"`
 }
 
 type Config struct {

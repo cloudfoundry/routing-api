@@ -11,7 +11,6 @@ type Args struct {
 	Port         uint16
 	ConfigPath   string
 	DevMode      bool
-	EtcdCluster  string
 	IP           string
 	SystemDomain string
 }
@@ -24,7 +23,6 @@ func (args Args) ArgSlice() []string {
 		"-config", args.ConfigPath,
 		"-logLevel=debug",
 		"-devMode=" + strconv.FormatBool(args.DevMode),
-		args.EtcdCluster,
 	}
 }
 

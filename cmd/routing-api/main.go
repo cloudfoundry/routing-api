@@ -89,8 +89,8 @@ func main() {
 		}
 	}
 
-	logger.Info("database", lager.Data{"etcd-addresses": flag.Args()})
-	etcdDatabase, err = db.NewETCD(flag.Args(), cfg.Etcd)
+	logger.Info("database", lager.Data{"etcd-addresses": cfg.Etcd.NodeURLS})
+	etcdDatabase, err = db.NewETCD(cfg.Etcd)
 	if err != nil {
 		logger.Error("failed-initialize-etcd-db", err)
 		os.Exit(1)

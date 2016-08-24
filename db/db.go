@@ -97,7 +97,7 @@ type etcd struct {
 	cancelFunc context.CancelFunc
 }
 
-func NewETCD(nodeURLs []string, conf config.Etcd) (DB, error) {
+func NewETCD(conf config.Etcd) (DB, error) {
 	var tr client.CancelableTransport
 	var err error
 	if conf.RequireSSL {
@@ -115,7 +115,7 @@ func NewETCD(nodeURLs []string, conf config.Etcd) (DB, error) {
 	}
 
 	cfg := client.Config{
-		Endpoints: nodeURLs,
+		Endpoints: conf.NodeURLS,
 		Transport: tr,
 	}
 

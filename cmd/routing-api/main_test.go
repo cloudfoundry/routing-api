@@ -86,7 +86,7 @@ var _ = Describe("Main", func() {
 	})
 
 	It("exits 1 if the SQL db fails to initialize", func() {
-		session = RoutingApi("-config=../../example_config/example.yml", "-ip='1.1.1.1'", "--systemDomain=example.com", "1.1.1.1:1111")
+		session = RoutingApi("-config=../../example_config/example.yml", "-ip='1.1.1.1'", "--systemDomain=example.com")
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("failed-initialize-sql-connection"))
 	})

@@ -130,7 +130,6 @@ var _ = BeforeEach(func() {
 		IP:           routingAPIIP,
 		SystemDomain: routingAPISystemDomain,
 		ConfigPath:   createConfig(true),
-		EtcdCluster:  etcdUrl,
 		DevMode:      true,
 	}
 
@@ -139,7 +138,6 @@ var _ = BeforeEach(func() {
 		IP:           routingAPIIP,
 		SystemDomain: routingAPISystemDomain,
 		ConfigPath:   createConfig(false),
-		EtcdCluster:  etcdUrl,
 		DevMode:      true,
 	}
 })
@@ -151,14 +149,20 @@ var _ = AfterEach(func() {
 
 func createConfig(useSQL bool) string {
 	type customConfig struct {
-		Port    int
-		UAAPort string
-		CACerts string
+		EtcdPort int
+		Port     int
+		UAAPort  string
+		CACerts  string
 	}
 	caCertsPath, err := filepath.Abs(filepath.Join("..", "..", "fixtures", "uaa-certs", "uaa-ca.pem"))
 	Expect(err).NotTo(HaveOccurred())
 
-	actualStatsdConfig := customConfig{Port: 8125 + GinkgoParallelNode(), UAAPort: oauthServerPort, CACerts: caCertsPath}
+	actualStatsdConfig := customConfig{
+		Port:     8125 + GinkgoParallelNode(),
+		UAAPort:  oauthServerPort,
+		CACerts:  caCertsPath,
+		EtcdPort: etcdPort,
+	}
 
 	var templatePath string
 	if useSQL {

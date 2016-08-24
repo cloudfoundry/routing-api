@@ -17,3 +17,5 @@ sqldb:
   schema: "routing_api_test"
   port: 1234
   host: "localhost"
+etcd:
+  node_urls: ["http://localhost:1234"]

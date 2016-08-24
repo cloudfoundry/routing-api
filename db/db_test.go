@@ -26,7 +26,7 @@ var _ = Describe("DB", func() {
 		)
 
 		BeforeEach(func() {
-			etcd, err = db.NewETCD([]string{}, config.Etcd{})
+			etcd, err = db.NewETCD(config.Etcd{})
 		})
 
 		It("should not return an etcd instance", func() {
@@ -42,7 +42,7 @@ var _ = Describe("DB", func() {
 		)
 
 		BeforeEach(func() {
-			etcd, err = db.NewETCD([]string{"im-not-really-running"}, config.Etcd{})
+			etcd, err = db.NewETCD(config.Etcd{NodeURLS: []string{"im-not-really-running"}})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -68,8 +68,9 @@ var _ = Describe("DB", func() {
 				CertFile:   filepath.Join(basePath, "client.crt"),
 				KeyFile:    filepath.Join(basePath, "client.key"),
 				CAFile:     filepath.Join(basePath, "etcd-ca.crt"),
+				NodeURLS:   etcdRunner.NodeURLS(),
 			}
-			etcd, err = db.NewETCD(etcdRunner.NodeURLS(), etcdConfig)
+			etcd, err = db.NewETCD(etcdConfig)
 			Expect(err).NotTo(HaveOccurred())
 			route = models.NewRoute("post_here", 7000, "1.2.3.4", "my-guid", "https://rs.com", 50)
 			fakeKeysAPI = &fakes.FakeKeysAPI{}
