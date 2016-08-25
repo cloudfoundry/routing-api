@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"crypto/tls"
+	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -41,6 +42,9 @@ var (
 	routingAPISystemDomain string
 	oauthServer            *ghttp.Server
 	oauthServerPort        string
+
+	sqlDBName string
+	sqlDB     *sql.DB
 )
 
 var etcdVersion = "etcdserver\":\"2.1.1"
@@ -59,12 +63,34 @@ var _ = SynchronizedBeforeSuite(
 	func(routingAPIBin []byte) {
 		routingAPIBinPath = string(routingAPIBin)
 		SetDefaultEventuallyTimeout(15 * time.Second)
+		createSqlDatabase()
 	},
 )
 
-var _ = SynchronizedAfterSuite(func() {}, func() {
-	gexec.CleanupBuildArtifacts()
-})
+var _ = SynchronizedAfterSuite(func() {
+	dropSqlDatabase()
+},
+	func() {
+		gexec.CleanupBuildArtifacts()
+	})
+
+func createSqlDatabase() {
+	var err error
+	sqlDBName = fmt.Sprintf("test%d", GinkgoParallelNode())
+	sqlDB, err = sql.Open("mysql", "root:password@/")
+	Expect(err).NotTo(HaveOccurred())
+	Expect(sqlDB).NotTo(BeNil())
+	Expect(sqlDB.Ping()).NotTo(HaveOccurred())
+
+	_, err = sqlDB.Exec(fmt.Sprintf("CREATE DATABASE %s", sqlDBName))
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func dropSqlDatabase() {
+	defer sqlDB.Close()
+	_, err := sqlDB.Exec(fmt.Sprintf("DROP DATABASE %s", sqlDBName))
+	Expect(err).NotTo(HaveOccurred())
+}
 
 func setupETCD() {
 	etcdPort = 4001 + GinkgoParallelNode()
@@ -94,7 +120,7 @@ func teardownETCD() {
 	etcdRunner.KillWithFire()
 }
 
-var _ = BeforeEach(func() {
+func routingApiClient() routing_api.Client {
 	routingAPIPort = uint16(6900 + GinkgoParallelNode())
 	routingAPIIP = "127.0.0.1"
 	routingAPISystemDomain = "example.com"
@@ -105,8 +131,10 @@ var _ = BeforeEach(func() {
 		Host:   routingAPIAddress,
 	}
 
-	client = routing_api.NewClient(routingAPIURL.String(), false)
+	return routing_api.NewClient(routingAPIURL.String(), false)
+}
 
+func setupOauthServer() {
 	oauthServer = ghttp.NewUnstartedServer()
 	basePath, err := filepath.Abs(path.Join("..", "..", "fixtures", "uaa-certs"))
 	Expect(err).ToNot(HaveOccurred())
@@ -122,8 +150,12 @@ var _ = BeforeEach(func() {
 	oauthServer.HTTPTestServer.StartTLS()
 
 	oauthServerPort = getServerPort(oauthServer.URL())
+}
 
+var _ = BeforeEach(func() {
+	client = routingApiClient()
 	setupETCD()
+	setupOauthServer()
 
 	routingAPIArgs = testrunner.Args{
 		Port:       routingAPIPort,
@@ -151,15 +183,17 @@ func createConfig(useSQL bool) string {
 		Port     int
 		UAAPort  string
 		CACerts  string
+		Schema   string
 	}
 	caCertsPath, err := filepath.Abs(filepath.Join("..", "..", "fixtures", "uaa-certs", "uaa-ca.pem"))
 	Expect(err).NotTo(HaveOccurred())
 
-	actualStatsdConfig := customConfig{
+	actualConfig := customConfig{
 		Port:     8125 + GinkgoParallelNode(),
 		UAAPort:  oauthServerPort,
 		CACerts:  caCertsPath,
 		EtcdPort: etcdPort,
+		Schema:   sqlDBName,
 	}
 
 	var templatePath string
@@ -182,7 +216,7 @@ func createConfig(useSQL bool) string {
 	configFile, err := os.Create(configFilePath)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = tmpl.Execute(configFile, actualStatsdConfig)
+	err = tmpl.Execute(configFile, actualConfig)
 	configFile.Close()
 	Expect(err).NotTo(HaveOccurred())
 

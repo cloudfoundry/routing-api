@@ -230,7 +230,7 @@ var _ = Describe("Routes API", func() {
 		sqlCfg := config.SqlDB{
 			Username: "root",
 			Password: "password",
-			Schema:   "routing_api_test",
+			Schema:   sqlDBName,
 			Host:     "localhost",
 			Port:     3306,
 			Type:     "mysql",

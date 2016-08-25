@@ -81,9 +81,11 @@ func main() {
 
 	// Use SQL database if available, otherwise use ETCD
 	if cfg.SqlDB.Host != "" && cfg.SqlDB.Port > 0 && cfg.SqlDB.Schema != "" {
+		data := lager.Data{"host": cfg.SqlDB.Host, "port": cfg.SqlDB.Port}
+		logger.Info("sql-database", data)
 		sqlDatabase, err = db.NewSqlDB(&cfg.SqlDB)
 		if err != nil {
-			logger.Error("failed-initialize-sql-connection", err, lager.Data{"host": cfg.SqlDB.Host, "port": cfg.SqlDB.Port})
+			logger.Error("failed-initialize-sql-connection", err, data)
 		}
 	}
 

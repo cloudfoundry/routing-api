@@ -23,7 +23,7 @@ etcd:
 sqldb:
   username: "root"
   password: "password"
-  schema: "routing_api_test"
+  schema: "{{.Schema}}"
   port: 3306
   host: "localhost"
   type: "mysql"
