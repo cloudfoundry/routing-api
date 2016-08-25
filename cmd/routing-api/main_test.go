@@ -46,15 +46,9 @@ var _ = Describe("Main", func() {
 	})
 
 	It("exits 1 if an illegal port number is provided", func() {
-		session = RoutingApi("-port=65538", "-config=../../example_config/example.yml", "-ip='127.0.0.1'", "-systemDomain='domain")
+		session = RoutingApi("-port=65538", "-config=../../example_config/example.yml", "-ip='127.0.0.1'")
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("Port must be in range 0 - 65535"))
-	})
-
-	It("exits 1 if no system domain is provided", func() {
-		session = RoutingApi("-config=../../example_config/example.yml", "-ip='1.1.1.1'")
-		Eventually(session).Should(Exit(1))
-		Eventually(session).Should(Say("No system domain provided"))
 	})
 
 	It("exits 1 if the uaa_verification_key is not a valid PEM format", func() {
@@ -86,7 +80,7 @@ var _ = Describe("Main", func() {
 	})
 
 	It("exits 1 if the SQL db fails to initialize", func() {
-		session = RoutingApi("-config=../../example_config/example.yml", "-ip='1.1.1.1'", "--systemDomain=example.com")
+		session = RoutingApi("-config=../../example_config/example.yml", "-ip='1.1.1.1'")
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("failed-initialize-sql-connection"))
 	})

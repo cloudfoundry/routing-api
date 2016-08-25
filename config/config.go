@@ -45,6 +45,8 @@ type Config struct {
 	DebugAddress                    string              `yaml:"debug_address"`
 	LogGuid                         string              `yaml:"log_guid"`
 	MetronConfig                    MetronConfig        `yaml:"metron_config"`
+	MaxTTL                          time.Duration       `yaml:"max_ttl"`
+	SystemDomain                    string              `yaml:"system_domain"`
 	MetricsReportingIntervalString  string              `yaml:"metrics_reporting_interval"`
 	MetricsReportingInterval        time.Duration       `yaml:"-"`
 	StatsdEndpoint                  string              `yaml:"statsd_endpoint"`
@@ -75,6 +77,10 @@ func (cfg *Config) Initialize(file []byte, authDisabled bool) error {
 	err := yaml.Unmarshal(file, &cfg)
 	if err != nil {
 		return err
+	}
+
+	if cfg.SystemDomain == "" {
+		return errors.New("No system_domain specified")
 	}
 
 	if cfg.LogGuid == "" {
@@ -110,6 +116,10 @@ func (cfg *Config) process() error {
 		return err
 	}
 	cfg.StatsdClientFlushInterval = statsdClientFlushInterval
+
+	if cfg.MaxTTL == 0 {
+		cfg.MaxTTL = 2 * time.Minute
+	}
 
 	if err := cfg.RouterGroups.Validate(); err != nil {
 		return err

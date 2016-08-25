@@ -10,6 +10,8 @@ metron_config:
   port: "4567"
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
+system_domain: "example.com"
+max_ttl: "2m"
 statsd_client_flush_interval: "10ms"
 sqldb:
   username: "username"

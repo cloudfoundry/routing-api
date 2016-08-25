@@ -36,12 +36,10 @@ import (
 
 const DEFAULT_ETCD_WORKERS = 25
 
-var maxTTL = flag.Duration("maxTTL", 2*time.Minute, "Maximum TTL on the route")
 var port = flag.Uint("port", 8080, "Port to run rounting-api server on")
 var configPath = flag.String("config", "", "Configuration for routing-api")
 var devMode = flag.Bool("devMode", false, "Disable authentication for easier development iteration")
 var ip = flag.String("ip", "", "The public ip of the routing api")
-var systemDomain = flag.String("systemDomain", "", "System domain that the routing api should register on")
 
 func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 	return http.HandlerFunc(f)
@@ -121,7 +119,13 @@ func main() {
 	apiServer := constructApiServer(cfg, database, statsdClient, logger.Session("api-server"))
 	stopper := constructStopper(database)
 
-	routerRegister := constructRouteRegister(cfg.LogGuid, database, logger.Session("route-register"))
+	routerRegister := constructRouteRegister(
+		cfg.LogGuid,
+		cfg.SystemDomain,
+		cfg.MaxTTL,
+		database,
+		logger.Session("route-register"),
+	)
 
 	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
 	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker, logger.Session("metrics"))
@@ -184,8 +188,14 @@ func constructStopper(database db.DB) ifrit.Runner {
 	})
 }
 
-func constructRouteRegister(logGuid string, database db.DB, logger lager.Logger) ifrit.Runner {
-	host := fmt.Sprintf("api.%s/routing", *systemDomain)
+func constructRouteRegister(
+	logGuid string,
+	systemDomain string,
+	maxTTL time.Duration,
+	database db.DB,
+	logger lager.Logger,
+) ifrit.Runner {
+	host := fmt.Sprintf("api.%s/routing", systemDomain)
 	route := models.NewRoute(host, uint16(*port), *ip, logGuid, "", int(maxTTL.Seconds()))
 
 	registerInterval := int(maxTTL.Seconds()) / 2
@@ -209,10 +219,10 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 	}
 
 	validator := handlers.NewValidator()
-	routesHandler := handlers.NewRoutesHandler(uaaClient, int(maxTTL.Seconds()), validator, database, logger)
+	routesHandler := handlers.NewRoutesHandler(uaaClient, int(cfg.MaxTTL.Seconds()), validator, database, logger)
 	eventStreamHandler := handlers.NewEventStreamHandler(uaaClient, database, logger, statsdClient)
 	routerGroupsHandler := handlers.NewRouteGroupsHandler(uaaClient, logger, database)
-	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(uaaClient, validator, database, int(maxTTL.Seconds()), logger)
+	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(uaaClient, validator, database, int(cfg.MaxTTL.Seconds()), logger)
 
 	actions := rata.Handlers{
 		routing_api.UpsertRoute:           route(routesHandler.Upsert),
@@ -264,10 +274,6 @@ func checkFlags() error {
 
 	if *ip == "" {
 		return errors.New("No ip address provided")
-	}
-
-	if *systemDomain == "" {
-		return errors.New("No system domain provided")
 	}
 
 	if *port > 65535 {

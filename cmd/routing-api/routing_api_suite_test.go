@@ -126,19 +126,17 @@ var _ = BeforeEach(func() {
 	setupETCD()
 
 	routingAPIArgs = testrunner.Args{
-		Port:         routingAPIPort,
-		IP:           routingAPIIP,
-		SystemDomain: routingAPISystemDomain,
-		ConfigPath:   createConfig(true),
-		DevMode:      true,
+		Port:       routingAPIPort,
+		IP:         routingAPIIP,
+		ConfigPath: createConfig(true),
+		DevMode:    true,
 	}
 
 	routingAPIArgsNoSQL = testrunner.Args{
-		Port:         routingAPIPort,
-		IP:           routingAPIIP,
-		SystemDomain: routingAPISystemDomain,
-		ConfigPath:   createConfig(false),
-		DevMode:      true,
+		Port:       routingAPIPort,
+		IP:         routingAPIIP,
+		ConfigPath: createConfig(false),
+		DevMode:    true,
 	}
 })
 

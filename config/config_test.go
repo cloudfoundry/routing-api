@@ -26,9 +26,11 @@ var _ = Describe("Config", func() {
 					Expect(cfg.OAuth.TokenEndpoint).To(Equal("127.0.0.1"))
 					Expect(cfg.OAuth.Port).To(Equal(3000))
 					Expect(cfg.OAuth.CACerts).To(Equal("some-ca-cert"))
+					Expect(cfg.SystemDomain).To(Equal("example.com"))
 					Expect(cfg.SqlDB.Username).To(Equal("username"))
 					Expect(cfg.SqlDB.Password).To(Equal("password"))
 					Expect(cfg.SqlDB.Port).To(Equal(1234))
+					Expect(cfg.MaxTTL).To(Equal(2 * time.Minute))
 					Expect(cfg.Etcd.NodeURLS).To(Equal([]string{"http://localhost:1234"}))
 				})
 
@@ -77,6 +79,7 @@ var _ = Describe("Config", func() {
 						Expect(cfg.MetronConfig.Address).To(Equal("1.2.3.4"))
 						Expect(cfg.MetronConfig.Port).To(Equal("4567"))
 						Expect(cfg.DebugAddress).To(Equal("1.2.3.4:1234"))
+						Expect(cfg.MaxTTL).To(Equal(2 * time.Minute))
 						Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
 						Expect(cfg.OAuth.TokenEndpoint).To(BeEmpty())
 						Expect(cfg.OAuth.Port).To(Equal(0))
@@ -103,6 +106,7 @@ var _ = Describe("Config", func() {
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
+system_domain: "example.com"
 router_groups:
 - name: router-group-1
   reservable_ports: ` + ports + `
@@ -184,6 +188,7 @@ router_groups:
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
+system_domain: "example.com"
 router_groups:
 - name: router-group-1
   reservable_ports: 1024-65535`
@@ -196,6 +201,7 @@ router_groups:
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
+system_domain: "example.com"
 router_groups:
 - type: tcp
   reservable_ports: 1024-65535`
@@ -208,6 +214,7 @@ router_groups:
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
+system_domain: "example.com"
 router_groups:
 - type: tcp
   name: default-tcp`
@@ -219,10 +226,25 @@ router_groups:
 
 		Context("when there are errors in the yml file", func() {
 			var test_config string
+			It("errors if there is no system_domain", func() {
+				test_config = `log_guid: "my_logs"
+debug_address: "1.2.3.4:1234"
+metron_config:
+  address: "1.2.3.4"
+  port: "4567"
+metrics_reporting_interval: "500ms"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"`
+				err := cfg.Initialize([]byte(test_config), true)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("system_domain"))
+			})
+
 			Context("UAA errors", func() {
 				BeforeEach(func() {
 					test_config = `log_guid: "my_logs"
 debug_address: "1.2.3.4:1234"
+system_domain: "example.com"
 metron_config:
   address: "1.2.3.4"
   port: "4567"
@@ -249,6 +271,7 @@ statsd_client_flush_interval: "10ms"`
 		Context("when there are no router groups seeded in the configuration file", func() {
 
 			testConfig := `log_guid: "my_logs"
+system_domain: "example.com"
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"`
