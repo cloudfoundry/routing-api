@@ -27,8 +27,9 @@ var _ = Describe("Locking", func() {
 				args := routingAPIArgs
 				args.DevMode = true
 				session1 := RoutingApi(args.ArgSlice()...)
-				session2 := RoutingApi(args.ArgSlice()...)
 				Eventually(session1, 10*time.Second).Should(gbytes.Say("acquire-lock-succeeded"))
+
+				session2 := RoutingApi(args.ArgSlice()...)
 
 				defer func() {
 					session1.Interrupt().Wait(5 * time.Second)
@@ -59,8 +60,8 @@ var _ = Describe("Locking", func() {
 
 				Eventually(session1, 10*time.Second).Should(gbytes.Say("acquire-lock-succeeded"))
 
-				consul_runner.Reset()
-				consul_runner.WaitUntilReady()
+				consulRunner.Reset()
+				consulRunner.WaitUntilReady()
 				Eventually(session1, 10*time.Second).Should(gbytes.Say("lost-lock"))
 				Eventually(session1, 20*time.Second).Should(gexec.Exit(1))
 			})

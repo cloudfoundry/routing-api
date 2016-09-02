@@ -44,9 +44,9 @@ var (
 	oauthServer            *ghttp.Server
 	oauthServerPort        string
 
-	sqlDBName     string
-	sqlDB         *sql.DB
-	consul_runner *consulrunner.ClusterRunner
+	sqlDBName    string
+	sqlDB        *sql.DB
+	consulRunner *consulrunner.ClusterRunner
 )
 
 var etcdVersion = "etcdserver\":\"2.1.1"
@@ -66,15 +66,44 @@ var _ = SynchronizedBeforeSuite(
 		routingAPIBinPath = string(routingAPIBin)
 		SetDefaultEventuallyTimeout(15 * time.Second)
 		createSqlDatabase()
+		setupConsul()
+		setupOauthServer()
 	},
 )
 
 var _ = SynchronizedAfterSuite(func() {
 	dropSqlDatabase()
+	teardownConsul()
+	oauthServer.Close()
 },
 	func() {
 		gexec.CleanupBuildArtifacts()
 	})
+
+var _ = BeforeEach(func() {
+	client = routingApiClient()
+	setupETCD()
+	//resetETCD()
+	resetConsul()
+
+	routingAPIArgs = testrunner.Args{
+		Port:       routingAPIPort,
+		IP:         routingAPIIP,
+		ConfigPath: createConfig(true),
+		DevMode:    true,
+	}
+
+	routingAPIArgsNoSQL = testrunner.Args{
+		Port:       routingAPIPort,
+		IP:         routingAPIIP,
+		ConfigPath: createConfig(false),
+		DevMode:    true,
+	}
+})
+
+var _ = AfterEach(func() {
+	teardownETCD()
+})
 
 func createSqlDatabase() {
 	var err error
@@ -113,6 +142,10 @@ func setupETCD() {
 
 	etcdAdapter = etcdRunner.Adapter(nil)
 
+}
+
+func resetETCD() {
+	etcdRunner.Reset()
 }
 
 func teardownETCD() {
@@ -155,42 +188,18 @@ func setupOauthServer() {
 }
 
 func setupConsul() {
-	starting_port := 16000 + GinkgoParallelNode()
-	consul_runner = consulrunner.NewClusterRunner(starting_port, 1, "http")
-	consul_runner.Start()
-	consul_runner.WaitUntilReady()
+	consulRunner = consulrunner.NewClusterRunner(9001+GinkgoParallelNode()*consulrunner.PortOffsetLength, 1, "http")
+	consulRunner.Start()
+	consulRunner.WaitUntilReady()
 }
 
 func teardownConsul() {
-	consul_runner.Stop()
+	consulRunner.Stop()
 }
 
-var _ = BeforeEach(func() {
-	client = routingApiClient()
-	setupETCD()
-	setupOauthServer()
-	setupConsul()
-
-	routingAPIArgs = testrunner.Args{
-		Port:       routingAPIPort,
-		IP:         routingAPIIP,
-		ConfigPath: createConfig(true),
-		DevMode:    true,
-	}
-
-	routingAPIArgsNoSQL = testrunner.Args{
-		Port:       routingAPIPort,
-		IP:         routingAPIIP,
-		ConfigPath: createConfig(false),
-		DevMode:    true,
-	}
-})
-
-var _ = AfterEach(func() {
-	oauthServer.Close()
-	teardownETCD()
-	teardownConsul()
-})
+func resetConsul() {
+	consulRunner.Reset()
+}
 
 func createConfig(useSQL bool) string {
 	type customConfig struct {
@@ -210,7 +219,7 @@ func createConfig(useSQL bool) string {
 		CACerts:   caCertsPath,
 		EtcdPort:  etcdPort,
 		Schema:    sqlDBName,
-		ConsulUrl: consul_runner.URL(),
+		ConsulUrl: consulRunner.URL(),
 	}
 
 	var templatePath string

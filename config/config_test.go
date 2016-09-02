@@ -101,7 +101,7 @@ var _ = Describe("Config", func() {
 		BeforeEach(func() {
 			cfg = &config.Config{}
 		})
-		FContext("when consul properties are not set", func() {
+		Context("when consul properties are not set", func() {
 			testConfig := func() string {
 				return `log_guid: "my_logs"
 metrics_reporting_interval: "500ms"

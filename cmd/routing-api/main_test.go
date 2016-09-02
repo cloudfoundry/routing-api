@@ -153,6 +153,8 @@ var _ = Describe("Main", func() {
 
 			etcdAdapter.Disconnect()
 			etcdRunner.Stop()
+			// to ensure etcd is stopped completely
+			time.Sleep(time.Second)
 
 			ginkgomon.Interrupt(proc)
 			Eventually(routingAPIRunner).Should(Exit(1))
