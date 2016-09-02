@@ -28,4 +28,4 @@ sqldb:
   host: "localhost"
   type: "mysql"
 consul_cluster:
-  url: "{{.ConsulUrl}}"
+  servers: "{{.ConsulUrl}}"

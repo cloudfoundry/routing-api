@@ -43,7 +43,7 @@ type Etcd struct {
 }
 
 type ConsulCluster struct {
-	URL           string        `yaml:"url"`
+	Servers       string        `yaml:"servers"`
 	LockTTL       time.Duration `yaml:"lock_ttl"`
 	RetryInterval time.Duration `yaml:"retry_interval"`
 }

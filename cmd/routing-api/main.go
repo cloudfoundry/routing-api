@@ -135,7 +135,7 @@ func main() {
 		logger.Session("route-register"),
 	)
 	clock := clock.NewClock()
-	lockMaintainer := initializeLockMaintainer(logger, cfg.ConsulCluster.URL, sessionName,
+	lockMaintainer := initializeLockMaintainer(logger, cfg.ConsulCluster.Servers, sessionName,
 		cfg.ConsulCluster.LockTTL, cfg.ConsulCluster.RetryInterval, clock)
 	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
 	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker, logger.Session("metrics"))

@@ -33,7 +33,7 @@ var _ = Describe("Config", func() {
 					Expect(cfg.SqlDB.Port).To(Equal(1234))
 					Expect(cfg.MaxTTL).To(Equal(2 * time.Minute))
 					Expect(cfg.Etcd.NodeURLS).To(Equal([]string{"http://localhost:1234"}))
-					Expect(cfg.ConsulCluster.URL).To(Equal("http://localhost:5678"))
+					Expect(cfg.ConsulCluster.Servers).To(Equal("http://localhost:5678"))
 					Expect(cfg.ConsulCluster.LockTTL).To(Equal(10 * time.Second))
 					Expect(cfg.ConsulCluster.RetryInterval).To(Equal(5 * time.Second))
 				})

@@ -21,4 +21,4 @@ router_groups:
   type: "tcp"
   reservable_ports: "1024-65535"
 consul_cluster:
-  url: "{{.ConsulUrl}}"
+  servers: "{{.ConsulUrl}}"
