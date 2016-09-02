@@ -147,17 +147,22 @@ var _ = Describe("Main", func() {
 			Eventually(routingAPIRunner.ExitCode(), 2*time.Second).Should(Equal(0))
 		})
 
-		It("exits 1 if etcd returns an error as we unregister ourself during a deployment roll", func() {
-			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
-			proc := ifrit.Invoke(routingAPIRunner)
+		Context("when etcd is unavailable", func() {
+			AfterEach(func() {
+				setupETCD()
+			})
+			It("exits 1 when we shut down the routing api", func() {
+				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+				proc := ifrit.Invoke(routingAPIRunner)
 
-			etcdAdapter.Disconnect()
-			etcdRunner.Stop()
-			// to ensure etcd is stopped completely
-			time.Sleep(time.Second)
+				etcdAdapter.Disconnect()
+				etcdRunner.Stop()
+				// to ensure etcd is stopped completely
+				time.Sleep(time.Second)
 
-			ginkgomon.Interrupt(proc)
-			Eventually(routingAPIRunner).Should(Exit(1))
+				ginkgomon.Interrupt(proc)
+				Eventually(routingAPIRunner).Should(Exit(1))
+			})
 		})
 	})
 })

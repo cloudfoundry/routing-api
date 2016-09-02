@@ -66,6 +66,7 @@ var _ = SynchronizedBeforeSuite(
 		routingAPIBinPath = string(routingAPIBin)
 		SetDefaultEventuallyTimeout(15 * time.Second)
 		createSqlDatabase()
+		setupETCD()
 		setupConsul()
 		setupOauthServer()
 	},
@@ -74,6 +75,7 @@ var _ = SynchronizedBeforeSuite(
 var _ = SynchronizedAfterSuite(func() {
 	dropSqlDatabase()
 	teardownConsul()
+	teardownETCD()
 	oauthServer.Close()
 },
 	func() {
@@ -82,8 +84,7 @@ var _ = SynchronizedAfterSuite(func() {
 
 var _ = BeforeEach(func() {
 	client = routingApiClient()
-	setupETCD()
-	//resetETCD()
+	resetETCD()
 	resetConsul()
 
 	routingAPIArgs = testrunner.Args{
@@ -99,10 +100,6 @@ var _ = BeforeEach(func() {
 		ConfigPath: createConfig(false),
 		DevMode:    true,
 	}
-})
-
-var _ = AfterEach(func() {
-	teardownETCD()
 })
 
 func createSqlDatabase() {
