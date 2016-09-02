@@ -6,5 +6,6 @@ go get -u github.com/kisielk/errcheck
 
 errcheck ./..
 go vet ./...
-
-ginkgo -r -p -failOnPending -randomizeAllSpecs -race "$@"
+# running -p with consul causes test setup to fail.
+# TODO: fix how we run consul for test setup
+ginkgo -r -failOnPending -randomizeAllSpecs -race "$@"
