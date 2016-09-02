@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
@@ -39,8 +40,11 @@ var _ = Describe("Routes API", func() {
 
 			It("fetches all of the routes", func() {
 				routingAPIRoute := models.NewRoute(fmt.Sprintf("api.%s/routing", routingAPISystemDomain), routingAPIPort, routingAPIIP, "my_logs", "", 120)
-
-				Expect(routes).To(HaveLen(3))
+				Eventually(func() int {
+					routes, getErr = client.Routes()
+					Expect(getErr).ToNot(HaveOccurred())
+					return len(routes)
+				}, 2*time.Second).Should(BeNumerically("==", 3))
 				Expect(Routes(routes).ContainsAll(route1, route2, routingAPIRoute)).To(BeTrue())
 			})
 

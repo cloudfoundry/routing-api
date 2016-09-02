@@ -27,3 +27,5 @@ sqldb:
   port: 3306
   host: "localhost"
   type: "mysql"
+consul_cluster:
+  url: "{{.ConsulUrl}}"

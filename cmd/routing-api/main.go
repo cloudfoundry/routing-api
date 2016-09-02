@@ -9,8 +9,10 @@ import (
 	"strconv"
 	"time"
 
+	"code.cloudfoundry.org/consuladapter"
 	"code.cloudfoundry.org/debugserver"
 	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
@@ -34,7 +36,10 @@ import (
 	"github.com/tedsuo/rata"
 )
 
-const DEFAULT_ETCD_WORKERS = 25
+const (
+	DEFAULT_ETCD_WORKERS = 25
+	routingApiLockPath   = "routing_api_lock"
+)
 
 var port = flag.Uint("port", 8080, "Port to run rounting-api server on")
 var configPath = flag.String("config", "", "Configuration for routing-api")
@@ -128,11 +133,17 @@ func main() {
 		database,
 		logger.Session("route-register"),
 	)
-
+	sessionName := "routing_api"
+	lockTTL := locket.LockTTL
+	lockRetryInterval := locket.RetryInterval
+	clock := clock.NewClock()
+	lockMaintainer := initializeLockMaintainer(logger, cfg.ConsulCluster.URL, sessionName,
+		lockTTL, lockRetryInterval, clock)
 	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
 	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker, logger.Session("metrics"))
 
 	members := grouper.Members{
+		{"lock-maintainer", lockMaintainer},
 		{"api-server", apiServer},
 		{"conn-stopper", stopper},
 		{"metrics", metricsReporter},
@@ -283,4 +294,37 @@ func checkFlags() error {
 	}
 
 	return nil
+}
+
+func initializeLockMaintainer(
+	logger lager.Logger,
+	consulCluster, sessionName string,
+	lockTTL, lockRetryInterval time.Duration,
+	clock clock.Clock,
+) ifrit.Runner {
+	client, err := consuladapter.NewClientFromUrl(consulCluster)
+	if err != nil {
+		logger.Fatal("new-client-failed", err)
+	}
+
+	return newLockRunner(logger, client, clock, lockRetryInterval, lockTTL)
+}
+
+func newLockRunner(
+	logger lager.Logger,
+	consulClient consuladapter.Client,
+	clock clock.Clock,
+	lockRetryInterval time.Duration,
+	lockTTL time.Duration,
+) ifrit.Runner {
+	lockSchemaPath := locket.LockSchemaPath(routingApiLockPath)
+
+	routingApiUUID, err := uuid.NewV4()
+	if err != nil {
+		logger.Fatal("Couldn't generate tcp Emitter UUID", err)
+	}
+	routingApiID := []byte(routingApiUUID.String())
+
+	return locket.NewLock(logger, consulClient, lockSchemaPath,
+		routingApiID, clock, lockRetryInterval, lockTTL)
 }

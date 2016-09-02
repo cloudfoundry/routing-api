@@ -13,6 +13,7 @@ import (
 	"strings"
 	"text/template"
 
+	"code.cloudfoundry.org/consuladapter/consulrunner"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"github.com/cloudfoundry/storeadapter"
@@ -43,8 +44,9 @@ var (
 	oauthServer            *ghttp.Server
 	oauthServerPort        string
 
-	sqlDBName string
-	sqlDB     *sql.DB
+	sqlDBName     string
+	sqlDB         *sql.DB
+	consul_runner *consulrunner.ClusterRunner
 )
 
 var etcdVersion = "etcdserver\":\"2.1.1"
@@ -152,10 +154,22 @@ func setupOauthServer() {
 	oauthServerPort = getServerPort(oauthServer.URL())
 }
 
+func setupConsul() {
+	starting_port := 16000 + GinkgoParallelNode()
+	consul_runner = consulrunner.NewClusterRunner(starting_port, 1, "http")
+	consul_runner.Start()
+	consul_runner.WaitUntilReady()
+}
+
+func teardownConsul() {
+	consul_runner.Stop()
+}
+
 var _ = BeforeEach(func() {
 	client = routingApiClient()
 	setupETCD()
 	setupOauthServer()
+	setupConsul()
 
 	routingAPIArgs = testrunner.Args{
 		Port:       routingAPIPort,
@@ -175,25 +189,28 @@ var _ = BeforeEach(func() {
 var _ = AfterEach(func() {
 	oauthServer.Close()
 	teardownETCD()
+	teardownConsul()
 })
 
 func createConfig(useSQL bool) string {
 	type customConfig struct {
-		EtcdPort int
-		Port     int
-		UAAPort  string
-		CACerts  string
-		Schema   string
+		EtcdPort  int
+		Port      int
+		UAAPort   string
+		CACerts   string
+		Schema    string
+		ConsulUrl string
 	}
 	caCertsPath, err := filepath.Abs(filepath.Join("..", "..", "fixtures", "uaa-certs", "uaa-ca.pem"))
 	Expect(err).NotTo(HaveOccurred())
 
 	actualConfig := customConfig{
-		Port:     8125 + GinkgoParallelNode(),
-		UAAPort:  oauthServerPort,
-		CACerts:  caCertsPath,
-		EtcdPort: etcdPort,
-		Schema:   sqlDBName,
+		Port:      8125 + GinkgoParallelNode(),
+		UAAPort:   oauthServerPort,
+		CACerts:   caCertsPath,
+		EtcdPort:  etcdPort,
+		Schema:    sqlDBName,
+		ConsulUrl: consul_runner.URL(),
 	}
 
 	var templatePath string

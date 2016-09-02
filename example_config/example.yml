@@ -21,3 +21,8 @@ sqldb:
   host: "localhost"
 etcd:
   node_urls: ["http://localhost:1234"]
+consul_cluster:
+  url: "http://localhost:5678"
+  lock_ttl: 10s
+  retry_interval: 5s
+

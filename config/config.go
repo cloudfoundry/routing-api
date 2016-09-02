@@ -41,6 +41,12 @@ type Etcd struct {
 	NodeURLS   []string `yaml:"node_urls"`
 }
 
+type ConsulCluster struct {
+	URL           string        `yaml:"url"`
+	LockTTL       time.Duration `yaml:"lock_ttl"`
+	RetryInterval time.Duration `yaml:"retry_interval"`
+}
+
 type Config struct {
 	DebugAddress                    string              `yaml:"debug_address"`
 	LogGuid                         string              `yaml:"log_guid"`
@@ -56,6 +62,7 @@ type Config struct {
 	RouterGroups                    models.RouterGroups `yaml:"router_groups"`
 	Etcd                            Etcd                `yaml:"etcd"`
 	SqlDB                           SqlDB               `yaml:"sqldb"`
+	ConsulCluster                   ConsulCluster       `yaml:"consul_cluster"`
 }
 
 func NewConfigFromFile(configFile string, authDisabled bool) (Config, error) {
