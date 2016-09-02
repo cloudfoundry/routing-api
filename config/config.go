@@ -7,6 +7,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/routing-api/models"
 )
 
@@ -101,9 +102,14 @@ func (cfg *Config) Initialize(file []byte, authDisabled bool) error {
 	if !authDisabled && cfg.OAuth.TokenEndpoint != "" && cfg.OAuth.Port == -1 {
 		return errors.New("Routing API requires TLS enabled to get OAuth token")
 	}
+	if cfg.ConsulCluster.LockTTL == 0 {
+		cfg.ConsulCluster.LockTTL = locket.LockTTL
+	}
+	if cfg.ConsulCluster.RetryInterval == 0 {
+		cfg.ConsulCluster.RetryInterval = locket.RetryInterval
+	}
 
 	err = cfg.process()
-
 	if err != nil {
 		return err
 	}

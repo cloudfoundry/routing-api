@@ -39,6 +39,7 @@ import (
 const (
 	DEFAULT_ETCD_WORKERS = 25
 	routingApiLockPath   = "routing_api_lock"
+	sessionName          = "routing_api"
 )
 
 var port = flag.Uint("port", 8080, "Port to run rounting-api server on")
@@ -133,12 +134,9 @@ func main() {
 		database,
 		logger.Session("route-register"),
 	)
-	sessionName := "routing_api"
-	lockTTL := locket.LockTTL
-	lockRetryInterval := locket.RetryInterval
 	clock := clock.NewClock()
 	lockMaintainer := initializeLockMaintainer(logger, cfg.ConsulCluster.URL, sessionName,
-		lockTTL, lockRetryInterval, clock)
+		cfg.ConsulCluster.LockTTL, cfg.ConsulCluster.RetryInterval, clock)
 	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
 	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker, logger.Session("metrics"))
 

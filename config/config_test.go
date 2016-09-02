@@ -3,6 +3,7 @@ package config_test
 import (
 	"time"
 
+	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/models"
 
@@ -100,7 +101,34 @@ var _ = Describe("Config", func() {
 		BeforeEach(func() {
 			cfg = &config.Config{}
 		})
-
+		FContext("when consul properties are not set", func() {
+			testConfig := func() string {
+				return `log_guid: "my_logs"
+metrics_reporting_interval: "500ms"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"
+system_domain: "example.com"
+router_groups:
+- name: router-group-2
+  reservable_ports: 1024-10000,42000
+  type: udp
+consul_cluster:
+  url: "http://localhost:4222"
+`
+			}
+			It("populates the default value for LockTTL from locket library", func() {
+				config := testConfig()
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.ConsulCluster.LockTTL).To(Equal(locket.LockTTL))
+			})
+			It("populates the default value for RetryInterval from locket library", func() {
+				config := testConfig()
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.ConsulCluster.RetryInterval).To(Equal(locket.RetryInterval))
+			})
+		})
 		Context("when router groups are seeded in the configuration file", func() {
 			var expectedGroups models.RouterGroups
 
