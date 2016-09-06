@@ -101,8 +101,12 @@ var _ = Describe("Routes API", func() {
 
 			getRouterGroupGuid := func() string {
 				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
-				routerGroups, err := client.RouterGroups()
-				Expect(err).NotTo(HaveOccurred())
+				var routerGroups []models.RouterGroup
+				Eventually(func() error {
+					var err error
+					routerGroups, err = client.RouterGroups()
+					return err
+				}, "30s", "1s").ShouldNot(HaveOccurred(), "Failed to connect to Routing API server after 30s.")
 				Expect(routerGroups).ToNot(HaveLen(0))
 				return routerGroups[0].Guid
 			}
