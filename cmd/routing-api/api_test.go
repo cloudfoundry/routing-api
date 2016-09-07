@@ -206,7 +206,7 @@ var _ = Describe("Routes API", func() {
 					Eventually(func() error {
 						_, err := client.RouterGroups()
 						return err
-					}, 5*time.Second)
+					}, "30s", "1s")
 					routerGroups, err := client.RouterGroups()
 					Expect(err).NotTo(HaveOccurred())
 					Expect(len(routerGroups)).To(Equal(1))
@@ -219,14 +219,18 @@ var _ = Describe("Routes API", func() {
 
 			Context("PUT", func() {
 				It("returns updated router groups", func() {
+					var routerGroups models.RouterGroups
 					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
-					routerGroups, err := client.RouterGroups()
-					Expect(err).NotTo(HaveOccurred())
+					Eventually(func() error {
+						var err error
+						routerGroups, err = client.RouterGroups()
+						return err
+					}, "30s", "1s").ShouldNot(HaveOccurred(), "Failed to connect to Routing API server after 30s.")
 					Expect(len(routerGroups)).To(Equal(1))
 					routerGroup := routerGroups[0]
 
 					routerGroup.ReservablePorts = "6000-8000"
-					err = client.UpdateRouterGroup(routerGroup)
+					err := client.UpdateRouterGroup(routerGroup)
 					Expect(err).NotTo(HaveOccurred())
 
 					routerGroups, err = client.RouterGroups()
