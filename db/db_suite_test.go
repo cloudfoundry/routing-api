@@ -100,6 +100,9 @@ var _ = AfterSuite(func() {
 	defer sqlDB.Close()
 	_, err := sqlDB.Exec(fmt.Sprintf("DROP DATABASE %s", sqlDBName))
 	Expect(err).NotTo(HaveOccurred())
+	etcdRunner.Stop()
+	etcdRunner.KillWithFire()
+	etcdRunner.GoAway()
 })
 
 var _ = BeforeEach(func() {

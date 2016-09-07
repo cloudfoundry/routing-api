@@ -1,26 +1,51 @@
 package models
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+
+	"github.com/nu7hatch/gouuid"
+)
 
 type TcpRouteMapping struct {
-	TcpRoute
-	HostPort        uint16          `json:"backend_port"`
-	HostIP          string          `json:"backend_ip"`
-	ModificationTag ModificationTag `json:"modification_tag"`
-	TTL             *int            `json:"ttl,omitempty"`
+	Model
+	ExpiresAt time.Time `json:"-"`
+	TcpMappingEntity
 }
 
-type TcpRoute struct {
+type TcpMappingEntity struct {
 	RouterGroupGuid string `json:"router_group_guid"`
-	ExternalPort    uint16 `json:"port"`
+	HostPort        uint16 `gorm:"not null; unique_index:idx_tcp_route; type:int" json:"backend_port"`
+	HostIP          string `gorm:"not null; unique_index:idx_tcp_route" json:"backend_ip"`
+	ExternalPort    uint16 `gorm:"not null; unique_index:idx_tcp_route; type: int" json:"port"`
+	ModificationTag `json:"modification_tag"`
+	TTL             *int `json:"ttl,omitempty"`
+}
+
+func NewTcpRouteMappingWithModel(tcpMapping TcpRouteMapping) (TcpRouteMapping, error) {
+	guid, err := uuid.NewV4()
+	if err != nil {
+		return TcpRouteMapping{}, err
+	}
+
+	m := Model{Guid: guid.String()}
+	return TcpRouteMapping{
+		ExpiresAt:        time.Now().Add(time.Duration(*tcpMapping.TTL) * time.Second),
+		Model:            m,
+		TcpMappingEntity: tcpMapping.TcpMappingEntity,
+	}, nil
 }
 
 func NewTcpRouteMapping(routerGroupGuid string, externalPort uint16, hostIP string, hostPort uint16, ttl int) TcpRouteMapping {
+	mapping := TcpMappingEntity{
+		RouterGroupGuid: routerGroupGuid,
+		ExternalPort:    externalPort,
+		HostPort:        hostPort,
+		HostIP:          hostIP,
+		TTL:             &ttl,
+	}
 	return TcpRouteMapping{
-		TcpRoute: TcpRoute{RouterGroupGuid: routerGroupGuid, ExternalPort: externalPort},
-		HostPort: hostPort,
-		HostIP:   hostIP,
-		TTL:      &ttl,
+		TcpMappingEntity: mapping,
 	}
 }
 

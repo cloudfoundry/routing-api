@@ -90,6 +90,27 @@ func (j jointDB) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	return j.etcd.SaveRouterGroup(routerGroup)
 }
 
+func (j jointDB) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
+	if j.sql != nil {
+		return j.sql.ReadTcpRouteMappings()
+	}
+	return j.etcd.ReadTcpRouteMappings()
+}
+
+func (j jointDB) SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
+	if j.sql != nil {
+		return j.sql.SaveTcpRouteMapping(tcpMapping)
+	}
+	return j.etcd.SaveTcpRouteMapping(tcpMapping)
+}
+
+func (j jointDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
+	if j.sql != nil {
+		return j.sql.DeleteTcpRouteMapping(tcpMapping)
+	}
+	return j.etcd.DeleteTcpRouteMapping(tcpMapping)
+}
+
 type etcd struct {
 	client     client.Client
 	keysAPI    client.KeysAPI
@@ -509,5 +530,5 @@ func generateTcpRouteMappingKey(tcpMapping models.TcpRouteMapping) string {
 	// Generating keys following this pattern
 	// /v1/tcp_routes/router_groups/{router_guid}/{port}/{host-ip}:{host-port}
 	return fmt.Sprintf("%s/%s/%d/%s:%d", TCP_MAPPING_BASE_KEY,
-		tcpMapping.TcpRoute.RouterGroupGuid, tcpMapping.TcpRoute.ExternalPort, tcpMapping.HostIP, tcpMapping.HostPort)
+		tcpMapping.RouterGroupGuid, tcpMapping.ExternalPort, tcpMapping.HostIP, tcpMapping.HostPort)
 }

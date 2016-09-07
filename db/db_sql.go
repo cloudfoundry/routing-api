@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"time"
 
 	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 
@@ -18,13 +19,15 @@ type SqlDB struct {
 	Client Client
 }
 
+const DeleteError = "Delete Fails: TCP Route Mapping does not exist"
+
 var _ DB = &SqlDB{}
 
 func NewSqlDB(cfg *config.SqlDB) (DB, error) {
 	if cfg == nil {
 		return nil, errors.New("SQL configuration cannot be nil")
 	}
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
+	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
 		cfg.Username,
 		cfg.Password,
 		cfg.Host,
@@ -36,7 +39,7 @@ func NewSqlDB(cfg *config.SqlDB) (DB, error) {
 		return nil, err
 	}
 
-	db.AutoMigrate(&models.RouterGroupDB{})
+	db.AutoMigrate(&models.RouterGroupDB{}, &models.TcpRouteMapping{})
 	return &SqlDB{Client: db}, nil
 }
 
@@ -95,6 +98,20 @@ func updateRouterGroup(existingRouterGroup, currentRouterGroup *models.RouterGro
 	}
 }
 
+func updateTcpRouteMapping(existingTcpRouteMapping models.TcpRouteMapping, currentTcpRouteMapping models.TcpRouteMapping) models.TcpRouteMapping {
+	if currentTcpRouteMapping.ModificationTag != (models.ModificationTag{}) {
+		existingTcpRouteMapping.ModificationTag = currentTcpRouteMapping.ModificationTag
+	}
+	if currentTcpRouteMapping.TTL != nil {
+		existingTcpRouteMapping.TTL = currentTcpRouteMapping.TTL
+	}
+
+	existingTcpRouteMapping.ExpiresAt = time.Now().
+		Add(time.Duration(*existingTcpRouteMapping.TTL) * time.Second)
+
+	return existingTcpRouteMapping
+}
+
 func notImplementedError() error {
 	pc, _, _, _ := runtime.Caller(1)
 	fnName := runtime.FuncForPC(pc).Name()
@@ -112,14 +129,67 @@ func (s *SqlDB) DeleteRoute(route models.Route) error {
 }
 
 func (s *SqlDB) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
-	return nil, notImplementedError()
+	var tcpRoutes []models.TcpRouteMapping
+	now := time.Now()
+	err := s.Client.Where("expires_at > ?", now).Find(&tcpRoutes).Error
+	if err != nil {
+		return nil, err
+	}
+	return tcpRoutes, nil
 }
-func (s *SqlDB) SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
-	return notImplementedError()
+
+func (s *SqlDB) readTcpRouteMapping(tcpMapping models.TcpRouteMapping) (models.TcpRouteMapping, error) {
+	var routes []models.TcpRouteMapping
+	var tcpRoute models.TcpRouteMapping
+	err := s.Client.Where("host_ip = ? and host_port = ? and external_port = ?",
+		tcpMapping.HostIP, tcpMapping.HostPort, tcpMapping.ExternalPort).Find(&routes).Error
+
+	if err != nil {
+		return tcpRoute, err
+	}
+	count := len(routes)
+	if count > 1 || count < 0 {
+		return tcpRoute, errors.New("Have duplicate tcp route mappings")
+	}
+	if count == 1 {
+		tcpRoute = routes[0]
+	}
+
+	return tcpRoute, err
 }
+
+func (s *SqlDB) SaveTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) error {
+	var existingTcpRouteMapping models.TcpRouteMapping
+
+	existingTcpRouteMapping, err := s.readTcpRouteMapping(tcpRouteMapping)
+	if err != nil {
+		return err
+	}
+
+	if existingTcpRouteMapping != (models.TcpRouteMapping{}) {
+		newTcpRouteMapping := updateTcpRouteMapping(existingTcpRouteMapping, tcpRouteMapping)
+		return s.Client.Save(&newTcpRouteMapping).Error
+	}
+
+	tcpMapping, err := models.NewTcpRouteMappingWithModel(tcpRouteMapping)
+	if err != nil {
+		return err
+	}
+
+	return s.Client.Create(&tcpMapping).Error
+}
+
 func (s *SqlDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
-	return notImplementedError()
+	tcpMapping, err := s.readTcpRouteMapping(tcpMapping)
+	if err != nil {
+		return err
+	}
+	if tcpMapping == (models.TcpRouteMapping{}) {
+		return errors.New(DeleteError)
+	}
+	return s.Client.Delete(&tcpMapping).Error
 }
+
 func (s *SqlDB) Connect() error {
 	return notImplementedError()
 }

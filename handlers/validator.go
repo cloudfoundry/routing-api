@@ -141,7 +141,7 @@ func (v Validator) ValidateCreateTcpRouteMapping(tcpRouteMappings []models.TcpRo
 
 		validGuid := false
 		for _, routerGroup := range routerGroups {
-			if tcpRouteMapping.TcpRoute.RouterGroupGuid == routerGroup.Guid {
+			if tcpRouteMapping.RouterGroupGuid == routerGroup.Guid {
 				validGuid = true
 				break
 			}
@@ -149,7 +149,7 @@ func (v Validator) ValidateCreateTcpRouteMapping(tcpRouteMappings []models.TcpRo
 
 		if !validGuid {
 			err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
-				"router_group_guid: "+tcpRouteMapping.TcpRoute.RouterGroupGuid+" not found")
+				"router_group_guid: "+tcpRouteMapping.RouterGroupGuid+" not found")
 			return &err
 		}
 	}
@@ -167,13 +167,13 @@ func (v Validator) ValidateDeleteTcpRouteMapping(tcpRouteMappings []models.TcpRo
 }
 
 func validateTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping, checkTTL bool, maxTTL int) *routing_api.Error {
-	if tcpRouteMapping.TcpRoute.RouterGroupGuid == "" {
+	if tcpRouteMapping.RouterGroupGuid == "" {
 		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
 			"Each tcp mapping requires a non empty router group guid. RouteMapping=["+tcpRouteMapping.String()+"]")
 		return &err
 	}
 
-	if tcpRouteMapping.TcpRoute.ExternalPort <= 0 {
+	if tcpRouteMapping.ExternalPort <= 0 {
 		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
 			"Each tcp mapping requires a positive external port. RouteMapping=["+tcpRouteMapping.String()+"]")
 		return &err

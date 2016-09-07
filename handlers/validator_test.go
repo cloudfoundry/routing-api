@@ -242,7 +242,7 @@ var _ = Describe("Validator", func() {
 			})
 
 			It("blows up when a external port is zero", func() {
-				tcpMapping.TcpRoute.ExternalPort = 0
+				tcpMapping.ExternalPort = 0
 				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
@@ -258,7 +258,7 @@ var _ = Describe("Validator", func() {
 			})
 
 			It("blows up when group guid is empty", func() {
-				tcpMapping.TcpRoute.RouterGroupGuid = ""
+				tcpMapping.RouterGroupGuid = ""
 				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
@@ -266,7 +266,7 @@ var _ = Describe("Validator", func() {
 			})
 
 			It("blows up when group guid is unknown", func() {
-				tcpMapping.TcpRoute.RouterGroupGuid = "unknown-router-group-guid"
+				tcpMapping.RouterGroupGuid = "unknown-router-group-guid"
 				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
@@ -318,7 +318,7 @@ var _ = Describe("Validator", func() {
 			})
 
 			It("blows up when a external port is zero", func() {
-				tcpMapping.TcpRoute.ExternalPort = 0
+				tcpMapping.ExternalPort = 0
 				err := validator.ValidateDeleteTcpRouteMapping([]models.TcpRouteMapping{tcpMapping})
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
@@ -334,7 +334,7 @@ var _ = Describe("Validator", func() {
 			})
 
 			It("blows up when group guid is empty", func() {
-				tcpMapping.TcpRoute.RouterGroupGuid = ""
+				tcpMapping.RouterGroupGuid = ""
 				err := validator.ValidateDeleteTcpRouteMapping([]models.TcpRouteMapping{tcpMapping})
 				Expect(err).ToNot(BeNil())
 				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
@@ -342,7 +342,7 @@ var _ = Describe("Validator", func() {
 			})
 
 			It("does not blow up when group guid is unknown", func() {
-				tcpMapping.TcpRoute.RouterGroupGuid = "unknown-router-group-guid"
+				tcpMapping.RouterGroupGuid = "unknown-router-group-guid"
 				err := validator.ValidateDeleteTcpRouteMapping([]models.TcpRouteMapping{tcpMapping})
 				Expect(err).To(BeNil())
 			})

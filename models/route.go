@@ -66,6 +66,6 @@ func (r *Route) SetDefaults(defaultTTL int) {
 }
 
 type ModificationTag struct {
-	Guid  string `json:"guid"`
-	Index uint32 `json:"index"`
+	Guid  string `gorm:"column:modification_guid" json:"guid"`
+	Index uint32 `gorm:"column:modification_index" json:"index"`
 }

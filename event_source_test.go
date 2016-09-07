@@ -168,17 +168,13 @@ var _ = Describe("EventSource", func() {
 							Retry: 1,
 						}
 
-						tcpMapping := models.TcpRouteMapping{
-							TcpRoute: models.TcpRoute{
-								RouterGroupGuid: "rguid1",
-								ExternalPort:    52000},
-							HostPort: 60000,
-							HostIP:   "1.1.1.1",
-							ModificationTag: models.ModificationTag{
-								Guid:  "my-guid",
-								Index: 5,
-							},
+						modTag := models.ModificationTag{
+							Guid:  "my-guid",
+							Index: 5,
 						}
+						tcpMapping := models.NewTcpRouteMapping("rguid1", 52000, "1.1.1.1", 60000, 5)
+						tcpMapping.ModificationTag = modTag
+						tcpMapping.TTL = nil
 
 						expectedEvent := routing_api.TcpEvent{
 							TcpRouteMapping: tcpMapping,

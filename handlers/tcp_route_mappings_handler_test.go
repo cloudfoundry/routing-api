@@ -61,13 +61,12 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 
 				BeforeEach(func() {
 					tcpMapping := models.TcpRouteMapping{
-						TcpRoute: models.TcpRoute{
+						TcpMappingEntity: models.TcpMappingEntity{
 							RouterGroupGuid: "router-group-guid-001",
 							ExternalPort:    52000,
-						},
-						HostIP:   "1.2.3.4",
-						HostPort: 60000,
-					}
+							HostIP:          "1.2.3.4",
+							HostPort:        60000,
+						}}
 					tcpMappings = []models.TcpRouteMapping{tcpMapping}
 				})
 

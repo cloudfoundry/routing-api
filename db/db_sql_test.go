@@ -74,7 +74,6 @@ var _ = Describe("SqlDB", func() {
 			It("returns an error", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(sqlDB).To(BeNil())
-
 			})
 		})
 	})
@@ -244,6 +243,219 @@ var _ = Describe("SqlDB", func() {
 				Expect(rg.Name).To(Equal(routerGroup.Name))
 				Expect(rg.ReservablePorts).To(Equal(routerGroup.ReservablePorts))
 				Expect(rg.Type).To(Equal(routerGroup.Type))
+			})
+		})
+	})
+
+	Describe("SaveTcpRouteMapping", func() {
+		var (
+			routerGroupId string
+			tcpRoute      models.TcpRouteMapping
+		)
+
+		BeforeEach(func() {
+			routerGroupId = newUuid()
+			modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
+			tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 5)
+			tcpRoute.ModificationTag = modTag
+		})
+
+		AfterEach(func() {
+			sqlDB.Client.Delete(&tcpRoute)
+		})
+
+		Context("when tcp route exists", func() {
+			BeforeEach(func() {
+				err = sqlDB.SaveTcpRouteMapping(tcpRoute)
+				Expect(err).ToNot(HaveOccurred())
+				tcpRoute.ModificationTag.Index = 15
+			})
+
+			It("updates the existing tcp route mapping", func() {
+				err := sqlDB.SaveTcpRouteMapping(tcpRoute)
+				Expect(err).ToNot(HaveOccurred())
+				var dbTcpRoute models.TcpRouteMapping
+				sqlDB.Client.Where("host_ip = ?", "127.0.0.1").First(&dbTcpRoute)
+				Expect(dbTcpRoute).ToNot(BeNil())
+				Expect(dbTcpRoute.ModificationTag.Index).To(BeNumerically("==", 15))
+			})
+
+			It("refreshes the expiration time of the mapping", func() {
+				var dbTcpRoute models.TcpRouteMapping
+				var ttl = 9
+				sqlDB.Client.Where("host_ip = ?", "127.0.0.1").First(&dbTcpRoute)
+				Expect(dbTcpRoute).ToNot(BeNil())
+				initialExpiration := dbTcpRoute.ExpiresAt
+
+				tcpRoute.TTL = &ttl
+				err := sqlDB.SaveTcpRouteMapping(tcpRoute)
+				Expect(err).ToNot(HaveOccurred())
+
+				sqlDB.Client.Where("host_ip = ?", "127.0.0.1").First(&dbTcpRoute)
+				Expect(dbTcpRoute).ToNot(BeNil())
+				Expect(initialExpiration).To(BeTemporally("<", dbTcpRoute.ExpiresAt))
+			})
+		})
+
+		Context("when tcp route doesn't exist", func() {
+			It("creates a tcp route", func() {
+				err := sqlDB.SaveTcpRouteMapping(tcpRoute)
+				Expect(err).ToNot(HaveOccurred())
+				var dbTcpRoute models.TcpRouteMapping
+				err = sqlDB.Client.Where("host_ip = ?", "127.0.0.1").First(&dbTcpRoute).Error
+				Expect(err).ToNot(HaveOccurred())
+				Expect(dbTcpRoute.TcpMappingEntity).To(Equal(tcpRoute.TcpMappingEntity))
+			})
+		})
+	})
+
+	Describe("ReadTcpRouteMappings", func() {
+		var (
+			err       error
+			tcpRoutes []models.TcpRouteMapping
+		)
+
+		JustBeforeEach(func() {
+			tcpRoutes, err = sqlDB.ReadTcpRouteMappings()
+		})
+
+		Context("when at least one tcp route exists", func() {
+			var (
+				routerGroupId     string
+				tcpRoute          models.TcpRouteMapping
+				tcpRouteWithModel models.TcpRouteMapping
+			)
+
+			BeforeEach(func() {
+				routerGroupId = newUuid()
+				modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
+				tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 5)
+				tcpRoute.ModificationTag = modTag
+				tcpRouteWithModel, err = models.NewTcpRouteMappingWithModel(tcpRoute)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(sqlDB.Client.Create(&tcpRouteWithModel).Error).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				Expect(sqlDB.Client.Delete(&tcpRouteWithModel).Error).ToNot(HaveOccurred())
+			})
+
+			It("returns the tcp routes", func() {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(tcpRoutes).To(HaveLen(1))
+				Expect(tcpRoutes[0].TcpMappingEntity).To(Equal(tcpRoute.TcpMappingEntity))
+			})
+
+			Context("when tcp routes have outlived their ttl", func() {
+				var (
+					routerGroupId            string
+					expiredTcpRoute          models.TcpRouteMapping
+					expiredTcpRouteWithModel models.TcpRouteMapping
+				)
+
+				BeforeEach(func() {
+					modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
+					expiredTcpRoute = models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, -9)
+					expiredTcpRoute.ModificationTag = modTag
+					expiredTcpRouteWithModel, err = models.NewTcpRouteMappingWithModel(expiredTcpRoute)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(sqlDB.Client.Create(&expiredTcpRouteWithModel).Error).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					Expect(sqlDB.Client.Delete(&expiredTcpRouteWithModel).Error).ToNot(HaveOccurred())
+				})
+
+				It("does not return the route", func() {
+					Expect(err).ToNot(HaveOccurred())
+
+					var tcpDBRoutes []models.TcpRouteMapping
+					err := sqlDB.Client.Find(&tcpDBRoutes).Error
+					Expect(err).NotTo(HaveOccurred())
+					Expect(tcpDBRoutes).To(HaveLen(2))
+
+					Expect(tcpRoutes).To(HaveLen(1))
+					Expect(tcpRoutes[0].TcpMappingEntity).To(Equal(tcpRoute.TcpMappingEntity))
+				})
+			})
+		})
+
+		Context("when tcp route doesn't exist", func() {
+			It("returns an empty array", func() {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(tcpRoutes).To(Equal([]models.TcpRouteMapping{}))
+			})
+		})
+	})
+
+	Describe("DeleteTcpRouteMapping", func() {
+		var (
+			err               error
+			routerGroupId     string
+			tcpRoute          models.TcpRouteMapping
+			tcpRouteWithModel models.TcpRouteMapping
+		)
+		BeforeEach(func() {
+			routerGroupId = newUuid()
+			modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
+			tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 5)
+			tcpRoute.ModificationTag = modTag
+			tcpRouteWithModel, err = models.NewTcpRouteMappingWithModel(tcpRoute)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		JustBeforeEach(func() {
+			err = sqlDB.DeleteTcpRouteMapping(tcpRoute)
+		})
+
+		Context("when at least one tcp route exists", func() {
+			BeforeEach(func() {
+				Expect(sqlDB.Client.Create(&tcpRouteWithModel).Error).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				Expect(sqlDB.Client.Delete(&tcpRouteWithModel).Error).ToNot(HaveOccurred())
+			})
+
+			It("returns the tcp routes", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				tcpRoutes, err := sqlDB.ReadTcpRouteMappings()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(tcpRoutes).ToNot(ContainElement(tcpRoute))
+			})
+
+			Context("when multiple tcp routes exist", func() {
+				var (
+					tcpRouteWithModel2 models.TcpRouteMapping
+				)
+				BeforeEach(func() {
+					modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
+					tcpRoute := models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, 5)
+					tcpRoute.ModificationTag = modTag
+					tcpRouteWithModel2, err = models.NewTcpRouteMappingWithModel(tcpRoute)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(sqlDB.Client.Create(&tcpRouteWithModel2).Error).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					Expect(sqlDB.Client.Delete(&tcpRouteWithModel2).Error).ToNot(HaveOccurred())
+				})
+
+				It("does not delete everything", func() {
+					Expect(err).ToNot(HaveOccurred())
+
+					tcpRoutes, err := sqlDB.ReadTcpRouteMappings()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(tcpRoutes).ToNot(BeEmpty())
+				})
+			})
+		})
+
+		Context("when the tcp route doesn't exist", func() {
+			It("returns an error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err).Should(MatchError(db.DeleteError))
 			})
 		})
 	})
