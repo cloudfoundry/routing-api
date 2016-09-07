@@ -203,6 +203,10 @@ var _ = Describe("Routes API", func() {
 			Context("GET (LIST)", func() {
 				It("returns seeded router groups", func() {
 					client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
+					Eventually(func() error {
+						_, err := client.RouterGroups()
+						return err
+					}, 5*time.Second)
 					routerGroups, err := client.RouterGroups()
 					Expect(err).NotTo(HaveOccurred())
 					Expect(len(routerGroups)).To(Equal(1))
