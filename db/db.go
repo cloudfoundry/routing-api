@@ -42,6 +42,8 @@ const (
 	ROUTER_GROUP_BASE_KEY string = "/v1/router_groups"
 	defaultDialTimeout           = 30 * time.Second
 	maxRetries                   = 3
+	TCP_WATCH             string = "tcp-watch"
+	HTTP_WATCH            string = "http-watch"
 )
 
 var ErrorConflict = errors.New("etcd failed to compare")
@@ -294,11 +296,24 @@ func (e *etcd) DeleteRoute(route models.Route) error {
 	return err
 }
 
-func (e *etcd) WatchRouteChanges(filter string) (<-chan Event, <-chan error, context.CancelFunc) {
+func (e *etcd) WatchRouteChanges(watchType string) (<-chan Event, <-chan error, context.CancelFunc) {
+	var filter string
 	events := make(chan Event)
-	errors := make(chan error)
-
+	errors := make(chan error, 1)
 	cxt, cancel := context.WithCancel(e.ctx)
+
+	switch watchType {
+	case TCP_WATCH:
+		filter = TCP_MAPPING_BASE_KEY
+	case HTTP_WATCH:
+		filter = HTTP_ROUTE_BASE_KEY
+	default:
+		err := fmt.Errorf("Invalid watch type: %s", watchType)
+		errors <- err
+		close(events)
+		close(errors)
+		return events, errors, cancel
+	}
 
 	go e.dispatchWatchEvents(cxt, filter, events, errors)
 

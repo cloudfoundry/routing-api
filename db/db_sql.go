@@ -197,7 +197,8 @@ func (s *SqlDB) Connect() error {
 }
 
 func (s *SqlDB) CancelWatches() {}
-func (s *SqlDB) WatchRouteChanges(filter string) (<-chan Event, <-chan error, context.CancelFunc) {
+
+func (s *SqlDB) WatchRouteChanges(routeType string) (<-chan Event, <-chan error, context.CancelFunc) {
 	return nil, nil, nil
 }
 

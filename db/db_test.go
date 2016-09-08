@@ -249,7 +249,7 @@ var _ = Describe("DB", func() {
 
 			Describe("WatchRouteChanges with http events", func() {
 				It("does return an error when canceled", func() {
-					_, errors, cancel := etcd.WatchRouteChanges(db.HTTP_ROUTE_BASE_KEY)
+					_, errors, cancel := etcd.WatchRouteChanges(db.HTTP_WATCH)
 					cancel()
 					Consistently(errors).ShouldNot(Receive())
 					Eventually(errors).Should(BeClosed())
@@ -257,8 +257,8 @@ var _ = Describe("DB", func() {
 
 				Context("Cancel Watches", func() {
 					It("cancels any in-flight watches", func() {
-						results, err, _ := etcd.WatchRouteChanges(db.HTTP_ROUTE_BASE_KEY)
-						results2, err2, _ := etcd.WatchRouteChanges(db.HTTP_ROUTE_BASE_KEY)
+						results, err, _ := etcd.WatchRouteChanges(db.HTTP_WATCH)
+						results2, err2, _ := etcd.WatchRouteChanges(db.HTTP_WATCH)
 
 						etcd.CancelWatches()
 
@@ -304,7 +304,7 @@ var _ = Describe("DB", func() {
 					})
 
 					It("resets the index", func() {
-						_, err, _ := fakeEtcd.WatchRouteChanges("some-key")
+						_, err, _ := fakeEtcd.WatchRouteChanges(db.HTTP_WATCH)
 						Expect(err).NotTo(Receive())
 						Expect(fakeKeysAPI.WatcherCallCount()).To(Equal(2))
 
@@ -314,14 +314,14 @@ var _ = Describe("DB", func() {
 					})
 
 					It("does not throws an error", func() {
-						_, err, _ := fakeEtcd.WatchRouteChanges("some-key")
+						_, err, _ := fakeEtcd.WatchRouteChanges(db.HTTP_WATCH)
 						Expect(err).NotTo(Receive())
 					})
 				})
 
 				Context("when a route is upserted", func() {
 					It("should return an update watch event", func() {
-						results, _, _ := etcd.WatchRouteChanges(db.HTTP_ROUTE_BASE_KEY)
+						results, _, _ := etcd.WatchRouteChanges(db.HTTP_WATCH)
 
 						err := etcd.SaveRoute(route)
 						Expect(err).NotTo(HaveOccurred())
@@ -343,7 +343,7 @@ var _ = Describe("DB", func() {
 						err := etcd.SaveRoute(route)
 						Expect(err).NotTo(HaveOccurred())
 
-						results, _, _ := etcd.WatchRouteChanges(db.HTTP_ROUTE_BASE_KEY)
+						results, _, _ := etcd.WatchRouteChanges(db.HTTP_WATCH)
 
 						err = etcd.DeleteRoute(route)
 						Expect(err).NotTo(HaveOccurred())
@@ -360,7 +360,7 @@ var _ = Describe("DB", func() {
 						*route.TTL = 1
 						err := etcd.SaveRoute(route)
 						Expect(err).NotTo(HaveOccurred())
-						results, _, _ := etcd.WatchRouteChanges(db.HTTP_ROUTE_BASE_KEY)
+						results, _, _ := etcd.WatchRouteChanges(db.HTTP_WATCH)
 
 						time.Sleep(1 * time.Second)
 						var event db.Event
@@ -588,7 +588,7 @@ var _ = Describe("DB", func() {
 			Describe("WatchRouteChanges with tcp events", func() {
 				Context("when a tcp route is upserted", func() {
 					It("should return an create watch event", func() {
-						results, _, _ := etcd.WatchRouteChanges(db.TCP_MAPPING_BASE_KEY)
+						results, _, _ := etcd.WatchRouteChanges(db.TCP_WATCH)
 
 						err = etcd.SaveTcpRouteMapping(tcpRouteMapping1)
 						Expect(err).NotTo(HaveOccurred())

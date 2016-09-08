@@ -42,8 +42,8 @@ func NewMetricsReporter(database db.DB, stats PartialStatsdClient, ticker *time.
 }
 
 func (r *MetricsReporter) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	httpEventChan, httpErrChan, _ := r.db.WatchRouteChanges(db.HTTP_ROUTE_BASE_KEY)
-	tcpEventChan, tcpErrChan, _ := r.db.WatchRouteChanges(db.TCP_MAPPING_BASE_KEY)
+	httpEventChan, httpErrChan, _ := r.db.WatchRouteChanges(db.HTTP_WATCH)
+	tcpEventChan, tcpErrChan, _ := r.db.WatchRouteChanges(db.TCP_WATCH)
 	close(ready)
 	ready = nil
 

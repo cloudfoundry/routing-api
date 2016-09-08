@@ -115,7 +115,7 @@ var _ = Describe("EventsHandler", func() {
 
 					Expect(event).To(Equal(expectedEvent))
 					filterString := database.WatchRouteChangesArgsForCall(0)
-					Expect(filterString).To(Equal(db.HTTP_ROUTE_BASE_KEY))
+					Expect(filterString).To(Equal(db.HTTP_WATCH))
 				})
 
 				It("sets the content-type to text/event-stream", func() {
@@ -278,7 +278,7 @@ var _ = Describe("EventsHandler", func() {
 
 					Expect(event).To(Equal(expectedEvent))
 					filterString := database.WatchRouteChangesArgsForCall(0)
-					Expect(filterString).To(Equal(db.TCP_MAPPING_BASE_KEY))
+					Expect(filterString).To(Equal(db.TCP_WATCH))
 				})
 			})
 		})

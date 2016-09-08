@@ -44,7 +44,7 @@ var _ = Describe("Metrics", func() {
 			resultsChan = make(chan db.Event, 1)
 			tcpResultsChan = make(chan db.Event, 1)
 			database.WatchRouteChangesStub = func(filter string) (<-chan db.Event, <-chan error, context.CancelFunc) {
-				if filter == db.HTTP_ROUTE_BASE_KEY {
+				if filter == db.HTTP_WATCH {
 					return resultsChan, nil, nil
 				} else {
 					return tcpResultsChan, nil, nil
