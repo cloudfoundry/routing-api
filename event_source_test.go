@@ -224,5 +224,4 @@ var _ = Describe("EventSource", func() {
 			})
 		})
 	})
-
 })
