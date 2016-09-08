@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
+	"code.cloudfoundry.org/routing-api/matchers"
 	"code.cloudfoundry.org/routing-api/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -24,93 +25,199 @@ var _ = Describe("Routes API", func() {
 		Expect(err.Error()).To(Equal("the requested key could not be found"))
 	}
 
-	Describe("SubscribeToEvents", func() {
-		var (
-			routingAPIProcess ifrit.Process
-			eventStream       routing_api.EventSource
-			err               error
-			route1            models.Route
-		)
+	getRouterGroupGuid := func() string {
+		client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
+		var routerGroups []models.RouterGroup
+		Eventually(func() error {
+			var err error
+			routerGroups, err = client.RouterGroups()
+			return err
+		}, "30s", "1s").ShouldNot(HaveOccurred(), "Failed to connect to Routing API server after 30s.")
+		Expect(routerGroups).ToNot(HaveLen(0))
+		return routerGroups[0].Guid
+	}
 
-		BeforeEach(func() {
-			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
-			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
-			eventStream, err = client.SubscribeToEvents()
-			Expect(err).NotTo(HaveOccurred())
+	TestTCPEvents := func() {
+		Context("TCP Events", func() {
+			var (
+				routerGroupGuid string
+				eventStream     routing_api.TcpEventSource
+				err             error
+				route1          models.TcpRouteMapping
+			)
 
-			route1 = models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 55)
-		})
+			BeforeEach(func() {
+				eventStream, err = client.SubscribeToTcpEvents()
+				Expect(err).NotTo(HaveOccurred())
+				routerGroupGuid = getRouterGroupGuid()
 
-		AfterEach(func() {
-			eventStream.Close()
-			ginkgomon.Kill(routingAPIProcess)
-		})
+				route1 = models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 60)
+			})
 
-		It("returns an eventstream", func() {
-			expectedEvent := routing_api.Event{
-				Action: "Upsert",
-				Route:  route1,
-			}
-			routesToInsert := []models.Route{route1}
-			client.UpsertRoutes(routesToInsert)
+			AfterEach(func() {
+				eventStream.Close()
+			})
 
-			Eventually(func() bool {
+			It("returns an eventstream", func(done Done) {
+				defer close(done)
+				expectedEvent := routing_api.TcpEvent{
+					Action:          "Upsert",
+					TcpRouteMapping: route1,
+				}
+				routesToInsert := []models.TcpRouteMapping{route1}
+				client.UpsertTcpRouteMappings(routesToInsert)
+
 				event, err := eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
-				return event.Action == expectedEvent.Action && event.Route.Matches(expectedEvent.Route)
-			}).Should(BeTrue())
-		})
+				Expect(event.Action).To(Equal(expectedEvent.Action))
+				Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(expectedEvent.TcpRouteMapping))
+			}, 5.0)
 
-		It("gets events for updated routes", func() {
-			routeUpdated := models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 85)
+			It("gets events for updated routes", func(done Done) {
+				defer close(done)
+				routeUpdated := models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 75)
 
-			client.UpsertRoutes([]models.Route{route1})
-			Eventually(func() bool {
+				routesToInsert := []models.TcpRouteMapping{route1}
+
+				client.UpsertTcpRouteMappings(routesToInsert)
 				event, err := eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
-				return event.Action == "Upsert" && event.Route.Matches(route1)
-			}).Should(BeTrue())
+				Expect(event.Action).To(Equal("Upsert"))
+				Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(route1))
 
-			client.UpsertRoutes([]models.Route{routeUpdated})
-			Eventually(func() bool {
+				client.UpsertTcpRouteMappings([]models.TcpRouteMapping{routeUpdated})
+				event, err = eventStream.Next()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(event.Action).To(Equal("Upsert"))
+				Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(routeUpdated))
+			}, 5.0)
+
+			It("gets events for deleted routes", func(done Done) {
+				defer close(done)
+				routesToInsert := []models.TcpRouteMapping{route1}
+
+				client.UpsertTcpRouteMappings(routesToInsert)
 				event, err := eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
-				return event.Action == "Upsert" && event.Route.Matches(routeUpdated)
-			}).Should(BeTrue())
-		})
 
-		It("gets events for deleted routes", func() {
-			client.UpsertRoutes([]models.Route{route1})
+				expectedEvent := routing_api.TcpEvent{
+					Action:          "Delete",
+					TcpRouteMapping: route1,
+				}
 
-			expectedEvent := routing_api.Event{
-				Action: "Delete",
-				Route:  route1,
-			}
-			client.DeleteRoutes([]models.Route{route1})
-			Eventually(func() bool {
+				client.DeleteTcpRouteMappings(routesToInsert)
+				event, err = eventStream.Next()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(event.Action).To(Equal(expectedEvent.Action))
+				Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(expectedEvent.TcpRouteMapping))
+			}, 5.0)
+
+			It("gets events for expired routes", func(done Done) {
+				defer close(done)
+				routeExpire := models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 1)
+
+				client.UpsertTcpRouteMappings([]models.TcpRouteMapping{routeExpire})
 				event, err := eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
-				return event.Action == expectedEvent.Action && event.Route.Matches(expectedEvent.Route)
-			}).Should(BeTrue())
-		})
 
-		It("gets events for expired routes", func() {
-			routeExpire := models.NewRoute("z.a.k", 63, "42.42.42.42", "Tomato", "", 1)
+				expectedEvent := routing_api.TcpEvent{
+					Action:          "Delete",
+					TcpRouteMapping: routeExpire,
+				}
 
-			client.UpsertRoutes([]models.Route{routeExpire})
-
-			expectedEvent := routing_api.Event{
-				Action: "Delete",
-				Route:  routeExpire,
-			}
-
-			Eventually(func() bool {
-				event, err := eventStream.Next()
+				event, err = eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
-				return event.Action == expectedEvent.Action && event.Route.Matches(expectedEvent.Route)
-			}).Should(BeTrue())
+				Expect(event.Action).To(Equal(expectedEvent.Action))
+				Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(expectedEvent.TcpRouteMapping))
+			}, 5.0)
 		})
-	})
+	}
+
+	TestHTTPEvents := func() {
+		Context("HTTP Events", func() {
+			var (
+				eventStream routing_api.EventSource
+				err         error
+				route1      models.Route
+			)
+
+			BeforeEach(func() {
+				eventStream, err = client.SubscribeToEvents()
+				Expect(err).NotTo(HaveOccurred())
+
+				route1 = models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 55)
+			})
+
+			AfterEach(func() {
+				eventStream.Close()
+			})
+
+			It("returns an eventstream", func() {
+				expectedEvent := routing_api.Event{
+					Action: "Upsert",
+					Route:  route1,
+				}
+				routesToInsert := []models.Route{route1}
+				client.UpsertRoutes(routesToInsert)
+
+				Eventually(func() bool {
+					event, err := eventStream.Next()
+					Expect(err).NotTo(HaveOccurred())
+					return event.Action == expectedEvent.Action && event.Route.Matches(expectedEvent.Route)
+				}).Should(BeTrue())
+			})
+
+			It("gets events for updated routes", func() {
+				routeUpdated := models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 85)
+
+				client.UpsertRoutes([]models.Route{route1})
+				Eventually(func() bool {
+					event, err := eventStream.Next()
+					Expect(err).NotTo(HaveOccurred())
+					return event.Action == "Upsert" && event.Route.Matches(route1)
+				}).Should(BeTrue())
+
+				client.UpsertRoutes([]models.Route{routeUpdated})
+				Eventually(func() bool {
+					event, err := eventStream.Next()
+					Expect(err).NotTo(HaveOccurred())
+					return event.Action == "Upsert" && event.Route.Matches(routeUpdated)
+				}).Should(BeTrue())
+			})
+
+			It("gets events for deleted routes", func() {
+				client.UpsertRoutes([]models.Route{route1})
+
+				expectedEvent := routing_api.Event{
+					Action: "Delete",
+					Route:  route1,
+				}
+				client.DeleteRoutes([]models.Route{route1})
+				Eventually(func() bool {
+					event, err := eventStream.Next()
+					Expect(err).NotTo(HaveOccurred())
+					return event.Action == expectedEvent.Action && event.Route.Matches(expectedEvent.Route)
+				}).Should(BeTrue())
+			})
+
+			It("gets events for expired routes", func() {
+				routeExpire := models.NewRoute("z.a.k", 63, "42.42.42.42", "Tomato", "", 1)
+
+				client.UpsertRoutes([]models.Route{routeExpire})
+
+				expectedEvent := routing_api.Event{
+					Action: "Delete",
+					Route:  routeExpire,
+				}
+
+				Eventually(func() bool {
+					event, err := eventStream.Next()
+					Expect(err).NotTo(HaveOccurred())
+					return event.Action == expectedEvent.Action && event.Route.Matches(expectedEvent.Route)
+				}).Should(BeTrue())
+			})
+		})
+	}
 
 	TestHTTPRoutes := func() {
 		Context("HTTP Routes", func() {
@@ -193,21 +300,10 @@ var _ = Describe("Routes API", func() {
 				tcpRouteMapping2 models.TcpRouteMapping
 			)
 
-			getRouterGroupGuid := func() string {
-				client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
-				var routerGroups []models.RouterGroup
-				Eventually(func() error {
-					var err error
-					routerGroups, err = client.RouterGroups()
-					return err
-				}, "30s", "1s").ShouldNot(HaveOccurred(), "Failed to connect to Routing API server after 30s.")
-				Expect(routerGroups).ToNot(HaveLen(0))
-				return routerGroups[0].Guid
-			}
-
 			BeforeEach(func() {
 				routerGroupGuid = getRouterGroupGuid()
 			})
+
 			Context("POST", func() {
 				It("allows to create given tcp route mappings", func() {
 					client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
@@ -387,7 +483,7 @@ var _ = Describe("Routes API", func() {
 		dbSQL.Client.Delete(models.TcpRouteMapping{})
 	}
 
-	Describe("API with MySQL Only", func() {
+	Describe("API with MySQL + ETCD", func() {
 		var routingAPIProcess ifrit.Process
 
 		BeforeEach(func() {
@@ -417,6 +513,8 @@ var _ = Describe("Routes API", func() {
 			ginkgomon.Kill(routingAPIProcess)
 		})
 
+		TestTCPEvents()
+		TestHTTPEvents()
 		TestHTTPRoutes()
 		TestTCPRoutes(true)
 		TestRouterGroups(true)
