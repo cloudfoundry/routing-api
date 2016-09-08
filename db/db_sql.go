@@ -99,9 +99,7 @@ func updateRouterGroup(existingRouterGroup, currentRouterGroup *models.RouterGro
 }
 
 func updateTcpRouteMapping(existingTcpRouteMapping models.TcpRouteMapping, currentTcpRouteMapping models.TcpRouteMapping) models.TcpRouteMapping {
-	if currentTcpRouteMapping.ModificationTag != (models.ModificationTag{}) {
-		existingTcpRouteMapping.ModificationTag = currentTcpRouteMapping.ModificationTag
-	}
+	existingTcpRouteMapping.ModificationTag.Increment()
 	if currentTcpRouteMapping.TTL != nil {
 		existingTcpRouteMapping.TTL = currentTcpRouteMapping.TTL
 	}
@@ -159,8 +157,6 @@ func (s *SqlDB) readTcpRouteMapping(tcpMapping models.TcpRouteMapping) (models.T
 }
 
 func (s *SqlDB) SaveTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) error {
-	var existingTcpRouteMapping models.TcpRouteMapping
-
 	existingTcpRouteMapping, err := s.readTcpRouteMapping(tcpRouteMapping)
 	if err != nil {
 		return err
@@ -175,6 +171,12 @@ func (s *SqlDB) SaveTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) erro
 	if err != nil {
 		return err
 	}
+
+	tag, err := models.NewModificationTag()
+	if err != nil {
+		return err
+	}
+	tcpMapping.ModificationTag = tag
 
 	return s.Client.Create(&tcpMapping).Error
 }

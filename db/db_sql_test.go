@@ -6,6 +6,7 @@ import (
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/db/fakes"
+	"code.cloudfoundry.org/routing-api/matchers"
 	"code.cloudfoundry.org/routing-api/models"
 	"github.com/jinzhu/gorm"
 	"github.com/nu7hatch/gouuid"
@@ -255,9 +256,7 @@ var _ = Describe("SqlDB", func() {
 
 		BeforeEach(func() {
 			routerGroupId = newUuid()
-			modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
 			tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 5)
-			tcpRoute.ModificationTag = modTag
 		})
 
 		AfterEach(func() {
@@ -268,16 +267,15 @@ var _ = Describe("SqlDB", func() {
 			BeforeEach(func() {
 				err = sqlDB.SaveTcpRouteMapping(tcpRoute)
 				Expect(err).ToNot(HaveOccurred())
-				tcpRoute.ModificationTag.Index = 15
 			})
 
-			It("updates the existing tcp route mapping", func() {
+			It("updates the existing tcp route mapping and increments modification tag", func() {
 				err := sqlDB.SaveTcpRouteMapping(tcpRoute)
 				Expect(err).ToNot(HaveOccurred())
 				var dbTcpRoute models.TcpRouteMapping
 				sqlDB.Client.Where("host_ip = ?", "127.0.0.1").First(&dbTcpRoute)
 				Expect(dbTcpRoute).ToNot(BeNil())
-				Expect(dbTcpRoute.ModificationTag.Index).To(BeNumerically("==", 15))
+				Expect(dbTcpRoute.ModificationTag.Index).To(BeNumerically("==", 1))
 			})
 
 			It("refreshes the expiration time of the mapping", func() {
@@ -298,13 +296,23 @@ var _ = Describe("SqlDB", func() {
 		})
 
 		Context("when tcp route doesn't exist", func() {
+			It("creates a modification tag", func() {
+				err := sqlDB.SaveTcpRouteMapping(tcpRoute)
+				Expect(err).ToNot(HaveOccurred())
+				var dbTcpRoute models.TcpRouteMapping
+				err = sqlDB.Client.Where("host_ip = ?", "127.0.0.1").First(&dbTcpRoute).Error
+				Expect(err).ToNot(HaveOccurred())
+				Expect(dbTcpRoute.ModificationTag.Guid).ToNot(BeEmpty())
+				Expect(dbTcpRoute.ModificationTag.Index).To(BeZero())
+			})
+
 			It("creates a tcp route", func() {
 				err := sqlDB.SaveTcpRouteMapping(tcpRoute)
 				Expect(err).ToNot(HaveOccurred())
 				var dbTcpRoute models.TcpRouteMapping
 				err = sqlDB.Client.Where("host_ip = ?", "127.0.0.1").First(&dbTcpRoute).Error
 				Expect(err).ToNot(HaveOccurred())
-				Expect(dbTcpRoute.TcpMappingEntity).To(Equal(tcpRoute.TcpMappingEntity))
+				Expect(dbTcpRoute).To(matchers.MatchTcpRoute(tcpRoute))
 			})
 		})
 	})
