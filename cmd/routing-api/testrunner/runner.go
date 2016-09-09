@@ -28,6 +28,6 @@ func New(binPath string, args Args) *ginkgomon.Runner {
 	return ginkgomon.New(ginkgomon.Config{
 		Name:       "routing-api",
 		Command:    exec.Command(binPath, args.ArgSlice()...),
-		StartCheck: "started",
+		StartCheck: "routing-api.started",
 	})
 }
