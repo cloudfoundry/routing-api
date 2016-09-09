@@ -248,7 +248,7 @@ var _ = Describe("DB", func() {
 			})
 
 			Describe("WatchRouteChanges with http events", func() {
-				It("does return an error when canceled", func() {
+				It("does not return an error when canceled", func() {
 					_, errors, cancel := etcd.WatchRouteChanges(db.HTTP_WATCH)
 					cancel()
 					Consistently(errors).ShouldNot(Receive())
@@ -597,7 +597,7 @@ var _ = Describe("DB", func() {
 						Eventually(results).Should((Receive(&event)))
 						Expect(event).NotTo(BeNil())
 						Expect(event.Type).To(Equal(db.CreateEvent))
-						Expect(event.Node.Value).To(ContainSubstring(`"ttl":50`))
+						Expect(event.Value).To(ContainSubstring(`"ttl":50`))
 
 						By("when http route is upserted")
 						err := etcd.SaveRoute(route)

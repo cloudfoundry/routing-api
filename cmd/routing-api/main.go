@@ -40,6 +40,7 @@ const (
 	DEFAULT_ETCD_WORKERS = 25
 	routingApiLockPath   = "routing_api_lock"
 	sessionName          = "routing_api"
+	pruningInterval      = 10 * time.Second
 )
 
 var port = flag.Uint("port", 8080, "Port to run rounting-api server on")
@@ -86,7 +87,7 @@ func main() {
 	var etcdDatabase db.DB
 
 	// Use SQL database if available, otherwise use ETCD
-	if cfg.SqlDB.Host != "" && cfg.SqlDB.Port > 0 && cfg.SqlDB.Schema != "" {
+	if isSql(cfg.SqlDB) {
 		data := lager.Data{"host": cfg.SqlDB.Host, "port": cfg.SqlDB.Port}
 		logger.Info("sql-database", data)
 		sqlDatabase, err = db.NewSqlDB(&cfg.SqlDB)
@@ -148,6 +149,11 @@ func main() {
 		{"metrics", metricsReporter},
 	}
 
+	if isSql(cfg.SqlDB) {
+		routePruner := runCleanupRoutes(sqlDatabase, logger)
+		members = append(members, grouper.Member{Name: "sql-route-pruner", Runner: routePruner})
+	}
+
 	group := grouper.NewOrdered(os.Interrupt, members)
 	process := ifrit.Invoke(sigmon.New(group))
 
@@ -161,6 +167,10 @@ func main() {
 		os.Exit(1)
 	}
 	logger.Info("exited")
+}
+
+func isSql(sqlDB config.SqlDB) bool {
+	return (sqlDB.Host != "" && sqlDB.Port > 0 && sqlDB.Schema != "")
 }
 
 func seedRouterGroups(cfg config.Config, logger lager.Logger, database db.DB) {
@@ -195,6 +205,19 @@ func constructStopper(database db.DB) ifrit.Runner {
 			database.CancelWatches()
 		}
 
+		return nil
+	})
+}
+func runCleanupRoutes(sqlDatabase db.DB, logger lager.Logger) ifrit.Runner {
+	pruneLogger := logger.Session("prune-routes")
+	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
+		sqlDB, ok := sqlDatabase.(*db.SqlDB)
+		if !ok {
+			return nil
+		}
+		close(ready)
+
+		sqlDB.CleanupRoutes(pruneLogger, pruningInterval, signals)
 		return nil
 	})
 }

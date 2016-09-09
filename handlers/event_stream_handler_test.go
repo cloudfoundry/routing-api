@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	fake_client "code.cloudfoundry.org/uaa-go-client/fakes"
-	"github.com/coreos/etcd/client"
 
 	"io"
 	"net/http"
@@ -100,8 +99,7 @@ var _ = Describe("EventsHandler", func() {
 			Context("when the user has routing.routes.read scope", func() {
 				BeforeEach(func() {
 					resultsChan := make(chan db.Event, 1)
-					storeNode := client.Node{Value: "valuable-string"}
-					resultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode}
+					resultsChan <- db.Event{Type: db.UpdateEvent, Value: "valuable-string"}
 					database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
 				})
 
@@ -141,8 +139,7 @@ var _ = Describe("EventsHandler", func() {
 				Context("when the event is of type Expire", func() {
 					BeforeEach(func() {
 						resultsChan := make(chan db.Event, 1)
-						storeNode := client.Node{Value: "valuable-string"}
-						resultsChan <- db.Event{Type: db.ExpireEvent, PrevNode: &storeNode}
+						resultsChan <- db.Event{Type: db.ExpireEvent, Value: "valuable-string"}
 						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
@@ -159,8 +156,7 @@ var _ = Describe("EventsHandler", func() {
 				Context("when the event is of type Delete", func() {
 					BeforeEach(func() {
 						resultsChan := make(chan db.Event, 1)
-						storeNode := client.Node{Value: "valuable-string"}
-						resultsChan <- db.Event{Type: db.DeleteEvent, PrevNode: &storeNode}
+						resultsChan <- db.Event{Type: db.DeleteEvent, Value: "valuable-string"}
 						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
@@ -177,8 +173,7 @@ var _ = Describe("EventsHandler", func() {
 				Context("when the event is of type Create", func() {
 					BeforeEach(func() {
 						resultsChan := make(chan db.Event, 1)
-						storeNode := client.Node{Value: "valuable-string"}
-						resultsChan <- db.Event{Type: db.CreateEvent, Node: &storeNode}
+						resultsChan <- db.Event{Type: db.CreateEvent, Value: "valuable-string"}
 						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
@@ -195,8 +190,7 @@ var _ = Describe("EventsHandler", func() {
 				Context("when the event is of type Update", func() {
 					BeforeEach(func() {
 						resultsChan := make(chan db.Event, 1)
-						storeNode := client.Node{Value: "valuable-string"}
-						resultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode}
+						resultsChan <- db.Event{Type: db.UpdateEvent, Value: "valuable-string"}
 						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
@@ -215,8 +209,7 @@ var _ = Describe("EventsHandler", func() {
 
 					BeforeEach(func() {
 						resultsChan := make(chan db.Event, 1)
-						storeNode := client.Node{Value: "valuable-string"}
-						resultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode}
+						resultsChan <- db.Event{Type: db.UpdateEvent, Value: "valuable-string"}
 
 						errChan = make(chan error)
 						database.WatchRouteChangesReturns(resultsChan, errChan, emptyCancelFunc)
@@ -263,8 +256,7 @@ var _ = Describe("EventsHandler", func() {
 			Context("when there are changes in db", func() {
 				BeforeEach(func() {
 					resultsChan := make(chan db.Event, 1)
-					storeNode := client.Node{Value: "valuable-string"}
-					resultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode}
+					resultsChan <- db.Event{Type: db.UpdateEvent, Value: "valuable-string"}
 					database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
 				})
 
@@ -283,5 +275,4 @@ var _ = Describe("EventsHandler", func() {
 			})
 		})
 	})
-
 })

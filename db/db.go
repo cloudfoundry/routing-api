@@ -33,7 +33,7 @@ type DB interface {
 	Connect() error
 
 	CancelWatches()
-	WatchRouteChanges(filter string) (<-chan Event, <-chan error, context.CancelFunc)
+	WatchRouteChanges(watchType string) (<-chan Event, <-chan error, context.CancelFunc)
 }
 
 const (
@@ -111,6 +111,20 @@ func (j jointDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error 
 		return j.sql.DeleteTcpRouteMapping(tcpMapping)
 	}
 	return j.etcd.DeleteTcpRouteMapping(tcpMapping)
+}
+
+func (j jointDB) WatchRouteChanges(watchType string) (<-chan Event, <-chan error, context.CancelFunc) {
+	if j.sql != nil {
+		return j.sql.WatchRouteChanges(watchType)
+	}
+	return j.etcd.WatchRouteChanges(watchType)
+}
+
+func (j jointDB) CancelWatches() {
+	if j.sql != nil {
+		j.sql.CancelWatches()
+	}
+	j.etcd.CancelWatches()
 }
 
 type etcd struct {
@@ -345,7 +359,7 @@ func (e *etcd) dispatchWatchEvents(cxt context.Context, key string, events chan<
 			return
 		}
 
-		event, err := NewEvent(resp)
+		event, err := NewEventFromEtcd(resp)
 		if err != nil {
 			errors <- err
 			return

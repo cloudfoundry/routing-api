@@ -14,13 +14,14 @@ type RouterGroupType string
 type RouterGroupsDB []RouterGroupDB
 
 type RouterGroupDB struct {
-	Guid            string `gorm:"primary_key"`
+	Model
 	Name            string
 	Type            string
 	ReservablePorts string
 }
 
 type RouterGroup struct {
+	Model
 	Guid            string          `json:"guid"`
 	Name            string          `json:"name"`
 	Type            RouterGroupType `json:"type"`
@@ -28,16 +29,26 @@ type RouterGroup struct {
 }
 
 func NewRouterGroupDB(routerGroup RouterGroup) RouterGroupDB {
+	if routerGroup.Model.Guid == "" {
+		routerGroup.Model = Model{
+			Guid: routerGroup.Guid,
+		}
+	}
 	return RouterGroupDB{
-		Guid:            routerGroup.Guid,
+		Model:           routerGroup.Model,
 		Name:            routerGroup.Name,
 		Type:            string(routerGroup.Type),
 		ReservablePorts: string(routerGroup.ReservablePorts),
 	}
 }
 
+func (RouterGroupDB) TableName() string {
+	return "router_groups"
+}
+
 func (rg *RouterGroupDB) ToRouterGroup() RouterGroup {
 	return RouterGroup{
+		Model:           rg.Model,
 		Guid:            rg.Guid,
 		Name:            rg.Name,
 		Type:            RouterGroupType(rg.Type),

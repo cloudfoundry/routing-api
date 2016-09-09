@@ -89,20 +89,10 @@ func (h *EventStreamHandler) handleEventStream(log lager.Logger, filterKey strin
 				return
 			}
 
-			var nodeValue string
-			switch eventType {
-			case db.DeleteEvent, db.ExpireEvent:
-				nodeValue = event.PrevNode.Value
-			case db.CreateEvent:
-				nodeValue = event.Node.Value
-			case db.UpdateEvent:
-				nodeValue = event.Node.Value
-			}
-
 			err = sse.Event{
 				ID:   strconv.Itoa(eventID),
 				Name: eventType.String(),
-				Data: []byte(nodeValue),
+				Data: []byte(event.Value),
 			}.Write(w)
 
 			if err != nil {

@@ -11,7 +11,6 @@ import (
 	fake_statsd "code.cloudfoundry.org/routing-api/metrics/fakes"
 	"code.cloudfoundry.org/routing-api/models"
 	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
-	"github.com/coreos/etcd/client"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -113,8 +112,7 @@ var _ = Describe("Metrics", func() {
 		Context("When a create event happens", func() {
 			Context("when event is for http route", func() {
 				BeforeEach(func() {
-					storeNode := client.Node{Value: "valuable-string"}
-					resultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode}
+					resultsChan <- db.Event{Type: db.CreateEvent, Value: "valuable-string"}
 				})
 
 				It("increments the gauge", func() {
@@ -125,8 +123,7 @@ var _ = Describe("Metrics", func() {
 
 			Context("when event is for tcp route", func() {
 				BeforeEach(func() {
-					storeNode := client.Node{Value: "invaluable-string"}
-					tcpResultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode}
+					tcpResultsChan <- db.Event{Type: db.CreateEvent, Value: "valuable-string"}
 				})
 
 				It("increments the gauge", func() {
@@ -139,9 +136,7 @@ var _ = Describe("Metrics", func() {
 		Context("When a update event happens", func() {
 			Context("when event is for http route", func() {
 				BeforeEach(func() {
-					storeNode := client.Node{Value: "valuable-string"}
-					prevNode := client.Node{Value: "older-valuable-string"}
-					resultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode, PrevNode: &prevNode}
+					resultsChan <- db.Event{Type: db.UpdateEvent, Value: "some-string"}
 				})
 
 				It("doesn't modify the gauge", func() {
@@ -152,9 +147,7 @@ var _ = Describe("Metrics", func() {
 
 			Context("when event is for tcp route", func() {
 				BeforeEach(func() {
-					storeNode := client.Node{Value: "invaluable-string"}
-					prevNode := client.Node{Value: "older-invaluable-string"}
-					tcpResultsChan <- db.Event{Type: db.UpdateEvent, Node: &storeNode, PrevNode: &prevNode}
+					tcpResultsChan <- db.Event{Type: db.UpdateEvent, Value: "older-invaluable-string"}
 				})
 
 				It("doesn't modify the gauge", func() {
@@ -166,8 +159,7 @@ var _ = Describe("Metrics", func() {
 
 		Context("When a expire event happens", func() {
 			BeforeEach(func() {
-				storeNode := client.Node{Value: "valuable-string"}
-				resultsChan <- db.Event{Type: db.ExpireEvent, Node: &storeNode}
+				resultsChan <- db.Event{Type: db.ExpireEvent, Value: "valuable-string"}
 			})
 
 			It("decrements the gauge", func() {
@@ -183,8 +175,7 @@ var _ = Describe("Metrics", func() {
 		Context("When a delete event happens", func() {
 			Context("when event is for http route", func() {
 				BeforeEach(func() {
-					storeNode := client.Node{Value: "valuable-string"}
-					resultsChan <- db.Event{Type: db.DeleteEvent, Node: &storeNode}
+					resultsChan <- db.Event{Type: db.DeleteEvent, Value: "valuable-string"}
 				})
 
 				It("decrements the gauge", func() {
@@ -195,8 +186,7 @@ var _ = Describe("Metrics", func() {
 
 			Context("when event is for tcp route", func() {
 				BeforeEach(func() {
-					storeNode := client.Node{Value: "invaluable-string"}
-					tcpResultsChan <- db.Event{Type: db.DeleteEvent, Node: &storeNode}
+					tcpResultsChan <- db.Event{Type: db.DeleteEvent, Value: "invaluable-string"}
 				})
 
 				It("decrements the gauge", func() {

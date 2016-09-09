@@ -3,11 +3,14 @@ package db
 import (
 	"errors"
 	"fmt"
+	"os"
 	"runtime"
 	"time"
 
 	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 
+	"code.cloudfoundry.org/eventhub"
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/models"
 
@@ -16,7 +19,9 @@ import (
 )
 
 type SqlDB struct {
-	Client Client
+	Client       Client
+	tcpEventHub  eventhub.Hub
+	httpEventHub eventhub.Hub
 }
 
 const DeleteError = "Delete Fails: TCP Route Mapping does not exist"
@@ -40,7 +45,28 @@ func NewSqlDB(cfg *config.SqlDB) (DB, error) {
 	}
 
 	db.AutoMigrate(&models.RouterGroupDB{}, &models.TcpRouteMapping{})
-	return &SqlDB{Client: db}, nil
+
+	tcpEventHub := eventhub.NewNonBlocking(1024)
+	httpEventHub := eventhub.NewNonBlocking(1024)
+
+	return &SqlDB{Client: db, tcpEventHub: tcpEventHub, httpEventHub: httpEventHub}, nil
+}
+
+func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration, signals <-chan os.Signal) {
+	pruningTicker := time.NewTicker(pruningInterval)
+	for {
+		select {
+		case <-pruningTicker.C:
+			db := s.Client.Where("expires_at < ?", time.Now()).Delete(models.TcpRouteMapping{})
+			if db.Error != nil {
+				logger.Error("failed-to-prune-routes", db.Error)
+			} else {
+				logger.Info("successfully-finished-pruning", lager.Data{"rowsAffected": db.RowsAffected})
+			}
+		case <-signals:
+			return
+		}
+	}
 }
 
 func (s *SqlDB) ReadRouterGroups() (models.RouterGroups, error) {
@@ -156,6 +182,16 @@ func (s *SqlDB) readTcpRouteMapping(tcpMapping models.TcpRouteMapping) (models.T
 	return tcpRoute, err
 }
 
+func (s *SqlDB) emitEvent(eventType EventType, obj interface{}) error {
+	event, err := NewEventFromInterface(eventType, obj)
+	if err != nil {
+		return err
+	}
+
+	s.tcpEventHub.Emit(event)
+	return nil
+}
+
 func (s *SqlDB) SaveTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) error {
 	existingTcpRouteMapping, err := s.readTcpRouteMapping(tcpRouteMapping)
 	if err != nil {
@@ -164,7 +200,11 @@ func (s *SqlDB) SaveTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) erro
 
 	if existingTcpRouteMapping != (models.TcpRouteMapping{}) {
 		newTcpRouteMapping := updateTcpRouteMapping(existingTcpRouteMapping, tcpRouteMapping)
-		return s.Client.Save(&newTcpRouteMapping).Error
+		err = s.Client.Save(&newTcpRouteMapping).Error
+		if err != nil {
+			return err
+		}
+		return s.emitEvent(UpdateEvent, newTcpRouteMapping)
 	}
 
 	tcpMapping, err := models.NewTcpRouteMappingWithModel(tcpRouteMapping)
@@ -178,7 +218,12 @@ func (s *SqlDB) SaveTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) erro
 	}
 	tcpMapping.ModificationTag = tag
 
-	return s.Client.Create(&tcpMapping).Error
+	err = s.Client.Create(&tcpMapping).Error
+	if err != nil {
+		return err
+	}
+
+	return s.emitEvent(CreateEvent, tcpMapping)
 }
 
 func (s *SqlDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
@@ -189,17 +234,91 @@ func (s *SqlDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 	if tcpMapping == (models.TcpRouteMapping{}) {
 		return errors.New(DeleteError)
 	}
-	return s.Client.Delete(&tcpMapping).Error
+
+	err = s.Client.Delete(&tcpMapping).Error
+	if err != nil {
+		return err
+	}
+
+	event, err := NewEventFromInterface(DeleteEvent, tcpMapping)
+	if err != nil {
+		return err
+	}
+
+	s.tcpEventHub.Emit(event)
+	return nil
 }
 
 func (s *SqlDB) Connect() error {
 	return notImplementedError()
 }
 
-func (s *SqlDB) CancelWatches() {}
+func (s *SqlDB) CancelWatches() {
+	// This only errors if the eventhub was closed.
+	_ = s.tcpEventHub.Close()
+	_ = s.httpEventHub.Close()
+}
 
-func (s *SqlDB) WatchRouteChanges(routeType string) (<-chan Event, <-chan error, context.CancelFunc) {
-	return nil, nil, nil
+func (s *SqlDB) WatchRouteChanges(watchType string) (<-chan Event, <-chan error, context.CancelFunc) {
+	var (
+		sub eventhub.Source
+		err error
+	)
+	events := make(chan Event)
+	errors := make(chan error, 1)
+	cancelFunc := func() {}
+
+	switch watchType {
+	case TCP_WATCH:
+		sub, err = s.tcpEventHub.Subscribe()
+		if err != nil {
+			errors <- err
+			close(events)
+			close(errors)
+			return events, errors, cancelFunc
+		}
+	case HTTP_WATCH:
+		sub, err = s.httpEventHub.Subscribe()
+		if err != nil {
+			errors <- err
+			close(events)
+			close(errors)
+			return events, errors, cancelFunc
+		}
+	default:
+		err := fmt.Errorf("Invalid watch type: %s", watchType)
+		errors <- err
+		close(events)
+		close(errors)
+		return events, errors, cancelFunc
+	}
+
+	cancelFunc = func() {
+		sub.Close()
+	}
+
+	go dispatchWatchEvents(sub, events, errors)
+
+	return events, errors, cancelFunc
+}
+
+func dispatchWatchEvents(sub eventhub.Source, events chan<- Event, errors chan<- error) {
+	defer close(events)
+	defer close(errors)
+	for {
+		event, err := sub.Next()
+		if err != nil {
+			if err == eventhub.ErrReadFromClosedSource {
+				return
+			}
+			errors <- err
+		}
+		watchEvent, ok := event.(Event)
+		if !ok {
+			errors <- fmt.Errorf("Incoming event is not a db.Event: %#v", event)
+		}
+		events <- watchEvent
+	}
 }
 
 func recordNotFound(err error) bool {
