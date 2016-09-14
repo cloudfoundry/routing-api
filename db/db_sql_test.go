@@ -220,7 +220,7 @@ var _ = Describe("SqlDB", func() {
 			err = sqlDB.SaveRouterGroup(routerGroup)
 		})
 
-		Context("when router group exists", func() {
+		Context("when the router group already exists", func() {
 			BeforeEach(func() {
 				sqlDB.Client.Create(&models.RouterGroupDB{
 					Model:           models.Model{Guid: routerGroupId},
@@ -308,7 +308,7 @@ var _ = Describe("SqlDB", func() {
 			})
 		})
 
-		Context("when tcp route doesn't exist", func() {
+		Context("when the tcp route doesn't exist", func() {
 			It("creates a modification tag", func() {
 				err := sqlDB.SaveTcpRouteMapping(tcpRoute)
 				Expect(err).ToNot(HaveOccurred())
@@ -387,7 +387,7 @@ var _ = Describe("SqlDB", func() {
 					Expect(sqlDB.Client.Delete(&expiredTcpRouteWithModel).Error).ToNot(HaveOccurred())
 				})
 
-				It("does not return the route", func() {
+				It("does not return the tcp route", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					var tcpDBRoutes []models.TcpRouteMapping
@@ -438,7 +438,7 @@ var _ = Describe("SqlDB", func() {
 				Expect(sqlDB.Client.Delete(&tcpRouteWithModel).Error).ToNot(HaveOccurred())
 			})
 
-			It("returns the tcp routes", func() {
+			It("deletes the tcp route", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				tcpRoutes, err := sqlDB.ReadTcpRouteMappings()
@@ -447,14 +447,13 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			Context("when multiple tcp routes exist", func() {
-				var (
-					tcpRouteWithModel2 models.TcpRouteMapping
-				)
+				var tcpRouteWithModel2 models.TcpRouteMapping
+
 				BeforeEach(func() {
 					modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
-					tcpRoute := models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, 5)
-					tcpRoute.ModificationTag = modTag
-					tcpRouteWithModel2, err = models.NewTcpRouteMappingWithModel(tcpRoute)
+					tcpRoute2 := models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, 5)
+					tcpRoute2.ModificationTag = modTag
+					tcpRouteWithModel2, err = models.NewTcpRouteMappingWithModel(tcpRoute2)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(sqlDB.Client.Create(&tcpRouteWithModel2).Error).ToNot(HaveOccurred())
 				})
@@ -468,7 +467,9 @@ var _ = Describe("SqlDB", func() {
 
 					tcpRoutes, err := sqlDB.ReadTcpRouteMappings()
 					Expect(err).ToNot(HaveOccurred())
-					Expect(tcpRoutes).ToNot(BeEmpty())
+
+					Expect(tcpRoutes).To(HaveLen(1))
+					Expect(tcpRoutes[0]).To(matchers.MatchTcpRoute(tcpRouteWithModel2))
 				})
 			})
 		})
@@ -481,36 +482,224 @@ var _ = Describe("SqlDB", func() {
 		})
 	})
 
-	// Describe("WatchRouteChanges with http events", func() {
-	// 	Context("Cancel Watches", func() {
-	// 		It("cancels any in-flight watches", func() {
-	// 			results, err, _ := etcd.WatchRouteChanges(db.HTTP_WATCH)
-	// 			results2, err2, _ := etcd.WatchRouteChanges(db.HTTP_WATCH)
+	Describe("SaveRoute", func() {
+		var (
+			httpRoute models.Route
+		)
 
-	// 			etcd.CancelWatches()
+		BeforeEach(func() {
+			httpRoute = models.NewRoute("post_here", 7000, "127.0.0.1", "my-guid", "https://rs.com", 5)
+		})
 
-	// 			Eventually(err).Should(BeClosed())
-	// 			Eventually(err2).Should(BeClosed())
-	// 			Eventually(results).Should(BeClosed())
-	// 			Eventually(results2).Should(BeClosed())
-	// 		})
-	// 	})
+		AfterEach(func() {
+			sqlDB.Client.Delete(&httpRoute)
+		})
 
-	// 	Context("when a route is expired", func() {
-	// 		It("should return an expire watch event", func() {
-	// 			*route.TTL = 1
-	// 			err := etcd.SaveRoute(route)
-	// 			Expect(err).NotTo(HaveOccurred())
-	// 			results, _, _ := etcd.WatchRouteChanges(db.HTTP_WATCH)
+		Context("when the http route already exists", func() {
+			BeforeEach(func() {
+				err = sqlDB.SaveRoute(httpRoute)
+				Expect(err).ToNot(HaveOccurred())
+			})
 
-	// 			time.Sleep(1 * time.Second)
-	// 			var event db.Event
-	// 			Eventually(results).Should((Receive(&event)))
-	// 			Expect(event).NotTo(BeNil())
-	// 			Expect(event.Type).To(Equal(db.ExpireEvent))
-	// 		})
-	// 	})
-	// })
+			It("updates the existing route and increments its modification tag", func() {
+				err := sqlDB.SaveRoute(httpRoute)
+				Expect(err).ToNot(HaveOccurred())
+				var dbRoute models.Route
+				sqlDB.Client.Where("ip = ?", "127.0.0.1").First(&dbRoute)
+				Expect(dbRoute).ToNot(BeNil())
+				Expect(dbRoute.ModificationTag.Index).To(BeNumerically("==", 1))
+			})
+
+			It("refreshes the expiration time of the route", func() {
+				var dbRoute models.Route
+				var ttl = 9
+				sqlDB.Client.Where("ip = ?", "127.0.0.1").First(&dbRoute)
+				Expect(dbRoute).ToNot(BeNil())
+				initialExpiration := dbRoute.ExpiresAt
+
+				httpRoute.TTL = &ttl
+				err := sqlDB.SaveRoute(httpRoute)
+				Expect(err).ToNot(HaveOccurred())
+
+				sqlDB.Client.Where("ip = ?", "127.0.0.1").First(&dbRoute)
+				Expect(dbRoute).ToNot(BeNil())
+				Expect(initialExpiration).To(BeTemporally("<", dbRoute.ExpiresAt))
+			})
+		})
+
+		Context("when the http route doesn't exist", func() {
+			It("creates a modification tag", func() {
+				err := sqlDB.SaveRoute(httpRoute)
+
+				Expect(err).ToNot(HaveOccurred())
+				var dbRoute models.Route
+				err = sqlDB.Client.Where("ip = ?", "127.0.0.1").First(&dbRoute).Error
+				Expect(err).ToNot(HaveOccurred())
+				Expect(dbRoute.ModificationTag.Guid).ToNot(BeEmpty())
+				Expect(dbRoute.ModificationTag.Index).To(BeZero())
+			})
+
+			It("creates a http route", func() {
+				err := sqlDB.SaveRoute(httpRoute)
+				Expect(err).ToNot(HaveOccurred())
+				var dbRoute models.Route
+				err = sqlDB.Client.Where("ip = ?", "127.0.0.1").First(&dbRoute).Error
+				Expect(err).ToNot(HaveOccurred())
+				Expect(dbRoute).To(matchers.MatchHttpRoute(httpRoute))
+			})
+		})
+	})
+
+	Describe("ReadRoute", func() {
+		var (
+			err    error
+			routes []models.Route
+		)
+
+		JustBeforeEach(func() {
+			routes, err = sqlDB.ReadRoutes()
+		})
+
+		Context("when at least one route exists", func() {
+			var (
+				route          models.Route
+				routeWithModel models.Route
+			)
+
+			BeforeEach(func() {
+				modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
+				route = models.NewRoute("post_here", 7000, "127.0.0.1", "my-guid", "https://rs.com", 5)
+				route.ModificationTag = modTag
+				routeWithModel, err = models.NewRouteWithModel(route)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(sqlDB.Client.Create(&routeWithModel).Error).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				Expect(sqlDB.Client.Delete(&routeWithModel).Error).ToNot(HaveOccurred())
+			})
+
+			It("returns the routes", func() {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(routes).To(HaveLen(1))
+				Expect(routes[0]).To(matchers.MatchHttpRoute(routeWithModel))
+			})
+
+			Context("when http routes have outlived their ttl", func() {
+				var (
+					expiredRoute          models.Route
+					expiredRouteWithModel models.Route
+				)
+
+				BeforeEach(func() {
+					modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
+					expiredRoute = models.NewRoute("post_here", 7001, "127.0.0.1", "my-guid", "https://rs.com", -9)
+					expiredRoute.ModificationTag = modTag
+					expiredRouteWithModel, err = models.NewRouteWithModel(expiredRoute)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(sqlDB.Client.Create(&expiredRouteWithModel).Error).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					Expect(sqlDB.Client.Delete(&expiredRouteWithModel).Error).ToNot(HaveOccurred())
+				})
+
+				It("does not return the route", func() {
+					Expect(err).ToNot(HaveOccurred())
+
+					var dbRoutes []models.Route
+					err := sqlDB.Client.Find(&dbRoutes).Error
+					Expect(err).NotTo(HaveOccurred())
+					Expect(dbRoutes).To(HaveLen(2))
+
+					Expect(routes).To(HaveLen(1))
+					Expect(routes[0]).To(matchers.MatchHttpRoute(route))
+				})
+			})
+		})
+
+		Context("when the http route doesn't exist", func() {
+			It("returns an empty array", func() {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(routes).To(Equal([]models.Route{}))
+			})
+		})
+	})
+
+	Describe("DeleteRoute", func() {
+		var (
+			err            error
+			route          models.Route
+			routeWithModel models.Route
+		)
+		BeforeEach(func() {
+			modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
+			route = models.NewRoute("post_here", 7000, "127.0.0.1", "my-guid", "https://rs.com", 100)
+			route.ModificationTag = modTag
+			routeWithModel, err = models.NewRouteWithModel(route)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		JustBeforeEach(func() {
+			err = sqlDB.DeleteRoute(route)
+		})
+
+		Context("when at least one route exists", func() {
+			BeforeEach(func() {
+				Expect(sqlDB.Client.Create(&routeWithModel).Error).ToNot(HaveOccurred())
+				routes, err := sqlDB.ReadRoutes()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(routes).To(HaveLen(1))
+				Expect(routes).ToNot(ContainElement(route))
+			})
+
+			AfterEach(func() {
+				Expect(sqlDB.Client.Delete(&routeWithModel).Error).ToNot(HaveOccurred())
+			})
+
+			It("deletes the route", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				routes, err := sqlDB.ReadRoutes()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(routes).To(BeEmpty())
+			})
+
+			Context("when multiple routes exist", func() {
+				var (
+					routeWithModel2 models.Route
+				)
+				BeforeEach(func() {
+					modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
+					route := models.NewRoute("post_here", 7001, "127.0.0.1", "my-guid", "https://rs.com", 5)
+					route.ModificationTag = modTag
+					routeWithModel2, err = models.NewRouteWithModel(route)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(sqlDB.Client.Create(&routeWithModel2).Error).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					Expect(sqlDB.Client.Delete(&routeWithModel2).Error).ToNot(HaveOccurred())
+				})
+
+				It("deletes the specified route", func() {
+					Expect(err).ToNot(HaveOccurred())
+
+					routes, err := sqlDB.ReadRoutes()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(routes).To(HaveLen(1))
+					Expect(routes[0]).To(matchers.MatchHttpRoute(routeWithModel2))
+				})
+			})
+		})
+
+		Context("when the route doesn't exist", func() {
+			It("returns an error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err).Should(MatchError(db.DeleteError))
+			})
+		})
+	})
 
 	Describe("WatchRouteChanges with tcp events", func() {
 		var (
@@ -647,6 +836,66 @@ var _ = Describe("SqlDB", func() {
 			Eventually(errors).Should(BeClosed())
 		})
 
+		Context("when a http route is updated", func() {
+			var (
+				httpRoute models.Route
+			)
+
+			BeforeEach(func() {
+				httpRoute = models.NewRoute("post_here", 7001, "127.0.0.1", "my-guid", "https://rs.com", 5)
+				err = sqlDB.SaveRoute(httpRoute)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("should return an update watch event", func() {
+				results, _, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
+
+				err = sqlDB.SaveRoute(httpRoute)
+				Expect(err).NotTo(HaveOccurred())
+
+				var event db.Event
+				Eventually(results).Should((Receive(&event)))
+				Expect(event).NotTo(BeNil())
+				Expect(event.Type).To(Equal(db.UpdateEvent))
+				Expect(event.Value).To(ContainSubstring(`"port":7001`))
+			})
+		})
+
+		Context("when a http route is created", func() {
+			It("should return an create watch event", func() {
+				results, _, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
+
+				httpRoute := models.NewRoute("post_here", 7002, "127.0.0.1", "my-guid", "https://rs.com", 5)
+				err := sqlDB.SaveRoute(httpRoute)
+				Expect(err).NotTo(HaveOccurred())
+
+				var event db.Event
+				Eventually(results).Should((Receive(&event)))
+				Expect(event).NotTo(BeNil())
+				Expect(event.Type).To(Equal(db.CreateEvent))
+				Expect(event.Value).To(ContainSubstring(`"port":7002`))
+			})
+		})
+
+		Context("when a http route is deleted", func() {
+			It("should return an delete watch event", func() {
+				httpRoute := models.NewRoute("post_here", 7003, "127.0.0.1", "my-guid", "https://rs.com", 5)
+				err := sqlDB.SaveRoute(httpRoute)
+				Expect(err).NotTo(HaveOccurred())
+
+				results, _, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
+
+				err = sqlDB.DeleteRoute(httpRoute)
+				Expect(err).NotTo(HaveOccurred())
+
+				var event db.Event
+				Eventually(results).Should((Receive(&event)))
+				Expect(event).NotTo(BeNil())
+				Expect(event.Type).To(Equal(db.DeleteEvent))
+				Expect(event.Value).To(ContainSubstring(`"port":7003`))
+			})
+		})
+
 		Context("Cancel Watches", func() {
 			It("cancels any in-flight watches", func() {
 				results, err, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
@@ -745,15 +994,6 @@ var _ = Describe("SqlDB", func() {
 			It("logs error message", func() {
 				Eventually(logger).Should(gbytes.Say(`failed-to-prune-routes","log_level":2,"data":{"error":"sql: database is closed"}`))
 			})
-		})
-	})
-
-	Describe("Methods not implemented", func() {
-		It("returns an error", func() {
-			err := sqlDB.SaveRoute(models.Route{})
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("function not implemented:"))
-			Expect(err.Error()).To(ContainSubstring("SaveRoute"))
 		})
 	})
 })

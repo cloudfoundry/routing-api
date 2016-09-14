@@ -113,6 +113,27 @@ func (j jointDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error 
 	return j.etcd.DeleteTcpRouteMapping(tcpMapping)
 }
 
+func (j jointDB) ReadRoutes() ([]models.Route, error) {
+	if j.sql != nil {
+		return j.sql.ReadRoutes()
+	}
+	return j.etcd.ReadRoutes()
+}
+
+func (j jointDB) SaveRoute(route models.Route) error {
+	if j.sql != nil {
+		return j.sql.SaveRoute(route)
+	}
+	return j.etcd.SaveRoute(route)
+}
+
+func (j jointDB) DeleteRoute(route models.Route) error {
+	if j.sql != nil {
+		return j.sql.DeleteRoute(route)
+	}
+	return j.etcd.DeleteRoute(route)
+}
+
 func (j jointDB) WatchRouteChanges(watchType string) (<-chan Event, <-chan error, context.CancelFunc) {
 	if j.sql != nil {
 		return j.sql.WatchRouteChanges(watchType)

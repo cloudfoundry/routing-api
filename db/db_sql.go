@@ -24,7 +24,7 @@ type SqlDB struct {
 	httpEventHub eventhub.Hub
 }
 
-const DeleteError = "Delete Fails: TCP Route Mapping does not exist"
+const DeleteError = "Delete Fails: Route does not exist"
 
 var _ DB = &SqlDB{}
 
@@ -44,7 +44,7 @@ func NewSqlDB(cfg *config.SqlDB) (DB, error) {
 		return nil, err
 	}
 
-	db.AutoMigrate(&models.RouterGroupDB{}, &models.TcpRouteMapping{})
+	db.AutoMigrate(&models.RouterGroupDB{}, &models.TcpRouteMapping{}, &models.Route{})
 
 	tcpEventHub := eventhub.NewNonBlocking(1024)
 	httpEventHub := eventhub.NewNonBlocking(1024)
@@ -136,6 +136,22 @@ func updateTcpRouteMapping(existingTcpRouteMapping models.TcpRouteMapping, curre
 	return existingTcpRouteMapping
 }
 
+func updateRoute(existingRoute, currentRoute models.Route) models.Route {
+	existingRoute.ModificationTag.Increment()
+	if currentRoute.TTL != nil {
+		existingRoute.TTL = currentRoute.TTL
+	}
+
+	if currentRoute.LogGuid != "" {
+		existingRoute.LogGuid = currentRoute.LogGuid
+	}
+
+	existingRoute.ExpiresAt = time.Now().
+		Add(time.Duration(*existingRoute.TTL) * time.Second)
+
+	return existingRoute
+}
+
 func notImplementedError() error {
 	pc, _, _, _ := runtime.Caller(1)
 	fnName := runtime.FuncForPC(pc).Name()
@@ -143,13 +159,80 @@ func notImplementedError() error {
 }
 
 func (s *SqlDB) ReadRoutes() ([]models.Route, error) {
-	return nil, notImplementedError()
+	var routes []models.Route
+	now := time.Now()
+	err := s.Client.Where("expires_at > ?", now).Find(&routes).Error
+	if err != nil {
+		return nil, err
+	}
+	return routes, err
 }
+
+func (s *SqlDB) readRoute(route models.Route) (models.Route, error) {
+	var routes []models.Route
+	err := s.Client.Where("route = ? and ip = ? and port = ? and route_service_url = ?",
+		route.Route, route.IP, route.Port, route.RouteServiceUrl).Find(&routes).Error
+
+	if err != nil {
+		return route, err
+	}
+	count := len(routes)
+	if count > 1 || count < 0 {
+		return route, errors.New("Have duplicate routes")
+	}
+	if count == 1 {
+		return routes[0], nil
+	}
+	return models.Route{}, nil
+}
+
 func (s *SqlDB) SaveRoute(route models.Route) error {
-	return notImplementedError()
+	existingRoute, err := s.readRoute(route)
+	if err != nil {
+		return nil
+	}
+
+	if existingRoute != (models.Route{}) {
+		newRoute := updateRoute(existingRoute, route)
+		err = s.Client.Save(&newRoute).Error
+		if err != nil {
+			return err
+		}
+		return s.emitEvent(UpdateEvent, newRoute)
+	}
+
+	newRoute, err := models.NewRouteWithModel(route)
+	if err != nil {
+		return err
+	}
+
+	tag, err := models.NewModificationTag()
+	if err != nil {
+		return err
+	}
+	newRoute.ModificationTag = tag
+
+	err = s.Client.Create(&newRoute).Error
+	if err != nil {
+		return err
+	}
+	return s.emitEvent(CreateEvent, newRoute)
 }
+
 func (s *SqlDB) DeleteRoute(route models.Route) error {
-	return notImplementedError()
+	route, err := s.readRoute(route)
+	if err != nil {
+		return err
+	}
+	if route == (models.Route{}) {
+		return errors.New(DeleteError)
+	}
+
+	err = s.Client.Delete(&route).Error
+	if err != nil {
+		return err
+	}
+	return s.emitEvent(DeleteEvent, route)
 }
 
 func (s *SqlDB) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
@@ -188,7 +271,14 @@ func (s *SqlDB) emitEvent(eventType EventType, obj interface{}) error {
 		return err
 	}
 
-	s.tcpEventHub.Emit(event)
+	switch obj.(type) {
+	case models.Route:
+		s.httpEventHub.Emit(event)
+	case models.TcpRouteMapping:
+		s.tcpEventHub.Emit(event)
+	default:
+		return errors.New("Unknown event type")
+	}
 	return nil
 }
 
@@ -239,14 +329,7 @@ func (s *SqlDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 	if err != nil {
 		return err
 	}
-
-	event, err := NewEventFromInterface(DeleteEvent, tcpMapping)
-	if err != nil {
-		return err
-	}
-
-	s.tcpEventHub.Emit(event)
-	return nil
+	return s.emitEvent(DeleteEvent, tcpMapping)
 }
 
 func (s *SqlDB) Connect() error {

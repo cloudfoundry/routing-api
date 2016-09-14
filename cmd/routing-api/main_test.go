@@ -2,7 +2,6 @@ package main_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os/exec"
 	"time"
@@ -98,15 +97,26 @@ var _ = Describe("Main", func() {
 		It("unregisters from etcd when the process exits", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
+			// getRoutes := func() string {
+			// 	routesPath := fmt.Sprintf("%s/v2/keys/routes", etcdUrl)
+			// 	resp, err := http.Get(routesPath)
+			// 	Expect(err).ToNot(HaveOccurred())
+
+			// 	body, err := ioutil.ReadAll(resp.Body)
+			// 	Expect(err).ToNot(HaveOccurred())
+			// 	return string(body)
+			// }
 
 			getRoutes := func() string {
-				routesPath := fmt.Sprintf("%s/v2/keys/routes", etcdUrl)
-				resp, err := http.Get(routesPath)
+				var routes []models.Route
+				err := gormDB.Find(&routes).Error
 				Expect(err).ToNot(HaveOccurred())
 
-				body, err := ioutil.ReadAll(resp.Body)
-				Expect(err).ToNot(HaveOccurred())
-				return string(body)
+				var routeUrl string
+				if len(routes) > 0 {
+					routeUrl = routes[0].Route
+				}
+				return routeUrl
 			}
 			Eventually(getRoutes).Should(ContainSubstring("api.example.com/routing"))
 
@@ -152,7 +162,7 @@ var _ = Describe("Main", func() {
 				setupETCD()
 			})
 			It("exits 1 when we shut down the routing api", func() {
-				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgsNoSQL)
 				proc := ifrit.Invoke(routingAPIRunner)
 
 				etcdAdapter.Disconnect()

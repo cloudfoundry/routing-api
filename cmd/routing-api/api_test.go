@@ -464,6 +464,21 @@ var _ = Describe("Routes API", func() {
 		dbSQL.Client.Delete(models.TcpRouteMapping{})
 	}
 
+	cleanupSQLHTTPRouteMappings := func() {
+		sqlCfg := config.SqlDB{
+			Username: "root",
+			Password: "password",
+			Schema:   sqlDBName,
+			Host:     "localhost",
+			Port:     3306,
+			Type:     "mysql",
+		}
+		dbSQLInterface, err := db.NewSqlDB(&sqlCfg)
+		Expect(err).ToNot(HaveOccurred())
+		dbSQL := dbSQLInterface.(*db.SqlDB)
+		dbSQL.Client.Delete(models.Route{})
+	}
+
 	Describe("API with MySQL + ETCD", func() {
 		var routingAPIProcess ifrit.Process
 
@@ -475,15 +490,18 @@ var _ = Describe("Routes API", func() {
 		AfterEach(func() {
 			ensureETCDIsEmpty(db.TCP_MAPPING_BASE_KEY)
 			ensureETCDIsEmpty(db.ROUTER_GROUP_BASE_KEY)
+			ensureETCDIsEmpty(db.HTTP_ROUTE_BASE_KEY)
 
 			ginkgomon.Kill(routingAPIProcess)
 			cleanupSQLRouterGroups()
 			cleanupSQLTCPRouteMappings()
+			cleanupSQLHTTPRouteMappings()
 		})
 
 		TestRouterGroups()
 		TestTCPRoutes()
 		TestTCPEvents()
+		TestHTTPRoutes()
 	})
 
 	Describe("API with ETCD Only", func() {

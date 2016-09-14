@@ -22,6 +22,7 @@ func MatchTcpRoute(target models.TcpRouteMapping) types.GomegaMatcher {
 		}, Equal(target.ExternalPort)),
 	)
 }
+
 func MatchRouterGroup(target models.RouterGroup) types.GomegaMatcher {
 	return SatisfyAll(
 		WithTransform(func(t models.RouterGroup) string {
@@ -36,5 +37,25 @@ func MatchRouterGroup(target models.RouterGroup) types.GomegaMatcher {
 		WithTransform(func(t models.RouterGroup) models.ReservablePorts {
 			return t.ReservablePorts
 		}, Equal(target.ReservablePorts)),
+	)
+}
+
+func MatchHttpRoute(target models.Route) types.GomegaMatcher {
+	return SatisfyAll(
+		WithTransform(func(t models.Route) string {
+			return t.Route
+		}, Equal(target.Route)),
+		WithTransform(func(t models.Route) uint16 {
+			return t.Port
+		}, Equal(target.Port)),
+		WithTransform(func(t models.Route) string {
+			return t.IP
+		}, Equal(target.IP)),
+		WithTransform(func(t models.Route) string {
+			return t.LogGuid
+		}, Equal(target.LogGuid)),
+		WithTransform(func(t models.Route) string {
+			return t.RouteServiceUrl
+		}, Equal(target.RouteServiceUrl)),
 	)
 }

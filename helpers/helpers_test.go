@@ -30,11 +30,13 @@ var _ = Describe("Helpers", func() {
 
 		BeforeEach(func() {
 			route = models.Route{
-				Route:   "i dont care",
-				Port:    3000,
-				IP:      "i dont care even more",
-				LogGuid: "i care a little bit more now",
-				TTL:     new(int),
+				RouteEntity: models.RouteEntity{
+					Route:   "i dont care",
+					Port:    3000,
+					IP:      "i dont care even more",
+					LogGuid: "i care a little bit more now",
+					TTL:     new(int),
+				},
 			}
 			*route.TTL = 120
 			database = &fake_db.FakeDB{}

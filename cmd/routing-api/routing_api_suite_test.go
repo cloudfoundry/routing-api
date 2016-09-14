@@ -18,6 +18,7 @@ import (
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"github.com/cloudfoundry/storeadapter"
 	"github.com/cloudfoundry/storeadapter/storerunner/etcdstorerunner"
+	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -46,6 +47,7 @@ var (
 
 	sqlDBName    string
 	sqlDB        *sql.DB
+	gormDB       *gorm.DB
 	consulRunner *consulrunner.ClusterRunner
 )
 
@@ -111,6 +113,10 @@ func createSqlDatabase() {
 	Expect(sqlDB.Ping()).NotTo(HaveOccurred())
 
 	_, err = sqlDB.Exec(fmt.Sprintf("CREATE DATABASE %s", sqlDBName))
+	Expect(err).NotTo(HaveOccurred())
+
+	connectionString := fmt.Sprintf("root:password@/%s?parseTime=true", sqlDBName)
+	gormDB, err = gorm.Open("mysql", connectionString)
 	Expect(err).NotTo(HaveOccurred())
 }
 

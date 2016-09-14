@@ -1,25 +1,50 @@
 package models
 
-import "github.com/nu7hatch/gouuid"
+import (
+	"time"
+
+	"github.com/nu7hatch/gouuid"
+)
 
 type Route struct {
-	Route           string          `json:"route"`
-	Port            uint16          `json:"port"`
-	IP              string          `json:"ip"`
-	TTL             *int            `json:"ttl"`
-	LogGuid         string          `json:"log_guid"`
-	RouteServiceUrl string          `json:"route_service_url,omitempty"`
-	ModificationTag ModificationTag `json:"modification_tag"`
+	Model
+	ExpiresAt time.Time `json:"-"`
+	RouteEntity
 }
 
-func NewRoute(url string, port uint16, ip, logGuid, routeServiceUrl string, ttl int) Route {
+type RouteEntity struct {
+	Route           string `gorm:"not null; unique_index:idx_route" json:"route"`
+	Port            uint16 `gorm:"not null; unique_index:idx_route" json:"port"`
+	IP              string `gorm:"not null; unique_index:idx_route" json:"ip"`
+	TTL             *int   `json:"ttl"`
+	LogGuid         string `json:"log_guid"`
+	RouteServiceUrl string `gorm:"not null; unique_index:idx_route" json:"route_service_url,omitempty"`
+	ModificationTag `json:"modification_tag"`
+}
+
+func NewRouteWithModel(route Route) (Route, error) {
+	guid, err := uuid.NewV4()
+	if err != nil {
+		return Route{}, err
+	}
+
 	return Route{
+		ExpiresAt:   time.Now().Add(time.Duration(*route.TTL) * time.Second),
+		Model:       Model{Guid: guid.String()},
+		RouteEntity: route.RouteEntity,
+	}, nil
+}
+func NewRoute(url string, port uint16, ip, logGuid, routeServiceUrl string, ttl int) Route {
+	route := RouteEntity{
 		Route:           url,
 		Port:            port,
 		IP:              ip,
 		TTL:             &ttl,
 		LogGuid:         logGuid,
 		RouteServiceUrl: routeServiceUrl,
+	}
+	return Route{
+		RouteEntity: route,
 	}
 }
 
