@@ -113,12 +113,11 @@ var _ = Describe("Routes API", func() {
 				Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(expectedEvent.TcpRouteMapping))
 			}, 5.0)
 
-			XIt("gets events for expired routes", func(done Done) {
-				defer close(done)
+			It("gets events for expired routes", func() {
 				routeExpire := models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 1)
 
 				client.UpsertTcpRouteMappings([]models.TcpRouteMapping{routeExpire})
-				event, err := eventStream.Next()
+				_, err := eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
 
 				expectedEvent := routing_api.TcpEvent{
@@ -126,11 +125,14 @@ var _ = Describe("Routes API", func() {
 					TcpRouteMapping: routeExpire,
 				}
 
-				event, err = eventStream.Next()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(event.Action).To(Equal(expectedEvent.Action))
-				Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(expectedEvent.TcpRouteMapping))
-			}, 5.0)
+				Eventually(func() models.TcpRouteMapping {
+					event, err := eventStream.Next()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(event.Action).To(Equal(expectedEvent.Action))
+					// Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(expectedEvent.TcpRouteMapping))
+					return event.TcpRouteMapping
+				}).Should(matchers.MatchTcpRoute(expectedEvent.TcpRouteMapping))
+			})
 		})
 	}
 
@@ -205,6 +207,8 @@ var _ = Describe("Routes API", func() {
 				routeExpire := models.NewRoute("z.a.k", 63, "42.42.42.42", "Tomato", "", 1)
 
 				client.UpsertRoutes([]models.Route{routeExpire})
+				_, err := eventStream.Next()
+				Expect(err).NotTo(HaveOccurred())
 
 				expectedEvent := routing_api.Event{
 					Action: "Delete",
@@ -502,6 +506,7 @@ var _ = Describe("Routes API", func() {
 		TestTCPRoutes()
 		TestTCPEvents()
 		TestHTTPRoutes()
+		TestHTTPEvents()
 	})
 
 	Describe("API with ETCD Only", func() {

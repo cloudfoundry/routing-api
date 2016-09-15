@@ -57,12 +57,53 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 	for {
 		select {
 		case <-pruningTicker.C:
-			db := s.Client.Where("expires_at < ?", time.Now()).Delete(models.TcpRouteMapping{})
-			if db.Error != nil {
-				logger.Error("failed-to-prune-routes", db.Error)
-			} else {
-				logger.Info("successfully-finished-pruning", lager.Data{"rowsAffected": db.RowsAffected})
-			}
+			go func() {
+				var tcpRoutes []models.TcpRouteMapping
+				err := s.Client.Where("expires_at < ?", time.Now()).Find(&tcpRoutes).Error
+				if err != nil {
+					logger.Error("failed-to-prune-tcp-routes", err)
+					return
+				}
+				guids := make([]string, len(tcpRoutes))
+				for _, route := range tcpRoutes {
+					guids = append(guids, route.Guid)
+
+				}
+				db := s.Client.Where("guid in (?)", guids).Delete(models.TcpRouteMapping{})
+				if db.Error != nil {
+					logger.Error("failed-to-prune-tcp-routes", err)
+					return
+				}
+				for _, route := range tcpRoutes {
+					s.emitEvent(DeleteEvent, route)
+				}
+
+				logger.Info("successfully-finished-pruning-tcp-routes", lager.Data{"rowsAffected": db.RowsAffected})
+			}()
+
+			go func() {
+				var httpRoutes []models.Route
+				err := s.Client.Where("expires_at < ?", time.Now()).Find(&httpRoutes).Error
+				if err != nil {
+					logger.Error("failed-to-prune-http-routes", err)
+					return
+				}
+				guids := make([]string, len(httpRoutes))
+				for _, route := range httpRoutes {
+					guids = append(guids, route.Guid)
+
+				}
+				db := s.Client.Where("guid in (?)", guids).Delete(models.Route{})
+				if db.Error != nil {
+					logger.Error("failed-to-prune-http-routes", err)
+					return
+				}
+				for _, route := range httpRoutes {
+					s.emitEvent(DeleteEvent, route)
+				}
+
+				logger.Info("successfully-finished-pruning-http-routes", lager.Data{"rowsAffected": db.RowsAffected})
+			}()
 		case <-signals:
 			return
 		}
@@ -400,6 +441,7 @@ func dispatchWatchEvents(sub eventhub.Source, events chan<- Event, errors chan<-
 		if !ok {
 			errors <- fmt.Errorf("Incoming event is not a db.Event: %#v", event)
 		}
+
 		events <- watchEvent
 	}
 }

@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = XDescribe("Routes API", func() {
+var _ = Describe("Routes API", func() {
 	var (
 		err               error
 		route1            models.Route
@@ -39,11 +39,12 @@ var _ = XDescribe("Routes API", func() {
 
 		go func(statsChan chan string) {
 			defer GinkgoRecover()
+			defer close(statsChan)
+
 			for {
 				buffer := make([]byte, 1000)
 				_, err := fakeStatsdServer.Read(buffer)
 				if err != nil {
-					close(statsChan)
 					return
 				}
 				scanner := bufio.NewScanner(bytes.NewBuffer(buffer))
@@ -62,6 +63,7 @@ var _ = XDescribe("Routes API", func() {
 		ginkgomon.Kill(routingAPIProcess)
 		err := fakeStatsdServer.Close()
 		Expect(err).ToNot(HaveOccurred())
+		Eventually(fakeStatsdChan).Should(BeClosed())
 	})
 
 	Describe("Stats for event subscribers", func() {
@@ -108,6 +110,10 @@ var _ = XDescribe("Routes API", func() {
 		})
 
 		Context("when creating and updating a new route", func() {
+			AfterEach(func() {
+				client.DeleteRoutes([]models.Route{route1})
+			})
+
 			It("Gets statsd messages for new routes", func() {
 				client.UpsertRoutes([]models.Route{route1})
 

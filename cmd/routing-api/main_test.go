@@ -97,15 +97,6 @@ var _ = Describe("Main", func() {
 		It("unregisters from etcd when the process exits", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
-			// getRoutes := func() string {
-			// 	routesPath := fmt.Sprintf("%s/v2/keys/routes", etcdUrl)
-			// 	resp, err := http.Get(routesPath)
-			// 	Expect(err).ToNot(HaveOccurred())
-
-			// 	body, err := ioutil.ReadAll(resp.Body)
-			// 	Expect(err).ToNot(HaveOccurred())
-			// 	return string(body)
-			// }
 
 			getRoutes := func() string {
 				var routes []models.Route
@@ -126,7 +117,7 @@ var _ = Describe("Main", func() {
 			Eventually(routingAPIRunner.ExitCode()).Should(Equal(0))
 		})
 
-		XIt("closes open event streams when the process exits", func() {
+		It("closes open event streams when the process exits", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
 			client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)

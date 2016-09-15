@@ -14,7 +14,6 @@ import (
 	"code.cloudfoundry.org/routing-api/models"
 	"github.com/jinzhu/gorm"
 	"github.com/nu7hatch/gouuid"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -42,6 +41,7 @@ var _ = Describe("SqlDB", func() {
 	AfterEach(func() {
 		_, ok := sqlDB.Client.(*gorm.DB)
 		if ok {
+			Expect(sqlDB.Client.Delete(&models.Route{}).Error).ToNot(HaveOccurred())
 			Expect(sqlDB.Client.Delete(&models.TcpRouteMapping{}).Error).ToNot(HaveOccurred())
 			Expect(sqlDB.Client.Delete(&models.RouterGroupDB{}).Error).ToNot(HaveOccurred())
 		}
@@ -925,57 +925,148 @@ var _ = Describe("SqlDB", func() {
 
 	Describe("Cleanup routes", func() {
 		var (
-			logger        lager.Logger
-			signals       = make(chan os.Signal, 1)
-			tcpRouteModel models.TcpRouteMapping
+			logger  lager.Logger
+			signals = make(chan os.Signal, 1)
 		)
-		BeforeEach(func() {
-			tcpRoute := models.NewTcpRouteMapping("guid", 3555, "127.0.0.1", 7879, 1)
-			tcpRouteModel, err := models.NewTcpRouteMappingWithModel(tcpRoute)
-			Expect(err).ToNot(HaveOccurred())
-			sqlDB.SaveTcpRouteMapping(tcpRouteModel)
 
-			routes, err := sqlDB.ReadTcpRouteMappings()
-			Expect(routes).To(HaveLen(1))
+		JustBeforeEach(func() {
 			logger = lagertest.NewTestLogger("prune")
-			go sqlDB.CleanupRoutes(logger, 100*time.Millisecond, signals)
+			go sqlDB.CleanupRoutes(logger, 500*time.Millisecond, signals)
 		})
 
 		AfterEach(func() {
 			signals <- os.Interrupt
 		})
 
-		Context("when db connection is successful", func() {
-			Context("when routes have expired", func() {
+		Context("tcp routes", func() {
+			var tcpRouteModel models.TcpRouteMapping
 
-				It("should prune the expired routes", func() {
-					Eventually(func() []models.TcpRouteMapping {
-						var tcpRoutes []models.TcpRouteMapping
-						err := sqlDB.Client.Where("host_ip = ?", "127.0.0.1").Find(&tcpRoutes).Error
-						Expect(err).ToNot(HaveOccurred())
-						return tcpRoutes
-					}, 2).Should(HaveLen(0))
+			BeforeEach(func() {
+				tcpRoute := models.NewTcpRouteMapping("guid", 3555, "127.0.0.1", 7879, 1)
+				var err error
+				tcpRouteModel, err = models.NewTcpRouteMappingWithModel(tcpRoute)
+				Expect(err).ToNot(HaveOccurred())
+				sqlDB.SaveTcpRouteMapping(tcpRouteModel)
+
+				routes, err := sqlDB.ReadTcpRouteMappings()
+				Expect(routes).To(HaveLen(1))
+			})
+
+			Context("when db connection is successful", func() {
+				Context("when all routes have expired", func() {
+
+					It("should prune the expired routes", func() {
+						Eventually(func() []models.TcpRouteMapping {
+							var tcpRoutes []models.TcpRouteMapping
+							err := sqlDB.Client.Where("host_ip = ?", "127.0.0.1").Find(&tcpRoutes).Error
+							Expect(err).ToNot(HaveOccurred())
+							return tcpRoutes
+						}, 2).Should(HaveLen(0))
+					})
+
+					It("should log the number of pruned routes", func() {
+						Eventually(logger, 2).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":1}`))
+					})
+
+					It("should emit a DeleteEvent for the pruned route", func() {
+						results, _, _ := sqlDB.WatchRouteChanges(db.TCP_WATCH)
+
+						var event db.Event
+						Eventually(results, 3).Should((Receive(&event)))
+						Expect(event).NotTo(BeNil())
+						Expect(event.Type).To(Equal(db.DeleteEvent))
+						Expect(event.Value).To(ContainSubstring(`"port":3555`))
+					})
 				})
 
-				It("should log the number of pruned routes", func() {
-					Eventually(logger, 2).Should(gbytes.Say(`prune.successfully-finished-pruning","log_level":1,"data":{"rowsAffected":1}`))
+				Context("when routes that have not expired exist", func() {
+					var tcpRoute models.TcpRouteMapping
+
+					BeforeEach(func() {
+						tcpRoute = models.NewTcpRouteMapping("guid", 3556, "127.0.0.1", 7879, 100)
+						sqlDB.SaveTcpRouteMapping(tcpRoute)
+
+						var routesDB []models.TcpRouteMapping
+						sqlDB.Client.Find(&routesDB)
+						Expect(routesDB).To(HaveLen(2))
+					})
+
+					It("should only prune expired routes", func() {
+						var tcpRoutes []models.TcpRouteMapping
+
+						Eventually(func() []models.TcpRouteMapping {
+							err := sqlDB.Client.Where("host_ip = ?", "127.0.0.1").Find(&tcpRoutes).Error
+							Expect(err).ToNot(HaveOccurred())
+							return tcpRoutes
+						}, 2).Should(HaveLen(1))
+
+						Expect(tcpRoutes[0]).To(matchers.MatchTcpRoute(tcpRoute))
+					})
 				})
 			})
 
-			Context("when no expired routes exist", func() {
-				BeforeEach(func() {
-					newTTL := 100
-					tcpRouteModel.TTL = &newTTL
-					sqlDB.SaveTcpRouteMapping(tcpRouteModel)
+		})
+
+		Context("http routes", func() {
+			BeforeEach(func() {
+				httpRoute := models.NewRoute("post_here", 7000, "127.0.0.1", "my-guid", "https://rs.com", 1)
+				httpRouteModel, err := models.NewRouteWithModel(httpRoute)
+				Expect(err).ToNot(HaveOccurred())
+				sqlDB.SaveRoute(httpRouteModel)
+
+				routes, err := sqlDB.ReadRoutes()
+				Expect(routes).To(HaveLen(1))
+			})
+			Context("when db connection is successful", func() {
+				Context("when all routes have expired", func() {
+
+					It("should prune the expired routes", func() {
+						Eventually(func() []models.Route {
+							var httpRoutes []models.Route
+							err := sqlDB.Client.Where("ip = ?", "127.0.0.1").Find(&httpRoutes).Error
+							Expect(err).ToNot(HaveOccurred())
+							return httpRoutes
+						}, 2).Should(HaveLen(0))
+					})
+
+					It("should log the number of pruned routes", func() {
+						Eventually(logger, 2).Should(gbytes.Say(`prune.successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":1}`))
+					})
+
+					It("should emit a DeleteEvent for the pruned route", func() {
+						results, _, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
+
+						var event db.Event
+						Eventually(results, 3).Should((Receive(&event)))
+						Expect(event).NotTo(BeNil())
+						Expect(event.Type).To(Equal(db.DeleteEvent))
+						Expect(event.Value).To(ContainSubstring(`"port":7000`))
+					})
 				})
 
-				It("should  not prune any routes", func() {
-					Consistently(func() []models.TcpRouteMapping {
-						var tcpRoutes []models.TcpRouteMapping
-						err := sqlDB.Client.Where("host_ip = ?", "127.0.0.1").Find(&tcpRoutes).Error
-						Expect(err).ToNot(HaveOccurred())
-						return tcpRoutes
-					}).Should(HaveLen(1))
+				Context("when some routes are expired", func() {
+					var httpRoute models.Route
+
+					BeforeEach(func() {
+						httpRoute = models.NewRoute("post_here", 7001, "127.0.0.1", "my-guid", "https://rs.com", 100)
+						sqlDB.SaveRoute(httpRoute)
+
+						var dbRoutes []models.Route
+						sqlDB.Client.Where("ip = ?", "127.0.0.1").Find(&dbRoutes)
+						Expect(dbRoutes).To(HaveLen(2))
+					})
+
+					It("should prune only expired routes", func() {
+						var httpRoutes []models.Route
+
+						Eventually(func() []models.Route {
+							err := sqlDB.Client.Where("ip = ?", "127.0.0.1").Find(&httpRoutes).Error
+							Expect(err).ToNot(HaveOccurred())
+							return httpRoutes
+						}, 2).Should(HaveLen(1))
+
+						Expect(httpRoutes[0]).To(matchers.MatchHttpRoute(httpRoute))
+					})
 				})
 			})
 		})
@@ -992,7 +1083,8 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			It("logs error message", func() {
-				Eventually(logger).Should(gbytes.Say(`failed-to-prune-routes","log_level":2,"data":{"error":"sql: database is closed"}`))
+				Eventually(logger, 2).Should(gbytes.Say(`failed-to-prune-tcp-routes","log_level":2,"data":{"error":"sql: database is closed"}`))
+				Eventually(logger, 2).Should(gbytes.Say(`failed-to-prune-http-routes","log_level":2,"data":{"error":"sql: database is closed"}`))
 			})
 		})
 	})
