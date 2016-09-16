@@ -144,8 +144,8 @@ func main() {
 		{"lock-maintainer", lockMaintainer},
 		{"api-server", apiServer},
 		{"conn-stopper", stopper},
-		{"metrics", metricsReporter},
 		{"route-register", routerRegister},
+		{"metrics", metricsReporter},
 	}
 
 	group := grouper.NewOrdered(os.Interrupt, members)
