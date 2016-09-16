@@ -26,8 +26,6 @@ type SqlDB struct {
 
 const DeleteError = "Delete Fails: Route does not exist"
 
-var _ DB = &SqlDB{}
-
 func NewSqlDB(cfg *config.SqlDB) (DB, error) {
 	if cfg == nil {
 		return nil, errors.New("SQL configuration cannot be nil")
@@ -67,7 +65,6 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 				guids := make([]string, len(tcpRoutes))
 				for _, route := range tcpRoutes {
 					guids = append(guids, route.Guid)
-
 				}
 				db := s.Client.Where("guid in (?)", guids).Delete(models.TcpRouteMapping{})
 				if db.Error != nil {
@@ -91,7 +88,6 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 				guids := make([]string, len(httpRoutes))
 				for _, route := range httpRoutes {
 					guids = append(guids, route.Guid)
-
 				}
 				db := s.Client.Where("guid in (?)", guids).Delete(models.Route{})
 				if db.Error != nil {
@@ -436,6 +432,7 @@ func dispatchWatchEvents(sub eventhub.Source, events chan<- Event, errors chan<-
 				return
 			}
 			errors <- err
+			return
 		}
 		watchEvent, ok := event.(Event)
 		if !ok {

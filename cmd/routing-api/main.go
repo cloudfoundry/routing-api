@@ -83,38 +83,11 @@ func main() {
 		}
 	}
 
-	var sqlDatabase db.DB
-	var etcdDatabase db.DB
-
-	// Use SQL database if available, otherwise use ETCD
-	if isSql(cfg.SqlDB) {
-		data := lager.Data{"host": cfg.SqlDB.Host, "port": cfg.SqlDB.Port}
-		logger.Info("sql-database", data)
-		sqlDatabase, err = db.NewSqlDB(&cfg.SqlDB)
-		if err != nil {
-			logger.Error("failed-initialize-sql-connection", err, data)
-		}
-	}
-
-	logger.Info("database", lager.Data{"etcd-addresses": cfg.Etcd.NodeURLS})
-	etcdDatabase, err = db.NewETCD(cfg.Etcd)
+	database, err := buildDatabase(logger, cfg)
 	if err != nil {
-		logger.Error("failed-initialize-etcd-db", err)
 		os.Exit(1)
 	}
 
-	err = etcdDatabase.Connect()
-	if err != nil {
-		logger.Error("failed-etcd-connection", err)
-		os.Exit(1)
-	}
-	defer etcdDatabase.CancelWatches()
-
-	database, err := db.NewJointDB(etcdDatabase, sqlDatabase)
-	if err != nil {
-		logger.Error("failed-initialize-database", err)
-		os.Exit(1)
-	}
 	seedRouterGroups(cfg, logger, database)
 
 	prefix := "routing_api"
@@ -150,7 +123,7 @@ func main() {
 	}
 
 	if isSql(cfg.SqlDB) {
-		routePruner := runCleanupRoutes(sqlDatabase, logger)
+		routePruner := runCleanupRoutes(database, logger)
 		members = append(members, grouper.Member{Name: "sql-route-pruner", Runner: routePruner})
 	}
 
@@ -208,6 +181,7 @@ func constructStopper(database db.DB) ifrit.Runner {
 		return nil
 	})
 }
+
 func runCleanupRoutes(sqlDatabase db.DB, logger lager.Logger) ifrit.Runner {
 	pruneLogger := logger.Session("prune-routes")
 	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
@@ -348,4 +322,38 @@ func newLockRunner(
 
 	return locket.NewLock(logger, consulClient, lockSchemaPath,
 		routingApiID, clock, lockRetryInterval, lockTTL)
+}
+
+func buildDatabase(
+	logger lager.Logger,
+	cfg config.Config,
+) (db.DB, error) {
+	var err error
+	var database db.DB
+
+	// Use SQL database if available, otherwise use ETCD
+	if isSql(cfg.SqlDB) {
+		data := lager.Data{"host": cfg.SqlDB.Host, "port": cfg.SqlDB.Port}
+		logger.Info("database", data)
+		database, err = db.NewSqlDB(&cfg.SqlDB)
+		if err != nil {
+			logger.Error("failed-initialize-sql-connection", err, data)
+			return nil, err
+		}
+	} else {
+		logger.Info("database", lager.Data{"etcd-addresses": cfg.Etcd.NodeURLS})
+		database, err = db.NewETCD(cfg.Etcd)
+		if err != nil {
+			logger.Error("failed-initialize-etcd-db", err)
+			return nil, err
+		}
+
+		err = database.Connect()
+		if err != nil {
+			logger.Error("failed-etcd-connection", err)
+			return nil, err
+		}
+	}
+
+	return database, nil
 }

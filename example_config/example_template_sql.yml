@@ -18,8 +18,6 @@ router_groups:
 - name: "default-tcp"
   type: "tcp"
   reservable_ports: "1024-65535"
-etcd:
-  node_urls: ["http://localhost:{{.EtcdPort}}"]
 sqldb:
   username: "root"
   password: "password"

@@ -49,6 +49,20 @@ func NewTcpRouteMapping(routerGroupGuid string, externalPort uint16, hostIP stri
 	}
 }
 
+func NewTcpRouteMappingWithModificationTag(
+	routerGroupGuid string,
+	externalPort uint16,
+	hostIP string,
+	hostPort uint16,
+	ttl int,
+	modTag ModificationTag,
+) TcpRouteMapping {
+	mapping := NewTcpRouteMapping(routerGroupGuid, externalPort, hostIP, hostPort, ttl)
+	mapping.ModificationTag = modTag
+
+	return mapping
+}
+
 func (m TcpRouteMapping) String() string {
 	return fmt.Sprintf("%s:%d<->%s:%d", m.RouterGroupGuid, m.ExternalPort, m.HostIP, m.HostPort)
 }

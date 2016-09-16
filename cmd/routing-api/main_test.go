@@ -94,7 +94,7 @@ var _ = Describe("Main", func() {
 			)
 		})
 
-		It("unregisters from etcd when the process exits", func() {
+		It("unregisters from the db when the process exits", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
 

@@ -483,7 +483,7 @@ var _ = Describe("Routes API", func() {
 		dbSQL.Client.Delete(models.Route{})
 	}
 
-	Describe("API with MySQL + ETCD", func() {
+	Describe("API with MySQL", func() {
 		var routingAPIProcess ifrit.Process
 
 		BeforeEach(func() {
@@ -509,7 +509,7 @@ var _ = Describe("Routes API", func() {
 		TestHTTPEvents()
 	})
 
-	Describe("API with ETCD Only", func() {
+	Describe("API with ETCD", func() {
 		var routingAPIProcess ifrit.Process
 
 		BeforeEach(func() {
