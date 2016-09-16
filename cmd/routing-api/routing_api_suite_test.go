@@ -2,9 +2,7 @@ package main_test
 
 import (
 	"crypto/tls"
-	"database/sql"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,8 +14,6 @@ import (
 	"code.cloudfoundry.org/consuladapter/consulrunner"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
-	"github.com/cloudfoundry/storeadapter"
-	"github.com/cloudfoundry/storeadapter/storerunner/etcdstorerunner"
 	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -29,10 +25,8 @@ import (
 )
 
 var (
-	etcdPort    int
-	etcdUrl     string
-	etcdRunner  *etcdstorerunner.ETCDClusterRunner
-	etcdAdapter storeadapter.StoreAdapter
+	etcdPort int
+	etcdUrl  string
 
 	client                 routing_api.Client
 	routingAPIBinPath      string
@@ -46,9 +40,11 @@ var (
 	oauthServerPort        string
 
 	sqlDBName    string
-	sqlDB        *sql.DB
 	gormDB       *gorm.DB
 	consulRunner *consulrunner.ClusterRunner
+
+	mysqlAllocator testrunner.DbAllocator
+	etcdAllocator  testrunner.DbAllocator
 )
 
 var etcdVersion = "etcdserver\":\"2.1.1"
@@ -65,19 +61,32 @@ var _ = SynchronizedBeforeSuite(
 		return []byte(routingAPIBin)
 	},
 	func(routingAPIBin []byte) {
+		var err error
 		routingAPIBinPath = string(routingAPIBin)
 		SetDefaultEventuallyTimeout(15 * time.Second)
-		createSqlDatabase()
-		setupETCD()
+		etcdPort = 4001 + GinkgoParallelNode()
+
+		mysqlAllocator = testrunner.NewMySQLAllocator()
+		etcdAllocator = testrunner.NewEtcdAllocator(etcdPort)
+
+		sqlDBName, err = mysqlAllocator.Create()
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = etcdAllocator.Create()
+		Expect(err).NotTo(HaveOccurred())
+
 		setupConsul()
 		setupOauthServer()
 	},
 )
 
 var _ = SynchronizedAfterSuite(func() {
-	dropSqlDatabase()
+	err := mysqlAllocator.Delete()
+	Expect(err).NotTo(HaveOccurred())
+	err = etcdAllocator.Delete()
+	Expect(err).NotTo(HaveOccurred())
+
 	teardownConsul()
-	teardownETCD()
 	oauthServer.Close()
 },
 	func() {
@@ -86,7 +95,10 @@ var _ = SynchronizedAfterSuite(func() {
 
 var _ = BeforeEach(func() {
 	client = routingApiClient()
-	resetETCD()
+	err := mysqlAllocator.Reset()
+	Expect(err).NotTo(HaveOccurred())
+	err = etcdAllocator.Reset()
+	Expect(err).NotTo(HaveOccurred())
 	resetConsul()
 
 	routingAPIArgs = testrunner.Args{
@@ -103,60 +115,6 @@ var _ = BeforeEach(func() {
 		DevMode:    true,
 	}
 })
-
-func createSqlDatabase() {
-	var err error
-	sqlDBName = fmt.Sprintf("test%d", GinkgoParallelNode())
-	sqlDB, err = sql.Open("mysql", "root:password@/")
-	Expect(err).NotTo(HaveOccurred())
-	Expect(sqlDB).NotTo(BeNil())
-	Expect(sqlDB.Ping()).NotTo(HaveOccurred())
-
-	_, err = sqlDB.Exec(fmt.Sprintf("CREATE DATABASE %s", sqlDBName))
-	Expect(err).NotTo(HaveOccurred())
-
-	connectionString := fmt.Sprintf("root:password@/%s?parseTime=true", sqlDBName)
-	gormDB, err = gorm.Open("mysql", connectionString)
-	Expect(err).NotTo(HaveOccurred())
-}
-
-func dropSqlDatabase() {
-	defer sqlDB.Close()
-	_, err := sqlDB.Exec(fmt.Sprintf("DROP DATABASE %s", sqlDBName))
-	Expect(err).NotTo(HaveOccurred())
-}
-
-func setupETCD() {
-	etcdPort = 4001 + GinkgoParallelNode()
-	etcdUrl = fmt.Sprintf("http://127.0.0.1:%d", etcdPort)
-	etcdRunner = etcdstorerunner.NewETCDClusterRunner(etcdPort, 1, nil)
-	etcdRunner.Start()
-
-	etcdVersionUrl := etcdRunner.NodeURLS()[0] + "/version"
-	resp, err := http.Get(etcdVersionUrl)
-	Expect(err).ToNot(HaveOccurred())
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	Expect(err).ToNot(HaveOccurred())
-
-	// response body: {"etcdserver":"2.1.1","etcdcluster":"2.1.0"}
-	Expect(string(body)).To(ContainSubstring(etcdVersion))
-
-	etcdAdapter = etcdRunner.Adapter(nil)
-
-}
-
-func resetETCD() {
-	etcdRunner.Reset()
-}
-
-func teardownETCD() {
-	etcdAdapter.Disconnect()
-	etcdRunner.Reset()
-	etcdRunner.Stop()
-	etcdRunner.KillWithFire()
-}
 
 func routingApiClient() routing_api.Client {
 	routingAPIPort = uint16(6900 + GinkgoParallelNode())

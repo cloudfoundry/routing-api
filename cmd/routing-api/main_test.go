@@ -9,6 +9,7 @@ import (
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/models"
+	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -84,7 +85,7 @@ var _ = Describe("Main", func() {
 		Eventually(session).Should(Say("failed-initialize-sql-connection"))
 	})
 
-	Context("when initialized correctly and etcd is running", func() {
+	Context("when initialized correctly and db is running", func() {
 		BeforeEach(func() {
 			oauthServer.AppendHandlers(
 				ghttp.CombineHandlers(
@@ -97,6 +98,10 @@ var _ = Describe("Main", func() {
 		It("unregisters from the db when the process exits", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
+
+			connectionString := fmt.Sprintf("root:password@/%s?parseTime=true", sqlDBName)
+			gormDB, err := gorm.Open("mysql", connectionString)
+			Expect(err).NotTo(HaveOccurred())
 
 			getRoutes := func() string {
 				var routes []models.Route
@@ -150,14 +155,15 @@ var _ = Describe("Main", func() {
 
 		Context("when etcd is unavailable", func() {
 			AfterEach(func() {
-				setupETCD()
+				_, err := etcdAllocator.Create()
+				Expect(err).NotTo(HaveOccurred())
 			})
+
 			It("exits 1 when we shut down the routing api", func() {
 				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgsNoSQL)
 				proc := ifrit.Invoke(routingAPIRunner)
 
-				etcdAdapter.Disconnect()
-				etcdRunner.Stop()
+				Expect(etcdAllocator.Delete()).NotTo(HaveOccurred())
 				// to ensure etcd is stopped completely
 				time.Sleep(time.Second)
 

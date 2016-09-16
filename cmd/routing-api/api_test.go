@@ -10,8 +10,6 @@ import (
 	"code.cloudfoundry.org/routing-api"
 	. "code.cloudfoundry.org/routing-api/cmd/routing-api/test_helpers"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
-	"code.cloudfoundry.org/routing-api/config"
-	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/matchers"
 	"code.cloudfoundry.org/routing-api/models"
 	. "github.com/onsi/ginkgo"
@@ -19,12 +17,6 @@ import (
 )
 
 var _ = Describe("Routes API", func() {
-	ensureETCDIsEmpty := func(base_key string) {
-		_, err := etcdAdapter.ListRecursively(base_key)
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("the requested key could not be found"))
-	}
-
 	getRouterGroupGuid := func() string {
 		client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 		var routerGroups []models.RouterGroup
@@ -438,51 +430,6 @@ var _ = Describe("Routes API", func() {
 		})
 	}
 
-	cleanupSQLRouterGroups := func() {
-		sqlCfg := config.SqlDB{
-			Username: "root",
-			Password: "password",
-			Schema:   sqlDBName,
-			Host:     "localhost",
-			Port:     3306,
-			Type:     "mysql",
-		}
-		dbSQLInterface, err := db.NewSqlDB(&sqlCfg)
-		Expect(err).ToNot(HaveOccurred())
-		dbSQL := dbSQLInterface.(*db.SqlDB)
-		dbSQL.Client.Where("type = ?", "tcp").Delete(models.RouterGroupsDB{})
-	}
-
-	cleanupSQLTCPRouteMappings := func() {
-		sqlCfg := config.SqlDB{
-			Username: "root",
-			Password: "password",
-			Schema:   sqlDBName,
-			Host:     "localhost",
-			Port:     3306,
-			Type:     "mysql",
-		}
-		dbSQLInterface, err := db.NewSqlDB(&sqlCfg)
-		Expect(err).ToNot(HaveOccurred())
-		dbSQL := dbSQLInterface.(*db.SqlDB)
-		dbSQL.Client.Delete(models.TcpRouteMapping{})
-	}
-
-	cleanupSQLHTTPRouteMappings := func() {
-		sqlCfg := config.SqlDB{
-			Username: "root",
-			Password: "password",
-			Schema:   sqlDBName,
-			Host:     "localhost",
-			Port:     3306,
-			Type:     "mysql",
-		}
-		dbSQLInterface, err := db.NewSqlDB(&sqlCfg)
-		Expect(err).ToNot(HaveOccurred())
-		dbSQL := dbSQLInterface.(*db.SqlDB)
-		dbSQL.Client.Delete(models.Route{})
-	}
-
 	Describe("API with MySQL", func() {
 		var routingAPIProcess ifrit.Process
 
@@ -492,14 +439,7 @@ var _ = Describe("Routes API", func() {
 		})
 
 		AfterEach(func() {
-			ensureETCDIsEmpty(db.TCP_MAPPING_BASE_KEY)
-			ensureETCDIsEmpty(db.ROUTER_GROUP_BASE_KEY)
-			ensureETCDIsEmpty(db.HTTP_ROUTE_BASE_KEY)
-
 			ginkgomon.Kill(routingAPIProcess)
-			cleanupSQLRouterGroups()
-			cleanupSQLTCPRouteMappings()
-			cleanupSQLHTTPRouteMappings()
 		})
 
 		TestRouterGroups()
