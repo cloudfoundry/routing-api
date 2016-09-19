@@ -51,7 +51,6 @@ var _ = Describe("Routes API", func() {
 			})
 
 			It("returns an eventstream", func() {
-				// defer close(done)
 				expectedEvent := routing_api.TcpEvent{
 					Action:          "Upsert",
 					TcpRouteMapping: route1,
@@ -121,7 +120,6 @@ var _ = Describe("Routes API", func() {
 					event, err := eventStream.Next()
 					Expect(err).NotTo(HaveOccurred())
 					Expect(event.Action).To(Equal(expectedEvent.Action))
-					// Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(expectedEvent.TcpRouteMapping))
 					return event.TcpRouteMapping
 				}).Should(matchers.MatchTcpRoute(expectedEvent.TcpRouteMapping))
 			})
