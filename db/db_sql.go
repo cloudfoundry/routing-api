@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sync/atomic"
 	"time"
 
 	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
@@ -51,55 +52,62 @@ func NewSqlDB(cfg *config.SqlDB) (DB, error) {
 }
 
 func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration, signals <-chan os.Signal) {
+	var tcpInFlight, httpInFlight int32
 	pruningTicker := time.NewTicker(pruningInterval)
 	for {
 		select {
 		case <-pruningTicker.C:
-			go func() {
-				var tcpRoutes []models.TcpRouteMapping
-				err := s.Client.Where("expires_at < ?", time.Now()).Find(&tcpRoutes).Error
-				if err != nil {
-					logger.Error("failed-to-prune-tcp-routes", err)
-					return
-				}
-				guids := make([]string, len(tcpRoutes))
-				for _, route := range tcpRoutes {
-					guids = append(guids, route.Guid)
-				}
-				db := s.Client.Where("guid in (?)", guids).Delete(models.TcpRouteMapping{})
-				if db.Error != nil {
-					logger.Error("failed-to-prune-tcp-routes", err)
-					return
-				}
-				for _, route := range tcpRoutes {
-					s.emitEvent(DeleteEvent, route)
-				}
+			if atomic.CompareAndSwapInt32(&tcpInFlight, 0, 1) {
+				go func() {
+					var tcpRoutes []models.TcpRouteMapping
+					err := s.Client.Find(&tcpRoutes, "expires_at < ?", time.Now()).Error
+					if err != nil {
+						logger.Error("failed-to-prune-tcp-routes", err)
+						return
+					}
+					guids := make([]string, len(tcpRoutes))
+					for _, route := range tcpRoutes {
+						guids = append(guids, route.Guid)
+					}
+					db := s.Client.Delete(models.TcpRouteMapping{}, "guid in (?)", guids)
+					if db.Error != nil {
+						logger.Error("failed-to-prune-tcp-routes", err)
+						return
+					}
+					for _, route := range tcpRoutes {
+						s.emitEvent(DeleteEvent, route)
+					}
 
-				logger.Info("successfully-finished-pruning-tcp-routes", lager.Data{"rowsAffected": db.RowsAffected})
-			}()
+					logger.Info("successfully-finished-pruning-tcp-routes", lager.Data{"rowsAffected": db.RowsAffected})
+					atomic.StoreInt32(&tcpInFlight, 0)
+				}()
+			}
 
-			go func() {
-				var httpRoutes []models.Route
-				err := s.Client.Where("expires_at < ?", time.Now()).Find(&httpRoutes).Error
-				if err != nil {
-					logger.Error("failed-to-prune-http-routes", err)
-					return
-				}
-				guids := make([]string, len(httpRoutes))
-				for _, route := range httpRoutes {
-					guids = append(guids, route.Guid)
-				}
-				db := s.Client.Where("guid in (?)", guids).Delete(models.Route{})
-				if db.Error != nil {
-					logger.Error("failed-to-prune-http-routes", err)
-					return
-				}
-				for _, route := range httpRoutes {
-					s.emitEvent(DeleteEvent, route)
-				}
+			if atomic.CompareAndSwapInt32(&httpInFlight, 0, 1) {
+				go func() {
+					var httpRoutes []models.Route
+					err := s.Client.Find(&httpRoutes, "expires_at < ?", time.Now()).Error
+					if err != nil {
+						logger.Error("failed-to-prune-http-routes", err)
+						return
+					}
+					guids := make([]string, len(httpRoutes))
+					for _, route := range httpRoutes {
+						guids = append(guids, route.Guid)
+					}
+					db := s.Client.Delete(models.Route{}, "guid in (?)", guids)
+					if db.Error != nil {
+						logger.Error("failed-to-prune-http-routes", err)
+						return
+					}
+					for _, route := range httpRoutes {
+						s.emitEvent(DeleteEvent, route)
+					}
 
-				logger.Info("successfully-finished-pruning-http-routes", lager.Data{"rowsAffected": db.RowsAffected})
-			}()
+					logger.Info("successfully-finished-pruning-http-routes", lager.Data{"rowsAffected": db.RowsAffected})
+					atomic.StoreInt32(&httpInFlight, 0)
+				}()
+			}
 		case <-signals:
 			return
 		}

@@ -3,6 +3,7 @@ package db_test
 import (
 	"errors"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"code.cloudfoundry.org/lager"
@@ -926,16 +927,56 @@ var _ = Describe("SqlDB", func() {
 	Describe("Cleanup routes", func() {
 		var (
 			logger  lager.Logger
-			signals = make(chan os.Signal, 1)
+			signals chan os.Signal
 		)
+
+		BeforeEach(func() {
+			signals = make(chan os.Signal, 1)
+		})
 
 		JustBeforeEach(func() {
 			logger = lagertest.NewTestLogger("prune")
-			go sqlDB.CleanupRoutes(logger, 500*time.Millisecond, signals)
+			go sqlDB.CleanupRoutes(logger, 100*time.Millisecond, signals)
 		})
 
 		AfterEach(func() {
-			signals <- os.Interrupt
+			close(signals)
+		})
+
+		Context("when cleanup takes longer than the cleanup interval", func() {
+			var (
+				fakeClient *fakes.FakeClient
+				done       chan bool
+				count      int32
+			)
+
+			BeforeEach(func() {
+				done = make(chan bool, 2)
+				fakeClient = &fakes.FakeClient{}
+				fakeClient.DeleteStub = func(value interface{}, where ...interface{}) *gorm.DB {
+					time.Sleep(500 * time.Millisecond)
+					c := atomic.AddInt32(&count, 1)
+					if c <= 2 {
+						done <- true
+					}
+					return &gorm.DB{}
+				}
+				fakeClient.FindReturns(&gorm.DB{})
+				sqlDB.Client = fakeClient
+			})
+
+			AfterEach(func() {
+				close(done)
+			})
+
+			It("should not cleanup before the previous cleanup is complete", func() {
+				Eventually(fakeClient.DeleteCallCount).Should(Equal(2))
+				Eventually(done).Should(Receive())
+				Eventually(done).Should(Receive())
+
+				Eventually(fakeClient.DeleteCallCount).Should(Equal(4))
+			})
+
 		})
 
 		Context("tcp routes", func() {
@@ -1083,8 +1124,8 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			It("logs error message", func() {
-				Eventually(logger, 2).Should(gbytes.Say(`failed-to-prune-tcp-routes","log_level":2,"data":{"error":"sql: database is closed"}`))
-				Eventually(logger, 2).Should(gbytes.Say(`failed-to-prune-http-routes","log_level":2,"data":{"error":"sql: database is closed"}`))
+				Eventually(logger, 2).Should(gbytes.Say(`failed-to-prune-.*-routes","log_level":2,"data":{"error":"sql: database is closed"}`))
+				Eventually(logger, 2).Should(gbytes.Say(`failed-to-prune-.*-routes","log_level":2,"data":{"error":"sql: database is closed"}`))
 			})
 		})
 	})
