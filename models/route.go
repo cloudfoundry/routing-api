@@ -8,7 +8,7 @@ import (
 
 type Route struct {
 	Model
-	ExpiresAt time.Time `json:"-"`
+	ExpiresAt time.Time `gorm:"type:timestamp(6)" json:"-"`
 	RouteEntity
 }
 
