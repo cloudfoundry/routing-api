@@ -1002,7 +1002,7 @@ var _ = Describe("SqlDB", func() {
 							err := sqlDB.Client.Where("host_ip = ?", "127.0.0.1").Find(&tcpRoutes).Error
 							Expect(err).ToNot(HaveOccurred())
 							return tcpRoutes
-						}, 2).Should(HaveLen(0))
+						}, 3).Should(HaveLen(0))
 						Eventually(logger, 2).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":1}`))
 					})
 
@@ -1065,7 +1065,7 @@ var _ = Describe("SqlDB", func() {
 							err := sqlDB.Client.Where("ip = ?", "127.0.0.1").Find(&httpRoutes).Error
 							Expect(err).ToNot(HaveOccurred())
 							return httpRoutes
-						}, 2).Should(HaveLen(0))
+						}, 3).Should(HaveLen(0))
 
 						Eventually(logger, 2).Should(gbytes.Say(`prune.successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":1}`))
 					})

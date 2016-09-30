@@ -9,7 +9,7 @@ import (
 
 type TcpRouteMapping struct {
 	Model
-	ExpiresAt time.Time `gorm:"type:timestamp(6) NULL" json:"-"`
+	ExpiresAt time.Time `json:"-"`
 	TcpMappingEntity
 }
 
