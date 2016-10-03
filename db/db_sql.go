@@ -42,9 +42,6 @@ func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	db.AutoMigrate(&models.RouterGroupDB{}, &models.TcpRouteMapping{}, &models.Route{})
-
 	tcpEventHub := eventhub.NewNonBlocking(1024)
 	httpEventHub := eventhub.NewNonBlocking(1024)
 

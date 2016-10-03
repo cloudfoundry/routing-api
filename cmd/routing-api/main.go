@@ -19,6 +19,7 @@ import (
 	"code.cloudfoundry.org/routing-api/handlers"
 	"code.cloudfoundry.org/routing-api/helpers"
 	"code.cloudfoundry.org/routing-api/metrics"
+	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/models"
 	uaaclient "code.cloudfoundry.org/uaa-go-client"
 	uaaconfig "code.cloudfoundry.org/uaa-go-client/config"
@@ -111,8 +112,10 @@ func main() {
 		cfg.ConsulCluster.LockTTL, cfg.ConsulCluster.RetryInterval, clock)
 	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
 	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker, logger.Session("metrics"))
+	migrationProcess := runMigration(database, cfg, &cfg.SqlDB, &cfg.Etcd, logger.Session("migration"))
 
 	members := grouper.Members{
+		{"migration", migrationProcess},
 		{"lock-maintainer", lockMaintainer},
 		{"seed-router-groups", seedRouterGroups(cfg, database, logger.Session("seeding"))},
 		{"api-server", apiServer},
@@ -199,6 +202,10 @@ func runCleanupRoutes(sqlDatabase db.DB, logger lager.Logger) ifrit.Runner {
 		sqlDB.CleanupRoutes(pruneLogger, pruningInterval, signals)
 		return nil
 	})
+}
+
+func runMigration(database db.DB, cfg config.Config, sqlCfg *config.SqlDB, etcdCfg *config.Etcd, logger lager.Logger) ifrit.Runner {
+	return migration.NewRunner(etcdCfg, sqlCfg, logger)
 }
 
 func constructRouteRegister(

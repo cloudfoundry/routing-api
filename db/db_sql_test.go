@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/db/fakes"
 	"code.cloudfoundry.org/routing-api/matchers"
+	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/models"
 	"github.com/jinzhu/gorm"
 	"github.com/nu7hatch/gouuid"
@@ -36,6 +37,7 @@ var _ = Describe("SqlDB", func() {
 		}
 		sqlDB, err = db.NewSqlDB(sqlCfg)
 		Expect(err).ToNot(HaveOccurred())
+		migration.NewV0InitMigration().Run(sqlDB)
 	})
 
 	AfterEach(func() {
