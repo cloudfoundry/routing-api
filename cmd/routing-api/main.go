@@ -342,15 +342,9 @@ func buildDatabase(
 		}
 	} else {
 		logger.Info("database", lager.Data{"etcd-addresses": cfg.Etcd.NodeURLS})
-		database, err = db.NewETCD(cfg.Etcd)
+		database, err = db.NewETCD(&cfg.Etcd)
 		if err != nil {
 			logger.Error("failed-initialize-etcd-db", err)
-			return nil, err
-		}
-
-		err = database.Connect()
-		if err != nil {
-			logger.Error("failed-etcd-connection", err)
 			return nil, err
 		}
 	}

@@ -30,10 +30,8 @@ type DB interface {
 	ReadRouterGroup(guid string) (models.RouterGroup, error)
 	SaveRouterGroup(routerGroup models.RouterGroup) error
 
-	Connect() error
-
 	CancelWatches()
-	WatchRouteChanges(watchType string) (<-chan Event, <-chan error, context.CancelFunc)
+	WatchChanges(watchType string) (<-chan Event, <-chan error, context.CancelFunc)
 }
 
 const (
@@ -44,18 +42,19 @@ const (
 	maxRetries                   = 3
 	TCP_WATCH             string = "tcp-watch"
 	HTTP_WATCH            string = "http-watch"
+	ROUTER_GROUP_WATCH    string = "router-group-watch"
 )
 
 var ErrorConflict = errors.New("etcd failed to compare")
 
-type etcd struct {
-	client     client.Client
-	keysAPI    client.KeysAPI
-	ctx        context.Context
-	cancelFunc context.CancelFunc
+type EtcdDB struct {
+	Client     client.Client
+	KeysAPI    client.KeysAPI
+	Ctx        context.Context
+	CancelFunc context.CancelFunc
 }
 
-func NewETCD(conf config.Etcd) (DB, error) {
+func NewETCD(conf *config.Etcd) (*EtcdDB, error) {
 	var tr client.CancelableTransport
 	var err error
 	if conf.RequireSSL {
@@ -85,34 +84,28 @@ func NewETCD(conf config.Etcd) (DB, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return New(c, keysAPI, ctx, cancel), nil
-}
-
-func New(client client.Client,
-	keys client.KeysAPI,
-	ctx context.Context,
-	cancelFunc context.CancelFunc) DB {
-	return &etcd{
-		client:     client,
-		keysAPI:    keys,
-		ctx:        ctx,
-		cancelFunc: cancelFunc,
+	err = c.Sync(ctx)
+	if err != nil {
+		return nil, err
 	}
+
+	return &EtcdDB{
+		Client:     c,
+		KeysAPI:    keysAPI,
+		Ctx:        ctx,
+		CancelFunc: cancel,
+	}, nil
 }
 
-func (e *etcd) Connect() error {
-	return e.client.Sync(e.ctx)
+func (e *EtcdDB) CancelWatches() {
+	e.CancelFunc()
 }
 
-func (e *etcd) CancelWatches() {
-	e.cancelFunc()
-}
-
-func (e *etcd) ReadRoutes() ([]models.Route, error) {
+func (e *EtcdDB) ReadRoutes() ([]models.Route, error) {
 	getOpts := &client.GetOptions{
 		Recursive: true,
 	}
-	response, err := e.keysAPI.Get(context.Background(), HTTP_ROUTE_BASE_KEY, getOpts)
+	response, err := e.KeysAPI.Get(context.Background(), HTTP_ROUTE_BASE_KEY, getOpts)
 	if err != nil {
 		return []models.Route{}, nil
 	}
@@ -123,6 +116,9 @@ func (e *etcd) ReadRoutes() ([]models.Route, error) {
 		err = json.Unmarshal([]byte(node.Value), &route)
 		if err != nil {
 			return []models.Route{}, nil
+		}
+		if node.Expiration != nil {
+			route.ExpiresAt = *node.Expiration
 		}
 
 		listRoutes = append(listRoutes, route)
@@ -160,13 +156,13 @@ func ctx() context.Context {
 	return context.Background()
 }
 
-func (e *etcd) SaveRoute(route models.Route) error {
+func (e *EtcdDB) SaveRoute(route models.Route) error {
 	key := generateHttpRouteKey(route)
 
 	retries := 0
 
 	for retries <= maxRetries {
-		response, err := e.keysAPI.Get(context.Background(), key, readOpts())
+		response, err := e.KeysAPI.Get(context.Background(), key, readOpts())
 
 		// Update
 		if response != nil && err == nil {
@@ -180,7 +176,7 @@ func (e *etcd) SaveRoute(route models.Route) error {
 			route.ModificationTag.Increment()
 
 			routeJSON, _ := json.Marshal(route)
-			_, err = e.keysAPI.Set(context.Background(), key, string(routeJSON), updateOptsWithTTL(*route.TTL, response.Node.ModifiedIndex))
+			_, err = e.KeysAPI.Set(context.Background(), key, string(routeJSON), updateOptsWithTTL(*route.TTL, response.Node.ModifiedIndex))
 			if err == nil {
 				break
 			}
@@ -197,7 +193,7 @@ func (e *etcd) SaveRoute(route models.Route) error {
 			}
 			route.ModificationTag = tag
 			routeJSON, _ := json.Marshal(route)
-			_, err = e.keysAPI.Set(ctx(), key, string(routeJSON), createOpts(*route.TTL))
+			_, err = e.KeysAPI.Set(ctx(), key, string(routeJSON), createOpts(*route.TTL))
 			if err == nil {
 				break
 			}
@@ -217,11 +213,11 @@ func (e *etcd) SaveRoute(route models.Route) error {
 	return nil
 }
 
-func (e *etcd) DeleteRoute(route models.Route) error {
+func (e *EtcdDB) DeleteRoute(route models.Route) error {
 	key := generateHttpRouteKey(route)
 
 	deleteOpt := &client.DeleteOptions{}
-	_, err := e.keysAPI.Delete(context.Background(), key, deleteOpt)
+	_, err := e.KeysAPI.Delete(context.Background(), key, deleteOpt)
 	if err != nil {
 		cerr, ok := err.(client.Error)
 		if ok && cerr.Code == client.ErrorCodeKeyNotFound {
@@ -231,17 +227,19 @@ func (e *etcd) DeleteRoute(route models.Route) error {
 	return err
 }
 
-func (e *etcd) WatchRouteChanges(watchType string) (<-chan Event, <-chan error, context.CancelFunc) {
+func (e *EtcdDB) WatchChanges(watchType string) (<-chan Event, <-chan error, context.CancelFunc) {
 	var filter string
 	events := make(chan Event)
 	errors := make(chan error, 1)
-	cxt, cancel := context.WithCancel(e.ctx)
+	cxt, cancel := context.WithCancel(e.Ctx)
 
 	switch watchType {
 	case TCP_WATCH:
 		filter = TCP_MAPPING_BASE_KEY
 	case HTTP_WATCH:
 		filter = HTTP_ROUTE_BASE_KEY
+	case ROUTER_GROUP_WATCH:
+		filter = ROUTER_GROUP_BASE_KEY
 	default:
 		err := fmt.Errorf("Invalid watch type: %s", watchType)
 		errors <- err
@@ -257,9 +255,9 @@ func (e *etcd) WatchRouteChanges(watchType string) (<-chan Event, <-chan error, 
 	return events, errors, cancel
 }
 
-func (e *etcd) dispatchWatchEvents(cxt context.Context, key string, events chan<- Event, errors chan<- error) {
+func (e *EtcdDB) dispatchWatchEvents(cxt context.Context, key string, events chan<- Event, errors chan<- error) {
 	watchOpt := &client.WatcherOptions{Recursive: true}
-	watcher := e.keysAPI.Watcher(key, watchOpt)
+	watcher := e.KeysAPI.Watcher(key, watchOpt)
 
 	defer close(events)
 	defer close(errors)
@@ -269,7 +267,7 @@ func (e *etcd) dispatchWatchEvents(cxt context.Context, key string, events chan<
 		if err != nil {
 			if err, ok := err.(client.Error); ok {
 				if err.Code == client.ErrorCodeEventIndexCleared {
-					watcher = e.keysAPI.Watcher(key, watchOpt)
+					watcher = e.KeysAPI.Watcher(key, watchOpt)
 					continue
 				}
 			}
@@ -290,7 +288,7 @@ func (e *etcd) dispatchWatchEvents(cxt context.Context, key string, events chan<
 	}
 }
 
-func (e *etcd) SaveRouterGroup(routerGroup models.RouterGroup) error {
+func (e *EtcdDB) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	if routerGroup.Guid == "" {
 		return errors.New("Invalid router group: missing guid")
 	}
@@ -312,7 +310,7 @@ func (e *etcd) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	getOpts := &client.GetOptions{
 		Recursive: true,
 	}
-	rg, err := e.keysAPI.Get(context.Background(), key, getOpts)
+	rg, err := e.KeysAPI.Get(context.Background(), key, getOpts)
 	if err == nil {
 		current := models.RouterGroup{}
 		err = json.Unmarshal([]byte(rg.Node.Value), &current)
@@ -325,18 +323,18 @@ func (e *etcd) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	}
 	json, _ := json.Marshal(routerGroup)
 	setOpt := &client.SetOptions{}
-	_, err = e.keysAPI.Set(context.Background(), key, string(json), setOpt)
+	_, err = e.KeysAPI.Set(context.Background(), key, string(json), setOpt)
 
 	return err
 }
 
 // Returns a zero-value struct and nil error when Router Group with guid could not be found.
-func (e *etcd) ReadRouterGroup(guid string) (models.RouterGroup, error) {
+func (e *EtcdDB) ReadRouterGroup(guid string) (models.RouterGroup, error) {
 	getOpts := &client.GetOptions{
 		Recursive: true,
 	}
 	query := models.RouterGroup{Guid: guid}
-	response, err := e.keysAPI.Get(context.Background(), generateRouterGroupKey(query), getOpts)
+	response, err := e.KeysAPI.Get(context.Background(), generateRouterGroupKey(query), getOpts)
 	if err != nil {
 		if clientErr, ok := err.(client.Error); ok && clientErr.Code == client.ErrorCodeKeyNotFound {
 			return models.RouterGroup{}, nil
@@ -349,11 +347,11 @@ func (e *etcd) ReadRouterGroup(guid string) (models.RouterGroup, error) {
 	return result, err
 }
 
-func (e *etcd) ReadRouterGroups() (models.RouterGroups, error) {
+func (e *EtcdDB) ReadRouterGroups() (models.RouterGroups, error) {
 	getOpts := &client.GetOptions{
 		Recursive: true,
 	}
-	response, err := e.keysAPI.Get(context.Background(), ROUTER_GROUP_BASE_KEY, getOpts)
+	response, err := e.KeysAPI.Get(context.Background(), ROUTER_GROUP_BASE_KEY, getOpts)
 	if err != nil {
 		if clientErr, ok := err.(client.Error); ok && clientErr.Code == client.ErrorCodeKeyNotFound {
 			return models.RouterGroups{}, nil
@@ -381,11 +379,11 @@ func generateRouterGroupKey(routerGroup models.RouterGroup) string {
 	return fmt.Sprintf("%s/%s", ROUTER_GROUP_BASE_KEY, routerGroup.Guid)
 }
 
-func (e *etcd) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
+func (e *EtcdDB) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
 	getOpts := &client.GetOptions{
 		Recursive: true,
 	}
-	tcpMappings, err := e.keysAPI.Get(context.Background(), TCP_MAPPING_BASE_KEY, getOpts)
+	tcpMappings, err := e.KeysAPI.Get(context.Background(), TCP_MAPPING_BASE_KEY, getOpts)
 	if err != nil {
 		return []models.TcpRouteMapping{}, nil
 	}
@@ -399,6 +397,9 @@ func (e *etcd) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
 				if err != nil {
 					return []models.TcpRouteMapping{}, nil
 				}
+				if mappingNode.Expiration != nil {
+					tcpMapping.ExpiresAt = *mappingNode.Expiration
+				}
 				listMappings = append(listMappings, tcpMapping)
 			}
 		}
@@ -406,12 +407,12 @@ func (e *etcd) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
 	return listMappings, nil
 }
 
-func (e *etcd) SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
+func (e *EtcdDB) SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 	key := generateTcpRouteMappingKey(tcpMapping)
 
 	retries := 0
 	for retries <= maxRetries {
-		response, err := e.keysAPI.Get(context.Background(), key, readOpts())
+		response, err := e.KeysAPI.Get(context.Background(), key, readOpts())
 
 		// Update
 		if response != nil && err == nil {
@@ -426,7 +427,7 @@ func (e *etcd) SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 			tcpMapping.ModificationTag.Increment()
 
 			tcpRouteJSON, _ := json.Marshal(tcpMapping)
-			_, err = e.keysAPI.Set(ctx(), key, string(tcpRouteJSON), updateOptsWithTTL(*tcpMapping.TTL, response.Node.ModifiedIndex))
+			_, err = e.KeysAPI.Set(ctx(), key, string(tcpRouteJSON), updateOptsWithTTL(*tcpMapping.TTL, response.Node.ModifiedIndex))
 		} else if cerr, ok := err.(client.Error); ok && cerr.Code == client.ErrorCodeKeyNotFound { //create
 			// Delete came in between a read and update
 			if retries > 0 {
@@ -441,7 +442,7 @@ func (e *etcd) SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 
 			tcpMapping.ModificationTag = tag
 			tcpRouteMappingJSON, _ := json.Marshal(tcpMapping)
-			_, err = e.keysAPI.Set(ctx(), key, string(tcpRouteMappingJSON), createOpts(*tcpMapping.TTL))
+			_, err = e.KeysAPI.Set(ctx(), key, string(tcpRouteMappingJSON), createOpts(*tcpMapping.TTL))
 		}
 
 		// return when create or update is successful
@@ -461,10 +462,10 @@ func (e *etcd) SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 	return ErrorConflict
 }
 
-func (e *etcd) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
+func (e *EtcdDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 	key := generateTcpRouteMappingKey(tcpMapping)
 	deleteOpt := &client.DeleteOptions{}
-	_, err := e.keysAPI.Delete(context.Background(), key, deleteOpt)
+	_, err := e.KeysAPI.Delete(context.Background(), key, deleteOpt)
 
 	if err != nil {
 		cerr, ok := err.(client.Error)

@@ -69,7 +69,7 @@ func (h *EventStreamHandler) handleEventStream(log lager.Logger, filterKey strin
 	flusher := w.(http.Flusher)
 	closeNotifier := w.(http.CloseNotifier).CloseNotify()
 
-	resultChan, errChan, cancelFunc := h.db.WatchRouteChanges(filterKey)
+	resultChan, errChan, cancelFunc := h.db.WatchChanges(filterKey)
 
 	w.Header().Add("Content-Type", "text/event-stream; charset=utf-8")
 	w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")

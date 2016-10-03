@@ -72,7 +72,7 @@ var _ = SynchronizedBeforeSuite(
 		sqlDBName, err = mysqlAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = etcdAllocator.Create()
+		etcdUrl, err = etcdAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
 
 		setupConsul()

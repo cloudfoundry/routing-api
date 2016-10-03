@@ -27,7 +27,7 @@ type SqlDB struct {
 
 const DeleteError = "Delete Fails: Route does not exist"
 
-func NewSqlDB(cfg *config.SqlDB) (DB, error) {
+func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 	if cfg == nil {
 		return nil, errors.New("SQL configuration cannot be nil")
 	}
@@ -387,7 +387,7 @@ func (s *SqlDB) CancelWatches() {
 	_ = s.httpEventHub.Close()
 }
 
-func (s *SqlDB) WatchRouteChanges(watchType string) (<-chan Event, <-chan error, context.CancelFunc) {
+func (s *SqlDB) WatchChanges(watchType string) (<-chan Event, <-chan error, context.CancelFunc) {
 	var (
 		sub eventhub.Source
 		err error

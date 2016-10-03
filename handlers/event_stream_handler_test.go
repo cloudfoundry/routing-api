@@ -36,7 +36,7 @@ var _ = Describe("EventsHandler", func() {
 		fakeClient = &fake_client.FakeClient{}
 
 		database = &fake_db.FakeDB{}
-		database.WatchRouteChangesReturns(nil, nil, emptyCancelFunc)
+		database.WatchChangesReturns(nil, nil, emptyCancelFunc)
 
 		logger = lagertest.NewTestLogger("event-handler-test")
 		stats = new(fake_statsd.FakePartialStatsdClient)
@@ -100,7 +100,7 @@ var _ = Describe("EventsHandler", func() {
 				BeforeEach(func() {
 					resultsChan := make(chan db.Event, 1)
 					resultsChan <- db.Event{Type: db.UpdateEvent, Value: "valuable-string"}
-					database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
+					database.WatchChangesReturns(resultsChan, nil, emptyCancelFunc)
 				})
 
 				It("emits events from changes in the db", func() {
@@ -112,7 +112,7 @@ var _ = Describe("EventsHandler", func() {
 					expectedEvent := sse.Event{ID: "0", Name: "Upsert", Data: []byte("valuable-string")}
 
 					Expect(event).To(Equal(expectedEvent))
-					filterString := database.WatchRouteChangesArgsForCall(0)
+					filterString := database.WatchChangesArgsForCall(0)
 					Expect(filterString).To(Equal(db.HTTP_WATCH))
 				})
 
@@ -126,7 +126,7 @@ var _ = Describe("EventsHandler", func() {
 					BeforeEach(func() {
 						resultsChan := make(chan db.Event, 1)
 						resultsChan <- db.Event{Type: db.InvalidEvent}
-						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
+						database.WatchChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
 					It("closes the event stream", func() {
@@ -140,7 +140,7 @@ var _ = Describe("EventsHandler", func() {
 					BeforeEach(func() {
 						resultsChan := make(chan db.Event, 1)
 						resultsChan <- db.Event{Type: db.ExpireEvent, Value: "valuable-string"}
-						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
+						database.WatchChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
 					It("emits a Delete Event", func() {
@@ -157,7 +157,7 @@ var _ = Describe("EventsHandler", func() {
 					BeforeEach(func() {
 						resultsChan := make(chan db.Event, 1)
 						resultsChan <- db.Event{Type: db.DeleteEvent, Value: "valuable-string"}
-						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
+						database.WatchChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
 					It("emits a Delete Event", func() {
@@ -174,7 +174,7 @@ var _ = Describe("EventsHandler", func() {
 					BeforeEach(func() {
 						resultsChan := make(chan db.Event, 1)
 						resultsChan <- db.Event{Type: db.CreateEvent, Value: "valuable-string"}
-						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
+						database.WatchChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
 					It("emits a Upsert Event", func() {
@@ -191,7 +191,7 @@ var _ = Describe("EventsHandler", func() {
 					BeforeEach(func() {
 						resultsChan := make(chan db.Event, 1)
 						resultsChan <- db.Event{Type: db.UpdateEvent, Value: "valuable-string"}
-						database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
+						database.WatchChangesReturns(resultsChan, nil, emptyCancelFunc)
 					})
 
 					It("emits a Upsert Event", func() {
@@ -212,7 +212,7 @@ var _ = Describe("EventsHandler", func() {
 						resultsChan <- db.Event{Type: db.UpdateEvent, Value: "valuable-string"}
 
 						errChan = make(chan error)
-						database.WatchRouteChangesReturns(resultsChan, errChan, emptyCancelFunc)
+						database.WatchChangesReturns(resultsChan, errChan, emptyCancelFunc)
 					})
 
 					It("returns early", func() {
@@ -228,7 +228,7 @@ var _ = Describe("EventsHandler", func() {
 						cancelTest = make(chan struct{}, 1)
 
 						cancelFunc := func() { cancelTest <- struct{}{} }
-						database.WatchRouteChangesReturns(resultsChan, nil, cancelFunc)
+						database.WatchChangesReturns(resultsChan, nil, cancelFunc)
 					})
 					It("returns early", func() {
 						reader := sse.NewReadCloser(response.Body)
@@ -257,7 +257,7 @@ var _ = Describe("EventsHandler", func() {
 				BeforeEach(func() {
 					resultsChan := make(chan db.Event, 1)
 					resultsChan <- db.Event{Type: db.UpdateEvent, Value: "valuable-string"}
-					database.WatchRouteChangesReturns(resultsChan, nil, emptyCancelFunc)
+					database.WatchChangesReturns(resultsChan, nil, emptyCancelFunc)
 				})
 
 				It("emits events from changes in the db", func() {
@@ -269,7 +269,7 @@ var _ = Describe("EventsHandler", func() {
 					expectedEvent := sse.Event{ID: "0", Name: "Upsert", Data: []byte("valuable-string")}
 
 					Expect(event).To(Equal(expectedEvent))
-					filterString := database.WatchRouteChangesArgsForCall(0)
+					filterString := database.WatchChangesArgsForCall(0)
 					Expect(filterString).To(Equal(db.TCP_WATCH))
 				})
 			})

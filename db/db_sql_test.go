@@ -34,9 +34,8 @@ var _ = Describe("SqlDB", func() {
 			Port:     3306,
 			Type:     "mysql",
 		}
-		dbSQL, err := db.NewSqlDB(sqlCfg)
+		sqlDB, err = db.NewSqlDB(sqlCfg)
 		Expect(err).ToNot(HaveOccurred())
-		sqlDB = dbSQL.(*db.SqlDB)
 	})
 
 	AfterEach(func() {
@@ -702,7 +701,7 @@ var _ = Describe("SqlDB", func() {
 		})
 	})
 
-	Describe("WatchRouteChanges with tcp events", func() {
+	Describe("WatchChanges with tcp events", func() {
 		var (
 			routerGroupId string
 		)
@@ -712,7 +711,7 @@ var _ = Describe("SqlDB", func() {
 		})
 
 		It("does not return an error when canceled", func() {
-			_, errors, cancel := sqlDB.WatchRouteChanges(db.TCP_WATCH)
+			_, errors, cancel := sqlDB.WatchChanges(db.TCP_WATCH)
 			cancel()
 			Consistently(errors).ShouldNot(Receive())
 			Eventually(errors).Should(BeClosed())
@@ -720,7 +719,7 @@ var _ = Describe("SqlDB", func() {
 
 		Context("with wrong event type", func() {
 			It("throws an error", func() {
-				event, err, _ := sqlDB.WatchRouteChanges("some-random-key")
+				event, err, _ := sqlDB.WatchChanges("some-random-key")
 				Eventually(err).Should(Receive())
 				Eventually(err).Should(BeClosed())
 
@@ -741,7 +740,7 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			It("should return an update watch event", func() {
-				results, _, _ := sqlDB.WatchRouteChanges(db.TCP_WATCH)
+				results, _, _ := sqlDB.WatchChanges(db.TCP_WATCH)
 
 				err = sqlDB.SaveTcpRouteMapping(tcpRoute)
 				Expect(err).NotTo(HaveOccurred())
@@ -756,7 +755,7 @@ var _ = Describe("SqlDB", func() {
 
 		Context("when a tcp route is created", func() {
 			It("should return an create watch event", func() {
-				results, _, _ := sqlDB.WatchRouteChanges(db.TCP_WATCH)
+				results, _, _ := sqlDB.WatchChanges(db.TCP_WATCH)
 
 				tcpRoute := models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, 50)
 				err = sqlDB.SaveTcpRouteMapping(tcpRoute)
@@ -776,7 +775,7 @@ var _ = Describe("SqlDB", func() {
 				err := sqlDB.SaveTcpRouteMapping(tcpRoute)
 				Expect(err).NotTo(HaveOccurred())
 
-				results, _, _ := sqlDB.WatchRouteChanges(db.TCP_WATCH)
+				results, _, _ := sqlDB.WatchChanges(db.TCP_WATCH)
 
 				err = sqlDB.DeleteTcpRouteMapping(tcpRoute)
 				Expect(err).NotTo(HaveOccurred())
@@ -791,8 +790,8 @@ var _ = Describe("SqlDB", func() {
 
 		Context("Cancel Watches", func() {
 			It("cancels any in-flight watches", func() {
-				results, err, _ := sqlDB.WatchRouteChanges(db.TCP_WATCH)
-				results2, err2, _ := sqlDB.WatchRouteChanges(db.TCP_WATCH)
+				results, err, _ := sqlDB.WatchChanges(db.TCP_WATCH)
+				results2, err2, _ := sqlDB.WatchChanges(db.TCP_WATCH)
 
 				sqlDB.CancelWatches()
 
@@ -807,10 +806,10 @@ var _ = Describe("SqlDB", func() {
 				sqlDB.CancelWatches()
 			})
 
-			It("causes subsequent calls to WatchRouteChanges to error", func() {
+			It("causes subsequent calls to WatchChanges to error", func() {
 				sqlDB.CancelWatches()
 
-				event, err, _ := sqlDB.WatchRouteChanges(db.TCP_WATCH)
+				event, err, _ := sqlDB.WatchChanges(db.TCP_WATCH)
 				Eventually(err).ShouldNot(Receive())
 				Eventually(err).Should(BeClosed())
 
@@ -821,17 +820,9 @@ var _ = Describe("SqlDB", func() {
 		})
 	})
 
-	Describe("WatchRouteChanges with http events", func() {
-		var (
-			routerGroupId string
-		)
-
-		BeforeEach(func() {
-			routerGroupId = newUuid()
-		})
-
+	Describe("WatchChanges with http events", func() {
 		It("does not return an error when canceled", func() {
-			_, errors, cancel := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
+			_, errors, cancel := sqlDB.WatchChanges(db.HTTP_WATCH)
 			cancel()
 			Consistently(errors).ShouldNot(Receive())
 			Eventually(errors).Should(BeClosed())
@@ -849,7 +840,7 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			It("should return an update watch event", func() {
-				results, _, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
+				results, _, _ := sqlDB.WatchChanges(db.HTTP_WATCH)
 
 				err = sqlDB.SaveRoute(httpRoute)
 				Expect(err).NotTo(HaveOccurred())
@@ -864,7 +855,7 @@ var _ = Describe("SqlDB", func() {
 
 		Context("when a http route is created", func() {
 			It("should return an create watch event", func() {
-				results, _, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
+				results, _, _ := sqlDB.WatchChanges(db.HTTP_WATCH)
 
 				httpRoute := models.NewRoute("post_here", 7002, "127.0.0.1", "my-guid", "https://rs.com", 5)
 				err := sqlDB.SaveRoute(httpRoute)
@@ -884,7 +875,7 @@ var _ = Describe("SqlDB", func() {
 				err := sqlDB.SaveRoute(httpRoute)
 				Expect(err).NotTo(HaveOccurred())
 
-				results, _, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
+				results, _, _ := sqlDB.WatchChanges(db.HTTP_WATCH)
 
 				err = sqlDB.DeleteRoute(httpRoute)
 				Expect(err).NotTo(HaveOccurred())
@@ -899,8 +890,8 @@ var _ = Describe("SqlDB", func() {
 
 		Context("Cancel Watches", func() {
 			It("cancels any in-flight watches", func() {
-				results, err, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
-				results2, err2, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
+				results, err, _ := sqlDB.WatchChanges(db.HTTP_WATCH)
+				results2, err2, _ := sqlDB.WatchChanges(db.HTTP_WATCH)
 
 				sqlDB.CancelWatches()
 
@@ -910,10 +901,10 @@ var _ = Describe("SqlDB", func() {
 				Eventually(results2).Should(BeClosed())
 			})
 
-			It("causes subsequent calls to WatchRouteChanges to error", func() {
+			It("causes subsequent calls to WatchChanges to error", func() {
 				sqlDB.CancelWatches()
 
-				event, err, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
+				event, err, _ := sqlDB.WatchChanges(db.HTTP_WATCH)
 				Eventually(err).ShouldNot(Receive())
 				Eventually(err).Should(BeClosed())
 
@@ -1008,7 +999,6 @@ var _ = Describe("SqlDB", func() {
 
 					It("should emit a ExpireEvent for the pruned route", func() {
 						results, _, _ := sqlDB.WatchRouteChanges(db.TCP_WATCH)
-
 						var event db.Event
 						Eventually(results, 3).Should((Receive(&event)))
 						Expect(event).NotTo(BeNil())
@@ -1072,7 +1062,6 @@ var _ = Describe("SqlDB", func() {
 
 					It("should emit a ExpireEvent for the pruned route", func() {
 						results, _, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
-
 						var event db.Event
 						Eventually(results, 3).Should((Receive(&event)))
 						Expect(event).NotTo(BeNil())
@@ -1114,9 +1103,8 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			AfterEach(func() {
-				dbSQL, err := db.NewSqlDB(sqlCfg)
+				sqlDB, err = db.NewSqlDB(sqlCfg)
 				Expect(err).ToNot(HaveOccurred())
-				sqlDB = dbSQL.(*db.SqlDB)
 			})
 
 			It("logs error message", func() {

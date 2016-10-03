@@ -89,7 +89,7 @@ type FakeDB struct {
 	CancelWatchesStub            func()
 	cancelWatchesMutex           sync.RWMutex
 	cancelWatchesArgsForCall     []struct{}
-	WatchRouteChangesStub        func(filter string) (<-chan db.Event, <-chan error, context.CancelFunc)
+	WatchChangesStub             func(filter string) (<-chan db.Event, <-chan error, context.CancelFunc)
 	watchRouteChangesMutex       sync.RWMutex
 	watchRouteChangesArgsForCall []struct {
 		filter string
@@ -408,33 +408,33 @@ func (fake *FakeDB) CancelWatchesCallCount() int {
 	return len(fake.cancelWatchesArgsForCall)
 }
 
-func (fake *FakeDB) WatchRouteChanges(filter string) (<-chan db.Event, <-chan error, context.CancelFunc) {
+func (fake *FakeDB) WatchChanges(filter string) (<-chan db.Event, <-chan error, context.CancelFunc) {
 	fake.watchRouteChangesMutex.Lock()
 	fake.watchRouteChangesArgsForCall = append(fake.watchRouteChangesArgsForCall, struct {
 		filter string
 	}{filter})
 	fake.watchRouteChangesMutex.Unlock()
-	if fake.WatchRouteChangesStub != nil {
-		return fake.WatchRouteChangesStub(filter)
+	if fake.WatchChangesStub != nil {
+		return fake.WatchChangesStub(filter)
 	} else {
 		return fake.watchRouteChangesReturns.result1, fake.watchRouteChangesReturns.result2, fake.watchRouteChangesReturns.result3
 	}
 }
 
-func (fake *FakeDB) WatchRouteChangesCallCount() int {
+func (fake *FakeDB) WatchChangesCallCount() int {
 	fake.watchRouteChangesMutex.RLock()
 	defer fake.watchRouteChangesMutex.RUnlock()
 	return len(fake.watchRouteChangesArgsForCall)
 }
 
-func (fake *FakeDB) WatchRouteChangesArgsForCall(i int) string {
+func (fake *FakeDB) WatchChangesArgsForCall(i int) string {
 	fake.watchRouteChangesMutex.RLock()
 	defer fake.watchRouteChangesMutex.RUnlock()
 	return fake.watchRouteChangesArgsForCall[i].filter
 }
 
-func (fake *FakeDB) WatchRouteChangesReturns(result1 <-chan db.Event, result2 <-chan error, result3 context.CancelFunc) {
-	fake.WatchRouteChangesStub = nil
+func (fake *FakeDB) WatchChangesReturns(result1 <-chan db.Event, result2 <-chan error, result3 context.CancelFunc) {
+	fake.WatchChangesStub = nil
 	fake.watchRouteChangesReturns = struct {
 		result1 <-chan db.Event
 		result2 <-chan error

@@ -17,6 +17,7 @@ sqldb:
   username: "username"
   password: "password"
   schema: "routing_api_test"
+  type: mysql
   port: 1234
   host: "localhost"
 etcd:

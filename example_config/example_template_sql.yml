@@ -27,3 +27,5 @@ sqldb:
   type: "mysql"
 consul_cluster:
   servers: "{{.ConsulUrl}}"
+etcd:
+  node_urls: ["http://localhost:{{.EtcdPort}}"]
