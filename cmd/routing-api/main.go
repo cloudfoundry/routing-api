@@ -88,8 +88,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	seedRouterGroups(cfg, logger, database)
-
 	prefix := "routing_api"
 	statsdClient, err := statsd.NewBufferedClient(cfg.StatsdEndpoint, prefix, cfg.StatsdClientFlushInterval, 512)
 	if err != nil {
@@ -116,6 +114,7 @@ func main() {
 
 	members := grouper.Members{
 		{"lock-maintainer", lockMaintainer},
+		{"seed-router-groups", seedRouterGroups(cfg, database, logger.Session("seeding"))},
 		{"api-server", apiServer},
 		{"conn-stopper", stopper},
 		{"route-register", routerRegister},
@@ -146,30 +145,6 @@ func isSql(sqlDB config.SqlDB) bool {
 	return (sqlDB.Host != "" && sqlDB.Port > 0 && sqlDB.Schema != "")
 }
 
-func seedRouterGroups(cfg config.Config, logger lager.Logger, database db.DB) {
-	// seed router groups from config
-	if len(cfg.RouterGroups) > 0 {
-		routerGroups, _ := database.ReadRouterGroups()
-		// if config not empty and db is empty, seed
-		if len(routerGroups) == 0 {
-			for _, rg := range cfg.RouterGroups {
-				guid, err := uuid.NewV4()
-				if err != nil {
-					logger.Error("failed to generate a guid for router group", err)
-					os.Exit(1)
-				}
-				rg.Guid = guid.String()
-				logger.Info("seeding", lager.Data{"router-group": rg})
-				err = database.SaveRouterGroup(rg)
-				if err != nil {
-					logger.Error("failed to save router group from config", err)
-					os.Exit(1)
-				}
-			}
-		}
-	}
-}
-
 func constructStopper(database db.DB) ifrit.Runner {
 	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
 		close(ready)
@@ -178,6 +153,36 @@ func constructStopper(database db.DB) ifrit.Runner {
 			database.CancelWatches()
 		}
 
+		return nil
+	})
+}
+func seedRouterGroups(cfg config.Config, database db.DB, logger lager.Logger) ifrit.Runner {
+	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
+		if len(cfg.RouterGroups) > 0 {
+			routerGroups, _ := database.ReadRouterGroups()
+			// if config not empty and db is empty, seed
+			if len(routerGroups) == 0 {
+				for _, rg := range cfg.RouterGroups {
+					guid, err := uuid.NewV4()
+					if err != nil {
+						logger.Error("failed to generate a guid for router group", err)
+						return err
+					}
+					rg.Guid = guid.String()
+					logger.Info("seeding", lager.Data{"router-group": rg})
+					err = database.SaveRouterGroup(rg)
+					if err != nil {
+						logger.Error("failed to save router group from config", err)
+						return err
+					}
+				}
+			}
+		}
+		close(ready)
+		select {
+		case sig := <-signals:
+			logger.Info("received-signal", lager.Data{"signal": sig})
+		}
 		return nil
 	})
 }
