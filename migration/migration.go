@@ -68,6 +68,10 @@ func InitializeMigrations(etcdCfg *config.Etcd, logger lager.Logger) []Migration
 	migration = NewV0InitMigration()
 	migrations = append(migrations, migration)
 
+	done := make(chan struct{})
+	migration = NewV1EtcdMigration(etcdCfg, done, logger)
+	migrations = append(migrations, migration)
+
 	return migrations
 }
 
