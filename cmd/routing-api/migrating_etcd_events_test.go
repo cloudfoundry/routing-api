@@ -70,8 +70,8 @@ var _ = Describe("ETCD Event Migrations", func() {
 	})
 
 	AfterEach(func() {
-		ginkgomon.Kill(routingAPIProcess)
 		ginkgomon.Kill(lockHolderProcess)
+		ginkgomon.Kill(routingAPIProcess)
 	})
 
 	Context("when another routing API process is currently the active node", func() {
