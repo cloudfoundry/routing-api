@@ -18,38 +18,43 @@ type MigrationData struct {
 }
 
 type Runner struct {
-	etcdCfg *config.Etcd
-	sqlCfg  *config.SqlDB
-	logger  lager.Logger
+	etcdCfg  *config.Etcd
+	sqlDB    *db.SqlDB
+	logger   lager.Logger
+	etcdDone chan struct{}
 }
 
 func NewRunner(
 	etcdCfg *config.Etcd,
-	sqlCfg *config.SqlDB,
+	etcdDone chan struct{},
+	sqlDB *db.SqlDB,
 	logger lager.Logger,
 ) *Runner {
 	return &Runner{
-		etcdCfg: etcdCfg,
-		sqlCfg:  sqlCfg,
-		logger:  logger,
+		etcdCfg:  etcdCfg,
+		sqlDB:    sqlDB,
+		logger:   logger,
+		etcdDone: etcdDone,
 	}
 }
 func (r *Runner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	migrations := InitializeMigrations(r.etcdCfg, r.logger)
+	migrations := InitializeMigrations(r.etcdCfg, r.etcdDone, r.logger)
 
-	if r.sqlCfg.IsValid() {
-
-		err := RunMigrations(r.sqlCfg, migrations)
-		if err != nil {
-			r.logger.Error("migrations-failed", err)
-			return err
-		}
+	err := RunMigrations(r.sqlDB, migrations)
+	if err != nil {
+		r.logger.Error("migrations-failed", err)
+		return err
 	}
 
 	close(ready)
 
 	select {
 	case sig := <-signals:
+		select {
+		case <-r.etcdDone:
+		default:
+			close(r.etcdDone)
+		}
 		r.logger.Info("received signal %s", lager.Data{"signal": sig})
 	}
 	return nil
@@ -61,40 +66,38 @@ type Migration interface {
 	Version() int
 }
 
-func InitializeMigrations(etcdCfg *config.Etcd, logger lager.Logger) []Migration {
+func InitializeMigrations(etcdCfg *config.Etcd, etcdDone chan struct{}, logger lager.Logger) []Migration {
 	migrations := []Migration{}
 	var migration Migration
 
 	migration = NewV0InitMigration()
 	migrations = append(migrations, migration)
 
-	done := make(chan struct{})
-	migration = NewV1EtcdMigration(etcdCfg, done, logger)
+	migration = NewV1EtcdMigration(etcdCfg, etcdDone, logger)
 	migrations = append(migrations, migration)
 
 	return migrations
 }
 
-func RunMigrations(sqlCfg *config.SqlDB, migrations []Migration) error {
+func RunMigrations(sqlDB *db.SqlDB, migrations []Migration) error {
 	if len(migrations) == 0 {
 		return nil
 	}
 
-	lastMigrationVersion := migrations[len(migrations)-1].Version()
-	sqlDB, err := db.NewSqlDB(sqlCfg)
-	if err != nil {
-		return err
+	if sqlDB == nil {
+		return nil
 	}
+
+	lastMigrationVersion := migrations[len(migrations)-1].Version()
 	gormDB := sqlDB.Client.(*gorm.DB)
 
-	defer gormDB.Close()
 	gormDB.AutoMigrate(&MigrationData{})
 
 	tx := gormDB.Begin()
 
 	existingVersion := &MigrationData{}
 
-	err = tx.Where("migration_key = ?", MigrationKey).First(existingVersion).Error
+	err := tx.Where("migration_key = ?", MigrationKey).First(existingVersion).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		tx.Rollback()
 		return err

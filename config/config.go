@@ -34,10 +34,6 @@ type SqlDB struct {
 	Password string `yaml:"password"`
 }
 
-func (s *SqlDB) IsValid() bool {
-	return s.Host != "" && s.Port != 0 && s.Schema != "" && s.Username != "" && s.Password != "" && s.Type != ""
-}
-
 type Etcd struct {
 	CertFile   string   `yaml:"cert_file"`
 	KeyFile    string   `yaml:"key_file"`

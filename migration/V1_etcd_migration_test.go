@@ -88,7 +88,11 @@ var _ = Describe("V1EtcdMigration", func() {
 		})
 
 		AfterEach(func() {
-			close(done)
+			select {
+			case <-done:
+			default:
+				close(done)
+			}
 
 			etcdRunner.Stop()
 			etcdRunner.KillWithFire()
@@ -132,7 +136,7 @@ var _ = Describe("V1EtcdMigration", func() {
 						Expect(err).NotTo(HaveOccurred())
 					})
 
-					It("should not migrate the expiration to sql database", func() {
+					It("should not migrate http route expirations to sql database", func() {
 						var (
 							routes []models.Route
 							err    error
@@ -162,89 +166,77 @@ var _ = Describe("V1EtcdMigration", func() {
 			})
 
 			Context("when there are tcp events", func() {
-				BeforeEach(func() {
-					etcdMigration := migration.NewV1EtcdMigration(etcdConfig, done, logger)
-					err := etcdMigration.Run(sqlDB)
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				Context("when there are tcp events", func() {
-					Context("when there are no expired events", func() {
-						BeforeEach(func() {
-							tcpRoute := models.NewTcpRouteMapping("router-group-guid", 3056, "127.0.0.1", 2990, 30)
-							err := etcd.SaveTcpRouteMapping(tcpRoute)
-							Expect(err).NotTo(HaveOccurred())
-						})
-
-						It("should migrate events to sql database", func() {
-							Eventually(func() []models.TcpRouteMapping {
-								routes, err := sqlDB.ReadTcpRouteMappings()
-								Expect(err).ToNot(HaveOccurred())
-								return routes
-							}, "3s", "500ms").Should(HaveLen(1))
-
-						})
+				Context("when there are no expired events", func() {
+					BeforeEach(func() {
+						tcpRoute := models.NewTcpRouteMapping("router-group-guid", 3056, "127.0.0.1", 2990, 30)
+						err := etcd.SaveTcpRouteMapping(tcpRoute)
+						Expect(err).NotTo(HaveOccurred())
 					})
-					Context("when there are expired events", func() {
-						var savedRoute models.TcpRouteMapping
-						BeforeEach(func() {
-							savedRoute = models.NewTcpRouteMapping("router-group-guid", 3056, "127.0.0.1", 2990, 1)
-							err := etcd.SaveTcpRouteMapping(savedRoute)
-							Expect(err).NotTo(HaveOccurred())
-						})
 
-						It("should not migrate events to sql database", func() {
-							var (
-								routes []models.TcpRouteMapping
-								err    error
-							)
-							Eventually(func() []models.TcpRouteMapping {
-								routes, err = sqlDB.ReadTcpRouteMappings()
-								Expect(err).ToNot(HaveOccurred())
-								return routes
-							}, "3s", "100ms").Should(HaveLen(1))
-
-							guid := routes[0].Guid
-
-							ttl := 30
-							savedRoute.TTL = &ttl
-							sqlDB.SaveTcpRouteMapping(savedRoute)
-
-							Eventually(etcd.ReadRoutes).Should(HaveLen(0))
-
-							Consistently(func() []models.TcpRouteMapping {
-								routes, err = sqlDB.ReadTcpRouteMappings()
-								Expect(err).ToNot(HaveOccurred())
-								return routes
-							}).Should(HaveLen(1))
-
-							Expect(routes[0].Guid).To(Equal(guid))
-						})
+					It("should migrate tcp routes to sql database", func() {
+						Eventually(func() []models.TcpRouteMapping {
+							routes, err := sqlDB.ReadTcpRouteMappings()
+							Expect(err).ToNot(HaveOccurred())
+							return routes
+						}, "3s", "500ms").Should(HaveLen(1))
 
 					})
 				})
+				Context("when there are expired events", func() {
+					var savedRoute models.TcpRouteMapping
+					BeforeEach(func() {
+						savedRoute = models.NewTcpRouteMapping("router-group-guid", 3056, "127.0.0.1", 2990, 1)
+						err := etcd.SaveTcpRouteMapping(savedRoute)
+						Expect(err).NotTo(HaveOccurred())
+					})
 
+					It("should not migrate tcp route expirations to sql database", func() {
+						var (
+							routes []models.TcpRouteMapping
+							err    error
+						)
+						Eventually(func() []models.TcpRouteMapping {
+							routes, err = sqlDB.ReadTcpRouteMappings()
+							Expect(err).ToNot(HaveOccurred())
+							return routes
+						}, "3s", "100ms").Should(HaveLen(1))
+
+						guid := routes[0].Guid
+
+						ttl := 30
+						savedRoute.TTL = &ttl
+						sqlDB.SaveTcpRouteMapping(savedRoute)
+
+						Eventually(etcd.ReadRoutes).Should(HaveLen(0))
+
+						Consistently(func() []models.TcpRouteMapping {
+							routes, err = sqlDB.ReadTcpRouteMappings()
+							Expect(err).ToNot(HaveOccurred())
+							return routes
+						}).Should(HaveLen(1))
+
+						Expect(routes[0].Guid).To(Equal(guid))
+					})
+
+				})
 			})
 
 			Context("when there are router group events", func() {
 				var rg models.RouterGroup
 				BeforeEach(func() {
-					//mimic seeding behavior
 					rg = models.RouterGroup{
 						Guid:            "some-guid",
 						Name:            "some-name",
 						Type:            "mysql",
 						ReservablePorts: "1200",
 					}
-					err := etcd.SaveRouterGroup(rg)
+					err := sqlDB.SaveRouterGroup(rg)
 					Expect(err).NotTo(HaveOccurred())
-
-					etcdMigration := migration.NewV1EtcdMigration(etcdConfig, done, logger)
-					err = etcdMigration.Run(sqlDB)
-					Expect(err).ToNot(HaveOccurred())
+					err = etcd.SaveRouterGroup(rg)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
-				Context("when there are updates to router groups ", func() {
+				Context("when there are updates to router groups", func() {
 					BeforeEach(func() {
 						//update port range to create etcd update event
 						rg.ReservablePorts = "1400"
@@ -280,6 +272,73 @@ var _ = Describe("V1EtcdMigration", func() {
 							Expect(err).ToNot(HaveOccurred())
 							return rg.Name
 						}, "3s", "500ms").Should(BeEmpty())
+					})
+				})
+			})
+
+			Context("when the migration is signaled to stop", func() {
+				BeforeEach(func() {
+					close(done)
+				})
+				Context("with http route events", func() {
+					BeforeEach(func() {
+						savedRoute := models.NewRoute("/route", 8333, "127.0.0.1", "log_guid", "rs", 10)
+						err := etcd.SaveRoute(savedRoute)
+						Expect(err).NotTo(HaveOccurred())
+						Eventually(func() []models.Route {
+							rt, _ := etcd.ReadRoutes()
+							return rt
+						}, "5s").Should(HaveLen(1))
+					})
+					It("should no longer migrate http routes to sql", func() {
+						Consistently(func() []models.Route {
+							routes, err := sqlDB.ReadRoutes()
+							Expect(err).ToNot(HaveOccurred())
+							return routes
+						}, "3s", "500ms").Should(BeEmpty())
+					})
+				})
+				Context("with tcp route events", func() {
+					BeforeEach(func() {
+						tcpRoute := models.NewTcpRouteMapping("router-group-guid", 3056, "127.0.0.1", 2990, 30)
+						err := etcd.SaveTcpRouteMapping(tcpRoute)
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("should no longer migrate tcp routes to sql", func() {
+						Consistently(func() []models.TcpRouteMapping {
+							routes, err := sqlDB.ReadTcpRouteMappings()
+							Expect(err).ToNot(HaveOccurred())
+							return routes
+						}, "3s", "500ms").Should(BeEmpty())
+
+					})
+				})
+				Context("with router group events", func() {
+					var rg models.RouterGroup
+					BeforeEach(func() {
+						rg = models.RouterGroup{
+							Guid:            "some-guid",
+							Name:            "some-name",
+							Type:            "mysql",
+							ReservablePorts: "1200",
+						}
+						err := sqlDB.SaveRouterGroup(rg)
+						Expect(err).NotTo(HaveOccurred())
+						err = etcd.SaveRouterGroup(rg)
+						Expect(err).NotTo(HaveOccurred())
+
+						rg.ReservablePorts = "1400"
+						err = etcd.SaveRouterGroup(rg)
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("should no longer migrate router group updates to sql", func() {
+						Consistently(func() string {
+							rg, err := sqlDB.ReadRouterGroup("some-guid")
+							Expect(err).ToNot(HaveOccurred())
+							return string(rg.ReservablePorts)
+						}, "3s", "500ms").Should(Equal("1200"))
 					})
 				})
 			})

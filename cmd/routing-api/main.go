@@ -108,16 +108,21 @@ func main() {
 		logger.Session("route-register"),
 	)
 	clock := clock.NewClock()
+
+	etcdDone := make(chan struct{})
 	lockMaintainer := initializeLockMaintainer(logger, cfg.ConsulCluster.Servers, sessionName,
 		cfg.ConsulCluster.LockTTL, cfg.ConsulCluster.RetryInterval, clock)
 	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
 	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker, logger.Session("metrics"))
-	migrationProcess := runMigration(database, cfg, &cfg.SqlDB, &cfg.Etcd, logger.Session("migration"))
+	migrationProcess := runMigration(cfg, database, &cfg.Etcd, etcdDone, logger.Session("migration"))
+	routerGroupSeeder := seedRouterGroups(cfg, database, logger.Session("seeding"))
+	etcdMigrationStopper := stopEtcdMigration(etcdDone)
 
 	members := grouper.Members{
 		{"migration", migrationProcess},
 		{"lock-maintainer", lockMaintainer},
-		{"seed-router-groups", seedRouterGroups(cfg, database, logger.Session("seeding"))},
+		{"etcd-migration-stopper", etcdMigrationStopper},
+		{"seed-router-groups", routerGroupSeeder},
 		{"api-server", apiServer},
 		{"conn-stopper", stopper},
 		{"route-register", routerRegister},
@@ -156,6 +161,20 @@ func constructStopper(database db.DB) ifrit.Runner {
 			database.CancelWatches()
 		}
 
+		return nil
+	})
+}
+func stopEtcdMigration(etcdDone chan struct{}) ifrit.Runner {
+	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
+		select {
+		case <-etcdDone:
+		default:
+			close(etcdDone)
+		}
+		close(ready)
+		select {
+		case <-signals:
+		}
 		return nil
 	})
 }
@@ -204,8 +223,11 @@ func runCleanupRoutes(sqlDatabase db.DB, logger lager.Logger) ifrit.Runner {
 	})
 }
 
-func runMigration(database db.DB, cfg config.Config, sqlCfg *config.SqlDB, etcdCfg *config.Etcd, logger lager.Logger) ifrit.Runner {
-	return migration.NewRunner(etcdCfg, sqlCfg, logger)
+func runMigration(cfg config.Config, database db.DB, etcdCfg *config.Etcd, etcdDone chan struct{}, logger lager.Logger) ifrit.Runner {
+	if sqlDB, ok := database.(*db.SqlDB); ok {
+		return migration.NewRunner(etcdCfg, etcdDone, sqlDB, logger)
+	}
+	return migration.NewRunner(etcdCfg, etcdDone, nil, logger)
 }
 
 func constructRouteRegister(

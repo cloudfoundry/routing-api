@@ -57,46 +57,6 @@ var _ = Describe("Config", func() {
 			})
 		})
 
-		Describe("SqlDb IsValid", func() {
-			Context("when valid sql config is initialized", func() {
-				It("returns true", func() {
-					cfg_file := "../example_config/example.yml"
-					cfg, err := config.NewConfigFromFile(cfg_file, false)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(cfg.SqlDB.IsValid()).To(BeTrue())
-				})
-			})
-			Context("when host is empty", func() {
-				testConfig := func() string {
-					return `log_guid: "my_logs"
-metrics_reporting_interval: "500ms"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-system_domain: "example.com"
-sqldb:
-  username: username
-  password: password
-  type: mysql
-  schema: routing_api
-  port: 3306
-router_groups:
-- name: router-group-2
-  reservable_ports: 1024-10000,42000
-  type: udp
-consul_cluster:
-  url: "http://localhost:4222"
-`
-				}
-				It("return false for invalid sql config", func() {
-					configBytes := testConfig()
-					cfg := &config.Config{}
-					err := cfg.Initialize([]byte(configBytes), true)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(cfg.SqlDB.IsValid()).To(BeFalse())
-				})
-			})
-		})
-
 		Context("when auth is disabled", func() {
 			Context("when the file exists", func() {
 				It("returns a valid config", func() {

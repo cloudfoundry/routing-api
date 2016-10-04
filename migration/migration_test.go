@@ -86,7 +86,9 @@ var _ = Describe("Migration", func() {
 		})
 
 		It("initializes all possible migrations", func() {
-			migrations := migration.InitializeMigrations(etcdConfig, logger)
+			done := make(chan struct{})
+			defer close(done)
+			migrations := migration.InitializeMigrations(etcdConfig, done, logger)
 			Expect(migrations).To(HaveLen(2))
 
 			Expect(migrations[0]).To(BeAssignableToTypeOf(&migration.V0InitMigration{}))
@@ -95,9 +97,17 @@ var _ = Describe("Migration", func() {
 	})
 
 	Describe("RunMigrations", func() {
+		Context("when no SqlDB exists", func() {
+			It("should be a no-op", func() {
+				err := migration.RunMigrations(nil, migrations)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(fakeMigration.RunCallCount()).To(Equal(0))
+				Expect(fakeLastMigration.RunCallCount()).To(Equal(0))
+			})
+		})
 		Context("when no migration table exists", func() {
 			It("should create the migration table and set the target version to last migration version", func() {
-				err := migration.RunMigrations(sqlCfg, migrations)
+				err := migration.RunMigrations(sqlDB, migrations)
 				Expect(err).ToNot(HaveOccurred())
 				gormClient := sqlDB.Client.(*gorm.DB)
 				Expect(gormClient.HasTable(&migration.MigrationData{})).To(BeTrue())
@@ -113,7 +123,7 @@ var _ = Describe("Migration", func() {
 				Expect(migrationVersion.TargetVersion).To(Equal(lastMigrationVersion))
 			})
 			It("should run all the migrations up to the current version", func() {
-				err := migration.RunMigrations(sqlCfg, migrations)
+				err := migration.RunMigrations(sqlDB, migrations)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(fakeMigration.RunCallCount()).To(Equal(1))
 				Expect(fakeLastMigration.RunCallCount()).To(Equal(1))
@@ -140,7 +150,7 @@ var _ = Describe("Migration", func() {
 					})
 
 					It("should not update the migration data", func() {
-						err := migration.RunMigrations(sqlCfg, migrations)
+						err := migration.RunMigrations(sqlDB, migrations)
 						Expect(err).ToNot(HaveOccurred())
 
 						var migrationVersions []migration.MigrationData
@@ -155,7 +165,7 @@ var _ = Describe("Migration", func() {
 					})
 
 					It("should not run any migrations", func() {
-						err := migration.RunMigrations(sqlCfg, migrations)
+						err := migration.RunMigrations(sqlDB, migrations)
 						Expect(err).ToNot(HaveOccurred())
 
 						Expect(fakeMigration.RunCallCount()).To(BeZero())
@@ -175,7 +185,7 @@ var _ = Describe("Migration", func() {
 					})
 
 					It("should update the migration data with the target version", func() {
-						err := migration.RunMigrations(sqlCfg, migrations)
+						err := migration.RunMigrations(sqlDB, migrations)
 						Expect(err).ToNot(HaveOccurred())
 
 						var migrationVersions []migration.MigrationData
@@ -190,7 +200,7 @@ var _ = Describe("Migration", func() {
 					})
 
 					It("should run all the migrations up to the current version", func() {
-						err := migration.RunMigrations(sqlCfg, migrations)
+						err := migration.RunMigrations(sqlDB, migrations)
 						Expect(err).ToNot(HaveOccurred())
 						Expect(fakeMigration.RunCallCount()).To(Equal(0))
 						Expect(fakeLastMigration.RunCallCount()).To(Equal(1))
@@ -211,7 +221,7 @@ var _ = Describe("Migration", func() {
 				})
 
 				It("should not update the migration data", func() {
-					err := migration.RunMigrations(sqlCfg, migrations)
+					err := migration.RunMigrations(sqlDB, migrations)
 					Expect(err).ToNot(HaveOccurred())
 
 					var migrationVersions []migration.MigrationData
@@ -226,7 +236,7 @@ var _ = Describe("Migration", func() {
 				})
 
 				It("should not run any migrations", func() {
-					err := migration.RunMigrations(sqlCfg, migrations)
+					err := migration.RunMigrations(sqlDB, migrations)
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(fakeMigration.RunCallCount()).To(BeZero())

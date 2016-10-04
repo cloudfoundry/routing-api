@@ -1,11 +1,9 @@
 package main_test
 
 import (
-	"fmt"
 	"path"
 	"path/filepath"
 
-	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
@@ -18,7 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Migrations", func() {
+var _ = Describe("ETCD Migrations", func() {
 	var (
 		etcdClient        db.DB
 		routingAPIProcess ifrit.Process
@@ -65,7 +63,6 @@ var _ = Describe("Migrations", func() {
 		})
 
 		It("migrates all router groups with the original guids", func() {
-			client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 			Eventually(func() error {
 				_, err := client.RouterGroups()
 				return err
