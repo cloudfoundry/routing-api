@@ -1000,7 +1000,7 @@ var _ = Describe("SqlDB", func() {
 					})
 
 					It("should emit a ExpireEvent for the pruned route", func() {
-						results, _, _ := sqlDB.WatchRouteChanges(db.TCP_WATCH)
+						results, _, _ := sqlDB.WatchChanges(db.TCP_WATCH)
 						var event db.Event
 						Eventually(results, 3).Should((Receive(&event)))
 						Expect(event).NotTo(BeNil())
@@ -1063,7 +1063,7 @@ var _ = Describe("SqlDB", func() {
 					})
 
 					It("should emit a ExpireEvent for the pruned route", func() {
-						results, _, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
+						results, _, _ := sqlDB.WatchChanges(db.HTTP_WATCH)
 						var event db.Event
 						Eventually(results, 3).Should((Receive(&event)))
 						Expect(event).NotTo(BeNil())
