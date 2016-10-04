@@ -1006,13 +1006,13 @@ var _ = Describe("SqlDB", func() {
 						Eventually(logger, 2).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":1}`))
 					})
 
-					It("should emit a DeleteEvent for the pruned route", func() {
+					It("should emit a ExpireEvent for the pruned route", func() {
 						results, _, _ := sqlDB.WatchRouteChanges(db.TCP_WATCH)
 
 						var event db.Event
 						Eventually(results, 3).Should((Receive(&event)))
 						Expect(event).NotTo(BeNil())
-						Expect(event.Type).To(Equal(db.DeleteEvent))
+						Expect(event.Type).To(Equal(db.ExpireEvent))
 						Expect(event.Value).To(ContainSubstring(`"port":3555`))
 					})
 				})
@@ -1070,13 +1070,13 @@ var _ = Describe("SqlDB", func() {
 						Eventually(logger, 2).Should(gbytes.Say(`prune.successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":1}`))
 					})
 
-					It("should emit a DeleteEvent for the pruned route", func() {
+					It("should emit a ExpireEvent for the pruned route", func() {
 						results, _, _ := sqlDB.WatchRouteChanges(db.HTTP_WATCH)
 
 						var event db.Event
 						Eventually(results, 3).Should((Receive(&event)))
 						Expect(event).NotTo(BeNil())
-						Expect(event.Type).To(Equal(db.DeleteEvent))
+						Expect(event.Type).To(Equal(db.ExpireEvent))
 						Expect(event.Value).To(ContainSubstring(`"port":7000`))
 					})
 				})

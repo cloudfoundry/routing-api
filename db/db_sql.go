@@ -75,7 +75,7 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 						return
 					}
 					for _, route := range tcpRoutes {
-						s.emitEvent(DeleteEvent, route)
+						s.emitEvent(ExpireEvent, route)
 					}
 
 					logger.Info("successfully-finished-pruning-tcp-routes", lager.Data{"rowsAffected": db.RowsAffected})
@@ -101,7 +101,7 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 						return
 					}
 					for _, route := range httpRoutes {
-						s.emitEvent(DeleteEvent, route)
+						s.emitEvent(ExpireEvent, route)
 					}
 
 					logger.Info("successfully-finished-pruning-http-routes", lager.Data{"rowsAffected": db.RowsAffected})
