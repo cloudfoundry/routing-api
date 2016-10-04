@@ -131,7 +131,7 @@ var _ = Describe("V1EtcdMigration", func() {
 				Context("when there are expired events", func() {
 					var savedRoute models.Route
 					BeforeEach(func() {
-						savedRoute = models.NewRoute("/route", 8333, "127.0.0.1", "log_guid", "rs", 1)
+						savedRoute = models.NewRoute("/route", 8333, "127.0.0.1", "log_guid", "rs", 2)
 						err := etcd.SaveRoute(savedRoute)
 						Expect(err).NotTo(HaveOccurred())
 					})
@@ -185,7 +185,7 @@ var _ = Describe("V1EtcdMigration", func() {
 				Context("when there are expired events", func() {
 					var savedRoute models.TcpRouteMapping
 					BeforeEach(func() {
-						savedRoute = models.NewTcpRouteMapping("router-group-guid", 3056, "127.0.0.1", 2990, 1)
+						savedRoute = models.NewTcpRouteMapping("router-group-guid", 3056, "127.0.0.1", 2990, 2)
 						err := etcd.SaveTcpRouteMapping(savedRoute)
 						Expect(err).NotTo(HaveOccurred())
 					})
@@ -199,7 +199,7 @@ var _ = Describe("V1EtcdMigration", func() {
 							routes, err = sqlDB.ReadTcpRouteMappings()
 							Expect(err).ToNot(HaveOccurred())
 							return routes
-						}, "3s", "100ms").Should(HaveLen(1))
+						}, "5s", "100ms").Should(HaveLen(1))
 
 						guid := routes[0].Guid
 
