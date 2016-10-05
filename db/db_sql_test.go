@@ -1042,9 +1042,11 @@ var _ = Describe("SqlDB", func() {
 				httpRoute := models.NewRoute("post_here", 7000, "127.0.0.1", "my-guid", "https://rs.com", 1)
 				httpRouteModel, err := models.NewRouteWithModel(httpRoute)
 				Expect(err).ToNot(HaveOccurred())
-				sqlDB.SaveRoute(httpRouteModel)
+				err = sqlDB.SaveRoute(httpRouteModel)
+				Expect(err).ToNot(HaveOccurred())
 
 				routes, err := sqlDB.ReadRoutes()
+				Expect(err).ToNot(HaveOccurred())
 				Expect(routes).To(HaveLen(1))
 			})
 
@@ -1077,7 +1079,8 @@ var _ = Describe("SqlDB", func() {
 
 					BeforeEach(func() {
 						httpRoute = models.NewRoute("post_here", 7001, "127.0.0.1", "my-guid", "https://rs.com", 100)
-						sqlDB.SaveRoute(httpRoute)
+						err := sqlDB.SaveRoute(httpRoute)
+						Expect(err).ToNot(HaveOccurred())
 
 						var dbRoutes []models.Route
 						sqlDB.Client.Where("ip = ?", "127.0.0.1").Find(&dbRoutes)
@@ -1091,7 +1094,7 @@ var _ = Describe("SqlDB", func() {
 							err := sqlDB.Client.Where("ip = ?", "127.0.0.1").Find(&httpRoutes).Error
 							Expect(err).ToNot(HaveOccurred())
 							return httpRoutes
-						}, 2).Should(HaveLen(1))
+						}, 3).Should(HaveLen(1))
 
 						Expect(httpRoutes[0]).To(matchers.MatchHttpRoute(httpRoute))
 					})

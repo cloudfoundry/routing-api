@@ -155,6 +155,7 @@ var _ = Describe("Main", func() {
 
 		Context("when etcd is unavailable", func() {
 			AfterEach(func() {
+				validatePort(uint16(etcdPort))
 				_, err := etcdAllocator.Create()
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -165,7 +166,7 @@ var _ = Describe("Main", func() {
 
 				Expect(etcdAllocator.Delete()).NotTo(HaveOccurred())
 				// to ensure etcd is stopped completely
-				time.Sleep(time.Second)
+				time.Sleep(2 * time.Second)
 
 				ginkgomon.Interrupt(proc)
 				Eventually(routingAPIRunner).Should(Exit(1))
