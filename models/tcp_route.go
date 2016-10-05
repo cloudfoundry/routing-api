@@ -22,6 +22,10 @@ type TcpMappingEntity struct {
 	TTL             *int `json:"ttl,omitempty"`
 }
 
+func (TcpRouteMapping) TableName() string {
+	return "tcp_routes"
+}
+
 func NewTcpRouteMappingWithModel(tcpMapping TcpRouteMapping) (TcpRouteMapping, error) {
 	guid, err := uuid.NewV4()
 	if err != nil {
