@@ -162,5 +162,5 @@ func validatePort(port uint16) {
 			l.Close()
 		}
 		return err
-	}).Should(BeNil())
+	}, "60s").Should(BeNil())
 }
