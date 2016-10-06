@@ -1,7 +1,6 @@
 package db_test
 
 import (
-	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"testing"
 
 	"code.cloudfoundry.org/cfhttp"
+	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
 	"github.com/cloudfoundry/storeadapter"
 	"github.com/cloudfoundry/storeadapter/storerunner/etcdstorerunner"
@@ -28,7 +28,9 @@ var routingAPIBinPath string
 var basePath string
 var sqlCfg *config.SqlDB
 var sqlDBName string
-var sqlDB *sql.DB
+var postgresDBName string
+var mysqlAllocator testrunner.DbAllocator
+var postgresAllocator testrunner.DbAllocator
 
 func TestDB(t *testing.T) {
 	var err error
@@ -63,14 +65,14 @@ func TestDB(t *testing.T) {
 var _ = BeforeSuite(func() {
 	sqlDBName = fmt.Sprintf("test%d", GinkgoParallelNode())
 	var err error
-	sqlDB, err = sql.Open("mysql", "root:password@/")
-	Expect(err).NotTo(HaveOccurred())
-	Expect(sqlDB).NotTo(BeNil())
-	Expect(sqlDB.Ping()).NotTo(HaveOccurred())
 
-	_, err = sqlDB.Exec(fmt.Sprintf("CREATE DATABASE %s", sqlDBName))
-	Expect(err).NotTo(HaveOccurred())
+	postgresAllocator = testrunner.NewPostgresAllocator()
+	postgresDBName, err = postgresAllocator.Create()
+	Expect(err).ToNot(HaveOccurred())
 
+	mysqlAllocator = testrunner.NewMySQLAllocator()
+	sqlDBName, err = mysqlAllocator.Create()
+	Expect(err).ToNot(HaveOccurred())
 	Expect(len(etcdRunner.NodeURLS())).Should(BeNumerically(">=", 1))
 
 	tlsConfig, err := cfhttp.NewTLSConfig(
@@ -97,14 +99,20 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	defer sqlDB.Close()
-	_, err := sqlDB.Exec(fmt.Sprintf("DROP DATABASE %s", sqlDBName))
-	Expect(err).NotTo(HaveOccurred())
+
+	err := mysqlAllocator.Delete()
+	Expect(err).ToNot(HaveOccurred())
+
+	err = postgresAllocator.Delete()
+	Expect(err).ToNot(HaveOccurred())
+
 	etcdRunner.Stop()
 	etcdRunner.KillWithFire()
 	etcdRunner.GoAway()
 })
 
 var _ = BeforeEach(func() {
+	mysqlAllocator.Reset()
+	postgresAllocator.Reset()
 	etcdRunner.Reset()
 })
