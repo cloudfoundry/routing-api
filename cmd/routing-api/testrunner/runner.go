@@ -36,6 +36,8 @@ func NewDbAllocator(etcdPort int) DbAllocator {
 	switch dbEnv {
 	case "etcd":
 		dbAllocator = NewEtcdAllocator(etcdPort)
+	case "postgres":
+		dbAllocator = NewPostgresAllocator()
 	default:
 		dbAllocator = NewMySQLAllocator()
 	}

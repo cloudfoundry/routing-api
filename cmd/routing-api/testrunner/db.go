@@ -20,6 +20,7 @@ type DbAllocator interface {
 	Create() (string, error)
 	Reset() error
 	Delete() error
+	ConnectionString() string
 }
 
 type mysqlAllocator struct {
@@ -50,10 +51,12 @@ type etcdAllocator struct {
 func NewEtcdAllocator(port int) DbAllocator {
 	return &etcdAllocator{port: port}
 }
-
+func (a *postgresAllocator) ConnectionString() string {
+	return "postgres://postgres:@localhost/?sslmode=disable"
+}
 func (a *postgresAllocator) Create() (string, error) {
 	var err error
-	a.sqlDB, err = sql.Open("postgres", "postgres://postgres:@localhost/?sslmode=disable")
+	a.sqlDB, err = sql.Open("postgres", a.ConnectionString())
 	if err != nil {
 		return "", err
 	}
@@ -69,6 +72,7 @@ func (a *postgresAllocator) Create() (string, error) {
 
 	return a.schemaName, nil
 }
+
 func (a *postgresAllocator) Reset() error {
 	_, err := a.sqlDB.Exec(fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity
 	WHERE datname = '%s'`, a.schemaName))
@@ -92,9 +96,13 @@ func (a *postgresAllocator) Delete() error {
 	return err
 }
 
+func (a *mysqlAllocator) ConnectionString() string {
+	return "root:password@/"
+}
+
 func (a *mysqlAllocator) Create() (string, error) {
 	var err error
-	a.sqlDB, err = sql.Open("mysql", "root:password@/")
+	a.sqlDB, err = sql.Open("mysql", a.ConnectionString())
 	if err != nil {
 		return "", err
 	}
@@ -150,8 +158,11 @@ func (e *etcdAllocator) Create() (string, error) {
 
 	e.etcdAdapter = e.etcdRunner.Adapter(nil)
 
-	etcdUrl := fmt.Sprintf("http://127.0.0.1:%d", e.port)
-	return etcdUrl, nil
+	return e.ConnectionString(), nil
+}
+
+func (e *etcdAllocator) ConnectionString() string {
+	return fmt.Sprintf("http://127.0.0.1:%d", e.port)
 }
 
 func (e *etcdAllocator) Reset() error {
