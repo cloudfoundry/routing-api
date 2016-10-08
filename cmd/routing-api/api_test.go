@@ -321,7 +321,7 @@ var _ = Describe("Routes API", func() {
 						Expect(err).NotTo(HaveOccurred())
 						mappings := TcpRouteMappings(tcpRouteMappingsResponse)
 						return mappings.Contains(tcpRouteMapping2)
-					}, 3, 1).Should(BeFalse())
+					}, "8s", 1).Should(BeFalse())
 				})
 			})
 
