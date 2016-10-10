@@ -158,9 +158,7 @@ var _ = Describe("ETCD Event Migrations", func() {
 func validatePort(port uint16) {
 	Eventually(func() error {
 		l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-		if err == nil {
-			l.Close()
-		}
+		defer l.Close()
 		return err
-	}, "60s").Should(BeNil())
+	}, "60s", "1s").Should(BeNil())
 }

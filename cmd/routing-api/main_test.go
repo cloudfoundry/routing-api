@@ -166,7 +166,7 @@ var _ = Describe("Main", func() {
 
 				Expect(etcdAllocator.Delete()).NotTo(HaveOccurred())
 				// to ensure etcd is stopped completely
-				time.Sleep(2 * time.Second)
+				validatePort(uint16(etcdPort))
 
 				ginkgomon.Interrupt(proc)
 				Eventually(routingAPIRunner).Should(Exit(1))
