@@ -33,13 +33,15 @@ type postgresAllocator struct {
 	schemaName string
 }
 
+func randSchemaName() string {
+	return fmt.Sprintf("test%d", rand.Int())
+}
+
 func NewPostgresAllocator() DbAllocator {
-	sqlDBName := fmt.Sprintf("test%d", rand.Int())
-	return &postgresAllocator{schemaName: sqlDBName}
+	return &postgresAllocator{schemaName: randSchemaName()}
 }
 func NewMySQLAllocator() DbAllocator {
-	sqlDBName := fmt.Sprintf("test%d", rand.Int())
-	return &mysqlAllocator{schemaName: sqlDBName}
+	return &mysqlAllocator{schemaName: randSchemaName()}
 }
 
 type etcdAllocator struct {
@@ -51,9 +53,11 @@ type etcdAllocator struct {
 func NewEtcdAllocator(port int) DbAllocator {
 	return &etcdAllocator{port: port}
 }
+
 func (a *postgresAllocator) ConnectionString() string {
 	return "postgres://postgres:@localhost/?sslmode=disable"
 }
+
 func (a *postgresAllocator) Create() (string, error) {
 	var err error
 	a.sqlDB, err = sql.Open("postgres", a.ConnectionString())
@@ -65,12 +69,23 @@ func (a *postgresAllocator) Create() (string, error) {
 		return "", err
 	}
 
-	_, err = a.sqlDB.Exec(fmt.Sprintf("CREATE DATABASE %s", a.schemaName))
-	if err != nil {
-		return "", err
+	for i := 0; i < 5; i++ {
+		dbExists, err := a.sqlDB.Exec(fmt.Sprintf("SELECT * FROM pg_database WHERE datname='%s'", a.schemaName))
+		rowsAffected, err := dbExists.RowsAffected()
+		if err != nil {
+			return "", err
+		}
+		if rowsAffected == 0 {
+			_, err = a.sqlDB.Exec(fmt.Sprintf("CREATE DATABASE %s", a.schemaName))
+			if err != nil {
+				return "", err
+			}
+			return a.schemaName, nil
+		} else {
+			a.schemaName = randSchemaName()
+		}
 	}
-
-	return a.schemaName, nil
+	return "", errors.New("Failed to create unique database ")
 }
 
 func (a *postgresAllocator) Reset() error {
@@ -111,12 +126,23 @@ func (a *mysqlAllocator) Create() (string, error) {
 		return "", err
 	}
 
-	_, err = a.sqlDB.Exec(fmt.Sprintf("CREATE DATABASE %s", a.schemaName))
-	if err != nil {
-		return "", err
+	for i := 0; i < 5; i++ {
+		dbExists, err := a.sqlDB.Exec(fmt.Sprintf("SHOW DATABASES LIKE '%s'", a.schemaName))
+		rowsAffected, err := dbExists.RowsAffected()
+		if err != nil {
+			return "", err
+		}
+		if rowsAffected == 0 {
+			_, err = a.sqlDB.Exec(fmt.Sprintf("CREATE DATABASE %s", a.schemaName))
+			if err != nil {
+				return "", err
+			}
+			return a.schemaName, nil
+		} else {
+			a.schemaName = randSchemaName()
+		}
 	}
-
-	return a.schemaName, nil
+	return "", errors.New("Failed to create unique database ")
 }
 
 func (a *mysqlAllocator) Reset() error {

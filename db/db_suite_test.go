@@ -15,6 +15,7 @@ import (
 	"github.com/cloudfoundry/storeadapter"
 	"github.com/cloudfoundry/storeadapter/storerunner/etcdstorerunner"
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -63,7 +64,6 @@ func TestDB(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	sqlDBName = fmt.Sprintf("test%d", GinkgoParallelNode())
 	var err error
 
 	postgresAllocator = testrunner.NewPostgresAllocator()
