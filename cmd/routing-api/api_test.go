@@ -304,24 +304,50 @@ var _ = Describe("Routes API", func() {
 					client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 					var err error
 					tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
-					tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 1)
+					tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 3)
 
 					tcpRouteMappings := []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 					err = client.UpsertTcpRouteMappings(tcpRouteMappings)
 					Expect(err).NotTo(HaveOccurred())
-					tcpRouteMappingsResponse, err := client.TcpRouteMappings()
-					Expect(err).NotTo(HaveOccurred())
-					Expect(tcpRouteMappingsResponse).NotTo(BeNil())
-					mappings := TcpRouteMappings(tcpRouteMappingsResponse)
+
+					tcpRoutes := make(chan []models.TcpRouteMapping, 1)
+					defer close(tcpRoutes)
+
+					go func(tcpRoutes chan []models.TcpRouteMapping) {
+						t := time.NewTicker(1 * time.Second)
+						for {
+							select {
+							case <-t.C:
+								tcpRouteMappingsResponse, err := client.TcpRouteMappings()
+								if err != nil {
+									tcpRoutes <- nil
+								} else {
+									mappings := TcpRouteMappings(tcpRouteMappingsResponse)
+									tcpRoutes <- mappings
+									if len(mappings) == 1 {
+										return
+									}
+								}
+							case <-time.NewTimer(10 * time.Second).C:
+								return
+							}
+						}
+					}(tcpRoutes)
+
+					//validate test setup
+					var mappings TcpRouteMappings
+					mappings = <-tcpRoutes
+					Expect(mappings).ToNot(BeNil())
 					Expect(mappings.ContainsAll(tcpRouteMappings...)).To(BeTrue())
 
-					By("letting route expire")
 					Eventually(func() bool {
-						tcpRouteMappingsResponse, err := client.TcpRouteMappings()
-						Expect(err).NotTo(HaveOccurred())
-						mappings := TcpRouteMappings(tcpRouteMappingsResponse)
-						return mappings.Contains(tcpRouteMapping2)
-					}, "8s", 1).Should(BeFalse())
+						mappings = <-tcpRoutes
+						Expect(mappings).ToNot(BeNil())
+						if len(mappings) == 1 {
+							return mappings.Contains(tcpRouteMapping1)
+						}
+						return false
+					}, "11s", 1).Should(BeTrue())
 				})
 			})
 
