@@ -1007,14 +1007,14 @@ var _ = Describe("SqlDB", func() {
 								err := sqlDB.Client.Where("host_ip = ?", "127.0.0.1").Find(&tcpRoutes).Error
 								Expect(err).ToNot(HaveOccurred())
 								return tcpRoutes
-							}, 3).Should(HaveLen(0))
+							}, 5).Should(HaveLen(0))
 							Eventually(logger, 2).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":1}`))
 						})
 
 						It("should emit a ExpireEvent for the pruned route", func() {
 							results, _, _ := sqlDB.WatchChanges(db.TCP_WATCH)
 							var event db.Event
-							Eventually(results, 3).Should((Receive(&event)))
+							Eventually(results, 5).Should((Receive(&event)))
 							Expect(event).NotTo(BeNil())
 							Expect(event.Type).To(Equal(db.ExpireEvent))
 							Expect(event.Value).To(ContainSubstring(`"port":3555`))
@@ -1040,13 +1040,12 @@ var _ = Describe("SqlDB", func() {
 								err := sqlDB.Client.Where("host_ip = ?", "127.0.0.1").Find(&tcpRoutes).Error
 								Expect(err).ToNot(HaveOccurred())
 								return tcpRoutes
-							}, 2).Should(HaveLen(1))
+							}, 5).Should(HaveLen(1))
 
 							Expect(tcpRoutes[0]).To(matchers.MatchTcpRoute(tcpRoute))
 						})
 					})
 				})
-
 			})
 
 			Context("http routes", func() {
@@ -1071,7 +1070,7 @@ var _ = Describe("SqlDB", func() {
 								err := sqlDB.Client.Where("ip = ?", "127.0.0.1").Find(&httpRoutes).Error
 								Expect(err).ToNot(HaveOccurred())
 								return httpRoutes
-							}, 3).Should(HaveLen(0))
+							}, 5).Should(HaveLen(0))
 
 							Eventually(logger, 2).Should(gbytes.Say(`prune.successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":1}`))
 						})
@@ -1079,7 +1078,7 @@ var _ = Describe("SqlDB", func() {
 						It("should emit a ExpireEvent for the pruned route", func() {
 							results, _, _ := sqlDB.WatchChanges(db.HTTP_WATCH)
 							var event db.Event
-							Eventually(results, 3).Should((Receive(&event)))
+							Eventually(results, 5).Should((Receive(&event)))
 							Expect(event).NotTo(BeNil())
 							Expect(event.Type).To(Equal(db.ExpireEvent))
 							Expect(event.Value).To(ContainSubstring(`"port":7000`))
@@ -1106,7 +1105,7 @@ var _ = Describe("SqlDB", func() {
 								err := sqlDB.Client.Where("ip = ?", "127.0.0.1").Find(&httpRoutes).Error
 								Expect(err).ToNot(HaveOccurred())
 								return httpRoutes
-							}, 3).Should(HaveLen(1))
+							}, 5).Should(HaveLen(1))
 
 							Expect(httpRoutes[0]).To(matchers.MatchHttpRoute(httpRoute))
 						})
