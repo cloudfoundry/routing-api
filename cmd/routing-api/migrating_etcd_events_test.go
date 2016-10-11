@@ -67,6 +67,7 @@ var _ = Describe("ETCD Event Migrations", func() {
 		})
 		validatePort(routingAPIArgs.Port)
 		routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
+		Eventually(routingAPIProcess.Ready(), "5s").Should(BeClosed())
 	})
 
 	AfterEach(func() {

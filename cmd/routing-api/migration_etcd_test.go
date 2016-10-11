@@ -41,6 +41,7 @@ var _ = Describe("ETCD Migrations", func() {
 	JustBeforeEach(func() {
 		routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 		routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
+		Eventually(routingAPIProcess.Ready(), "5s").Should(BeClosed())
 	})
 
 	AfterEach(func() {

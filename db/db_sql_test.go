@@ -988,7 +988,7 @@ var _ = Describe("SqlDB", func() {
 				var tcpRouteModel models.TcpRouteMapping
 
 				BeforeEach(func() {
-					tcpRoute := models.NewTcpRouteMapping("guid", 3555, "127.0.0.1", 7879, 1)
+					tcpRoute := models.NewTcpRouteMapping("guid", 3555, "127.0.0.1", 7879, 2)
 					var err error
 					tcpRouteModel, err = models.NewTcpRouteMappingWithModel(tcpRoute)
 					Expect(err).ToNot(HaveOccurred())

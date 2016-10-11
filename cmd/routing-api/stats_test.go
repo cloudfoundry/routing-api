@@ -29,6 +29,7 @@ var _ = Describe("Routes API", func() {
 	BeforeEach(func() {
 		routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 		routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
+		Eventually(routingAPIProcess.Ready(), "5s").Should(BeClosed())
 		addr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("localhost:%d", 8125+GinkgoParallelNode()))
 		Expect(err).ToNot(HaveOccurred())
 
