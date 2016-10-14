@@ -110,8 +110,12 @@ func main() {
 	clock := clock.NewClock()
 
 	etcdDone := make(chan struct{})
+	releaseLock := make(chan os.Signal)
+	lockErrChan := make(chan error)
 	lockMaintainer := initializeLockMaintainer(logger, cfg.ConsulCluster.Servers, sessionName,
 		cfg.ConsulCluster.LockTTL, cfg.ConsulCluster.RetryInterval, clock)
+	lockAcquirer := initializeLockAcquirer(lockMaintainer, releaseLock, lockErrChan)
+	lockReleaser := initializeLockReleaser(releaseLock, lockErrChan, cfg.ConsulCluster.RetryInterval)
 	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
 	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker, logger.Session("metrics"))
 	migrationProcess := runMigration(cfg, database, &cfg.Etcd, etcdDone, logger.Session("migration"))
@@ -120,7 +124,7 @@ func main() {
 
 	members := grouper.Members{
 		{"migration", migrationProcess},
-		{"lock-maintainer", lockMaintainer},
+		{"lock-acquirer", lockAcquirer},
 		{"etcd-migration-stopper", etcdMigrationStopper},
 		{"seed-router-groups", routerGroupSeeder},
 		{"api-server", apiServer},
@@ -133,6 +137,7 @@ func main() {
 		routePruner := runCleanupRoutes(database, logger)
 		members = append(members, grouper.Member{Name: "sql-route-pruner", Runner: routePruner})
 	}
+	members = append(members, grouper.Member{Name: "lock-releaser", Runner: lockReleaser})
 
 	group := grouper.NewOrdered(os.Interrupt, members)
 	process := ifrit.Invoke(sigmon.New(group))
@@ -337,6 +342,40 @@ func initializeLockMaintainer(
 	}
 
 	return newLockRunner(logger, client, clock, lockRetryInterval, lockTTL)
+}
+
+func initializeLockAcquirer(lockRunner ifrit.Runner, releaseLock chan os.Signal, lockErrChan chan error) ifrit.Runner {
+	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
+
+		go func() {
+			var err error
+			err = lockRunner.Run(releaseLock, ready)
+			lockErrChan <- err
+		}()
+
+		<-signals
+		return nil
+	})
+}
+
+func initializeLockReleaser(releaseLock chan os.Signal, lockErrChan chan error, retryInterval time.Duration) ifrit.Runner {
+	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
+		close(ready)
+		var err error
+		for {
+			select {
+			case signal := <-signals:
+				releaseLock <- signal
+
+			case err = <-lockErrChan:
+				consulLockRetryInterval := 5 * time.Second // DefaultLockRetryTime from consul API
+				//Give other routing-api enough time to grab the lock
+				time.Sleep(retryInterval + consulLockRetryInterval)
+
+				return err
+			}
+		}
+	})
 }
 
 func newLockRunner(

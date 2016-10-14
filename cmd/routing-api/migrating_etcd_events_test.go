@@ -119,7 +119,10 @@ var _ = Describe("ETCD Event Migrations", func() {
 	Context("the current Routing API connected to SQL is the active node", func() {
 		BeforeEach(func() {
 			lockHolderProcess.Signal(os.Interrupt)
+
 			Eventually(routingAPIRunner.Buffer()).Should(gbytes.Say(`routing-api.started`))
+			err := <-lockHolderProcess.Wait()
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("does not migrate route changes from etcd to SQL", func() {

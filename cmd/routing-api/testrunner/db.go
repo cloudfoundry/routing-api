@@ -12,6 +12,7 @@ import (
 	"github.com/cloudfoundry/storeadapter"
 	"github.com/cloudfoundry/storeadapter/storerunner/etcdstorerunner"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 var etcdVersion = "etcdserver\":\"2.1.1"

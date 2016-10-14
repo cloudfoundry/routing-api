@@ -32,6 +32,7 @@ func (r *RouteRegister) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 		return fmt.Errorf("registration error: %s", err.Error())
 	}
 	close(ready)
+	r.logger.Info("starting-registration-loop", lager.Data{"route": r.route})
 
 	for {
 		select {

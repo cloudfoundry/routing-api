@@ -40,11 +40,13 @@ func NewRunner(
 func (r *Runner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	migrations := InitializeMigrations(r.etcdCfg, r.etcdDone, r.logger)
 
+	r.logger.Info("starting-migration")
 	err := RunMigrations(r.sqlDB, migrations)
 	if err != nil {
 		r.logger.Error("migrations-failed", err)
 		return err
 	}
+	r.logger.Info("finished-migration")
 
 	close(ready)
 
@@ -55,7 +57,7 @@ func (r *Runner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		default:
 			close(r.etcdDone)
 		}
-		r.logger.Info("received signal %s", lager.Data{"signal": sig})
+		r.logger.Info("received signal", lager.Data{"signal": sig})
 	}
 	return nil
 }

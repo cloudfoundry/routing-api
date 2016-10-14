@@ -67,7 +67,6 @@ var _ = Describe("Helpers", func() {
 
 				Eventually(database.SaveRouteCallCount).Should(Equal(2))
 				Eventually(func() models.Route { return database.SaveRouteArgsForCall(1) }).Should(Equal(route))
-				Eventually(logger.Logs).Should(HaveLen(0))
 			})
 
 			Context("when there are errors", func() {
@@ -84,20 +83,20 @@ var _ = Describe("Helpers", func() {
 				})
 
 				It("logs the error for each attempt", func() {
-					Consistently(func() int { return len(logger.Logs()) }).Should(Equal(0))
+					Eventually(func() int { return len(logger.Logs()) }).Should(Equal(1))
 
 					timeChan <- time.Now()
-					Eventually(func() int { return len(logger.Logs()) }).Should(Equal(1))
+					Eventually(func() int { return len(logger.Logs()) }).Should(Equal(2))
 					Eventually(func() string {
-						if len(logger.Logs()) > 0 {
-							return logger.Logs()[0].Data["error"].(string)
+						if len(logger.Logs()) > 1 {
+							return logger.Logs()[1].Data["error"].(string)
 						} else {
 							return ""
 						}
 					}).Should(ContainSubstring("beep boop, self destruct mode engaged"))
 
 					timeChan <- time.Now()
-					Eventually(func() int { return len(logger.Logs()) }).Should(Equal(2))
+					Eventually(func() int { return len(logger.Logs()) }).Should(Equal(3))
 				})
 
 				Context("during startup", func() {

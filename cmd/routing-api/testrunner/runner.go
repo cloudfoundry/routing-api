@@ -103,8 +103,46 @@ router_groups:
 etcd:
   node_urls: ["%s"]
 consul_cluster:
-  servers: "%s"`
+  servers: "%s"
+  retry_interval: 50ms`
 		configBytes = []byte(fmt.Sprintf(etcdConfigStr, dbId, consulUrl))
+	case "postgres":
+		postgresConfigStr := `log_guid: "my_logs"
+uaa_verification_key: "-----BEGIN PUBLIC KEY-----
+
+      MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDHFr+KICms+tuT1OXJwhCUmR2d
+
+      KVy7psa8xzElSyzqx7oJyfJ1JZyOzToj9T5SfTIq396agbHJWVfYphNahvZ/7uMX
+
+      qHxf+ZH9BL1gk9Y6kCnbM5R60gfwjyW1/dQPjOzn9N394zd2FJoFHwdq9Qs0wBug
+
+      spULZVNRxq7veq/fzwIDAQAB
+
+      -----END PUBLIC KEY-----"
+
+debug_address: "1.2.3.4:1234"
+metron_config:
+  address: "1.2.3.4"
+  port: "4567"
+metrics_reporting_interval: "500ms"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"
+system_domain: "example.com"
+router_groups:
+- name: "default-tcp"
+  type: "tcp"
+  reservable_ports: "1024-65535"
+sqldb:
+  username: "postgres"
+  password: ""
+  schema: "%s"
+  port: 5432
+  host: "localhost"
+  type: "postgres"
+consul_cluster:
+  servers: "%s"
+  retry_interval: 50ms`
+		configBytes = []byte(fmt.Sprintf(postgresConfigStr, dbId, consulUrl))
 	default:
 		mysqlConfigStr := `log_guid: "my_logs"
 uaa_verification_key: "-----BEGIN PUBLIC KEY-----
@@ -139,7 +177,8 @@ sqldb:
   host: "localhost"
   type: "mysql"
 consul_cluster:
-  servers: "%s"`
+  servers: "%s"
+  retry_interval: 50ms`
 		configBytes = []byte(fmt.Sprintf(mysqlConfigStr, dbId, consulUrl))
 	}
 
