@@ -200,7 +200,6 @@ func (e *etcdAllocator) Reset() error {
 func (e *etcdAllocator) Delete() error {
 	e.etcdAdapter.Disconnect()
 	e.etcdRunner.Reset()
-	e.etcdRunner.Stop()
 	e.etcdRunner.KillWithFire()
 	return nil
 }
