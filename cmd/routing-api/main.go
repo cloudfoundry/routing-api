@@ -120,12 +120,10 @@ func main() {
 	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker, logger.Session("metrics"))
 	migrationProcess := runMigration(cfg, database, &cfg.Etcd, etcdDone, logger.Session("migration"))
 	routerGroupSeeder := seedRouterGroups(cfg, database, logger.Session("seeding"))
-	etcdMigrationStopper := stopEtcdMigration(etcdDone)
 
 	members := grouper.Members{
 		{"migration", migrationProcess},
 		{"lock-acquirer", lockAcquirer},
-		{"etcd-migration-stopper", etcdMigrationStopper},
 		{"seed-router-groups", routerGroupSeeder},
 		{"api-server", apiServer},
 		{"conn-stopper", stopper},
@@ -169,20 +167,7 @@ func constructStopper(database db.DB) ifrit.Runner {
 		return nil
 	})
 }
-func stopEtcdMigration(etcdDone chan struct{}) ifrit.Runner {
-	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
-		select {
-		case <-etcdDone:
-		default:
-			close(etcdDone)
-		}
-		close(ready)
-		select {
-		case <-signals:
-		}
-		return nil
-	})
-}
+
 func seedRouterGroups(cfg config.Config, database db.DB, logger lager.Logger) ifrit.Runner {
 	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
 		if len(cfg.RouterGroups) > 0 {

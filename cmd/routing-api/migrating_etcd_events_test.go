@@ -125,7 +125,7 @@ var _ = Describe("ETCD Event Migrations", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("does not migrate route changes from etcd to SQL", func() {
+		It("does migrate route changes from etcd to SQL", func() {
 			Expect(len(etcdRouterGroups)).To(Equal(1))
 			routerGroupGuid := etcdRouterGroups[0].Guid
 			tcpRoute := models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 30)
@@ -144,17 +144,17 @@ var _ = Describe("ETCD Event Migrations", func() {
 			Expect(err).ToNot(HaveOccurred())
 			tcpRoute = tcpRoutes[0]
 
-			Consistently(func() []models.TcpRouteMapping {
+			Eventually(func() []models.TcpRouteMapping {
 				tcpRouteMappings, err := client.TcpRouteMappings()
 				Expect(err).NotTo(HaveOccurred())
 				return tcpRouteMappings
-			}).Should(BeEmpty())
+			}).Should(ConsistOf(matchers.MatchTcpRoute(tcpRoute)))
 
 			Eventually(func() []models.Route {
 				httpRoutes, err := client.Routes()
 				Expect(err).ToNot(HaveOccurred())
 				return httpRoutes
-			}).ShouldNot(ContainElement(matchers.MatchHttpRoute(route)))
+			}).Should(ContainElement(matchers.MatchHttpRoute(route)))
 		})
 	})
 })
