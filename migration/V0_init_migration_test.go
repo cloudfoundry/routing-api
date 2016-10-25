@@ -7,7 +7,6 @@ import (
 	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/models"
 
-	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -15,7 +14,7 @@ import (
 var _ = Describe("V0InitMigration", func() {
 	var (
 		mysqlAllocator testrunner.DbAllocator
-		gormDb         *gorm.DB
+		dbClient       db.Client
 		sqlDB          *db.SqlDB
 		err            error
 	)
@@ -35,11 +34,12 @@ var _ = Describe("V0InitMigration", func() {
 
 		sqlDB, err = db.NewSqlDB(sqlCfg)
 		Expect(err).ToNot(HaveOccurred())
-		gormDb = sqlDB.Client.(*gorm.DB)
+		dbClient = sqlDB.Client
 	})
 
 	AfterEach(func() {
-		mysqlAllocator.Delete()
+		err := mysqlAllocator.Delete()
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Context("when valid sql config is passed", func() {
@@ -52,9 +52,9 @@ var _ = Describe("V0InitMigration", func() {
 			err = v0Migration.Run(sqlDB)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(gormDb.HasTable(&models.RouterGroupDB{})).To(BeTrue())
-			Expect(gormDb.HasTable(&models.TcpRouteMapping{})).To(BeTrue())
-			Expect(gormDb.HasTable(&models.Route{})).To(BeTrue())
+			Expect(dbClient.HasTable(&models.RouterGroupDB{})).To(BeTrue())
+			Expect(dbClient.HasTable(&models.TcpRouteMapping{})).To(BeTrue())
+			Expect(dbClient.HasTable(&models.Route{})).To(BeTrue())
 		})
 	})
 })

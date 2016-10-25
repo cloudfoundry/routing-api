@@ -54,7 +54,8 @@ var _ = Describe("EventSource", func() {
 					expectedJSON, _ := json.Marshal(rawEvent)
 
 					fakeRawEventSource.NextReturns(rawEvent, nil)
-					eventSource.Next()
+					_, err := eventSource.Next()
+					Expect(err).ToNot(HaveOccurred())
 
 					log, err := ioutil.ReadAll(stdout)
 					Expect(err).NotTo(HaveOccurred())
@@ -104,7 +105,8 @@ var _ = Describe("EventSource", func() {
 		Describe("Close", func() {
 			Context("when closing the raw event source succeeds", func() {
 				It("closes the event source", func() {
-					eventSource.Close()
+					err := eventSource.Close()
+					Expect(err).ToNot(HaveOccurred())
 					Expect(fakeRawEventSource.CloseCallCount()).To(Equal(1))
 				})
 			})
@@ -151,7 +153,8 @@ var _ = Describe("EventSource", func() {
 					expectedJSON, _ := json.Marshal(rawEvent)
 
 					fakeRawEventSource.NextReturns(rawEvent, nil)
-					tcpEventSource.Next()
+					_, err := tcpEventSource.Next()
+					Expect(err).ToNot(HaveOccurred())
 
 					log, err := ioutil.ReadAll(stdout)
 					Expect(err).NotTo(HaveOccurred())
@@ -208,7 +211,8 @@ var _ = Describe("EventSource", func() {
 		Describe("Close", func() {
 			Context("when closing the raw event source succeeds", func() {
 				It("closes the event source", func() {
-					tcpEventSource.Close()
+					err := tcpEventSource.Close()
+					Expect(err).ToNot(HaveOccurred())
 					Expect(fakeRawEventSource.CloseCallCount()).To(Equal(1))
 				})
 			})

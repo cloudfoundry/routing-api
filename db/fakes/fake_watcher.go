@@ -18,6 +18,8 @@ type FakeWatcher struct {
 		result1 *client.Response
 		result2 error
 	}
+	invocations      map[string][][]interface{}
+	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeWatcher) Next(arg1 context.Context) (*client.Response, error) {
@@ -25,6 +27,7 @@ func (fake *FakeWatcher) Next(arg1 context.Context) (*client.Response, error) {
 	fake.nextArgsForCall = append(fake.nextArgsForCall, struct {
 		arg1 context.Context
 	}{arg1})
+	fake.recordInvocation("Next", []interface{}{arg1})
 	fake.nextMutex.Unlock()
 	if fake.NextStub != nil {
 		return fake.NextStub(arg1)
@@ -51,6 +54,26 @@ func (fake *FakeWatcher) NextReturns(result1 *client.Response, result2 error) {
 		result1 *client.Response
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeWatcher) Invocations() map[string][][]interface{} {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	fake.nextMutex.RLock()
+	defer fake.nextMutex.RUnlock()
+	return fake.invocations
+}
+
+func (fake *FakeWatcher) recordInvocation(key string, args []interface{}) {
+	fake.invocationsMutex.Lock()
+	defer fake.invocationsMutex.Unlock()
+	if fake.invocations == nil {
+		fake.invocations = map[string][][]interface{}{}
+	}
+	if fake.invocations[key] == nil {
+		fake.invocations[key] = [][]interface{}{}
+	}
+	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
 var _ client.Watcher = new(FakeWatcher)

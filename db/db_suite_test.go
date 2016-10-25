@@ -90,7 +90,9 @@ var _ = BeforeSuite(func() {
 	resp, err := client.Get(etcdVersionUrl)
 	Expect(err).ToNot(HaveOccurred())
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	body, err := ioutil.ReadAll(resp.Body)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -112,7 +114,9 @@ var _ = AfterSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-	mysqlAllocator.Reset()
-	postgresAllocator.Reset()
+	err := mysqlAllocator.Reset()
+	Expect(err).ToNot(HaveOccurred())
+	err = postgresAllocator.Reset()
+	Expect(err).ToNot(HaveOccurred())
 	etcdRunner.Reset()
 })

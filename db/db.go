@@ -14,8 +14,8 @@ import (
 	"github.com/coreos/etcd/pkg/transport"
 )
 
-//go:generate counterfeiter -o fakes/fake_watcher.go ../../../coreos/etcd/client/keys.go Watcher
-//go:generate counterfeiter -o fakes/fake_keys_api.go ../../../coreos/etcd/client/keys.go KeysAPI
+//go:generate counterfeiter -o fakes/fake_watcher.go ../../../github.com/coreos/etcd/client/keys.go Watcher
+//go:generate counterfeiter -o fakes/fake_keys_api.go ../../../github.com/coreos/etcd/client/keys.go KeysAPI
 //go:generate counterfeiter -o fakes/fake_db.go . DB
 type DB interface {
 	ReadRoutes() ([]models.Route, error)

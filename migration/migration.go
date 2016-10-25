@@ -41,7 +41,7 @@ func (r *Runner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	migrations := InitializeMigrations(r.etcdCfg, r.etcdDone, r.logger)
 
 	r.logger.Info("starting-migration")
-	err := RunMigrations(r.sqlDB, migrations)
+	err := RunMigrations(r.sqlDB, migrations, r.logger)
 	if err != nil {
 		r.logger.Error("migrations-failed", err)
 		return err
@@ -81,7 +81,7 @@ func InitializeMigrations(etcdCfg *config.Etcd, etcdDone chan struct{}, logger l
 	return migrations
 }
 
-func RunMigrations(sqlDB *db.SqlDB, migrations []Migration) error {
+func RunMigrations(sqlDB *db.SqlDB, migrations []Migration, logger lager.Logger) error {
 	if len(migrations) == 0 {
 		return nil
 	}
@@ -91,56 +91,63 @@ func RunMigrations(sqlDB *db.SqlDB, migrations []Migration) error {
 	}
 
 	lastMigrationVersion := migrations[len(migrations)-1].Version()
-	gormDB := sqlDB.Client.(*gorm.DB)
+	err := sqlDB.Client.AutoMigrate(&MigrationData{})
+	if err != nil {
+		return err
+	}
 
-	gormDB.AutoMigrate(&MigrationData{})
+	tx := sqlDB.Client.Begin()
+	existingVersion := MigrationData{}
 
-	tx := gormDB.Begin()
-
-	existingVersion := &MigrationData{}
-
-	err := tx.Where("migration_key = ?", MigrationKey).First(existingVersion).Error
+	err = tx.Where("migration_key = ?", MigrationKey).First(&existingVersion)
 	if err != nil && err != gorm.ErrRecordNotFound {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			logger.Error("rollback-error", rollbackErr)
+		}
 		return err
 	}
 
 	if err == gorm.ErrRecordNotFound {
-		existingVersion = &MigrationData{
+		existingVersion = MigrationData{
 			MigrationKey:   MigrationKey,
 			CurrentVersion: -1,
 			TargetVersion:  lastMigrationVersion,
 		}
-
-		err := tx.Create(existingVersion).Error
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
+		_, err = tx.Create(existingVersion)
 	} else {
 		if existingVersion.TargetVersion >= lastMigrationVersion {
-			return tx.Commit().Error
+			return tx.Commit()
 		}
 
 		existingVersion.TargetVersion = lastMigrationVersion
-		err := tx.Save(existingVersion).Error
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
+		_, err = tx.Save(existingVersion)
 	}
-	err = tx.Commit().Error
+
 	if err != nil {
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			logger.Error("rollback-error", rollbackErr)
+		}
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		logger.Error("commit-error", err)
 		return err
 	}
 
 	currentVersion := existingVersion.CurrentVersion
 	for _, m := range migrations {
-		if m.Version() > currentVersion && m != nil {
-			m.Run(sqlDB)
+		if m != nil && m.Version() > currentVersion {
+			err = m.Run(sqlDB)
+			if err != nil {
+				return err
+			}
 			currentVersion = m.Version()
 			existingVersion.CurrentVersion = currentVersion
-			err := gormDB.Save(existingVersion).Error
+			_, err = sqlDB.Client.Save(&existingVersion)
 			if err != nil {
 				return err
 			}
@@ -148,3 +155,6 @@ func RunMigrations(sqlDB *db.SqlDB, migrations []Migration) error {
 	}
 	return nil
 }
+
+// func updateOrCreateMigrationRow(dbClient db.Client, lastMigrationVersion int, logger lager.Logger) (MigrationData, error) {
+// }

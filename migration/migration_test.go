@@ -11,7 +11,6 @@ import (
 	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/migration/fakes"
 	"github.com/cloudfoundry/storeadapter/storerunner/etcdstorerunner"
-	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -58,7 +57,8 @@ var _ = Describe("Migration", func() {
 	})
 
 	AfterEach(func() {
-		mysqlAllocator.Delete()
+		err := mysqlAllocator.Delete()
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Describe("InitializeMigrations", func() {
@@ -99,7 +99,7 @@ var _ = Describe("Migration", func() {
 	Describe("RunMigrations", func() {
 		Context("when no SqlDB exists", func() {
 			It("should be a no-op", func() {
-				err := migration.RunMigrations(nil, migrations)
+				err := migration.RunMigrations(nil, migrations, logger)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(fakeMigration.RunCallCount()).To(Equal(0))
 				Expect(fakeLastMigration.RunCallCount()).To(Equal(0))
@@ -107,13 +107,13 @@ var _ = Describe("Migration", func() {
 		})
 		Context("when no migration table exists", func() {
 			It("should create the migration table and set the target version to last migration version", func() {
-				err := migration.RunMigrations(sqlDB, migrations)
+				err := migration.RunMigrations(sqlDB, migrations, logger)
 				Expect(err).ToNot(HaveOccurred())
-				gormClient := sqlDB.Client.(*gorm.DB)
-				Expect(gormClient.HasTable(&migration.MigrationData{})).To(BeTrue())
+				Expect(sqlDB.Client.HasTable(&migration.MigrationData{})).To(BeTrue())
 
 				var migrationVersions []migration.MigrationData
-				gormClient.Find(&migrationVersions)
+				err = sqlDB.Client.Find(&migrationVersions)
+				Expect(err).ToNot(HaveOccurred())
 
 				Expect(migrationVersions).To(HaveLen(1))
 
@@ -123,7 +123,7 @@ var _ = Describe("Migration", func() {
 				Expect(migrationVersion.TargetVersion).To(Equal(lastMigrationVersion))
 			})
 			It("should run all the migrations up to the current version", func() {
-				err := migration.RunMigrations(sqlDB, migrations)
+				err := migration.RunMigrations(sqlDB, migrations, logger)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(fakeMigration.RunCallCount()).To(Equal(1))
 				Expect(fakeLastMigration.RunCallCount()).To(Equal(1))
@@ -132,8 +132,8 @@ var _ = Describe("Migration", func() {
 
 		Context("when a migration table exists", func() {
 			BeforeEach(func() {
-				gormClient := sqlDB.Client.(*gorm.DB)
-				gormClient.AutoMigrate(&migration.MigrationData{})
+				err := sqlDB.Client.AutoMigrate(&migration.MigrationData{})
+				Expect(err).ToNot(HaveOccurred())
 			})
 
 			Context("when a migration is necessary", func() {
@@ -145,16 +145,17 @@ var _ = Describe("Migration", func() {
 							TargetVersion:  lastMigrationVersion,
 						}
 
-						err := sqlDB.Client.Create(migrationData).Error
+						_, err := sqlDB.Client.Create(migrationData)
 						Expect(err).ToNot(HaveOccurred())
 					})
 
 					It("should not update the migration data", func() {
-						err := migration.RunMigrations(sqlDB, migrations)
+						err := migration.RunMigrations(sqlDB, migrations, logger)
 						Expect(err).ToNot(HaveOccurred())
 
 						var migrationVersions []migration.MigrationData
-						sqlDB.Client.Find(&migrationVersions)
+						err = sqlDB.Client.Find(&migrationVersions)
+						Expect(err).ToNot(HaveOccurred())
 
 						Expect(migrationVersions).To(HaveLen(1))
 
@@ -165,7 +166,7 @@ var _ = Describe("Migration", func() {
 					})
 
 					It("should not run any migrations", func() {
-						err := migration.RunMigrations(sqlDB, migrations)
+						err := migration.RunMigrations(sqlDB, migrations, logger)
 						Expect(err).ToNot(HaveOccurred())
 
 						Expect(fakeMigration.RunCallCount()).To(BeZero())
@@ -180,16 +181,17 @@ var _ = Describe("Migration", func() {
 							TargetVersion:  1,
 						}
 
-						err := sqlDB.Client.Create(migrationData).Error
+						_, err := sqlDB.Client.Create(migrationData)
 						Expect(err).ToNot(HaveOccurred())
 					})
 
 					It("should update the migration data with the target version", func() {
-						err := migration.RunMigrations(sqlDB, migrations)
+						err := migration.RunMigrations(sqlDB, migrations, logger)
 						Expect(err).ToNot(HaveOccurred())
 
 						var migrationVersions []migration.MigrationData
-						sqlDB.Client.Find(&migrationVersions)
+						err = sqlDB.Client.Find(&migrationVersions)
+						Expect(err).ToNot(HaveOccurred())
 
 						Expect(migrationVersions).To(HaveLen(1))
 
@@ -200,7 +202,7 @@ var _ = Describe("Migration", func() {
 					})
 
 					It("should run all the migrations up to the current version", func() {
-						err := migration.RunMigrations(sqlDB, migrations)
+						err := migration.RunMigrations(sqlDB, migrations, logger)
 						Expect(err).ToNot(HaveOccurred())
 						Expect(fakeMigration.RunCallCount()).To(Equal(0))
 						Expect(fakeLastMigration.RunCallCount()).To(Equal(1))
@@ -216,16 +218,17 @@ var _ = Describe("Migration", func() {
 						TargetVersion:  lastMigrationVersion,
 					}
 
-					err := sqlDB.Client.Create(migrationData).Error
+					_, err := sqlDB.Client.Create(migrationData)
 					Expect(err).ToNot(HaveOccurred())
 				})
 
 				It("should not update the migration data", func() {
-					err := migration.RunMigrations(sqlDB, migrations)
+					err := migration.RunMigrations(sqlDB, migrations, logger)
 					Expect(err).ToNot(HaveOccurred())
 
 					var migrationVersions []migration.MigrationData
-					sqlDB.Client.Find(&migrationVersions)
+					err = sqlDB.Client.Find(&migrationVersions)
+					Expect(err).ToNot(HaveOccurred())
 
 					Expect(migrationVersions).To(HaveLen(1))
 
@@ -236,7 +239,7 @@ var _ = Describe("Migration", func() {
 				})
 
 				It("should not run any migrations", func() {
-					err := migration.RunMigrations(sqlDB, migrations)
+					err := migration.RunMigrations(sqlDB, migrations, logger)
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(fakeMigration.RunCallCount()).To(BeZero())

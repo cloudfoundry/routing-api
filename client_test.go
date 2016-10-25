@@ -745,7 +745,9 @@ var _ = Describe("Client", func() {
 						"Authorization": []string{"bearer"},
 					}),
 					func(w http.ResponseWriter, req *http.Request) {
-						event.Write(w)
+						defer GinkgoRecover()
+						writeErr := event.Write(w)
+						Expect(writeErr).ToNot(HaveOccurred())
 					},
 				),
 			)
@@ -872,7 +874,9 @@ var _ = Describe("Client", func() {
 						"Authorization": []string{"bearer"},
 					}),
 					func(w http.ResponseWriter, req *http.Request) {
-						event.Write(w)
+						defer GinkgoRecover()
+						writeErr := event.Write(w)
+						Expect(writeErr).ToNot(HaveOccurred())
 					},
 				),
 			)

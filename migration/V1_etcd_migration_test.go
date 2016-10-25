@@ -57,7 +57,8 @@ var _ = Describe("V1EtcdMigration", func() {
 	})
 
 	AfterEach(func() {
-		mysqlAllocator.Delete()
+		err := mysqlAllocator.Delete()
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Context("when etcd is configured", func() {
@@ -151,7 +152,8 @@ var _ = Describe("V1EtcdMigration", func() {
 
 						ttl := 30
 						savedRoute.TTL = &ttl
-						sqlDB.SaveRoute(savedRoute)
+						err = sqlDB.SaveRoute(savedRoute)
+						Expect(err).ToNot(HaveOccurred())
 
 						Eventually(etcd.ReadRoutes, "3s").Should(HaveLen(0))
 
@@ -205,7 +207,8 @@ var _ = Describe("V1EtcdMigration", func() {
 
 						ttl := 30
 						savedRoute.TTL = &ttl
-						sqlDB.SaveTcpRouteMapping(savedRoute)
+						err = sqlDB.SaveTcpRouteMapping(savedRoute)
+						Expect(err).ToNot(HaveOccurred())
 
 						Eventually(etcd.ReadRoutes).Should(HaveLen(0))
 

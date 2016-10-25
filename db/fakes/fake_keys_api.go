@@ -86,6 +86,8 @@ type FakeKeysAPI struct {
 	watcherReturns struct {
 		result1 client.Watcher
 	}
+	invocations      map[string][][]interface{}
+	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeKeysAPI) Get(ctx context.Context, key string, opts *client.GetOptions) (*client.Response, error) {
@@ -95,6 +97,7 @@ func (fake *FakeKeysAPI) Get(ctx context.Context, key string, opts *client.GetOp
 		key  string
 		opts *client.GetOptions
 	}{ctx, key, opts})
+	fake.recordInvocation("Get", []interface{}{ctx, key, opts})
 	fake.getMutex.Unlock()
 	if fake.GetStub != nil {
 		return fake.GetStub(ctx, key, opts)
@@ -131,6 +134,7 @@ func (fake *FakeKeysAPI) Set(ctx context.Context, key string, value string, opts
 		value string
 		opts  *client.SetOptions
 	}{ctx, key, value, opts})
+	fake.recordInvocation("Set", []interface{}{ctx, key, value, opts})
 	fake.setMutex.Unlock()
 	if fake.SetStub != nil {
 		return fake.SetStub(ctx, key, value, opts)
@@ -166,6 +170,7 @@ func (fake *FakeKeysAPI) Delete(ctx context.Context, key string, opts *client.De
 		key  string
 		opts *client.DeleteOptions
 	}{ctx, key, opts})
+	fake.recordInvocation("Delete", []interface{}{ctx, key, opts})
 	fake.deleteMutex.Unlock()
 	if fake.DeleteStub != nil {
 		return fake.DeleteStub(ctx, key, opts)
@@ -201,6 +206,7 @@ func (fake *FakeKeysAPI) Create(ctx context.Context, key string, value string) (
 		key   string
 		value string
 	}{ctx, key, value})
+	fake.recordInvocation("Create", []interface{}{ctx, key, value})
 	fake.createMutex.Unlock()
 	if fake.CreateStub != nil {
 		return fake.CreateStub(ctx, key, value)
@@ -237,6 +243,7 @@ func (fake *FakeKeysAPI) CreateInOrder(ctx context.Context, dir string, value st
 		value string
 		opts  *client.CreateInOrderOptions
 	}{ctx, dir, value, opts})
+	fake.recordInvocation("CreateInOrder", []interface{}{ctx, dir, value, opts})
 	fake.createInOrderMutex.Unlock()
 	if fake.CreateInOrderStub != nil {
 		return fake.CreateInOrderStub(ctx, dir, value, opts)
@@ -272,6 +279,7 @@ func (fake *FakeKeysAPI) Update(ctx context.Context, key string, value string) (
 		key   string
 		value string
 	}{ctx, key, value})
+	fake.recordInvocation("Update", []interface{}{ctx, key, value})
 	fake.updateMutex.Unlock()
 	if fake.UpdateStub != nil {
 		return fake.UpdateStub(ctx, key, value)
@@ -306,6 +314,7 @@ func (fake *FakeKeysAPI) Watcher(key string, opts *client.WatcherOptions) client
 		key  string
 		opts *client.WatcherOptions
 	}{key, opts})
+	fake.recordInvocation("Watcher", []interface{}{key, opts})
 	fake.watcherMutex.Unlock()
 	if fake.WatcherStub != nil {
 		return fake.WatcherStub(key, opts)
@@ -331,6 +340,38 @@ func (fake *FakeKeysAPI) WatcherReturns(result1 client.Watcher) {
 	fake.watcherReturns = struct {
 		result1 client.Watcher
 	}{result1}
+}
+
+func (fake *FakeKeysAPI) Invocations() map[string][][]interface{} {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	fake.setMutex.RLock()
+	defer fake.setMutex.RUnlock()
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
+	fake.createMutex.RLock()
+	defer fake.createMutex.RUnlock()
+	fake.createInOrderMutex.RLock()
+	defer fake.createInOrderMutex.RUnlock()
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
+	fake.watcherMutex.RLock()
+	defer fake.watcherMutex.RUnlock()
+	return fake.invocations
+}
+
+func (fake *FakeKeysAPI) recordInvocation(key string, args []interface{}) {
+	fake.invocationsMutex.Lock()
+	defer fake.invocationsMutex.Unlock()
+	if fake.invocations == nil {
+		fake.invocations = map[string][][]interface{}{}
+	}
+	if fake.invocations[key] == nil {
+		fake.invocations[key] = [][]interface{}{}
+	}
+	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
 var _ client.KeysAPI = new(FakeKeysAPI)

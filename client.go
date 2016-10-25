@@ -225,7 +225,9 @@ func (c *client) do(req *http.Request, response interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 
 	trace.DumpResponse(res)
 

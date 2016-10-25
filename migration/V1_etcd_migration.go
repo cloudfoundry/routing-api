@@ -7,7 +7,6 @@ import (
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
-	"github.com/jinzhu/gorm"
 )
 
 type V1EtcdMigration struct {
@@ -30,7 +29,6 @@ func (v *V1EtcdMigration) Run(sqlDB *db.SqlDB) error {
 	if sqlDB == nil {
 		return nil
 	}
-	gormDB := sqlDB.Client.(*gorm.DB)
 
 	if len(v.etcdCfg.NodeURLS) == 0 {
 		return nil
@@ -47,7 +45,7 @@ func (v *V1EtcdMigration) Run(sqlDB *db.SqlDB) error {
 	}
 	for _, rg := range etcdRouterGroups {
 		routerGroup := models.NewRouterGroupDB(rg)
-		err := gormDB.Create(&routerGroup).Error
+		_, err := sqlDB.Client.Create(&routerGroup)
 		if err != nil {
 			return err
 		}
@@ -66,7 +64,7 @@ func (v *V1EtcdMigration) Run(sqlDB *db.SqlDB) error {
 		}
 		r.ExpiresAt = route.ExpiresAt
 
-		err = gormDB.Create(&r).Error
+		_, err = sqlDB.Client.Create(&r)
 		if err != nil {
 			return err
 		}
@@ -85,7 +83,7 @@ func (v *V1EtcdMigration) Run(sqlDB *db.SqlDB) error {
 		}
 		r.ExpiresAt = route.ExpiresAt
 
-		err = gormDB.Create(&r).Error
+		_, err = sqlDB.Client.Create(&r)
 		if err != nil {
 			return err
 		}
@@ -105,14 +103,20 @@ func (v *V1EtcdMigration) watchForHTTPEvents(etcd db.DB, sqlDB db.DB) {
 				var httpRoute models.Route
 				switch event.Type {
 				case db.CreateEvent, db.UpdateEvent:
-					json.Unmarshal([]byte(event.Value), &httpRoute)
-					err := sqlDB.SaveRoute(httpRoute)
+					err := json.Unmarshal([]byte(event.Value), &httpRoute)
+					if err != nil {
+						v.logger.Error("failed-to-unmarshal-http-event", err)
+					}
+					err = sqlDB.SaveRoute(httpRoute)
 					if err != nil {
 						v.logger.Error("failed-to-save-http-route", err)
 					}
 				case db.DeleteEvent:
-					json.Unmarshal([]byte(event.Value), &httpRoute)
-					err := sqlDB.DeleteRoute(httpRoute)
+					err := json.Unmarshal([]byte(event.Value), &httpRoute)
+					if err != nil {
+						v.logger.Error("failed-to-unmarshal-http-event", err)
+					}
+					err = sqlDB.DeleteRoute(httpRoute)
 					if err != nil {
 						v.logger.Error("failed-to-delete-http-route", err)
 					}
@@ -140,7 +144,10 @@ func (v *V1EtcdMigration) watchForRouterGroupChanges(etcd db.DB, sqlDB db.DB) {
 				var routerGroup models.RouterGroup
 				switch event.Type {
 				case db.UpdateEvent:
-					json.Unmarshal([]byte(event.Value), &routerGroup)
+					err := json.Unmarshal([]byte(event.Value), &routerGroup)
+					if err != nil {
+						v.logger.Error("failed-to-unmarshal-router-group-event", err)
+					}
 					rg, err := sqlDB.ReadRouterGroup(routerGroup.Guid)
 					if err != nil {
 						v.logger.Error("failed-to-read-router-group", err)
@@ -174,14 +181,20 @@ func (v *V1EtcdMigration) watchForTCPEvents(etcd db.DB, sqlDB db.DB) {
 				var tcpRoute models.TcpRouteMapping
 				switch event.Type {
 				case db.CreateEvent, db.UpdateEvent:
-					json.Unmarshal([]byte(event.Value), &tcpRoute)
-					err := sqlDB.SaveTcpRouteMapping(tcpRoute)
+					err := json.Unmarshal([]byte(event.Value), &tcpRoute)
+					if err != nil {
+						v.logger.Error("failed-to-unmarshal-tcp-event", err)
+					}
+					err = sqlDB.SaveTcpRouteMapping(tcpRoute)
 					if err != nil {
 						v.logger.Error("failed-to-save-tcp-route", err)
 					}
 				case db.DeleteEvent:
-					json.Unmarshal([]byte(event.Value), &tcpRoute)
-					err := sqlDB.DeleteTcpRouteMapping(tcpRoute)
+					err := json.Unmarshal([]byte(event.Value), &tcpRoute)
+					if err != nil {
+						v.logger.Error("failed-to-unmarshal-tcp-event", err)
+					}
+					err = sqlDB.DeleteTcpRouteMapping(tcpRoute)
 					if err != nil {
 						v.logger.Error("failed-to-delete-tcp-route", err)
 					}

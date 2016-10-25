@@ -4,7 +4,7 @@ package fake_routing_api
 import (
 	"sync"
 
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/models"
 )
 
@@ -107,6 +107,8 @@ type FakeClient struct {
 		result1 routing_api.TcpEventSource
 		result2 error
 	}
+	invocations      map[string][][]interface{}
+	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeClient) SetToken(arg1 string) {
@@ -114,6 +116,7 @@ func (fake *FakeClient) SetToken(arg1 string) {
 	fake.setTokenArgsForCall = append(fake.setTokenArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	fake.recordInvocation("SetToken", []interface{}{arg1})
 	fake.setTokenMutex.Unlock()
 	if fake.SetTokenStub != nil {
 		fake.SetTokenStub(arg1)
@@ -133,10 +136,16 @@ func (fake *FakeClient) SetTokenArgsForCall(i int) string {
 }
 
 func (fake *FakeClient) UpsertRoutes(arg1 []models.Route) error {
+	var arg1Copy []models.Route
+	if arg1 != nil {
+		arg1Copy = make([]models.Route, len(arg1))
+		copy(arg1Copy, arg1)
+	}
 	fake.upsertRoutesMutex.Lock()
 	fake.upsertRoutesArgsForCall = append(fake.upsertRoutesArgsForCall, struct {
 		arg1 []models.Route
-	}{arg1})
+	}{arg1Copy})
+	fake.recordInvocation("UpsertRoutes", []interface{}{arg1Copy})
 	fake.upsertRoutesMutex.Unlock()
 	if fake.UpsertRoutesStub != nil {
 		return fake.UpsertRoutesStub(arg1)
@@ -167,6 +176,7 @@ func (fake *FakeClient) UpsertRoutesReturns(result1 error) {
 func (fake *FakeClient) Routes() ([]models.Route, error) {
 	fake.routesMutex.Lock()
 	fake.routesArgsForCall = append(fake.routesArgsForCall, struct{}{})
+	fake.recordInvocation("Routes", []interface{}{})
 	fake.routesMutex.Unlock()
 	if fake.RoutesStub != nil {
 		return fake.RoutesStub()
@@ -190,10 +200,16 @@ func (fake *FakeClient) RoutesReturns(result1 []models.Route, result2 error) {
 }
 
 func (fake *FakeClient) DeleteRoutes(arg1 []models.Route) error {
+	var arg1Copy []models.Route
+	if arg1 != nil {
+		arg1Copy = make([]models.Route, len(arg1))
+		copy(arg1Copy, arg1)
+	}
 	fake.deleteRoutesMutex.Lock()
 	fake.deleteRoutesArgsForCall = append(fake.deleteRoutesArgsForCall, struct {
 		arg1 []models.Route
-	}{arg1})
+	}{arg1Copy})
+	fake.recordInvocation("DeleteRoutes", []interface{}{arg1Copy})
 	fake.deleteRoutesMutex.Unlock()
 	if fake.DeleteRoutesStub != nil {
 		return fake.DeleteRoutesStub(arg1)
@@ -224,6 +240,7 @@ func (fake *FakeClient) DeleteRoutesReturns(result1 error) {
 func (fake *FakeClient) RouterGroups() ([]models.RouterGroup, error) {
 	fake.routerGroupsMutex.Lock()
 	fake.routerGroupsArgsForCall = append(fake.routerGroupsArgsForCall, struct{}{})
+	fake.recordInvocation("RouterGroups", []interface{}{})
 	fake.routerGroupsMutex.Unlock()
 	if fake.RouterGroupsStub != nil {
 		return fake.RouterGroupsStub()
@@ -251,6 +268,7 @@ func (fake *FakeClient) UpdateRouterGroup(arg1 models.RouterGroup) error {
 	fake.updateRouterGroupArgsForCall = append(fake.updateRouterGroupArgsForCall, struct {
 		arg1 models.RouterGroup
 	}{arg1})
+	fake.recordInvocation("UpdateRouterGroup", []interface{}{arg1})
 	fake.updateRouterGroupMutex.Unlock()
 	if fake.UpdateRouterGroupStub != nil {
 		return fake.UpdateRouterGroupStub(arg1)
@@ -279,10 +297,16 @@ func (fake *FakeClient) UpdateRouterGroupReturns(result1 error) {
 }
 
 func (fake *FakeClient) UpsertTcpRouteMappings(arg1 []models.TcpRouteMapping) error {
+	var arg1Copy []models.TcpRouteMapping
+	if arg1 != nil {
+		arg1Copy = make([]models.TcpRouteMapping, len(arg1))
+		copy(arg1Copy, arg1)
+	}
 	fake.upsertTcpRouteMappingsMutex.Lock()
 	fake.upsertTcpRouteMappingsArgsForCall = append(fake.upsertTcpRouteMappingsArgsForCall, struct {
 		arg1 []models.TcpRouteMapping
-	}{arg1})
+	}{arg1Copy})
+	fake.recordInvocation("UpsertTcpRouteMappings", []interface{}{arg1Copy})
 	fake.upsertTcpRouteMappingsMutex.Unlock()
 	if fake.UpsertTcpRouteMappingsStub != nil {
 		return fake.UpsertTcpRouteMappingsStub(arg1)
@@ -311,10 +335,16 @@ func (fake *FakeClient) UpsertTcpRouteMappingsReturns(result1 error) {
 }
 
 func (fake *FakeClient) DeleteTcpRouteMappings(arg1 []models.TcpRouteMapping) error {
+	var arg1Copy []models.TcpRouteMapping
+	if arg1 != nil {
+		arg1Copy = make([]models.TcpRouteMapping, len(arg1))
+		copy(arg1Copy, arg1)
+	}
 	fake.deleteTcpRouteMappingsMutex.Lock()
 	fake.deleteTcpRouteMappingsArgsForCall = append(fake.deleteTcpRouteMappingsArgsForCall, struct {
 		arg1 []models.TcpRouteMapping
-	}{arg1})
+	}{arg1Copy})
+	fake.recordInvocation("DeleteTcpRouteMappings", []interface{}{arg1Copy})
 	fake.deleteTcpRouteMappingsMutex.Unlock()
 	if fake.DeleteTcpRouteMappingsStub != nil {
 		return fake.DeleteTcpRouteMappingsStub(arg1)
@@ -345,6 +375,7 @@ func (fake *FakeClient) DeleteTcpRouteMappingsReturns(result1 error) {
 func (fake *FakeClient) TcpRouteMappings() ([]models.TcpRouteMapping, error) {
 	fake.tcpRouteMappingsMutex.Lock()
 	fake.tcpRouteMappingsArgsForCall = append(fake.tcpRouteMappingsArgsForCall, struct{}{})
+	fake.recordInvocation("TcpRouteMappings", []interface{}{})
 	fake.tcpRouteMappingsMutex.Unlock()
 	if fake.TcpRouteMappingsStub != nil {
 		return fake.TcpRouteMappingsStub()
@@ -370,6 +401,7 @@ func (fake *FakeClient) TcpRouteMappingsReturns(result1 []models.TcpRouteMapping
 func (fake *FakeClient) SubscribeToEvents() (routing_api.EventSource, error) {
 	fake.subscribeToEventsMutex.Lock()
 	fake.subscribeToEventsArgsForCall = append(fake.subscribeToEventsArgsForCall, struct{}{})
+	fake.recordInvocation("SubscribeToEvents", []interface{}{})
 	fake.subscribeToEventsMutex.Unlock()
 	if fake.SubscribeToEventsStub != nil {
 		return fake.SubscribeToEventsStub()
@@ -397,6 +429,7 @@ func (fake *FakeClient) SubscribeToEventsWithMaxRetries(retries uint16) (routing
 	fake.subscribeToEventsWithMaxRetriesArgsForCall = append(fake.subscribeToEventsWithMaxRetriesArgsForCall, struct {
 		retries uint16
 	}{retries})
+	fake.recordInvocation("SubscribeToEventsWithMaxRetries", []interface{}{retries})
 	fake.subscribeToEventsWithMaxRetriesMutex.Unlock()
 	if fake.SubscribeToEventsWithMaxRetriesStub != nil {
 		return fake.SubscribeToEventsWithMaxRetriesStub(retries)
@@ -428,6 +461,7 @@ func (fake *FakeClient) SubscribeToEventsWithMaxRetriesReturns(result1 routing_a
 func (fake *FakeClient) SubscribeToTcpEvents() (routing_api.TcpEventSource, error) {
 	fake.subscribeToTcpEventsMutex.Lock()
 	fake.subscribeToTcpEventsArgsForCall = append(fake.subscribeToTcpEventsArgsForCall, struct{}{})
+	fake.recordInvocation("SubscribeToTcpEvents", []interface{}{})
 	fake.subscribeToTcpEventsMutex.Unlock()
 	if fake.SubscribeToTcpEventsStub != nil {
 		return fake.SubscribeToTcpEventsStub()
@@ -455,6 +489,7 @@ func (fake *FakeClient) SubscribeToTcpEventsWithMaxRetries(retries uint16) (rout
 	fake.subscribeToTcpEventsWithMaxRetriesArgsForCall = append(fake.subscribeToTcpEventsWithMaxRetriesArgsForCall, struct {
 		retries uint16
 	}{retries})
+	fake.recordInvocation("SubscribeToTcpEventsWithMaxRetries", []interface{}{retries})
 	fake.subscribeToTcpEventsWithMaxRetriesMutex.Unlock()
 	if fake.SubscribeToTcpEventsWithMaxRetriesStub != nil {
 		return fake.SubscribeToTcpEventsWithMaxRetriesStub(retries)
@@ -481,6 +516,50 @@ func (fake *FakeClient) SubscribeToTcpEventsWithMaxRetriesReturns(result1 routin
 		result1 routing_api.TcpEventSource
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeClient) Invocations() map[string][][]interface{} {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	fake.setTokenMutex.RLock()
+	defer fake.setTokenMutex.RUnlock()
+	fake.upsertRoutesMutex.RLock()
+	defer fake.upsertRoutesMutex.RUnlock()
+	fake.routesMutex.RLock()
+	defer fake.routesMutex.RUnlock()
+	fake.deleteRoutesMutex.RLock()
+	defer fake.deleteRoutesMutex.RUnlock()
+	fake.routerGroupsMutex.RLock()
+	defer fake.routerGroupsMutex.RUnlock()
+	fake.updateRouterGroupMutex.RLock()
+	defer fake.updateRouterGroupMutex.RUnlock()
+	fake.upsertTcpRouteMappingsMutex.RLock()
+	defer fake.upsertTcpRouteMappingsMutex.RUnlock()
+	fake.deleteTcpRouteMappingsMutex.RLock()
+	defer fake.deleteTcpRouteMappingsMutex.RUnlock()
+	fake.tcpRouteMappingsMutex.RLock()
+	defer fake.tcpRouteMappingsMutex.RUnlock()
+	fake.subscribeToEventsMutex.RLock()
+	defer fake.subscribeToEventsMutex.RUnlock()
+	fake.subscribeToEventsWithMaxRetriesMutex.RLock()
+	defer fake.subscribeToEventsWithMaxRetriesMutex.RUnlock()
+	fake.subscribeToTcpEventsMutex.RLock()
+	defer fake.subscribeToTcpEventsMutex.RUnlock()
+	fake.subscribeToTcpEventsWithMaxRetriesMutex.RLock()
+	defer fake.subscribeToTcpEventsWithMaxRetriesMutex.RUnlock()
+	return fake.invocations
+}
+
+func (fake *FakeClient) recordInvocation(key string, args []interface{}) {
+	fake.invocationsMutex.Lock()
+	defer fake.invocationsMutex.Unlock()
+	if fake.invocations == nil {
+		fake.invocations = map[string][][]interface{}{}
+	}
+	if fake.invocations[key] == nil {
+		fake.invocations[key] = [][]interface{}{}
+	}
+	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
 var _ routing_api.Client = new(FakeClient)

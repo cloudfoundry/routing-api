@@ -60,10 +60,15 @@ func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	tcpEventHub := eventhub.NewNonBlocking(1024)
 	httpEventHub := eventhub.NewNonBlocking(1024)
 
-	return &SqlDB{Client: db, tcpEventHub: tcpEventHub, httpEventHub: httpEventHub}, nil
+	return &SqlDB{
+		Client:       NewGormClient(db),
+		tcpEventHub:  tcpEventHub,
+		httpEventHub: httpEventHub,
+	}, nil
 }
 
 func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration, signals <-chan os.Signal) {
@@ -75,7 +80,7 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 			if atomic.CompareAndSwapInt32(&tcpInFlight, 0, 1) {
 				go func() {
 					var tcpRoutes []models.TcpRouteMapping
-					err := s.Client.Find(&tcpRoutes, "expires_at < ?", time.Now()).Error
+					err := s.Client.Find(&tcpRoutes, "expires_at < ?", time.Now())
 					if err != nil {
 						logger.Error("failed-to-prune-tcp-routes", err)
 						return
@@ -84,16 +89,19 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 					for _, route := range tcpRoutes {
 						guids = append(guids, route.Guid)
 					}
-					db := s.Client.Delete(models.TcpRouteMapping{}, "guid in (?)", guids)
-					if db.Error != nil {
+					rowsAffected, err := s.Client.Delete(models.TcpRouteMapping{}, "guid in (?)", guids)
+					if err != nil {
 						logger.Error("failed-to-prune-tcp-routes", err)
 						return
 					}
 					for _, route := range tcpRoutes {
-						s.emitEvent(ExpireEvent, route)
+						err = s.emitEvent(ExpireEvent, route)
+						if err != nil {
+							logger.Error("failed-to-emit-expire-tcp-event", err)
+						}
 					}
 
-					logger.Info("successfully-finished-pruning-tcp-routes", lager.Data{"rowsAffected": db.RowsAffected})
+					logger.Info("successfully-finished-pruning-tcp-routes", lager.Data{"rowsAffected": rowsAffected})
 					atomic.StoreInt32(&tcpInFlight, 0)
 				}()
 			}
@@ -101,7 +109,7 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 			if atomic.CompareAndSwapInt32(&httpInFlight, 0, 1) {
 				go func() {
 					var httpRoutes []models.Route
-					err := s.Client.Find(&httpRoutes, "expires_at < ?", time.Now()).Error
+					err := s.Client.Find(&httpRoutes, "expires_at < ?", time.Now())
 					if err != nil {
 						logger.Error("failed-to-prune-http-routes", err)
 						return
@@ -110,16 +118,19 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 					for _, route := range httpRoutes {
 						guids = append(guids, route.Guid)
 					}
-					db := s.Client.Delete(models.Route{}, "guid in (?)", guids)
-					if db.Error != nil {
+					rowsAffected, err := s.Client.Delete(models.Route{}, "guid in (?)", guids)
+					if err != nil {
 						logger.Error("failed-to-prune-http-routes", err)
 						return
 					}
 					for _, route := range httpRoutes {
-						s.emitEvent(ExpireEvent, route)
+						err = s.emitEvent(ExpireEvent, route)
+						if err != nil {
+							logger.Error("failed-to-emit-expire-http-event", err)
+						}
 					}
 
-					logger.Info("successfully-finished-pruning-http-routes", lager.Data{"rowsAffected": db.RowsAffected})
+					logger.Info("successfully-finished-pruning-http-routes", lager.Data{"rowsAffected": rowsAffected})
 					atomic.StoreInt32(&httpInFlight, 0)
 				}()
 			}
@@ -132,7 +143,7 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 func (s *SqlDB) ReadRouterGroups() (models.RouterGroups, error) {
 	routerGroupsDB := models.RouterGroupsDB{}
 	routerGroups := models.RouterGroups{}
-	err := s.Client.Find(&routerGroupsDB).Error
+	err := s.Client.Find(&routerGroupsDB)
 	if err == nil {
 		routerGroups = routerGroupsDB.ToRouterGroups()
 	}
@@ -143,7 +154,7 @@ func (s *SqlDB) ReadRouterGroups() (models.RouterGroups, error) {
 func (s *SqlDB) ReadRouterGroup(guid string) (models.RouterGroup, error) {
 	routerGroupDB := models.RouterGroupDB{}
 	routerGroup := models.RouterGroup{}
-	err := s.Client.Where("guid = ?", guid).First(&routerGroupDB).Error
+	err := s.Client.Where("guid = ?", guid).First(&routerGroupDB)
 	if err == nil {
 		routerGroup = routerGroupDB.ToRouterGroup()
 	}
@@ -164,9 +175,9 @@ func (s *SqlDB) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	if existingRouterGroup.Guid == routerGroup.Guid {
 		updateRouterGroup(&existingRouterGroup, &routerGroup)
 		routerGroupDB = models.NewRouterGroupDB(existingRouterGroup)
-		err = s.Client.Save(&routerGroupDB).Error
+		_, err = s.Client.Save(&routerGroupDB)
 	} else {
-		err = s.Client.Create(&routerGroupDB).Error
+		_, err = s.Client.Create(&routerGroupDB)
 	}
 
 	return err
@@ -221,7 +232,7 @@ func notImplementedError() error {
 func (s *SqlDB) ReadRoutes() ([]models.Route, error) {
 	var routes []models.Route
 	now := time.Now()
-	err := s.Client.Where("expires_at > ?", now).Find(&routes).Error
+	err := s.Client.Where("expires_at > ?", now).Find(&routes)
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +242,7 @@ func (s *SqlDB) ReadRoutes() ([]models.Route, error) {
 func (s *SqlDB) readRoute(route models.Route) (models.Route, error) {
 	var routes []models.Route
 	err := s.Client.Where("route = ? and ip = ? and port = ? and route_service_url = ?",
-		route.Route, route.IP, route.Port, route.RouteServiceUrl).Find(&routes).Error
+		route.Route, route.IP, route.Port, route.RouteServiceUrl).Find(&routes)
 
 	if err != nil {
 		return route, err
@@ -249,12 +260,12 @@ func (s *SqlDB) readRoute(route models.Route) (models.Route, error) {
 func (s *SqlDB) SaveRoute(route models.Route) error {
 	existingRoute, err := s.readRoute(route)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if existingRoute != (models.Route{}) {
 		newRoute := updateRoute(existingRoute, route)
-		err = s.Client.Save(&newRoute).Error
+		_, err = s.Client.Save(&newRoute)
 		if err != nil {
 			return err
 		}
@@ -272,7 +283,7 @@ func (s *SqlDB) SaveRoute(route models.Route) error {
 	}
 	newRoute.ModificationTag = tag
 
-	err = s.Client.Create(&newRoute).Error
+	_, err = s.Client.Create(&newRoute)
 	if err != nil {
 		return err
 	}
@@ -288,7 +299,7 @@ func (s *SqlDB) DeleteRoute(route models.Route) error {
 		return errors.New(DeleteError)
 	}
 
-	err = s.Client.Delete(&route).Error
+	_, err = s.Client.Delete(&route)
 	if err != nil {
 		return err
 	}
@@ -298,7 +309,7 @@ func (s *SqlDB) DeleteRoute(route models.Route) error {
 func (s *SqlDB) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
 	var tcpRoutes []models.TcpRouteMapping
 	now := time.Now()
-	err := s.Client.Where("expires_at > ?", now).Find(&tcpRoutes).Error
+	err := s.Client.Where("expires_at > ?", now).Find(&tcpRoutes)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +320,7 @@ func (s *SqlDB) readTcpRouteMapping(tcpMapping models.TcpRouteMapping) (models.T
 	var routes []models.TcpRouteMapping
 	var tcpRoute models.TcpRouteMapping
 	err := s.Client.Where("host_ip = ? and host_port = ? and external_port = ?",
-		tcpMapping.HostIP, tcpMapping.HostPort, tcpMapping.ExternalPort).Find(&routes).Error
+		tcpMapping.HostIP, tcpMapping.HostPort, tcpMapping.ExternalPort).Find(&routes)
 
 	if err != nil {
 		return tcpRoute, err
@@ -350,7 +361,7 @@ func (s *SqlDB) SaveTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) erro
 
 	if existingTcpRouteMapping != (models.TcpRouteMapping{}) {
 		newTcpRouteMapping := updateTcpRouteMapping(existingTcpRouteMapping, tcpRouteMapping)
-		err = s.Client.Save(&newTcpRouteMapping).Error
+		_, err = s.Client.Save(&newTcpRouteMapping)
 		if err != nil {
 			return err
 		}
@@ -368,7 +379,7 @@ func (s *SqlDB) SaveTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) erro
 	}
 	tcpMapping.ModificationTag = tag
 
-	err = s.Client.Create(&tcpMapping).Error
+	_, err = s.Client.Create(&tcpMapping)
 	if err != nil {
 		return err
 	}
@@ -385,7 +396,7 @@ func (s *SqlDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 		return errors.New(DeleteError)
 	}
 
-	err = s.Client.Delete(&tcpMapping).Error
+	_, err = s.Client.Delete(&tcpMapping)
 	if err != nil {
 		return err
 	}
@@ -437,7 +448,7 @@ func (s *SqlDB) WatchChanges(watchType string) (<-chan Event, <-chan error, cont
 	}
 
 	cancelFunc = func() {
-		sub.Close()
+		_ = sub.Close()
 	}
 
 	go dispatchWatchEvents(sub, events, errors)
