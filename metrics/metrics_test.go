@@ -65,7 +65,11 @@ var _ = Describe("Metrics", func() {
 		})
 
 		JustBeforeEach(func() {
-			go reporter.Run(sigChan, readyChan)
+			go func() {
+				defer GinkgoRecover()
+				err := reporter.Run(sigChan, readyChan)
+				Expect(err).ToNot(HaveOccurred())
+			}()
 		})
 
 		AfterEach(func() {

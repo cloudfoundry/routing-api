@@ -64,7 +64,7 @@ var _ = Describe("Locking", func() {
 
 				Eventually(session1, 10*time.Second).Should(gbytes.Say("acquire-lock-succeeded"))
 
-				consulRunner.Reset()
+				_ = consulRunner.Reset()
 				consulRunner.WaitUntilReady()
 				Eventually(session1, 10*time.Second).Should(gbytes.Say("lost-lock"))
 				Eventually(session1, 20*time.Second).Should(gexec.Exit(1))

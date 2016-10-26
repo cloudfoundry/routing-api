@@ -35,7 +35,10 @@ var _ = Describe("Routes API", func() {
 
 		fakeStatsdServer, err = net.ListenUDP("udp", addr)
 		Expect(err).ToNot(HaveOccurred())
-		fakeStatsdServer.SetReadDeadline(time.Now().Add(15 * time.Second))
+
+		err = fakeStatsdServer.SetReadDeadline(time.Now().Add(15 * time.Second))
+		Expect(err).ToNot(HaveOccurred())
+
 		fakeStatsdChan = make(chan string, 1)
 
 		go func(statsChan chan string) {
@@ -73,19 +76,31 @@ var _ = Describe("Routes API", func() {
 
 				eventStream1, err := client.SubscribeToEvents()
 				Expect(err).NotTo(HaveOccurred())
-				defer eventStream1.Close()
+				defer func() {
+					err := eventStream1.Close()
+					Expect(err).NotTo(HaveOccurred())
+				}()
 
 				eventStream2, err := client.SubscribeToEvents()
 				Expect(err).NotTo(HaveOccurred())
-				defer eventStream2.Close()
+				defer func() {
+					err := eventStream2.Close()
+					Expect(err).NotTo(HaveOccurred())
+				}()
 
 				eventStream3, err := client.SubscribeToEvents()
 				Expect(err).NotTo(HaveOccurred())
-				defer eventStream3.Close()
+				defer func() {
+					err := eventStream3.Close()
+					Expect(err).NotTo(HaveOccurred())
+				}()
 
 				eventStream4, err := client.SubscribeToEvents()
 				Expect(err).NotTo(HaveOccurred())
-				defer eventStream4.Close()
+				defer func() {
+					err := eventStream4.Close()
+					Expect(err).NotTo(HaveOccurred())
+				}()
 
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_subscriptions:+1|g")))
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_subscriptions:+1|g")))
@@ -112,11 +127,13 @@ var _ = Describe("Routes API", func() {
 
 		Context("when creating and updating a new route", func() {
 			AfterEach(func() {
-				client.DeleteRoutes([]models.Route{route1})
+				err := client.DeleteRoutes([]models.Route{route1})
+				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("Gets statsd messages for new routes", func() {
-				client.UpsertRoutes([]models.Route{route1})
+				err := client.UpsertRoutes([]models.Route{route1})
+				Expect(err).ToNot(HaveOccurred())
 
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:+1|g")))
 			})
@@ -124,9 +141,11 @@ var _ = Describe("Routes API", func() {
 
 		Context("when deleting a route", func() {
 			It("gets statsd messages for deleted routes", func() {
-				client.UpsertRoutes([]models.Route{route1})
+				err := client.UpsertRoutes([]models.Route{route1})
+				Expect(err).ToNot(HaveOccurred())
 
-				client.DeleteRoutes([]models.Route{route1})
+				err = client.DeleteRoutes([]models.Route{route1})
+				Expect(err).ToNot(HaveOccurred())
 
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:+1|g")))
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:-1|g")))
@@ -137,7 +156,8 @@ var _ = Describe("Routes API", func() {
 			It("gets statsd messages for expired routes", func() {
 				routeExpire := models.NewRoute("z.a.k", 63, "42.42.42.42", "Tomato", "", 1)
 
-				client.UpsertRoutes([]models.Route{routeExpire})
+				err := client.UpsertRoutes([]models.Route{routeExpire})
+				Expect(err).ToNot(HaveOccurred())
 
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:+1|g")))
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:-1|g")))

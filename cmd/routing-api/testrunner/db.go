@@ -102,7 +102,9 @@ func (a *postgresAllocator) Reset() error {
 }
 
 func (a *postgresAllocator) Delete() error {
-	defer a.sqlDB.Close()
+	defer func() {
+		_ = a.sqlDB.Close()
+	}()
 	_, err := a.sqlDB.Exec(fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity
 	WHERE datname = '%s'`, a.schemaName))
 	if err != nil {
@@ -157,7 +159,9 @@ func (a *mysqlAllocator) Reset() error {
 }
 
 func (a *mysqlAllocator) Delete() error {
-	defer a.sqlDB.Close()
+	defer func() {
+		_ = a.sqlDB.Close()
+	}()
 	_, err := a.sqlDB.Exec(fmt.Sprintf("DROP DATABASE %s", a.schemaName))
 	return err
 }
@@ -168,7 +172,9 @@ func (e *etcdAllocator) Create() (string, error) {
 
 	etcdVersionUrl := e.etcdRunner.NodeURLS()[0] + "/version"
 	resp, err := http.Get(etcdVersionUrl)
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	if err != nil {
 		return "", err
 	}
@@ -198,7 +204,10 @@ func (e *etcdAllocator) Reset() error {
 }
 
 func (e *etcdAllocator) Delete() error {
-	e.etcdAdapter.Disconnect()
+	err := e.etcdAdapter.Disconnect()
+	if err != nil {
+		return err
+	}
 	e.etcdRunner.Reset()
 	e.etcdRunner.KillWithFire()
 	return nil

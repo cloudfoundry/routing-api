@@ -131,7 +131,8 @@ var _ = Describe("Main", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			route := models.NewRoute("some-route", 1234, "234.32.43.4", "some-guid", "", 1)
-			client.UpsertRoutes([]models.Route{route})
+			err = client.UpsertRoutes([]models.Route{route})
+			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func() string {
 				event, _ := events.Next()

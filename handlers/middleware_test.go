@@ -60,7 +60,10 @@ var _ = Describe("Middleware", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		output, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
+		defer func() {
+			err := resp.Body.Close()
+			Expect(err).ToNot(HaveOccurred())
+		}()
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(output).To(ContainSubstring("Dummy handler"))

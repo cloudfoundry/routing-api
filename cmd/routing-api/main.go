@@ -92,10 +92,15 @@ func main() {
 	prefix := "routing_api"
 	statsdClient, err := statsd.NewBufferedClient(cfg.StatsdEndpoint, prefix, cfg.StatsdClientFlushInterval, 512)
 	if err != nil {
-		logger.Error("failed to create a statsd client", err)
+		logger.Error("failed-to-create-statsd-client", err)
 		os.Exit(1)
 	}
-	defer statsdClient.Close()
+	defer func() {
+		err := statsdClient.Close()
+		if err != nil {
+			logger.Error("failed-to-close-statsd-client", err)
+		}
+	}()
 
 	apiServer := constructApiServer(cfg, database, statsdClient, logger.Session("api-server"))
 	stopper := constructStopper(database)

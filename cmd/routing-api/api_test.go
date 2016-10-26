@@ -8,7 +8,6 @@ import (
 	"github.com/tedsuo/ifrit/ginkgomon"
 
 	"code.cloudfoundry.org/routing-api"
-	. "code.cloudfoundry.org/routing-api/cmd/routing-api/test_helpers"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/matchers"
 	"code.cloudfoundry.org/routing-api/models"
@@ -47,7 +46,8 @@ var _ = Describe("Routes API", func() {
 			})
 
 			AfterEach(func() {
-				eventStream.Close()
+				err = eventStream.Close()
+				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("returns an eventstream", func() {
@@ -71,13 +71,15 @@ var _ = Describe("Routes API", func() {
 
 				routesToInsert := []models.TcpRouteMapping{route1}
 
-				client.UpsertTcpRouteMappings(routesToInsert)
+				err := client.UpsertTcpRouteMappings(routesToInsert)
+				Expect(err).NotTo(HaveOccurred())
 				event, err := eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(event.Action).To(Equal("Upsert"))
 				Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(route1))
 
-				client.UpsertTcpRouteMappings([]models.TcpRouteMapping{routeUpdated})
+				err = client.UpsertTcpRouteMappings([]models.TcpRouteMapping{routeUpdated})
+				Expect(err).NotTo(HaveOccurred())
 				event, err = eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(event.Action).To(Equal("Upsert"))
@@ -88,7 +90,8 @@ var _ = Describe("Routes API", func() {
 				defer close(done)
 				routesToInsert := []models.TcpRouteMapping{route1}
 
-				client.UpsertTcpRouteMappings(routesToInsert)
+				err := client.UpsertTcpRouteMappings(routesToInsert)
+				Expect(err).NotTo(HaveOccurred())
 				event, err := eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
 
@@ -97,7 +100,8 @@ var _ = Describe("Routes API", func() {
 					TcpRouteMapping: route1,
 				}
 
-				client.DeleteTcpRouteMappings(routesToInsert)
+				err = client.DeleteTcpRouteMappings(routesToInsert)
+				Expect(err).NotTo(HaveOccurred())
 				event, err = eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(event.Action).To(Equal(expectedEvent.Action))
@@ -107,8 +111,9 @@ var _ = Describe("Routes API", func() {
 			It("gets events for expired routes", func() {
 				routeExpire := models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 1)
 
-				client.UpsertTcpRouteMappings([]models.TcpRouteMapping{routeExpire})
-				_, err := eventStream.Next()
+				err := client.UpsertTcpRouteMappings([]models.TcpRouteMapping{routeExpire})
+				Expect(err).NotTo(HaveOccurred())
+				_, err = eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
 
 				expectedEvent := routing_api.TcpEvent{
@@ -142,7 +147,8 @@ var _ = Describe("Routes API", func() {
 			})
 
 			AfterEach(func() {
-				eventStream.Close()
+				err = eventStream.Close()
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("returns an eventstream", func() {
@@ -151,53 +157,64 @@ var _ = Describe("Routes API", func() {
 					Route:  route1,
 				}
 				routesToInsert := []models.Route{route1}
-				client.UpsertRoutes(routesToInsert)
+				err := client.UpsertRoutes(routesToInsert)
+				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(func() bool {
+				Eventually(func() routing_api.Event {
 					event, err := eventStream.Next()
 					Expect(err).NotTo(HaveOccurred())
-					return event.Action == expectedEvent.Action && event.Route.Matches(expectedEvent.Route)
-				}).Should(BeTrue())
+					return event
+				}).Should(matchers.MatchHttpEvent(expectedEvent))
 			})
 
 			It("gets events for updated routes", func() {
 				routeUpdated := models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 85)
 
-				client.UpsertRoutes([]models.Route{route1})
-				Eventually(func() bool {
+				expectedEvent := routing_api.Event{
+					Action: "Upsert",
+					Route:  route1,
+				}
+				err := client.UpsertRoutes([]models.Route{route1})
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(func() routing_api.Event {
 					event, err := eventStream.Next()
 					Expect(err).NotTo(HaveOccurred())
-					return event.Action == "Upsert" && event.Route.Matches(route1)
-				}).Should(BeTrue())
+					return event
+				}).Should(matchers.MatchHttpEvent(expectedEvent))
 
-				client.UpsertRoutes([]models.Route{routeUpdated})
-				Eventually(func() bool {
+				expectedEvent.Route = routeUpdated
+				err = client.UpsertRoutes([]models.Route{routeUpdated})
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(func() routing_api.Event {
 					event, err := eventStream.Next()
 					Expect(err).NotTo(HaveOccurred())
-					return event.Action == "Upsert" && event.Route.Matches(routeUpdated)
-				}).Should(BeTrue())
+					return event
+				}).Should(matchers.MatchHttpEvent(expectedEvent))
 			})
 
 			It("gets events for deleted routes", func() {
-				client.UpsertRoutes([]models.Route{route1})
+				err := client.UpsertRoutes([]models.Route{route1})
+				Expect(err).NotTo(HaveOccurred())
 
 				expectedEvent := routing_api.Event{
 					Action: "Delete",
 					Route:  route1,
 				}
-				client.DeleteRoutes([]models.Route{route1})
-				Eventually(func() bool {
+				err = client.DeleteRoutes([]models.Route{route1})
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(func() routing_api.Event {
 					event, err := eventStream.Next()
 					Expect(err).NotTo(HaveOccurred())
-					return event.Action == expectedEvent.Action && event.Route.Matches(expectedEvent.Route)
-				}).Should(BeTrue())
+					return event
+				}).Should(matchers.MatchHttpEvent(expectedEvent))
 			})
 
 			It("gets events for expired routes", func() {
 				routeExpire := models.NewRoute("z.a.k", 63, "42.42.42.42", "Tomato", "", 1)
 
-				client.UpsertRoutes([]models.Route{routeExpire})
-				_, err := eventStream.Next()
+				err := client.UpsertRoutes([]models.Route{routeExpire})
+				Expect(err).NotTo(HaveOccurred())
+				_, err = eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
 
 				expectedEvent := routing_api.Event{
@@ -205,11 +222,11 @@ var _ = Describe("Routes API", func() {
 					Route:  routeExpire,
 				}
 
-				Eventually(func() bool {
+				Eventually(func() routing_api.Event {
 					event, err := eventStream.Next()
 					Expect(err).NotTo(HaveOccurred())
-					return event.Action == expectedEvent.Action && event.Route.Matches(expectedEvent.Route)
-				}).Should(BeTrue())
+					return event
+				}).Should(matchers.MatchHttpEvent(expectedEvent))
 			})
 		})
 	}
@@ -241,7 +258,11 @@ var _ = Describe("Routes API", func() {
 					Expect(getErr).ToNot(HaveOccurred())
 					return len(routes)
 				}, 2*time.Second).Should(BeNumerically("==", 3))
-				Expect(Routes(routes).ContainsAll(route1, route2, routingAPIRoute)).To(BeTrue())
+				Expect(routes).To(ConsistOf(
+					matchers.MatchHttpRoute(route1),
+					matchers.MatchHttpRoute(route2),
+					matchers.MatchHttpRoute(routingAPIRoute),
+				))
 			})
 
 			It("deletes a route", func() {
@@ -251,7 +272,7 @@ var _ = Describe("Routes API", func() {
 
 				routes, err = client.Routes()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(Routes(routes).Contains(route1)).To(BeFalse())
+				Expect(routes).ToNot(ContainElement(matchers.MatchHttpRoute(route1)))
 			})
 
 			It("rejects bad routes", func() {
@@ -263,9 +284,9 @@ var _ = Describe("Routes API", func() {
 				routes, err = client.Routes()
 
 				Expect(err).ToNot(HaveOccurred())
-				Expect(Routes(routes).Contains(route1)).To(BeTrue())
-				Expect(Routes(routes).Contains(route2)).To(BeTrue())
-				Expect(Routes(routes).Contains(route3)).To(BeFalse())
+				Expect(routes).To(ContainElement(matchers.MatchHttpRoute(route1)))
+				Expect(routes).To(ContainElement(matchers.MatchHttpRoute(route2)))
+				Expect(routes).ToNot(ContainElement(matchers.MatchHttpRoute(route3)))
 			})
 
 			Context("when a route has a context path", func() {
@@ -281,7 +302,7 @@ var _ = Describe("Routes API", func() {
 					var err error
 					routes, err = client.Routes()
 					Expect(err).ToNot(HaveOccurred())
-					Expect(Routes(routes).Contains(routeWithPath)).To(BeTrue())
+					Expect(routes).To(ContainElement(matchers.MatchHttpRoute(routeWithPath)))
 				})
 			})
 		})
@@ -310,44 +331,12 @@ var _ = Describe("Routes API", func() {
 					err = client.UpsertTcpRouteMappings(tcpRouteMappings)
 					Expect(err).NotTo(HaveOccurred())
 
-					tcpRoutes := make(chan []models.TcpRouteMapping, 1)
-					defer close(tcpRoutes)
+					Eventually(func() []models.TcpRouteMapping {
+						tcpRouteMappingsResponse, err := client.TcpRouteMappings()
+						Expect(err).ToNot(HaveOccurred())
+						return tcpRouteMappingsResponse
+					}, "10s", 1).Should(ConsistOf(matchers.MatchTcpRoute(tcpRouteMapping1)))
 
-					go func(tcpRoutes chan []models.TcpRouteMapping) {
-						t := time.NewTicker(1 * time.Second)
-						for {
-							select {
-							case <-t.C:
-								tcpRouteMappingsResponse, err := client.TcpRouteMappings()
-								if err != nil {
-									tcpRoutes <- nil
-								} else {
-									mappings := TcpRouteMappings(tcpRouteMappingsResponse)
-									tcpRoutes <- mappings
-									if len(mappings) == 1 {
-										return
-									}
-								}
-							case <-time.NewTimer(10 * time.Second).C:
-								return
-							}
-						}
-					}(tcpRoutes)
-
-					//validate test setup
-					var mappings TcpRouteMappings
-					mappings = <-tcpRoutes
-					Expect(mappings).ToNot(BeNil())
-					Expect(mappings.ContainsAll(tcpRouteMappings...)).To(BeTrue())
-
-					Eventually(func() bool {
-						mappings = <-tcpRoutes
-						Expect(mappings).ToNot(BeNil())
-						if len(mappings) == 1 {
-							return mappings.Contains(tcpRouteMapping1)
-						}
-						return false
-					}, "11s", 1).Should(BeTrue())
 				})
 			})
 
@@ -379,7 +368,8 @@ var _ = Describe("Routes API", func() {
 					tcpRouteMappingsResponse, err := client.TcpRouteMappings()
 					Expect(err).NotTo(HaveOccurred())
 					Expect(tcpRouteMappingsResponse).NotTo(BeNil())
-					Expect(tcpRouteMappingsResponse).NotTo(ConsistOf(tcpRouteMappings))
+					Expect(tcpRouteMappingsResponse).NotTo(ContainElement(matchers.MatchTcpRoute(tcpRouteMapping1)))
+					Expect(tcpRouteMappingsResponse).NotTo(ContainElement(matchers.MatchTcpRoute(tcpRouteMapping2)))
 				})
 			})
 
@@ -404,7 +394,8 @@ var _ = Describe("Routes API", func() {
 					tcpRouteMappingsResponse, err := client.TcpRouteMappings()
 					Expect(err).NotTo(HaveOccurred())
 					Expect(tcpRouteMappingsResponse).NotTo(BeNil())
-					Expect(TcpRouteMappings(tcpRouteMappingsResponse).ContainsAll(tcpRouteMappings...)).To(BeTrue())
+					Expect(tcpRouteMappingsResponse).To(ContainElement(matchers.MatchTcpRoute(tcpRouteMapping1)))
+					Expect(tcpRouteMappingsResponse).To(ContainElement(matchers.MatchTcpRoute(tcpRouteMapping2)))
 				})
 			})
 		})

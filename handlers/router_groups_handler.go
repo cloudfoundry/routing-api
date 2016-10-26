@@ -66,7 +66,10 @@ func (h *RouterGroupsHandler) UpdateRouterGroup(w http.ResponseWriter, req *http
 	log := h.logger.Session("update-router-group")
 	log.Debug("started")
 	defer log.Debug("completed")
-	defer req.Body.Close()
+	defer func() {
+		err := req.Body.Close()
+		log.Error("failed-to-close-request-body", err)
+	}()
 
 	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
 	if err != nil {

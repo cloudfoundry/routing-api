@@ -290,9 +290,7 @@ var _ = Describe("Models", func() {
 
 	Describe("Route", func() {
 		var (
-			route      Route
-			otherRoute Route
-			matches    bool
+			route Route
 		)
 
 		BeforeEach(func() {
@@ -323,54 +321,11 @@ var _ = Describe("Models", func() {
 				})
 			})
 		})
-
-		Describe("Matches", func() {
-			JustBeforeEach(func() {
-				matches = route.Matches(otherRoute)
-			})
-
-			Context("when all properties matches", func() {
-				BeforeEach(func() {
-					otherRoute = route
-				})
-
-				It("returns true", func() {
-					Expect(matches).To(BeTrue())
-				})
-			})
-
-			Context("when all properties but modification tag matches", func() {
-				BeforeEach(func() {
-					otherRoute = route
-					tag1, err := NewModificationTag()
-					Expect(err).ToNot(HaveOccurred())
-					otherRoute.ModificationTag = tag1
-				})
-
-				It("returns true", func() {
-					Expect(matches).To(BeTrue())
-				})
-			})
-			Context("when some properties don't match", func() {
-
-				BeforeEach(func() {
-					otherRoute = NewRoute("/foo/brah", 35, "3.3.3.3", "", "banana", 66)
-				})
-
-				It("returns false", func() {
-					Expect(matches).To(BeFalse())
-				})
-
-			})
-		})
-
 	})
 
 	Describe("TcpRouteMapping", func() {
 		var (
-			route      TcpRouteMapping
-			otherRoute TcpRouteMapping
-			matches    bool
+			route TcpRouteMapping
 		)
 
 		BeforeEach(func() {
@@ -402,58 +357,19 @@ var _ = Describe("Models", func() {
 			})
 		})
 
-		Describe("Matches", func() {
-			JustBeforeEach(func() {
-				matches = route.Matches(otherRoute)
-			})
-
-			Context("when all properties matches", func() {
-				BeforeEach(func() {
-					otherRoute = route
-				})
-
-				It("returns true", func() {
-					Expect(matches).To(BeTrue())
-				})
-			})
-
-			Context("when all properties but modification tag matches", func() {
-				BeforeEach(func() {
-					otherRoute = route
-					tag1, err := NewModificationTag()
-					Expect(err).ToNot(HaveOccurred())
-					otherRoute.ModificationTag = tag1
-				})
-
-				It("returns true", func() {
-					Expect(matches).To(BeTrue())
-				})
-			})
-
-			Context("when some properties don't match", func() {
-				BeforeEach(func() {
-					otherRoute = NewTcpRouteMapping("router-group-1", 60000, "2.2.2.2", 64000, 67)
-				})
-
-				It("returns false", func() {
-					Expect(matches).To(BeFalse())
-				})
-			})
-
-			Context("multiple annotations", func() {
-				It("return router group object", func() {
-					jsonStr :=
-						`
+		Context("multiple annotations", func() {
+			It("return router group object", func() {
+				jsonStr :=
+					`
 { "guid": "some-guid",
 	"name": "name"
 }
 `
-					rg := RouterGroup{}
-					err := json.Unmarshal([]byte(jsonStr), &rg)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(rg.Guid).To(Equal("some-guid"))
-					Expect(rg.Name).To(Equal("name"))
-				})
+				rg := RouterGroup{}
+				err := json.Unmarshal([]byte(jsonStr), &rg)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(rg.Guid).To(Equal("some-guid"))
+				Expect(rg.Name).To(Equal("name"))
 			})
 		})
 	})

@@ -163,7 +163,7 @@ func validatePort(port uint16) {
 	Eventually(func() error {
 		l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 		if l != nil {
-			l.Close()
+			_ = l.Close()
 		}
 		return err
 	}, "60s", "1s").Should(BeNil())

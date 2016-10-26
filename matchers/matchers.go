@@ -1,6 +1,7 @@
 package matchers
 
 import (
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/models"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -57,5 +58,16 @@ func MatchHttpRoute(target models.Route) types.GomegaMatcher {
 		WithTransform(func(t models.Route) string {
 			return t.RouteServiceUrl
 		}, Equal(target.RouteServiceUrl)),
+	)
+}
+
+func MatchHttpEvent(target routing_api.Event) types.GomegaMatcher {
+	return SatisfyAll(
+		WithTransform(func(t routing_api.Event) string {
+			return t.Action
+		}, Equal(target.Action)),
+		WithTransform(func(t routing_api.Event) models.Route {
+			return t.Route
+		}, MatchHttpRoute(target.Route)),
 	)
 }
