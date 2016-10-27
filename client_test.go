@@ -432,14 +432,11 @@ var _ = Describe("Client", func() {
 	Context("Routes", func() {
 		var routes []models.Route
 		var err error
-
-		JustBeforeEach(func() {
-			routes, err = client.Routes()
-		})
+		var data []byte
 
 		Context("when the server returns a valid response", func() {
 			BeforeEach(func() {
-				data, _ := json.Marshal([]models.Route{route1, route2})
+				data, _ = json.Marshal([]models.Route{route1, route2})
 
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
@@ -450,15 +447,32 @@ var _ = Describe("Client", func() {
 			})
 
 			It("Sends a ListRoutes request to the server", func() {
+				routes, err = client.Routes()
+				Expect(err).NotTo(HaveOccurred())
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
 			})
 
 			It("gets a list of routes from the server", func() {
+				routes, err = client.Routes()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(routes).To(Equal([]models.Route{route1, route2}))
 			})
 
+			It("does not send a body in the request", func() {
+				server.SetHandler(0,
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", ROUTES_API_URL),
+						ghttp.VerifyBody([]byte{}),
+						ghttp.RespondWith(http.StatusOK, data),
+					),
+				)
+				routes, err = client.Routes()
+				Expect(err).NotTo(HaveOccurred())
+			})
+
 			It("logs the request and response", func() {
+				routes, err = client.Routes()
+				Expect(err).NotTo(HaveOccurred())
 				expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
 				r, err := ioutil.ReadAll(stdout)
@@ -484,11 +498,14 @@ var _ = Describe("Client", func() {
 			})
 
 			It("returns an error", func() {
+				routes, err = client.Routes()
 				Expect(err).To(HaveOccurred())
 				Expect(routes).To(BeEmpty())
 			})
 
 			It("logs the request and response", func() {
+				routes, err = client.Routes()
+				Expect(err).To(HaveOccurred())
 				expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
 				r, err := ioutil.ReadAll(stdout)
@@ -511,19 +528,16 @@ var _ = Describe("Client", func() {
 			tcpRouteMapping1 models.TcpRouteMapping
 			tcpRouteMapping2 models.TcpRouteMapping
 			routes           []models.TcpRouteMapping
+			data             []byte
 		)
 		BeforeEach(func() {
 			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
 			tcpRouteMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60)
 		})
 
-		JustBeforeEach(func() {
-			routes, err = client.TcpRouteMappings()
-		})
-
 		Context("when the server returns a valid response", func() {
 			BeforeEach(func() {
-				data, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
+				data, _ = json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
@@ -534,15 +548,32 @@ var _ = Describe("Client", func() {
 			})
 
 			It("Sends a ListRoutes request to the server", func() {
+				routes, err = client.TcpRouteMappings()
+				Expect(err).NotTo(HaveOccurred())
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
 			})
 
 			It("gets a list of routes from the server", func() {
+				routes, err = client.TcpRouteMappings()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(routes).To(Equal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}))
 			})
 
+			It("does not send a body in the request", func() {
+				server.SetHandler(0,
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", TCP_ROUTES_API_URL),
+						ghttp.VerifyBody([]byte{}),
+						ghttp.RespondWith(http.StatusOK, data),
+					),
+				)
+				routes, err = client.TcpRouteMappings()
+				Expect(err).NotTo(HaveOccurred())
+			})
+
 			It("logs the request and response", func() {
+				routes, err = client.TcpRouteMappings()
+				Expect(err).NotTo(HaveOccurred())
 				expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
 				r, err := ioutil.ReadAll(stdout)
@@ -568,11 +599,14 @@ var _ = Describe("Client", func() {
 			})
 
 			It("returns an error", func() {
+				routes, err = client.TcpRouteMappings()
 				Expect(err).To(HaveOccurred())
 				Expect(routes).To(BeEmpty())
 			})
 
 			It("logs the request and response", func() {
+				routes, err = client.TcpRouteMappings()
+				Expect(err).To(HaveOccurred())
 				expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
 				r, err := ioutil.ReadAll(stdout)
@@ -593,6 +627,7 @@ var _ = Describe("Client", func() {
 			routerGroups []models.RouterGroup
 			err          error
 			routerGroup1 models.RouterGroup
+			data         []byte
 		)
 
 		BeforeEach(func() {
@@ -604,13 +639,9 @@ var _ = Describe("Client", func() {
 			}
 		})
 
-		JustBeforeEach(func() {
-			routerGroups, err = client.RouterGroups()
-		})
-
 		Context("when the server returns a valid response", func() {
 			BeforeEach(func() {
-				data, _ := json.Marshal([]models.RouterGroup{routerGroup1})
+				data, _ = json.Marshal([]models.RouterGroup{routerGroup1})
 
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
@@ -621,15 +652,32 @@ var _ = Describe("Client", func() {
 			})
 
 			It("Sends a ListRouterGroups request to the server", func() {
+				routerGroups, err = client.RouterGroups()
+				Expect(err).NotTo(HaveOccurred())
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
 			})
 
 			It("gets a list of router groups from the server", func() {
+				routerGroups, err = client.RouterGroups()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(routerGroups).To(Equal([]models.RouterGroup{routerGroup1}))
 			})
 
+			It("does not send a body in the request", func() {
+				server.SetHandler(0,
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", TCP_ROUTER_GROUPS_API_URL),
+						ghttp.VerifyBody([]byte{}),
+						ghttp.RespondWith(http.StatusOK, data),
+					),
+				)
+				routerGroups, err = client.RouterGroups()
+				Expect(err).NotTo(HaveOccurred())
+			})
+
 			It("logs the request and response", func() {
+				routerGroups, err = client.RouterGroups()
+				Expect(err).NotTo(HaveOccurred())
 				expectedBody, _ := json.Marshal([]models.RouterGroup{routerGroup1})
 
 				r, err := ioutil.ReadAll(stdout)
@@ -655,11 +703,14 @@ var _ = Describe("Client", func() {
 			})
 
 			It("returns an error", func() {
+				routerGroups, err = client.RouterGroups()
 				Expect(err).To(HaveOccurred())
 				Expect(routerGroups).To(BeEmpty())
 			})
 
 			It("logs the request and response", func() {
+				routerGroups, err = client.RouterGroups()
+				Expect(err).To(HaveOccurred())
 				expectedBody, _ := json.Marshal([]models.RouterGroup{routerGroup1})
 
 				r, err := ioutil.ReadAll(stdout)

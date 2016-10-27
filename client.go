@@ -190,18 +190,25 @@ func (c *client) doSubscribe(routeName string, retries uint16) (RawEventSource, 
 }
 
 func (c *client) createRequest(requestName string, params rata.Params, queryParams url.Values, request interface{}) (*http.Request, error) {
-	requestJson, err := json.Marshal(request)
-	if err != nil {
-		return nil, err
+	var (
+		bodyBytes []byte
+		err       error
+	)
+
+	if request != nil {
+		bodyBytes, err = json.Marshal(request)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	req, err := c.reqGen.CreateRequest(requestName, params, bytes.NewReader(requestJson))
+	req, err := c.reqGen.CreateRequest(requestName, params, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return nil, err
 	}
 
 	req.URL.RawQuery = queryParams.Encode()
-	req.ContentLength = int64(len(requestJson))
+	req.ContentLength = int64(len(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 	c.tokenMutex.RLock()
 	defer c.tokenMutex.RUnlock()
