@@ -156,7 +156,9 @@ var _ = Describe("Main", func() {
 
 		Context("when etcd is unavailable", func() {
 			AfterEach(func() {
+				peerPort := etcdPort + 3000
 				validatePort(uint16(etcdPort))
+				validatePort(uint16(peerPort))
 				_, err := etcdAllocator.Create()
 				Expect(err).NotTo(HaveOccurred())
 			})
