@@ -97,9 +97,9 @@ func RunMigrations(sqlDB *db.SqlDB, migrations []Migration, logger lager.Logger)
 	}
 
 	tx := sqlDB.Client.Begin()
-	existingVersion := MigrationData{}
+	existingVersion := &MigrationData{}
 
-	err = tx.Where("migration_key = ?", MigrationKey).First(&existingVersion)
+	err = tx.Where("migration_key = ?", MigrationKey).First(existingVersion)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
@@ -109,11 +109,13 @@ func RunMigrations(sqlDB *db.SqlDB, migrations []Migration, logger lager.Logger)
 	}
 
 	if err == gorm.ErrRecordNotFound {
-		existingVersion = MigrationData{
+		existingVersion = &MigrationData{
 			MigrationKey:   MigrationKey,
 			CurrentVersion: -1,
 			TargetVersion:  lastMigrationVersion,
 		}
+
+		logger.Info("creating-migration-version", lager.Data{"version": existingVersion})
 		_, err = tx.Create(existingVersion)
 	} else {
 		if existingVersion.TargetVersion >= lastMigrationVersion {
@@ -121,6 +123,7 @@ func RunMigrations(sqlDB *db.SqlDB, migrations []Migration, logger lager.Logger)
 		}
 
 		existingVersion.TargetVersion = lastMigrationVersion
+		logger.Info("updating-migration-version", lager.Data{"version": existingVersion})
 		_, err = tx.Save(existingVersion)
 	}
 
@@ -147,7 +150,7 @@ func RunMigrations(sqlDB *db.SqlDB, migrations []Migration, logger lager.Logger)
 			}
 			currentVersion = m.Version()
 			existingVersion.CurrentVersion = currentVersion
-			_, err = sqlDB.Client.Save(&existingVersion)
+			_, err = sqlDB.Client.Save(existingVersion)
 			if err != nil {
 				return err
 			}
@@ -155,6 +158,3 @@ func RunMigrations(sqlDB *db.SqlDB, migrations []Migration, logger lager.Logger)
 	}
 	return nil
 }
-
-// func updateOrCreateMigrationRow(dbClient db.Client, lastMigrationVersion int, logger lager.Logger) (MigrationData, error) {
-// }
