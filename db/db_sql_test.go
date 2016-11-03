@@ -1093,7 +1093,7 @@ var _ = Describe("SqlDB", func() {
 
 			Context("http routes", func() {
 				BeforeEach(func() {
-					httpRoute := models.NewRoute("post_here", 7000, "127.0.0.1", "my-guid", "https://rs.com", 1)
+					httpRoute := models.NewRoute("post_here", 7000, "127.0.0.1", "my-guid", "https://rs.com", 2)
 					httpRouteModel, err := models.NewRouteWithModel(httpRoute)
 					Expect(err).ToNot(HaveOccurred())
 					err = sqlDB.SaveRoute(httpRouteModel)
