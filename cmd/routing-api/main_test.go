@@ -130,7 +130,7 @@ var _ = Describe("Main", func() {
 			events, err := client.SubscribeToEvents()
 			Expect(err).ToNot(HaveOccurred())
 
-			route := models.NewRoute("some-route", 1234, "234.32.43.4", "some-guid", "", 1)
+			route := models.NewRoute("some-route", 1234, "234.32.43.4", "some-guid", "", 120)
 			err = client.UpsertRoutes([]models.Route{route})
 			Expect(err).ToNot(HaveOccurred())
 
@@ -138,11 +138,6 @@ var _ = Describe("Main", func() {
 				event, _ := events.Next()
 				return event.Action
 			}).Should(Equal("Upsert"))
-
-			Eventually(func() string {
-				event, _ := events.Next()
-				return event.Action
-			}, 3, 1).Should(Equal("Delete"))
 
 			ginkgomon.Interrupt(proc)
 
