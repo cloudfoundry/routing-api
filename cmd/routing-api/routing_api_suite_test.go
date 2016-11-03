@@ -3,6 +3,7 @@ package main_test
 import (
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -117,7 +118,7 @@ var _ = BeforeEach(func() {
 })
 
 func routingApiClient() routing_api.Client {
-	routingAPIPort = uint16(6900 + GinkgoParallelNode())
+	routingAPIPort = uint16(testPort())
 	routingAPIIP = "127.0.0.1"
 	routingAPISystemDomain = "example.com"
 	routingAPIAddress = fmt.Sprintf("%s:%d", routingAPIIP, routingAPIPort)
@@ -219,4 +220,24 @@ func getServerPort(url string) string {
 	endpoints := strings.Split(url, ":")
 	Expect(endpoints).To(HaveLen(3))
 	return endpoints[2]
+}
+
+func testPort() int {
+	add, err := net.ResolveTCPAddr("tcp", ":0")
+	Expect(err).NotTo(HaveOccurred())
+	l, err := net.ListenTCP("tcp", add)
+	Expect(err).NotTo(HaveOccurred())
+
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port
+}
+
+func validatePort(port uint16) {
+	Eventually(func() error {
+		l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+		if l != nil {
+			_ = l.Close()
+		}
+		return err
+	}, "60s", "1s").Should(BeNil())
 }

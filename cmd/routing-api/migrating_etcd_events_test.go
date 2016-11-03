@@ -1,8 +1,6 @@
 package main_test
 
 import (
-	"fmt"
-	"net"
 	"os"
 	"os/exec"
 	"path"
@@ -55,9 +53,8 @@ var _ = Describe("ETCD Event Migrations", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		lockHolderArgs := routingAPIArgsNoSQL
-		lockHolderArgs.Port = uint16(7000 + GinkgoParallelNode())
+		lockHolderArgs.Port = uint16(testPort())
 		lockHolderRunner := testrunner.New(routingAPIBinPath, lockHolderArgs)
-		validatePort(lockHolderArgs.Port)
 		lockHolderProcess = ginkgomon.Invoke(lockHolderRunner)
 
 		routingAPIRunner = ginkgomon.New(ginkgomon.Config{
@@ -65,7 +62,6 @@ var _ = Describe("ETCD Event Migrations", func() {
 			Command:    exec.Command(routingAPIBinPath, routingAPIArgs.ArgSlice()...),
 			StartCheck: "routing-api.lock.acquiring-lock",
 		})
-		validatePort(routingAPIArgs.Port)
 		routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
 		Eventually(routingAPIProcess.Ready(), "5s").Should(BeClosed())
 	})
@@ -158,13 +154,3 @@ var _ = Describe("ETCD Event Migrations", func() {
 		})
 	})
 })
-
-func validatePort(port uint16) {
-	Eventually(func() error {
-		l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-		if l != nil {
-			_ = l.Close()
-		}
-		return err
-	}, "60s", "1s").Should(BeNil())
-}

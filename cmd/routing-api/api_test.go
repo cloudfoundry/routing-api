@@ -226,7 +226,7 @@ var _ = Describe("Routes API", func() {
 					event, err := eventStream.Next()
 					Expect(err).NotTo(HaveOccurred())
 					return event
-				}).Should(matchers.MatchHttpEvent(expectedEvent))
+				}, 2*time.Second).Should(matchers.MatchHttpEvent(expectedEvent))
 			})
 		})
 	}

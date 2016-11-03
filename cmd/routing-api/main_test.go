@@ -156,9 +156,11 @@ var _ = Describe("Main", func() {
 
 		Context("when etcd is unavailable", func() {
 			AfterEach(func() {
+				// etcd uses peer port when creating cluster. Defaults to specified etcd port + 3000
 				peerPort := etcdPort + 3000
 				validatePort(uint16(etcdPort))
 				validatePort(uint16(peerPort))
+
 				_, err := etcdAllocator.Create()
 				Expect(err).NotTo(HaveOccurred())
 			})

@@ -94,10 +94,12 @@ var _ = Describe("Locking", func() {
 
 				var err1, err2 error
 
-				for {
+				ticker := time.NewTicker(time.Second)
+				for range ticker.C {
 					select {
 					case <-done:
 						close(goRoutineFinished)
+						ticker.Stop()
 						return
 					default:
 						_, err1 = client1.Routes()
