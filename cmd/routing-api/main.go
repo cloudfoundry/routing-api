@@ -13,7 +13,6 @@ import (
 	"code.cloudfoundry.org/debugserver"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/locket"
-	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/handlers"
@@ -24,6 +23,7 @@ import (
 	uaaclient "code.cloudfoundry.org/uaa-go-client"
 	uaaconfig "code.cloudfoundry.org/uaa-go-client/config"
 	"github.com/cactus/go-statsd-client/statsd"
+	"github.com/cloudfoundry-incubator/routing-api"
 	"github.com/cloudfoundry/dropsonde"
 	"github.com/nu7hatch/gouuid"
 
@@ -48,6 +48,8 @@ var port = flag.Uint("port", 8080, "Port to run rounting-api server on")
 var configPath = flag.String("config", "", "Configuration for routing-api")
 var devMode = flag.Bool("devMode", false, "Disable authentication for easier development iteration")
 var ip = flag.String("ip", "", "The public ip of the routing api")
+var listenIP = flag.String("listenIP", "", "The ip address to listen")
+var systemDomain = flag.String("systemDomain", "", "System domain that the routing api should register on")
 
 func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 	return http.HandlerFunc(f)
@@ -281,7 +283,7 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 	}
 
 	handler = handlers.LogWrap(handler, logger)
-	return http_server.New(":"+strconv.Itoa(int(*port)), handler)
+	return http_server.New(*listenIP+":"+strconv.Itoa(int(*port)), handler)
 }
 
 func newUaaClient(logger lager.Logger, routingApiConfig config.Config) (uaaclient.Client, error) {
