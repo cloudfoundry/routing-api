@@ -160,9 +160,8 @@ func teardownConsul() {
 }
 
 func resetConsul() {
-	_ = consulRunner.Reset()
-	// TODO: https://www.pivotaltracker.com/story/show/133202225
-	//	Expect(err).ToNot(HaveOccurred())
+	err := consulRunner.Reset()
+	Expect(err).ToNot(HaveOccurred())
 }
 
 func createConfig(useSQL bool) string {
