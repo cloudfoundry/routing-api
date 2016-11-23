@@ -364,21 +364,15 @@ data: {"route":"127.0.0.1:8080/routing","port":3000,"ip":"1.2.3.4","ttl":120,"lo
 API Object Types
 -------------------
 
-### HTTP Route
-| Object Field        | Type            | Description |
-|---------------------|-----------------|-------------|
-| `route`             | string          | Address, including optional path, associated with one or more backends
-| `ip`                | string          | IP address of backend
-| `port`              | integer         | Backend port. Must be greater than 0.
-| `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
-| `log_guid`          | string          | A string used to annotate routing logs for requests forwarded to this backend.
-| `route_service_url` | string          | When present, requests for the route will be forwarded to this url before being forwarded to a backend. If provided, this url must use HTTPS.
-| `modification_tag`  | ModificationTag | See [Modification Tags](modification_tags.md).
+### Router Group
+| Object Field       | Type   | Description |
+|--------------------|--------|-------------|
+| `guid`             | string | GUID of the router group.
+| `name`             | string | External facing port for the TCP route.
+| `type`             | string | Type of the router group e.g. `tcp`.
+| `reservable_ports` | string | Comma delimited list of reservable port or port ranges.
 
-### Modification Tags
-  See [Modification Tags](modification_tags.md).
-
-### TCP Route Mapping
+### TCP Route
 | Object Field        | Type            | Description |
 |---------------------|-----------------|-------------|
 | `router_group_guid` | string          | GUID of the router group associated with this route.
@@ -388,10 +382,16 @@ API Object Types
 | `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
 | `modification_tag`  | ModificationTag | See [Modification Tags](modification_tags.md).
 
-### Router Group
-| Object Field       | Type   | Description |
-|--------------------|--------|-------------|
-| `guid`             | string | GUID of the router group.
-| `name`             | string | External facing port for the TCP route.
-| `type`             | string | Type of the router group e.g. `tcp`.
-| `reservable_ports` | string | Comma delimited list of reservable port or port ranges.
+### Modification Tags
+  See [Modification Tags](modification_tags.md).
+
+### HTTP Route (Experimental)
+| Object Field        | Type            | Description |
+|---------------------|-----------------|-------------|
+| `route`             | string          | Address, including optional path, associated with one or more backends
+| `ip`                | string          | IP address of backend
+| `port`              | integer         | Backend port. Must be greater than 0.
+| `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
+| `log_guid`          | string          | A string used to annotate routing logs for requests forwarded to this backend.
+| `route_service_url` | string          | When present, requests for the route will be forwarded to this url before being forwarded to a backend. If provided, this url must use HTTPS.
+| `modification_tag`  | ModificationTag | See [Modification Tags](modification_tags.md).
