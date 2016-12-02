@@ -255,7 +255,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v
 #### Example Response
 ```
 [{
-  "route": "127.0.0.1:8080/routing",
+  "route": "myapp.com/somepath",
   "port": 3000,
   "ip": "1.2.3.4",
   "ttl": 120,
@@ -292,7 +292,7 @@ As routes have a TTL, clients must register routes periodically to keep them act
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://127.0.0.1:8080/routing/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
+curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://127.0.0.1:8080/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":45}]'
 ```
 
 #### Expected Response
@@ -320,7 +320,7 @@ Experimental -  subject to backward incompatible change
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" -X DELETE http://127.0.0.1:8080/routing/v1/routes -d '[{"ip":"1.2.3.4", "route":"a_route", "port":8089, "ttl":45}]'
+curl -vvv -H "Authorization: bearer [uaa token]" -X DELETE http://127.0.0.1:8080/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":45}]'
 ```
 
 #### Expected Response
@@ -352,11 +352,11 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v
 ```
 id: 13
 event: Upsert
-data: {"route":"127.0.0.1:8080/routing","port":3000,"ip":"1.2.3.4","ttl":120,"log_guid":"routing_api","modification_tag":{"guid":"abc123","index":1154}}
+data: {"route":"myapp.com/somepath","port":3000,"ip":"1.2.3.4","ttl":120,"log_guid":"routing_api","modification_tag":{"guid":"abc123","index":1154}}
 
 id: 14
 event: Upsert
-data: {"route":"127.0.0.1:8080/routing","port":3000,"ip":"1.2.3.4","ttl":120,"log_guid":"routing_api","modification_tag":{"guid":"abc123","index":1155}}
+data: {"route":"myapp.com/somepath","port":3001,"ip":"1.2.3.5","ttl":120,"log_guid":"routing_api","modification_tag":{"guid":"abc123","index":1155}}
 ```
 
 -------------------
