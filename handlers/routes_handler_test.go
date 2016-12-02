@@ -1,9 +1,11 @@
 package handlers_test
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/routing-api"
@@ -72,6 +74,26 @@ var _ = Describe("RoutesHandler", func() {
 				routesHandler.List(responseRecorder, request)
 				Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
 				Expect(metrics.GetTokenErrors()).To(Equal(currentCount + 1))
+			})
+		})
+
+		Context("when token does not have necessary permissions", func() {
+			BeforeEach(func() {
+				fakeClient.DecodeTokenReturns(errors.New("Token does not have 'routing.router_groups.read' scope"))
+			})
+			It("returns an UnauthorizedError", func() {
+				type authorization struct {
+					Name, Message string
+				}
+				request = handlers.NewTestRequest("")
+				routesHandler.List(responseRecorder, request)
+				Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
+				// convert body from json and get message part alone
+				dec := json.NewDecoder(strings.NewReader(responseRecorder.Body.String()))
+				var responseBody authorization
+				err := dec.Decode(&responseBody)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(responseBody.Message).To(Equal("You are not authorized to perform the requested action"))
 			})
 		})
 
