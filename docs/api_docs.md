@@ -3,7 +3,7 @@ Routing API Documentation
 
 Reference documentation for client authors using the Routing API manually.
 
-#### Authorization Token
+### Authorization Token
 
 To obtain an token from UAA, use the `uaac` CLI for UAA.
 
@@ -27,7 +27,7 @@ To obtain an token from UAA, use the `uaac` CLI for UAA.
 
 List Router Groups
 -------------------
-#### Request
+### Request
   `GET /routing/v1/router_groups`
 
 #### Request Headers
@@ -38,11 +38,11 @@ List Router Groups
 curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v1/router_groups
 ```
 
-#### Expected Response
-  Status `200 OK`
+### Response
+  Expected Status `200 OK`
 
-#### Expected JSON-Encoded Response Body
-  An array of [`Router Group`](#router-group) objects.
+#### Response Body
+  A JSON-encoded array of [`Router Group`](#router-group) objects.
 
 #### Example Response
 ```
@@ -58,7 +58,7 @@ Update Router Group
 -------------------
 To update a Router Group's `reservable_ports` field with a new port range.
 
-#### Request
+### Request
   `PUT /routing/v1/router_groups/:guid`
 
   `:guid` is the GUID of the router group to be updated.
@@ -66,11 +66,9 @@ To update a Router Group's `reservable_ports` field with a new port range.
 #### Request Headers
   A bearer token for an OAuth client with `routing.router_groups.write` scope is required.
 
-#### Request JSON-Encoded Body
-  A single `Router Group` object for the router group to modify.
-  Only the `reservable_ports` field is updated.
+#### Request Body
+  A JSON-encoded object for the modified router group. Only the `reservable_ports` field may be updated.
 
-#### Router Group Object
 | Object Field       | Type   | Required? | Description |
 |--------------------|--------|-----------|-------------|
 | `reservable_ports` | string | yes       | Comma delimited list of reservable port or port ranges. These ports must fall between 1024 and 65535 (inclusive).
@@ -83,11 +81,11 @@ To update a Router Group's `reservable_ports` field with a new port range.
 ```sh
 curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v1/router_groups/abc123 -X PUT -d '{"reservable_ports":"9000-10000"}'
 ```
-#### Expected Response
-  Status `200 OK`
+### Response
+  Expected Status `200 OK`
 
-#### Expected JSON-Encoded Response Body
-  The updated [`Router Group`](#router-group).
+#### Response Body
+  A JSON-encoded object for the updated [`Router Group`](#router-group).
 
 #### Example Response:
 ```
@@ -101,7 +99,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v
 
 List TCP Routes
 -------------------
-#### Request
+### Request
   `GET /routing/v1/tcp_routes`
 
 #### Request Headers
@@ -112,11 +110,11 @@ List TCP Routes
 curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v1/tcp_routes
 ```
 
-#### Expected Response
-  Status `200 OK`
+### Response
+  Expected Status `200 OK`
 
-#### Expected JSON-Encoded Response Body
-  An array of [`TCP Route Mapping`](#tcp-route-mapping-2) objects.
+#### Response Body
+  A JSON-encoded array of [`TCP Route`](#tcp-route-mapping-2) objects.
 
 #### Example Response:
 ```
@@ -132,22 +130,21 @@ Register TCP Routes
 -------------------
 As routes have a TTL, clients must register routes periodically to keep them active.
 
-#### Sample Request
+### Request
   `POST /routing/v1/tcp_routes/create`
 
 #### Request Headers
   A bearer token for an OAuth client with `routing.routes.write` scope is required.
 
-#### Request JSON-Encoded Body
-  An array of `TCP Route Mapping` objects for each route to register.
+#### Request Body
+  A JSON-encoded array of `TCP Route` objects for each route to register. 
 
-#### TCP Route Mapping
 | Object Field        | Type            | Required? | Description |
 |---------------------|-----------------|-----------|-------------|
 | `router_group_guid` | string          | yes       | GUID of the router group associated with this route.
 | `port`              | string          | yes       | External facing port for the TCP route.
-| `backend_ip`        | integer         | yes       | IP address of backend
-| `backend_port`      | string          | yes       | Backend port. Must be greater than 0.
+| `backend_ip`        | string          | yes       | IP address of backend
+| `backend_port`      | integer         | yes       | Backend port. Must be greater than 0.
 | `ttl`               | integer         | yes       | Time to live, in seconds. The mapping of backend to route will be pruned after this time. Must be greater than 0 seconds and less than 60 seconds.
 
 #### Example Request
@@ -162,28 +159,26 @@ curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://127.0.0.1:8080/r
 }]'
 ```
 
-#### Expected Response
-  Status `201 CREATED`
-
+### Response
+  Expected Status `201 CREATED`
 
 Delete TCP Routes
 -------------------
-#### Request
+### Request
   `POST /routing/v1/tcp_routes/delete`
 
 #### Request Headers
   A bearer token for an OAuth client with `routing.routes.write` scope is required.
 
-#### Request JSON-Encoded Body
-  An array of `TCP Route Mapping` objects for each route to delete.
+#### Request Body
+  A JSON-Encoded array of `TCP Route` objects for each route to delete.
 
-#### TCP Route Mapping
 | Object Field        | Type            | Required? | Description |
 |---------------------|-----------------|-----------|-------------|
 | `router_group_guid` | string          | yes       | GUID of the router group associated with this route.
 | `port`              | string          | yes       | External facing port for the TCP route.
-| `backend_ip`        | integer         | yes       | IP address of backend
-| `backend_port`      | string          | yes       | Backend port. Must be greater than 0.
+| `backend_ip`        | string          | yes       | IP address of backend
+| `backend_port`      | integer         | yes       | Backend port. Must be greater than 0.
 
 #### Example Request
 ```sh
@@ -196,14 +191,14 @@ curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://127.0.0.1:8080/r
 }]'
 ```
 
-#### Expected Response
-  Status `204 NO CONTENT`
+### Response
+  Expected Status `204 NO CONTENT`
 
 
 
 Subscribe to Events for TCP Routes
 -------------------
-#### Request
+### Request
   `GET /routing/v1/tcp_routes/events`
 
 #### Request Headers
@@ -213,14 +208,14 @@ Subscribe to Events for TCP Routes
 ```sh
 curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v1/tcp_events
 ```
-#### Expected Response
-  Status `200 OK`
+### Response
+  Expected Status `200 OK`
 
   The response is a long lived HTTP connection of content type
   `text/event-stream` as defined by
   https://www.w3.org/TR/2012/CR-eventsource-20121211/.
 
-#### Example Response Format:
+#### Example Response
 
 ```
 id: 0
@@ -236,7 +231,7 @@ List HTTP Routes (Experimental)
 -------------------
 Experimental -  subject to backward incompatible change
 
-#### Request
+### Request
   `GET /routing/v1/routes`
 #### Request Headers
   A bearer token for an OAuth client with `routing.routes.read` scope is required.
@@ -246,11 +241,11 @@ Experimental -  subject to backward incompatible change
 curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v1/routes
 ```
 
-#### Expected Response
-  Status `200 OK`
+### Response
+  Expected Status `200 OK`
 
-#### Expected JSON-Encoded Response Body
-  An array of [`HTTP Route`](#http-route) objects.
+#### Response Body
+  A JSON-encoded array of [`HTTP Route`](#http-route) objects.
 
 #### Example Response
 ```
@@ -273,14 +268,13 @@ Experimental -  subject to backward incompatible change
 
 As routes have a TTL, clients must register routes periodically to keep them active.
 
-#### Request
+### Request
   `POST /routing/v1/routes`
 #### Request Headers
   A bearer token for an OAuth client with `routing.routes.write` scope is required.
-#### Request JSON-Encoded Body
-  An array of `HTTP Route` objects for each route to register.
+#### Request Body
+  A JSON-encoded array of `HTTP Route` objects for each route to register.
 
-#### HTTP Route Object
 | Object Field        | Type            | Required? | Description |
 |---------------------|-----------------|-----------|-------------|
 | `route`             | string          | yes       | Address, including optional path, associated with one or more backends
@@ -295,21 +289,20 @@ As routes have a TTL, clients must register routes periodically to keep them act
 curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://127.0.0.1:8080/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":45}]'
 ```
 
-#### Expected Response
-  Status `201 CREATED`
+### Response
+  Expected Status `201 CREATED`
 
 Delete HTTP Routes (Experimental)
 -------------------
 Experimental -  subject to backward incompatible change
 
-#### Request
+### Request
   `DELETE /routing/v1/routes`
 #### Request Headers
   A bearer token for an OAuth client with `routing.routes.write` scope is required.
-#### Request JSON-Encoded Body
-  An array of `HTTP Route` objects for each route to delete.
+#### Request Body
+  A JSON-encoded array of `HTTP Route` objects for each route to delete.
 
-#### HTTP Route Object
 | Object Field        | Type            | Required? | Description |
 |---------------------|-----------------|-----------|-------------|
 | `route`             | string          | yes       | Address, including optional path, associated with one or more backends
@@ -323,14 +316,14 @@ Experimental -  subject to backward incompatible change
 curl -vvv -H "Authorization: bearer [uaa token]" -X DELETE http://127.0.0.1:8080/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":45}]'
 ```
 
-#### Expected Response
-  Status `204 NO CONTENT`
+### Response
+  Expected Status `204 NO CONTENT`
 
 Subscribe to Events for HTTP Routes (Experimental)
 -------------------
 Experimental -  subject to backward incompatible change
 
-#### Request
+### Request
   `GET /routing/v1/events`
 
 #### Request Headers
@@ -340,14 +333,14 @@ Experimental -  subject to backward incompatible change
 ```sh
 curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v1/events
 ```
-#### Expected Response
-  Status `200 OK`
+### Response
+  Expected Status `200 OK`
 
   The response is a long lived HTTP connection of content type
   `text/event-stream` as defined by
   https://www.w3.org/TR/2012/CR-eventsource-20121211/.
 
-#### Example Response Format:
+#### Example Response:
 
 ```
 id: 13
@@ -377,8 +370,8 @@ API Object Types
 |---------------------|-----------------|-------------|
 | `router_group_guid` | string          | GUID of the router group associated with this route.
 | `port`              | string          | External facing port for the TCP route.
-| `backend_ip`        | integer         | IP address of backend.
-| `backend_port`      | string          | Backend port. Must be greater than 0.
+| `backend_ip`        | string          | IP address of backend.
+| `backend_port`      | integer         | Backend port. Must be greater than 0.
 | `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
 | `modification_tag`  | ModificationTag | See [Modification Tags](modification_tags.md).
 
