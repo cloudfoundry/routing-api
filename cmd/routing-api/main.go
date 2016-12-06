@@ -127,13 +127,13 @@ func main() {
 	routerGroupSeeder := seedRouterGroups(cfg, database, logger.Session("seeding"))
 
 	members := grouper.Members{
-		{"migration", migrationProcess},
-		{"lock-acquirer", lockAcquirer},
-		{"seed-router-groups", routerGroupSeeder},
-		{"api-server", apiServer},
-		{"conn-stopper", stopper},
-		{"route-register", routerRegister},
-		{"metrics", metricsReporter},
+		grouper.Member{Name: "migration", Runner: migrationProcess},
+		grouper.Member{Name: "lock-acquirer", Runner: lockAcquirer},
+		grouper.Member{Name: "seed-router-groups", Runner: routerGroupSeeder},
+		grouper.Member{Name: "api-server", Runner: apiServer},
+		grouper.Member{Name: "conn-stopper", Runner: stopper},
+		grouper.Member{Name: "route-register", Runner: routerRegister},
+		grouper.Member{Name: "metrics", Runner: metricsReporter},
 	}
 
 	if isSql(cfg.SqlDB) {

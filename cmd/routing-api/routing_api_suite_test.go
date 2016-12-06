@@ -227,7 +227,11 @@ func testPort() int {
 	l, err := net.ListenTCP("tcp", add)
 	Expect(err).NotTo(HaveOccurred())
 
-	defer l.Close()
+	defer func() {
+		err = l.Close()
+		Expect(err).NotTo(HaveOccurred())
+	}()
+
 	return l.Addr().(*net.TCPAddr).Port
 }
 

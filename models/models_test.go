@@ -14,7 +14,7 @@ var _ = Describe("Models", func() {
 		var tag ModificationTag
 
 		BeforeEach(func() {
-			tag = ModificationTag{"guid1", 5}
+			tag = ModificationTag{Guid: "guid1", Index: 5}
 		})
 
 		Describe("Increment", func() {
@@ -32,7 +32,7 @@ var _ = Describe("Models", func() {
 
 			Context("when the guid is the different", func() {
 				BeforeEach(func() {
-					tag2 = ModificationTag{"guid5", 0}
+					tag2 = ModificationTag{Guid: "guid5", Index: 0}
 				})
 				It("new tag should succeed", func() {
 					Expect(tag.SucceededBy(&tag2)).To(BeTrue())
@@ -43,7 +43,7 @@ var _ = Describe("Models", func() {
 
 				Context("when the index is the same as the original tag", func() {
 					BeforeEach(func() {
-						tag2 = ModificationTag{"guid1", 5}
+						tag2 = ModificationTag{Guid: "guid1", Index: 5}
 					})
 
 					It("new tag should not succeed", func() {
@@ -55,7 +55,7 @@ var _ = Describe("Models", func() {
 				Context("when the index is less than original tag Index", func() {
 
 					BeforeEach(func() {
-						tag2 = ModificationTag{"guid1", 4}
+						tag2 = ModificationTag{Guid: "guid1", Index: 4}
 					})
 
 					It("new tag should not succeed", func() {
@@ -65,7 +65,7 @@ var _ = Describe("Models", func() {
 
 				Context("when the index is greater than original tag Index", func() {
 					BeforeEach(func() {
-						tag2 = ModificationTag{"guid1", 6}
+						tag2 = ModificationTag{Guid: "guid1", Index: 6}
 					})
 
 					It("new tag should succeed", func() {
