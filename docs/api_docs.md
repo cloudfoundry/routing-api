@@ -137,7 +137,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v
 | `backend_ip`        | string          | IP address of backend.
 | `backend_port`      | integer         | Backend port. Must be greater than 0.
 | `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
-| `modification_tag`  | ModificationTag | See [Modification Tags](modification_tags.md).
+| `modification_tag`  | object     | See [Modification Tags](modification_tags.md).
 
 #### Example Response:
 ```
@@ -286,7 +286,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v
 | `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
 | `log_guid`          | string          | A string used to annotate routing logs for requests forwarded to this backend.
 | `route_service_url` | string          | When present, requests for the route will be forwarded to this url before being forwarded to a backend. If provided, this url must use HTTPS.
-| `modification_tag`  | ModificationTag | See [Modification Tags](modification_tags.md).
+| `modification_tag`  | object          | See [Modification Tags](modification_tags.md).
 
 #### Example Response
 ```
