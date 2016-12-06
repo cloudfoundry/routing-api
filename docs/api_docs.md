@@ -42,7 +42,14 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v
   Expected Status `200 OK`
 
 #### Response Body
-  A JSON-encoded array of [`Router Group`](#router-group) objects.
+  A JSON-encoded array of `Router Group` objects.
+
+| Object Field       | Type   | Description |
+|--------------------|--------|-------------|
+| `guid`             | string | GUID of the router group.
+| `name`             | string | External facing port for the TCP route.
+| `type`             | string | Type of the router group e.g. `tcp`.
+| `reservable_ports` | string | Comma delimited list of reservable port or port ranges.
 
 #### Example Response
 ```
@@ -85,7 +92,14 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v
   Expected Status `200 OK`
 
 #### Response Body
-  A JSON-encoded object for the updated [`Router Group`](#router-group).
+  A JSON-encoded object for the updated `Router Group`.
+
+| Object Field       | Type   | Description |
+|--------------------|--------|-------------|
+| `guid`             | string | GUID of the router group.
+| `name`             | string | External facing port for the TCP route.
+| `type`             | string | Type of the router group e.g. `tcp`.
+| `reservable_ports` | string | Comma delimited list of reservable port or port ranges.
 
 #### Example Response:
 ```
@@ -114,7 +128,16 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v
   Expected Status `200 OK`
 
 #### Response Body
-  A JSON-encoded array of [`TCP Route`](#tcp-route-mapping-2) objects.
+  A JSON-encoded array of `TCP Route` objects.
+
+| Object Field        | Type            | Description |
+|---------------------|-----------------|-------------|
+| `router_group_guid` | string          | GUID of the router group associated with this route.
+| `port`              | integer         | External facing port for the TCP route.
+| `backend_ip`        | string          | IP address of backend.
+| `backend_port`      | integer         | Backend port. Must be greater than 0.
+| `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
+| `modification_tag`  | ModificationTag | See [Modification Tags](modification_tags.md).
 
 #### Example Response:
 ```
@@ -122,7 +145,11 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v
   "router_group_guid": "xyz789",
   "port": 5200,
   "backend_ip": "10.1.1.12",
-  "backend_port": 60000
+  "backend_port": 60000,
+  "modification_tag":  {
+    "guid": "cbdhb4e3-141d-4259-b0ac-99140e8998l0",
+    "index": 10
+  }
 }]
 ```
 
@@ -142,7 +169,7 @@ As routes have a TTL, clients must register routes periodically to keep them act
 | Object Field        | Type            | Required? | Description |
 |---------------------|-----------------|-----------|-------------|
 | `router_group_guid` | string          | yes       | GUID of the router group associated with this route.
-| `port`              | string          | yes       | External facing port for the TCP route.
+| `port`              | integer         | yes       | External facing port for the TCP route.
 | `backend_ip`        | string          | yes       | IP address of backend
 | `backend_port`      | integer         | yes       | Backend port. Must be greater than 0.
 | `ttl`               | integer         | yes       | Time to live, in seconds. The mapping of backend to route will be pruned after this time. Must be greater than 0 seconds and less than 60 seconds.
@@ -156,6 +183,10 @@ curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://127.0.0.1:8080/r
   "backend_ip": "10.1.1.12",
   "backend_port": 60000,
   "ttl": 30
+  "modification_tag":  {
+    "guid": "cbdhb4e3-141d-4259-b0ac-99140e8998l0",
+    "index": 1
+  }
 }]'
 ```
 
@@ -176,7 +207,7 @@ Delete TCP Routes
 | Object Field        | Type            | Required? | Description |
 |---------------------|-----------------|-----------|-------------|
 | `router_group_guid` | string          | yes       | GUID of the router group associated with this route.
-| `port`              | string          | yes       | External facing port for the TCP route.
+| `port`              | integer         | yes       | External facing port for the TCP route.
 | `backend_ip`        | string          | yes       | IP address of backend
 | `backend_port`      | integer         | yes       | Backend port. Must be greater than 0.
 
@@ -245,7 +276,17 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v
   Expected Status `200 OK`
 
 #### Response Body
-  A JSON-encoded array of [`HTTP Route`](#http-route) objects.
+  A JSON-encoded array of `HTTP Route` objects.
+
+| Object Field        | Type            | Description |
+|---------------------|-----------------|-------------|
+| `route`             | string          | Address, including optional path, associated with one or more backends
+| `ip`                | string          | IP address of backend
+| `port`              | integer         | Backend port. Must be greater than 0.
+| `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
+| `log_guid`          | string          | A string used to annotate routing logs for requests forwarded to this backend.
+| `route_service_url` | string          | When present, requests for the route will be forwarded to this url before being forwarded to a backend. If provided, this url must use HTTPS.
+| `modification_tag`  | ModificationTag | See [Modification Tags](modification_tags.md).
 
 #### Example Response
 ```
@@ -352,39 +393,5 @@ event: Upsert
 data: {"route":"myapp.com/somepath","port":3001,"ip":"1.2.3.5","ttl":120,"log_guid":"routing_api","modification_tag":{"guid":"abc123","index":1155}}
 ```
 
--------------------
 
-API Object Types
--------------------
 
-### Router Group
-| Object Field       | Type   | Description |
-|--------------------|--------|-------------|
-| `guid`             | string | GUID of the router group.
-| `name`             | string | External facing port for the TCP route.
-| `type`             | string | Type of the router group e.g. `tcp`.
-| `reservable_ports` | string | Comma delimited list of reservable port or port ranges.
-
-### TCP Route
-| Object Field        | Type            | Description |
-|---------------------|-----------------|-------------|
-| `router_group_guid` | string          | GUID of the router group associated with this route.
-| `port`              | string          | External facing port for the TCP route.
-| `backend_ip`        | string          | IP address of backend.
-| `backend_port`      | integer         | Backend port. Must be greater than 0.
-| `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
-| `modification_tag`  | ModificationTag | See [Modification Tags](modification_tags.md).
-
-### Modification Tags
-  See [Modification Tags](modification_tags.md).
-
-### HTTP Route (Experimental)
-| Object Field        | Type            | Description |
-|---------------------|-----------------|-------------|
-| `route`             | string          | Address, including optional path, associated with one or more backends
-| `ip`                | string          | IP address of backend
-| `port`              | integer         | Backend port. Must be greater than 0.
-| `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
-| `log_guid`          | string          | A string used to annotate routing logs for requests forwarded to this backend.
-| `route_service_url` | string          | When present, requests for the route will be forwarded to this url before being forwarded to a backend. If provided, this url must use HTTPS.
-| `modification_tag`  | ModificationTag | See [Modification Tags](modification_tags.md).
