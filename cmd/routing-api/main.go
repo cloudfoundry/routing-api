@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/consuladapter"
 	"code.cloudfoundry.org/debugserver"
 	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagerflags"
 	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/config"
@@ -27,7 +28,6 @@ import (
 	"github.com/cloudfoundry/dropsonde"
 	"github.com/nu7hatch/gouuid"
 
-	cf_lager "code.cloudfoundry.org/cflager"
 	"code.cloudfoundry.org/clock"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
@@ -54,10 +54,10 @@ func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 }
 
 func main() {
-	cf_lager.AddFlags(flag.CommandLine)
+	lagerflags.AddFlags(flag.CommandLine)
 	flag.Parse()
 
-	logger, reconfigurableSink := cf_lager.New("routing-api")
+	logger, reconfigurableSink := lagerflags.New("routing-api")
 
 	err := checkFlags()
 	if err != nil {
