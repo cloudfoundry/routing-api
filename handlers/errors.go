@@ -54,7 +54,7 @@ func handleUnauthorizedError(w http.ResponseWriter, err error, log lager.Logger)
 	retErr := marshalRoutingApiError(routing_api.NewError(routing_api.UnauthorizedError, err.Error()), log)
 	metrics.IncrementTokenError()
 
-	if bytes.ContainsAny(retErr, "Token does not have ") {
+	if bytes.Contains(retErr, []byte("Token does not have ")) {
 		newRegEx := regexp.MustCompile("Token does not have .* scope")
 		retErr = newRegEx.ReplaceAll(retErr, []byte("You are not authorized to perform the requested action"))
 	}
