@@ -103,7 +103,7 @@ func (cfg *Config) Initialize(file []byte, authDisabled bool) error {
 		return errors.New("Routing API requires TLS enabled to get OAuth token")
 	}
 	if cfg.ConsulCluster.LockTTL == 0 {
-		cfg.ConsulCluster.LockTTL = locket.LockTTL
+		cfg.ConsulCluster.LockTTL = locket.DefaultSessionTTL
 	}
 	if cfg.ConsulCluster.RetryInterval == 0 {
 		cfg.ConsulCluster.RetryInterval = locket.RetryInterval

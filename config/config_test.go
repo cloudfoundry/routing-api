@@ -120,7 +120,7 @@ consul_cluster:
 				config := testConfig()
 				err := cfg.Initialize([]byte(config), true)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(cfg.ConsulCluster.LockTTL).To(Equal(locket.LockTTL))
+				Expect(cfg.ConsulCluster.LockTTL).To(Equal(locket.DefaultSessionTTL))
 			})
 			It("populates the default value for RetryInterval from locket library", func() {
 				config := testConfig()
