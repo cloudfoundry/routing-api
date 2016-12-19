@@ -237,7 +237,7 @@ Subscribe to Events for TCP Routes
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/tcp_events
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/tcp_routes/events
 ```
 ### Response
   Expected Status `200 OK`
