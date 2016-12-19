@@ -35,7 +35,7 @@ List Router Groups
 
 #### Example request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v1/router_groups
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/router_groups
 ```
 
 ### Response
@@ -86,7 +86,7 @@ To update a Router Group's `reservable_ports` field with a new port range.
 
 #### Example Request   
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v1/router_groups/abc123 -X PUT -d '{"reservable_ports":"9000-10000"}'
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/router_groups/abc123 -X PUT -d '{"reservable_ports":"9000-10000"}'
 ```
 ### Response
   Expected Status `200 OK`
@@ -121,7 +121,7 @@ List TCP Routes
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v1/tcp_routes
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/tcp_routes
 ```
 
 ### Response
@@ -176,7 +176,7 @@ As routes have a TTL, clients must register routes periodically to keep them act
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://127.0.0.1:8080/routing/v1/tcp_routes/create -d '
+curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://api.system-domain.com/routing/v1/tcp_routes/create -d '
 [{
   "router_group_guid": "xyz789",
   "port": 5200,
@@ -213,7 +213,7 @@ Delete TCP Routes
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://127.0.0.1:8080/routing/v1/tcp_routes/delete -d '
+curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://api.system-domain.com/routing/v1/tcp_routes/delete -d '
 [{
   "router_group_guid": "xyz789",
   "port": 5200,
@@ -237,7 +237,7 @@ Subscribe to Events for TCP Routes
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v1/tcp_events
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/tcp_events
 ```
 ### Response
   Expected Status `200 OK`
@@ -269,7 +269,7 @@ Experimental -  subject to backward incompatible change
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v1/routes
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/routes
 ```
 
 ### Response
@@ -327,7 +327,7 @@ As routes have a TTL, clients must register routes periodically to keep them act
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://127.0.0.1:8080/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":45}]'
+curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://api.system-domain.com/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":45}]'
 ```
 
 ### Response
@@ -354,7 +354,7 @@ Experimental -  subject to backward incompatible change
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" -X DELETE http://127.0.0.1:8080/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":45}]'
+curl -vvv -H "Authorization: bearer [uaa token]" -X DELETE http://api.system-domain.com/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":45}]'
 ```
 
 ### Response
@@ -372,7 +372,7 @@ Experimental -  subject to backward incompatible change
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" http://127.0.0.1:8080/routing/v1/events
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/events
 ```
 ### Response
   Expected Status `200 OK`
