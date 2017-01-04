@@ -173,6 +173,7 @@ As routes have a TTL, clients must register routes periodically to keep them act
 | `backend_ip`        | string          | yes       | IP address of backend
 | `backend_port`      | integer         | yes       | Backend port. Must be greater than 0.
 | `ttl`               | integer         | yes       | Time to live, in seconds. The mapping of backend to route will be pruned after this time. Must be greater than 0 seconds and less than 60 seconds.
+| `modification_tag`  | object          | no        | See [Modification Tags](modification_tags.md).
 
 #### Example Request
 ```sh
@@ -182,7 +183,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://api.system-domai
   "port": 5200,
   "backend_ip": "10.1.1.12",
   "backend_port": 60000,
-  "ttl": 30
+  "ttl": 120,
   "modification_tag":  {
     "guid": "cbdhb4e3-141d-4259-b0ac-99140e8998l0",
     "index": 1
@@ -327,7 +328,7 @@ As routes have a TTL, clients must register routes periodically to keep them act
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://api.system-domain.com/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":45}]'
+curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://api.system-domain.com/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":120}]'
 ```
 
 ### Response
@@ -354,7 +355,7 @@ Experimental -  subject to backward incompatible change
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" -X DELETE http://api.system-domain.com/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":45}]'
+curl -vvv -H "Authorization: bearer [uaa token]" -X DELETE http://api.system-domain.com/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":120}]'
 ```
 
 ### Response
