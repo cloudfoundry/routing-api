@@ -25,6 +25,20 @@ To obtain an token from UAA, use the `uaac` CLI for UAA.
    uaac context
    ```
 
+Routing API Endpoints
+---------------------
+- [List Router Groups](#list-router-groups)
+- [Update Router Group](#update-router-group)
+- [List TCP Routes](#list-tcp-routes)
+- [Create TCP Routes](#create-tcp-routes)
+- [Delete TCP Routes](#delete-tcp-routes)
+- [Subscribe to Events for TCP Routes](#subscribe-to-events-for-tcp-routes)
+- [List HTTP Routes (Experimental)](#list-http-routes-experimental)
+- [Create HTTP Routes (Experimental)](#create-http-routes-experimentalcreate)
+- [Delete HTTP Routes (Experimental)](#delete-http-routes-experimental)
+- [Subscribe to Events for HTTP Routes (Experimental)](#subscribe-to-events-for-http-routes-experimental)
+
+
 List Router Groups
 -------------------
 ### Request
@@ -153,7 +167,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 }]
 ```
 
-Register TCP Routes
+Create TCP Routes
 -------------------
 As routes have a TTL, clients must register routes periodically to keep them active.
 
@@ -304,7 +318,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 }]
 ```
 
-Register HTTP Routes (Experimental)
+Create HTTP Routes (Experimental)
 -------------------
 Experimental -  subject to backward incompatible change
 
