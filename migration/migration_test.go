@@ -71,10 +71,11 @@ var _ = Describe("Migration", func() {
 				done := make(chan struct{})
 				defer close(done)
 				migrations := migration.InitializeMigrations(etcdConfig, done, logger)
-				Expect(migrations).To(HaveLen(2))
+				Expect(migrations).To(HaveLen(3))
 
 				Expect(migrations[0]).To(BeAssignableToTypeOf(&migration.V0InitMigration{}))
 				Expect(migrations[1]).To(BeAssignableToTypeOf(&migration.V1EtcdMigration{}))
+				Expect(migrations[2]).To(BeAssignableToTypeOf(&migration.V2UpdateRgMigration{}))
 			})
 		})
 

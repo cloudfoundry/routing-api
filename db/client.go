@@ -17,6 +17,8 @@ type Client interface {
 	Rollback() error
 	Commit() error
 	HasTable(value interface{}) bool
+	AddUniqueIndex(indexName string, columns ...string) (Client, error)
+	Model(value interface{}) Client
 }
 
 type gormClient struct {
@@ -30,7 +32,17 @@ func NewGormClient(db *gorm.DB) Client {
 func (c *gormClient) Close() error {
 	return c.db.Close()
 }
+func (c *gormClient) AddUniqueIndex(indexName string, columns ...string) (Client, error) {
+	var newClient gormClient
+	newClient.db = c.db.AddUniqueIndex(indexName, columns...)
+	return &newClient, newClient.db.Error
+}
 
+func (c *gormClient) Model(value interface{}) Client {
+	var newClient gormClient
+	newClient.db = c.db.Model(value)
+	return &newClient
+}
 func (c *gormClient) Where(query interface{}, args ...interface{}) Client {
 	var newClient gormClient
 	newClient.db = c.db.Where(query, args...)

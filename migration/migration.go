@@ -78,6 +78,9 @@ func InitializeMigrations(etcdCfg *config.Etcd, etcdDone chan struct{}, logger l
 	migration = NewV1EtcdMigration(etcdCfg, etcdDone, logger)
 	migrations = append(migrations, migration)
 
+	migration = NewV2UpdateRgMigration()
+	migrations = append(migrations, migration)
+
 	return migrations
 }
 

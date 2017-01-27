@@ -104,9 +104,8 @@ func (fake *FakeDB) ReadRoutes() ([]models.Route, error) {
 	fake.readRoutesMutex.Unlock()
 	if fake.ReadRoutesStub != nil {
 		return fake.ReadRoutesStub()
-	} else {
-		return fake.readRoutesReturns.result1, fake.readRoutesReturns.result2
 	}
+	return fake.readRoutesReturns.result1, fake.readRoutesReturns.result2
 }
 
 func (fake *FakeDB) ReadRoutesCallCount() int {
@@ -132,9 +131,8 @@ func (fake *FakeDB) SaveRoute(route models.Route) error {
 	fake.saveRouteMutex.Unlock()
 	if fake.SaveRouteStub != nil {
 		return fake.SaveRouteStub(route)
-	} else {
-		return fake.saveRouteReturns.result1
 	}
+	return fake.saveRouteReturns.result1
 }
 
 func (fake *FakeDB) SaveRouteCallCount() int {
@@ -165,9 +163,8 @@ func (fake *FakeDB) DeleteRoute(route models.Route) error {
 	fake.deleteRouteMutex.Unlock()
 	if fake.DeleteRouteStub != nil {
 		return fake.DeleteRouteStub(route)
-	} else {
-		return fake.deleteRouteReturns.result1
 	}
+	return fake.deleteRouteReturns.result1
 }
 
 func (fake *FakeDB) DeleteRouteCallCount() int {
@@ -196,9 +193,8 @@ func (fake *FakeDB) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
 	fake.readTcpRouteMappingsMutex.Unlock()
 	if fake.ReadTcpRouteMappingsStub != nil {
 		return fake.ReadTcpRouteMappingsStub()
-	} else {
-		return fake.readTcpRouteMappingsReturns.result1, fake.readTcpRouteMappingsReturns.result2
 	}
+	return fake.readTcpRouteMappingsReturns.result1, fake.readTcpRouteMappingsReturns.result2
 }
 
 func (fake *FakeDB) ReadTcpRouteMappingsCallCount() int {
@@ -224,9 +220,8 @@ func (fake *FakeDB) SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error
 	fake.saveTcpRouteMappingMutex.Unlock()
 	if fake.SaveTcpRouteMappingStub != nil {
 		return fake.SaveTcpRouteMappingStub(tcpMapping)
-	} else {
-		return fake.saveTcpRouteMappingReturns.result1
 	}
+	return fake.saveTcpRouteMappingReturns.result1
 }
 
 func (fake *FakeDB) SaveTcpRouteMappingCallCount() int {
@@ -257,9 +252,8 @@ func (fake *FakeDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) err
 	fake.deleteTcpRouteMappingMutex.Unlock()
 	if fake.DeleteTcpRouteMappingStub != nil {
 		return fake.DeleteTcpRouteMappingStub(tcpMapping)
-	} else {
-		return fake.deleteTcpRouteMappingReturns.result1
 	}
+	return fake.deleteTcpRouteMappingReturns.result1
 }
 
 func (fake *FakeDB) DeleteTcpRouteMappingCallCount() int {
@@ -288,9 +282,8 @@ func (fake *FakeDB) ReadRouterGroups() (models.RouterGroups, error) {
 	fake.readRouterGroupsMutex.Unlock()
 	if fake.ReadRouterGroupsStub != nil {
 		return fake.ReadRouterGroupsStub()
-	} else {
-		return fake.readRouterGroupsReturns.result1, fake.readRouterGroupsReturns.result2
 	}
+	return fake.readRouterGroupsReturns.result1, fake.readRouterGroupsReturns.result2
 }
 
 func (fake *FakeDB) ReadRouterGroupsCallCount() int {
@@ -316,9 +309,8 @@ func (fake *FakeDB) ReadRouterGroup(guid string) (models.RouterGroup, error) {
 	fake.readRouterGroupMutex.Unlock()
 	if fake.ReadRouterGroupStub != nil {
 		return fake.ReadRouterGroupStub(guid)
-	} else {
-		return fake.readRouterGroupReturns.result1, fake.readRouterGroupReturns.result2
 	}
+	return fake.readRouterGroupReturns.result1, fake.readRouterGroupReturns.result2
 }
 
 func (fake *FakeDB) ReadRouterGroupCallCount() int {
@@ -350,9 +342,8 @@ func (fake *FakeDB) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	fake.saveRouterGroupMutex.Unlock()
 	if fake.SaveRouterGroupStub != nil {
 		return fake.SaveRouterGroupStub(routerGroup)
-	} else {
-		return fake.saveRouterGroupReturns.result1
 	}
+	return fake.saveRouterGroupReturns.result1
 }
 
 func (fake *FakeDB) SaveRouterGroupCallCount() int {
@@ -399,9 +390,8 @@ func (fake *FakeDB) WatchChanges(watchType string) (<-chan db.Event, <-chan erro
 	fake.watchChangesMutex.Unlock()
 	if fake.WatchChangesStub != nil {
 		return fake.WatchChangesStub(watchType)
-	} else {
-		return fake.watchChangesReturns.result1, fake.watchChangesReturns.result2, fake.watchChangesReturns.result3
 	}
+	return fake.watchChangesReturns.result1, fake.watchChangesReturns.result2, fake.watchChangesReturns.result3
 }
 
 func (fake *FakeDB) WatchChangesCallCount() int {

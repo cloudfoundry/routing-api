@@ -101,9 +101,8 @@ func (fake *FakeKeysAPI) Get(ctx context.Context, key string, opts *client.GetOp
 	fake.getMutex.Unlock()
 	if fake.GetStub != nil {
 		return fake.GetStub(ctx, key, opts)
-	} else {
-		return fake.getReturns.result1, fake.getReturns.result2
 	}
+	return fake.getReturns.result1, fake.getReturns.result2
 }
 
 func (fake *FakeKeysAPI) GetCallCount() int {
@@ -138,9 +137,8 @@ func (fake *FakeKeysAPI) Set(ctx context.Context, key string, value string, opts
 	fake.setMutex.Unlock()
 	if fake.SetStub != nil {
 		return fake.SetStub(ctx, key, value, opts)
-	} else {
-		return fake.setReturns.result1, fake.setReturns.result2
 	}
+	return fake.setReturns.result1, fake.setReturns.result2
 }
 
 func (fake *FakeKeysAPI) SetCallCount() int {
@@ -174,9 +172,8 @@ func (fake *FakeKeysAPI) Delete(ctx context.Context, key string, opts *client.De
 	fake.deleteMutex.Unlock()
 	if fake.DeleteStub != nil {
 		return fake.DeleteStub(ctx, key, opts)
-	} else {
-		return fake.deleteReturns.result1, fake.deleteReturns.result2
 	}
+	return fake.deleteReturns.result1, fake.deleteReturns.result2
 }
 
 func (fake *FakeKeysAPI) DeleteCallCount() int {
@@ -210,9 +207,8 @@ func (fake *FakeKeysAPI) Create(ctx context.Context, key string, value string) (
 	fake.createMutex.Unlock()
 	if fake.CreateStub != nil {
 		return fake.CreateStub(ctx, key, value)
-	} else {
-		return fake.createReturns.result1, fake.createReturns.result2
 	}
+	return fake.createReturns.result1, fake.createReturns.result2
 }
 
 func (fake *FakeKeysAPI) CreateCallCount() int {
@@ -247,9 +243,8 @@ func (fake *FakeKeysAPI) CreateInOrder(ctx context.Context, dir string, value st
 	fake.createInOrderMutex.Unlock()
 	if fake.CreateInOrderStub != nil {
 		return fake.CreateInOrderStub(ctx, dir, value, opts)
-	} else {
-		return fake.createInOrderReturns.result1, fake.createInOrderReturns.result2
 	}
+	return fake.createInOrderReturns.result1, fake.createInOrderReturns.result2
 }
 
 func (fake *FakeKeysAPI) CreateInOrderCallCount() int {
@@ -283,9 +278,8 @@ func (fake *FakeKeysAPI) Update(ctx context.Context, key string, value string) (
 	fake.updateMutex.Unlock()
 	if fake.UpdateStub != nil {
 		return fake.UpdateStub(ctx, key, value)
-	} else {
-		return fake.updateReturns.result1, fake.updateReturns.result2
 	}
+	return fake.updateReturns.result1, fake.updateReturns.result2
 }
 
 func (fake *FakeKeysAPI) UpdateCallCount() int {
@@ -318,9 +312,8 @@ func (fake *FakeKeysAPI) Watcher(key string, opts *client.WatcherOptions) client
 	fake.watcherMutex.Unlock()
 	if fake.WatcherStub != nil {
 		return fake.WatcherStub(key, opts)
-	} else {
-		return fake.watcherReturns.result1
 	}
+	return fake.watcherReturns.result1
 }
 
 func (fake *FakeKeysAPI) WatcherCallCount() int {

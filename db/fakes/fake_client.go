@@ -112,6 +112,24 @@ type FakeClient struct {
 	hasTableReturns struct {
 		result1 bool
 	}
+	AddUniqueIndexStub        func(indexName string, columns ...string) (db.Client, error)
+	addUniqueIndexMutex       sync.RWMutex
+	addUniqueIndexArgsForCall []struct {
+		indexName string
+		columns   []string
+	}
+	addUniqueIndexReturns struct {
+		result1 db.Client
+		result2 error
+	}
+	ModelStub        func(value interface{}) db.Client
+	modelMutex       sync.RWMutex
+	modelArgsForCall []struct {
+		value interface{}
+	}
+	modelReturns struct {
+		result1 db.Client
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -123,9 +141,8 @@ func (fake *FakeClient) Close() error {
 	fake.closeMutex.Unlock()
 	if fake.CloseStub != nil {
 		return fake.CloseStub()
-	} else {
-		return fake.closeReturns.result1
 	}
+	return fake.closeReturns.result1
 }
 
 func (fake *FakeClient) CloseCallCount() int {
@@ -151,9 +168,8 @@ func (fake *FakeClient) Where(query interface{}, args ...interface{}) db.Client 
 	fake.whereMutex.Unlock()
 	if fake.WhereStub != nil {
 		return fake.WhereStub(query, args...)
-	} else {
-		return fake.whereReturns.result1
 	}
+	return fake.whereReturns.result1
 }
 
 func (fake *FakeClient) WhereCallCount() int {
@@ -184,9 +200,8 @@ func (fake *FakeClient) Create(value interface{}) (int64, error) {
 	fake.createMutex.Unlock()
 	if fake.CreateStub != nil {
 		return fake.CreateStub(value)
-	} else {
-		return fake.createReturns.result1, fake.createReturns.result2
 	}
+	return fake.createReturns.result1, fake.createReturns.result2
 }
 
 func (fake *FakeClient) CreateCallCount() int {
@@ -219,9 +234,8 @@ func (fake *FakeClient) Delete(value interface{}, where ...interface{}) (int64, 
 	fake.deleteMutex.Unlock()
 	if fake.DeleteStub != nil {
 		return fake.DeleteStub(value, where...)
-	} else {
-		return fake.deleteReturns.result1, fake.deleteReturns.result2
 	}
+	return fake.deleteReturns.result1, fake.deleteReturns.result2
 }
 
 func (fake *FakeClient) DeleteCallCount() int {
@@ -253,9 +267,8 @@ func (fake *FakeClient) Save(value interface{}) (int64, error) {
 	fake.saveMutex.Unlock()
 	if fake.SaveStub != nil {
 		return fake.SaveStub(value)
-	} else {
-		return fake.saveReturns.result1, fake.saveReturns.result2
 	}
+	return fake.saveReturns.result1, fake.saveReturns.result2
 }
 
 func (fake *FakeClient) SaveCallCount() int {
@@ -287,9 +300,8 @@ func (fake *FakeClient) Update(attrs ...interface{}) (int64, error) {
 	fake.updateMutex.Unlock()
 	if fake.UpdateStub != nil {
 		return fake.UpdateStub(attrs...)
-	} else {
-		return fake.updateReturns.result1, fake.updateReturns.result2
 	}
+	return fake.updateReturns.result1, fake.updateReturns.result2
 }
 
 func (fake *FakeClient) UpdateCallCount() int {
@@ -322,9 +334,8 @@ func (fake *FakeClient) First(out interface{}, where ...interface{}) error {
 	fake.firstMutex.Unlock()
 	if fake.FirstStub != nil {
 		return fake.FirstStub(out, where...)
-	} else {
-		return fake.firstReturns.result1
 	}
+	return fake.firstReturns.result1
 }
 
 func (fake *FakeClient) FirstCallCount() int {
@@ -356,9 +367,8 @@ func (fake *FakeClient) Find(out interface{}, where ...interface{}) error {
 	fake.findMutex.Unlock()
 	if fake.FindStub != nil {
 		return fake.FindStub(out, where...)
-	} else {
-		return fake.findReturns.result1
 	}
+	return fake.findReturns.result1
 }
 
 func (fake *FakeClient) FindCallCount() int {
@@ -389,9 +399,8 @@ func (fake *FakeClient) AutoMigrate(values ...interface{}) error {
 	fake.autoMigrateMutex.Unlock()
 	if fake.AutoMigrateStub != nil {
 		return fake.AutoMigrateStub(values...)
-	} else {
-		return fake.autoMigrateReturns.result1
 	}
+	return fake.autoMigrateReturns.result1
 }
 
 func (fake *FakeClient) AutoMigrateCallCount() int {
@@ -420,9 +429,8 @@ func (fake *FakeClient) Begin() db.Client {
 	fake.beginMutex.Unlock()
 	if fake.BeginStub != nil {
 		return fake.BeginStub()
-	} else {
-		return fake.beginReturns.result1
 	}
+	return fake.beginReturns.result1
 }
 
 func (fake *FakeClient) BeginCallCount() int {
@@ -445,9 +453,8 @@ func (fake *FakeClient) Rollback() error {
 	fake.rollbackMutex.Unlock()
 	if fake.RollbackStub != nil {
 		return fake.RollbackStub()
-	} else {
-		return fake.rollbackReturns.result1
 	}
+	return fake.rollbackReturns.result1
 }
 
 func (fake *FakeClient) RollbackCallCount() int {
@@ -470,9 +477,8 @@ func (fake *FakeClient) Commit() error {
 	fake.commitMutex.Unlock()
 	if fake.CommitStub != nil {
 		return fake.CommitStub()
-	} else {
-		return fake.commitReturns.result1
 	}
+	return fake.commitReturns.result1
 }
 
 func (fake *FakeClient) CommitCallCount() int {
@@ -497,9 +503,8 @@ func (fake *FakeClient) HasTable(value interface{}) bool {
 	fake.hasTableMutex.Unlock()
 	if fake.HasTableStub != nil {
 		return fake.HasTableStub(value)
-	} else {
-		return fake.hasTableReturns.result1
 	}
+	return fake.hasTableReturns.result1
 }
 
 func (fake *FakeClient) HasTableCallCount() int {
@@ -518,6 +523,72 @@ func (fake *FakeClient) HasTableReturns(result1 bool) {
 	fake.HasTableStub = nil
 	fake.hasTableReturns = struct {
 		result1 bool
+	}{result1}
+}
+
+func (fake *FakeClient) AddUniqueIndex(indexName string, columns ...string) (db.Client, error) {
+	fake.addUniqueIndexMutex.Lock()
+	fake.addUniqueIndexArgsForCall = append(fake.addUniqueIndexArgsForCall, struct {
+		indexName string
+		columns   []string
+	}{indexName, columns})
+	fake.recordInvocation("AddUniqueIndex", []interface{}{indexName, columns})
+	fake.addUniqueIndexMutex.Unlock()
+	if fake.AddUniqueIndexStub != nil {
+		return fake.AddUniqueIndexStub(indexName, columns...)
+	}
+	return fake.addUniqueIndexReturns.result1, fake.addUniqueIndexReturns.result2
+}
+
+func (fake *FakeClient) AddUniqueIndexCallCount() int {
+	fake.addUniqueIndexMutex.RLock()
+	defer fake.addUniqueIndexMutex.RUnlock()
+	return len(fake.addUniqueIndexArgsForCall)
+}
+
+func (fake *FakeClient) AddUniqueIndexArgsForCall(i int) (string, []string) {
+	fake.addUniqueIndexMutex.RLock()
+	defer fake.addUniqueIndexMutex.RUnlock()
+	return fake.addUniqueIndexArgsForCall[i].indexName, fake.addUniqueIndexArgsForCall[i].columns
+}
+
+func (fake *FakeClient) AddUniqueIndexReturns(result1 db.Client, result2 error) {
+	fake.AddUniqueIndexStub = nil
+	fake.addUniqueIndexReturns = struct {
+		result1 db.Client
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) Model(value interface{}) db.Client {
+	fake.modelMutex.Lock()
+	fake.modelArgsForCall = append(fake.modelArgsForCall, struct {
+		value interface{}
+	}{value})
+	fake.recordInvocation("Model", []interface{}{value})
+	fake.modelMutex.Unlock()
+	if fake.ModelStub != nil {
+		return fake.ModelStub(value)
+	}
+	return fake.modelReturns.result1
+}
+
+func (fake *FakeClient) ModelCallCount() int {
+	fake.modelMutex.RLock()
+	defer fake.modelMutex.RUnlock()
+	return len(fake.modelArgsForCall)
+}
+
+func (fake *FakeClient) ModelArgsForCall(i int) interface{} {
+	fake.modelMutex.RLock()
+	defer fake.modelMutex.RUnlock()
+	return fake.modelArgsForCall[i].value
+}
+
+func (fake *FakeClient) ModelReturns(result1 db.Client) {
+	fake.ModelStub = nil
+	fake.modelReturns = struct {
+		result1 db.Client
 	}{result1}
 }
 
@@ -550,6 +621,10 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.commitMutex.RUnlock()
 	fake.hasTableMutex.RLock()
 	defer fake.hasTableMutex.RUnlock()
+	fake.addUniqueIndexMutex.RLock()
+	defer fake.addUniqueIndexMutex.RUnlock()
+	fake.modelMutex.RLock()
+	defer fake.modelMutex.RUnlock()
 	return fake.invocations
 }
 

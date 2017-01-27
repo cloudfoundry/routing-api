@@ -31,9 +31,8 @@ func (fake *FakeWatcher) Next(arg1 context.Context) (*client.Response, error) {
 	fake.nextMutex.Unlock()
 	if fake.NextStub != nil {
 		return fake.NextStub(arg1)
-	} else {
-		return fake.nextReturns.result1, fake.nextReturns.result2
 	}
+	return fake.nextReturns.result1, fake.nextReturns.result2
 }
 
 func (fake *FakeWatcher) NextCallCount() int {
