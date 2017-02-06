@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"errors"
 	"time"
 
 	"code.cloudfoundry.org/locket"
@@ -129,6 +130,55 @@ consul_cluster:
 				Expect(cfg.ConsulCluster.RetryInterval).To(Equal(locket.RetryInterval))
 			})
 		})
+
+		Context("when multiple router groups are seeded", func() {
+			var expectedGroups models.RouterGroups
+
+			testConfig := func(name string) string {
+				return `log_guid: "my_logs"
+metrics_reporting_interval: "500ms"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"
+system_domain: "example.com"
+router_groups:
+- name: router-group-1
+  reservable_ports: 1200
+  type: tcp
+- name: ` + name + `
+  reservable_ports: 10000-42000
+  type: tcp`
+			}
+
+			Context("with different names", func() {
+				It("should not error", func() {
+					config := testConfig("router-group-2")
+					err := cfg.Initialize([]byte(config), true)
+					Expect(err).NotTo(HaveOccurred())
+					expectedGroups = models.RouterGroups{
+						{
+							Name:            "router-group-1",
+							ReservablePorts: "1200",
+							Type:            "tcp",
+						},
+						{
+							Name:            "router-group-2",
+							ReservablePorts: "10000-42000",
+							Type:            "tcp",
+						},
+					}
+					Expect(cfg.RouterGroups).To(Equal(expectedGroups))
+				})
+			})
+			Context("with same names", func() {
+				It("should error", func() {
+					config := testConfig("router-group-1")
+					err := cfg.Initialize([]byte(config), true)
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError(errors.New("Router Group name router-group-1 is repeated")))
+				})
+			})
+		})
+
 		Context("when router groups are seeded in the configuration file", func() {
 			var expectedGroups models.RouterGroups
 

@@ -163,16 +163,38 @@ func resetConsul() {
 	err := consulRunner.Reset()
 	Expect(err).ToNot(HaveOccurred())
 }
+func createConfigWithRg(routerGroups string) string {
+	caCertsPath, err := filepath.Abs(filepath.Join("..", "..", "fixtures", "uaa-certs", "uaa-ca.pem"))
+	Expect(err).NotTo(HaveOccurred())
+
+	actualConfig := customConfig{
+		Port:      8125 + GinkgoParallelNode(),
+		UAAPort:   oauthServerPort,
+		CACerts:   caCertsPath,
+		EtcdPort:  etcdPort,
+		Schema:    sqlDBName,
+		ConsulUrl: consulRunner.URL(),
+	}
+	var templatePath string
+	templatePath, err = filepath.Abs(filepath.Join("..", "..", "example_config", "example_template_rg.yml"))
+	Expect(err).NotTo(HaveOccurred())
+
+	var configFilePath string
+	configFilePath = fmt.Sprintf("/tmp/example_rg_%d.yml", GinkgoParallelNode())
+
+	return writeConfigFile(templatePath, configFilePath, actualConfig)
+}
+
+type customConfig struct {
+	EtcdPort  int
+	Port      int
+	UAAPort   string
+	CACerts   string
+	Schema    string
+	ConsulUrl string
+}
 
 func createConfig(useSQL bool) string {
-	type customConfig struct {
-		EtcdPort  int
-		Port      int
-		UAAPort   string
-		CACerts   string
-		Schema    string
-		ConsulUrl string
-	}
 	caCertsPath, err := filepath.Abs(filepath.Join("..", "..", "fixtures", "uaa-certs", "uaa-ca.pem"))
 	Expect(err).NotTo(HaveOccurred())
 
@@ -193,15 +215,20 @@ func createConfig(useSQL bool) string {
 	}
 	Expect(err).NotTo(HaveOccurred())
 
-	tmpl, err := template.ParseFiles(templatePath)
-	Expect(err).NotTo(HaveOccurred())
-
 	var configFilePath string
 	if useSQL {
 		configFilePath = fmt.Sprintf("/tmp/example_sql_%d.yml", GinkgoParallelNode())
 	} else {
 		configFilePath = fmt.Sprintf("/tmp/example_%d.yml", GinkgoParallelNode())
 	}
+	return writeConfigFile(templatePath, configFilePath, actualConfig)
+}
+
+func writeConfigFile(templatePath, configFilePath string, actualConfig customConfig) string {
+
+	tmpl, err := template.ParseFiles(templatePath)
+	Expect(err).NotTo(HaveOccurred())
+
 	configFile, err := os.Create(configFilePath)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -214,7 +241,6 @@ func createConfig(useSQL bool) string {
 
 	return configFilePath
 }
-
 func getServerPort(url string) string {
 	endpoints := strings.Split(url, ":")
 	Expect(endpoints).To(HaveLen(3))

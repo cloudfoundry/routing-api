@@ -173,6 +173,38 @@ var _ = Describe("Main", func() {
 			})
 		})
 	})
+
+	Context("when multiple router groups are seeded", func() {
+		var gormDB *gorm.DB
+		BeforeEach(func() {
+			routingAPIArgs = testrunner.Args{
+				Port:       routingAPIPort,
+				IP:         routingAPIIP,
+				ConfigPath: createConfigWithRg(`{name: default-tcp, type: tcp, reservable_ports: "2000"}`),
+				DevMode:    true,
+			}
+			connectionString := fmt.Sprintf("root:password@/%s?parseTime=true", sqlDBName)
+			var err error
+			gormDB, err = gorm.Open("mysql", connectionString)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		AfterEach(func() {
+			gormDB.AutoMigrate(&models.RouterGroupDB{})
+		})
+		It("should fail with an error", func() {
+			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			proc := ifrit.Invoke(routingAPIRunner)
+			type resultCount struct {
+				results string
+			}
+
+			db := gormDB.Raw("SHOW TABLES LIKE 'router_groups';")
+			Expect(db.Error).ToNot(HaveOccurred())
+			Expect(int(db.RowsAffected)).To(Equal(0))
+			Eventually(routingAPIRunner).Should(Exit(1))
+			ginkgomon.Interrupt(proc)
+		})
+	})
 })
 
 func RoutingApi(args ...string) *Session {
