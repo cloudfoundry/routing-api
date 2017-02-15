@@ -174,7 +174,7 @@ router_groups:
 					config := testConfig("router-group-1")
 					err := cfg.Initialize([]byte(config), true)
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError(errors.New("Router Group name router-group-1 is repeated")))
+					Expect(err).To(MatchError(errors.New("Router group name must be unique")))
 				})
 			})
 		})

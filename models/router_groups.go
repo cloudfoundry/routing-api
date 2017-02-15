@@ -70,7 +70,7 @@ func (g RouterGroups) validateRouterGroupName() error {
 	encountered := map[string]bool{}
 	for _, r := range g {
 		if encountered[r.Name] == true {
-			return fmt.Errorf("Router Group name %s is repeated", r.Name)
+			return fmt.Errorf("Router group name must be unique")
 		} else {
 			encountered[r.Name] = true
 		}
