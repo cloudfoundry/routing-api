@@ -70,7 +70,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 [{
   "guid": "abc123",
   "name": "default-tcp",
-  "reservable_ports":"1024-65535"
+  "reservable_ports":"1024-65535",
   "type": "tcp"
 }]
 ```
@@ -120,7 +120,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 {
   "guid": "abc123",
   "name": "default-tcp",
-  "reservable_ports":"9000-10000"
+  "reservable_ports":"9000-10000",
   "type": "tcp"
 }
 ```
