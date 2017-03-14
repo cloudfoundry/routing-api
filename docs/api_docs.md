@@ -7,19 +7,25 @@ Reference documentation for client authors using the Routing API manually.
 
 To obtain an token from UAA, use the `uaac` CLI for UAA.
 
-1. Install the `uaac` CLI
+1. Install the `uaac` CLI:
 
    ```
    gem install cf-uaac
    ```
+   
+1. Set the UAA target:
 
-2. Retrieve the OAuth token using credentials for registered OAuth client
+   ```
+   uaac target uaa.example.com
+   ```
+
+1. Retrieve the OAuth token using credentials for registered OAuth client:
 
    ```bash
    uaac token client get routing_api_client
    ```
 
-3. Display the `access_token`, which can be used as the Authorization header to `curl` the Routing API.
+1. Display the `access_token`, which can be used as the Authorization header to `curl` the Routing API:
 
    ```
    uaac context
