@@ -11,6 +11,11 @@ var InvalidPortError = errors.New("Port must be between 1024 and 65535")
 
 type RouterGroupType string
 
+const (
+	RouterGroup_TCP  RouterGroupType = "tcp"
+	RouterGroup_HTTP RouterGroupType = "http"
+)
+
 type RouterGroupsDB []RouterGroupDB
 
 type RouterGroupDB struct {
@@ -69,11 +74,10 @@ type RouterGroups []RouterGroup
 func (g RouterGroups) validateRouterGroupName() error {
 	encountered := map[string]bool{}
 	for _, r := range g {
-		if encountered[r.Name] == true {
+		if _, exist := encountered[r.Name]; exist {
 			return fmt.Errorf("Router group name must be unique")
-		} else {
-			encountered[r.Name] = true
 		}
+		encountered[r.Name] = true
 	}
 	return nil
 }
@@ -98,7 +102,13 @@ func (g RouterGroup) Validate() error {
 		return errors.New("Missing type in router group")
 	}
 	if g.ReservablePorts == "" {
-		return errors.New(fmt.Sprintf("Missing reservable_ports in router group: %s", g.Name))
+		if g.Type == RouterGroup_TCP {
+			return errors.New(fmt.Sprintf("Missing reservable_ports in router group: %s", g.Name))
+		}
+		return nil
+	}
+	if g.Type == RouterGroup_HTTP {
+		return errors.New("Reservable ports are not supported for router groups of type http")
 	}
 
 	err := g.ReservablePorts.Validate()

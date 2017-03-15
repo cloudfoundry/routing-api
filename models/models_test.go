@@ -83,6 +83,41 @@ var _ = Describe("Models", func() {
 		var rg RouterGroup
 
 		Describe("Validate", func() {
+			It("does not allow ReservablePorts for http type", func() {
+				rg = RouterGroup{
+					Name:            "router-group-1",
+					Type:            "http",
+					ReservablePorts: "1025-2025",
+				}
+				err := rg.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("Reservable ports are not supported for router groups of type http"))
+				By("not having ReservablePorts")
+				rg = RouterGroup{
+					Name: "router-group-1",
+					Type: "http",
+				}
+				err = rg.Validate()
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("ReservablePorts are optional for non-http, non-tcp type", func() {
+				rg = RouterGroup{
+					Name:            "router-group-1",
+					Type:            "foo",
+					ReservablePorts: "1025-2025",
+				}
+				err := rg.Validate()
+				Expect(err).ToNot(HaveOccurred())
+
+				rg = RouterGroup{
+					Name: "router-group-1",
+					Type: "foo",
+				}
+				err = rg.Validate()
+				Expect(err).ToNot(HaveOccurred())
+			})
+
 			It("succeeds for valid router group", func() {
 				rg = RouterGroup{
 					Name:            "router-group-1",
@@ -112,7 +147,7 @@ var _ = Describe("Models", func() {
 				Expect(err.Error()).To(Equal("Missing name in router group"))
 			})
 
-			It("fails for missing name", func() {
+			It("fails for missing ReservablePorts", func() {
 				rg = RouterGroup{
 					Type: "tcp",
 					Name: "router-group-1",
@@ -128,7 +163,6 @@ var _ = Describe("Models", func() {
 		var ports ReservablePorts
 
 		Describe("Validate", func() {
-
 			It("succeeds for valid reservable ports", func() {
 				ports = "6001,6005,6010-6020,6021-6030"
 				err := ports.Validate()

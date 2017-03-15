@@ -174,13 +174,13 @@ var _ = Describe("Main", func() {
 		})
 	})
 
-	Context("when multiple router groups are seeded", func() {
+	Context("when multiple router groups with the same name are seeded", func() {
 		var gormDB *gorm.DB
 		BeforeEach(func() {
 			routingAPIArgs = testrunner.Args{
 				Port:       routingAPIPort,
 				IP:         routingAPIIP,
-				ConfigPath: createConfigWithRg(`{name: default-tcp, type: tcp, reservable_ports: "2000"}`),
+				ConfigPath: createConfigWithRg(),
 				DevMode:    true,
 			}
 			connectionString := fmt.Sprintf("root:password@/%s?parseTime=true", sqlDBName)

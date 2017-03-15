@@ -163,7 +163,8 @@ func resetConsul() {
 	err := consulRunner.Reset()
 	Expect(err).ToNot(HaveOccurred())
 }
-func createConfigWithRg(routerGroups string) string {
+
+func createConfigWithRg() string {
 	caCertsPath, err := filepath.Abs(filepath.Join("..", "..", "fixtures", "uaa-certs", "uaa-ca.pem"))
 	Expect(err).NotTo(HaveOccurred())
 
