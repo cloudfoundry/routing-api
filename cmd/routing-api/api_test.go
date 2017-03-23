@@ -441,6 +441,27 @@ var _ = Describe("Routes API", func() {
 					Expect(len(routerGroups)).To(Equal(1))
 					Expect(routerGroups[0].ReservablePorts).To(Equal(models.ReservablePorts("6000-8000")))
 				})
+
+				It("validates updates", func() {
+					var routerGroups models.RouterGroups
+					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
+					Eventually(func() error {
+						var err error
+						routerGroups, err = client.RouterGroups()
+						return err
+					}, "30s", "1s").ShouldNot(HaveOccurred(), "Failed to connect to Routing API server after 30s.")
+					Expect(len(routerGroups)).To(Equal(1))
+					routerGroup := routerGroups[0]
+
+					routerGroup.ReservablePorts = ""
+					err := client.UpdateRouterGroup(routerGroup)
+					Expect(err).To(HaveOccurred())
+
+					routerGroups, err = client.RouterGroups()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(len(routerGroups)).To(Equal(1))
+					Expect(routerGroups[0].ReservablePorts).To(Equal(models.ReservablePorts("1024-65535")))
+				})
 			})
 		})
 	}

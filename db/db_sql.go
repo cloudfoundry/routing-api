@@ -190,9 +190,7 @@ func updateRouterGroup(existingRouterGroup, currentRouterGroup *models.RouterGro
 	if currentRouterGroup.Name != "" {
 		existingRouterGroup.Name = currentRouterGroup.Name
 	}
-	if currentRouterGroup.ReservablePorts != "" {
-		existingRouterGroup.ReservablePorts = currentRouterGroup.ReservablePorts
-	}
+	existingRouterGroup.ReservablePorts = currentRouterGroup.ReservablePorts
 }
 
 func updateTcpRouteMapping(existingTcpRouteMapping models.TcpRouteMapping, currentTcpRouteMapping models.TcpRouteMapping) models.TcpRouteMapping {

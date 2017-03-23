@@ -23,9 +23,11 @@ import (
 )
 
 const (
-	DefaultRouterGroupGuid = "bad25cff-9332-48a6-8603-b619858e7992"
-	DefaultRouterGroupName = "default-tcp"
-	DefaultRouterGroupType = "tcp"
+	DefaultRouterGroupGuid      = "bad25cff-9332-48a6-8603-b619858e7992"
+	DefaultHTTPRouterGroupGuid  = "sad25cff-9332-48a6-8603-b619858e7992"
+	DefaultOtherRouterGroupGuid = "mad25cff-9332-48a6-8603-b619858e7992"
+	DefaultRouterGroupName      = "default-tcp"
+	DefaultRouterGroupType      = "tcp"
 )
 
 var _ = Describe("RouterGroupsHandler", func() {
@@ -126,20 +128,45 @@ var _ = Describe("RouterGroupsHandler", func() {
 
 	Describe("UpdateRouterGroup", func() {
 		var (
-			existingRouterGroup models.RouterGroup
-			handler             http.Handler
-			body                io.Reader
+			existingTCPRouterGroup   models.RouterGroup
+			existingHTTPRouterGroup  models.RouterGroup
+			existingOtherRouterGroup models.RouterGroup
+			handler                  http.Handler
+			body                     io.Reader
 		)
 
 		BeforeEach(func() {
 			var err error
-			existingRouterGroup = models.RouterGroup{
+			existingTCPRouterGroup = models.RouterGroup{
 				Guid:            DefaultRouterGroupGuid,
 				Name:            DefaultRouterGroupName,
 				Type:            DefaultRouterGroupType,
 				ReservablePorts: "1024-65535",
 			}
-			fakeDb.ReadRouterGroupReturns(existingRouterGroup, nil)
+
+			existingHTTPRouterGroup = models.RouterGroup{
+				Guid:            DefaultHTTPRouterGroupGuid,
+				Name:            "default-http",
+				Type:            "http",
+				ReservablePorts: "",
+			}
+
+			existingOtherRouterGroup = models.RouterGroup{
+				Guid:            DefaultOtherRouterGroupGuid,
+				Name:            "default-other",
+				Type:            "other",
+				ReservablePorts: "9876",
+			}
+
+			fakeDb.ReadRouterGroupStub = func(guid string) (models.RouterGroup, error) {
+				if guid == DefaultHTTPRouterGroupGuid {
+					return existingHTTPRouterGroup, nil
+				}
+				if guid == DefaultOtherRouterGroupGuid {
+					return existingOtherRouterGroup, nil
+				}
+				return existingTCPRouterGroup, nil
+			}
 
 			routes := rata.Routes{
 				routing_api.RoutesMap[routing_api.UpdateRouterGroup],
@@ -255,7 +282,146 @@ var _ = Describe("RouterGroupsHandler", func() {
 			})
 		})
 
-		Context("when reservable port field is the empty string", func() {
+		Context("when adding reservable ports to type: http", func() {
+			BeforeEach(func() {
+				queryGroup := models.RouterGroup{
+					ReservablePorts: "8001",
+				}
+
+				bodyBytes, err := json.Marshal(queryGroup)
+				Expect(err).ToNot(HaveOccurred())
+				body = bytes.NewReader(bodyBytes)
+			})
+
+			It("does not save the router group", func() {
+				var err error
+				request, err = http.NewRequest(
+					"PUT",
+					fmt.Sprintf("/routing/v1/router_groups/%s", DefaultHTTPRouterGroupGuid),
+					body,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				handler.ServeHTTP(responseRecorder, request)
+
+				Expect(fakeDb.ReadRouterGroupCallCount()).To(Equal(1))
+				guid := fakeDb.ReadRouterGroupArgsForCall(0)
+				Expect(guid).To(Equal(DefaultHTTPRouterGroupGuid))
+
+				Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
+			})
+
+			It("returns a 400 Bad Request", func() {
+				var err error
+				request, err = http.NewRequest(
+					"PUT",
+					fmt.Sprintf("/routing/v1/router_groups/%s", DefaultHTTPRouterGroupGuid),
+					body,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				handler.ServeHTTP(responseRecorder, request)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+				payload := responseRecorder.Body.String()
+				Expect(payload).To(MatchJSON(`
+				{
+					"name": "ProcessRequestError",
+					"message": "Cannot process request: Reservable ports are not supported for router groups of type http"
+				}`))
+			})
+		})
+
+		Context("when changing non-http, non-tcp router groups", func() {
+			It("saves the router group when changing the ports", func() {
+				queryGroup := models.RouterGroup{
+					ReservablePorts: "8001",
+				}
+
+				bodyBytes, err := json.Marshal(queryGroup)
+				Expect(err).ToNot(HaveOccurred())
+				body = bytes.NewReader(bodyBytes)
+
+				request, err = http.NewRequest(
+					"PUT",
+					fmt.Sprintf("/routing/v1/router_groups/%s", DefaultOtherRouterGroupGuid),
+					body,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				handler.ServeHTTP(responseRecorder, request)
+
+				Expect(fakeDb.ReadRouterGroupCallCount()).To(Equal(1))
+				guid := fakeDb.ReadRouterGroupArgsForCall(0)
+				Expect(guid).To(Equal(DefaultOtherRouterGroupGuid))
+
+				Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(1))
+				savedGroup := fakeDb.SaveRouterGroupArgsForCall(0)
+				updatedGroup := models.RouterGroup{
+					Guid:            DefaultOtherRouterGroupGuid,
+					Name:            "default-other",
+					Type:            "other",
+					ReservablePorts: "8001",
+				}
+				Expect(savedGroup).To(Equal(updatedGroup))
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				payload := responseRecorder.Body.String()
+				Expect(payload).To(MatchJSON(`
+			{
+			"guid": "mad25cff-9332-48a6-8603-b619858e7992",
+			"name": "default-other",
+			"type": "other",
+			"reservable_ports": "8001"
+			}`))
+			})
+
+			It("saves the router group when removing the ports", func() {
+				queryGroup := models.RouterGroup{
+					ReservablePorts: "",
+				}
+
+				bodyBytes, err := json.Marshal(queryGroup)
+				Expect(err).ToNot(HaveOccurred())
+				body = bytes.NewReader(bodyBytes)
+
+				request, err = http.NewRequest(
+					"PUT",
+					fmt.Sprintf("/routing/v1/router_groups/%s", DefaultOtherRouterGroupGuid),
+					body,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				handler.ServeHTTP(responseRecorder, request)
+
+				Expect(fakeDb.ReadRouterGroupCallCount()).To(Equal(1))
+				guid := fakeDb.ReadRouterGroupArgsForCall(0)
+				Expect(guid).To(Equal(DefaultOtherRouterGroupGuid))
+
+				Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(1))
+				savedGroup := fakeDb.SaveRouterGroupArgsForCall(0)
+				updatedGroup := models.RouterGroup{
+					Guid:            DefaultOtherRouterGroupGuid,
+					Name:            "default-other",
+					Type:            "other",
+					ReservablePorts: "",
+				}
+				Expect(savedGroup).To(Equal(updatedGroup))
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				payload := responseRecorder.Body.String()
+				Expect(payload).To(MatchJSON(`
+			{
+			"guid": "mad25cff-9332-48a6-8603-b619858e7992",
+			"name": "default-other",
+			"type": "other",
+			"reservable_ports": ""
+			}`))
+			})
+
+		})
+
+		Context("when reservable port field is the empty string for a TCP router group", func() {
 			It("does not save the router group", func() {
 				var err error
 
@@ -277,14 +443,12 @@ var _ = Describe("RouterGroupsHandler", func() {
 
 				Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
 
-				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
 				payload := responseRecorder.Body.String()
 				Expect(payload).To(MatchJSON(`
 				{
-				"guid": "bad25cff-9332-48a6-8603-b619858e7992",
-				"name": "default-tcp",
-				"type": "tcp",
-				"reservable_ports": "1024-65535"
+					"name": "ProcessRequestError",
+					"message": "Cannot process request: Missing reservable_ports in router group: default-tcp"
 				}`))
 			})
 		})

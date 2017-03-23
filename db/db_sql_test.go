@@ -238,6 +238,30 @@ var _ = Describe("SqlDB", func() {
 					Expect(rg.ReservablePorts).To(Equal(routerGroup.ReservablePorts))
 					Expect(rg.Type).To(Equal(routerGroup.Type))
 				})
+
+			})
+
+			It("Can remove ReservablePorts", func() {
+				testRg := &models.RouterGroupDB{
+					Model:           models.Model{Guid: routerGroupId},
+					Name:            "rg-1",
+					Type:            "other",
+					ReservablePorts: "120",
+				}
+				rgGroup := testRg.ToRouterGroup()
+				Expect(err).ToNot(HaveOccurred())
+				err = sqlDB.SaveRouterGroup(rgGroup)
+				Expect(err).ToNot(HaveOccurred())
+				rg, err := sqlDB.ReadRouterGroup(testRg.Guid)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(rg.ReservablePorts)).To(Equal("120"))
+
+				rgGroup.ReservablePorts = ""
+				err = sqlDB.SaveRouterGroup(rgGroup)
+				Expect(err).ToNot(HaveOccurred())
+				rgAgain, err := sqlDB.ReadRouterGroup(testRg.Guid)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(rgAgain.ReservablePorts)).To(Equal(""))
 			})
 
 			Context("when router group doesn't exist", func() {

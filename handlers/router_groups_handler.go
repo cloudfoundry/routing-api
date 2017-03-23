@@ -80,7 +80,9 @@ func (h *RouterGroupsHandler) UpdateRouterGroup(w http.ResponseWriter, req *http
 	bodyDecoder := json.NewDecoder(req.Body)
 	var updatedGroup models.RouterGroup
 	err = bodyDecoder.Decode(&updatedGroup)
+
 	if err != nil {
+
 		handleProcessRequestError(w, err, log)
 		return
 	}
@@ -97,15 +99,18 @@ func (h *RouterGroupsHandler) UpdateRouterGroup(w http.ResponseWriter, req *http
 		return
 	}
 
-	if updatedGroup.ReservablePorts != "" && rg.ReservablePorts != updatedGroup.ReservablePorts {
+	if rg.ReservablePorts != updatedGroup.ReservablePorts {
 		rg.ReservablePorts = updatedGroup.ReservablePorts
+
 		err = rg.Validate()
+
 		if err != nil {
 			handleProcessRequestError(w, err, log)
 			return
 		}
 
 		err = h.db.SaveRouterGroup(rg)
+
 		if err != nil {
 			handleDBCommunicationError(w, err, log)
 			return

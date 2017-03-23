@@ -111,8 +111,9 @@ var _ = Describe("Models", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				rg = RouterGroup{
-					Name: "router-group-1",
-					Type: "foo",
+					Name:            "router-group-1",
+					Type:            "foo",
+					ReservablePorts: "",
 				}
 				err = rg.Validate()
 				Expect(err).ToNot(HaveOccurred())

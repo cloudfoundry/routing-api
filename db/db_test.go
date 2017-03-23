@@ -866,6 +866,22 @@ var _ = Describe("DB", func() {
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("Name cannot be updated"))
 				})
+
+				It("allows reservable ports to be empty", func() {
+					routerGroup.ReservablePorts = ""
+					err := etcd.SaveRouterGroup(routerGroup)
+
+					node, err := etcdClient.Get(db.ROUTER_GROUP_BASE_KEY + "/" + guid)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(node.TTL).To(Equal(uint64(0)))
+					expected := `{
+							"name": "router-group-1",
+							"type": "tcp",
+							"guid": "` + guid + `",
+							"reservable_ports": ""
+						}`
+					Expect(node.Value).To(MatchJSON(expected))
+				})
 			})
 		})
 	})
