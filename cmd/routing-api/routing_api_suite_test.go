@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -34,6 +35,7 @@ var (
 	routingAPIAddress      string
 	routingAPIArgs         testrunner.Args
 	routingAPIArgsNoSQL    testrunner.Args
+	routingAPIArgsOnlySQL  testrunner.Args
 	routingAPIPort         uint16
 	routingAPIIP           string
 	routingAPISystemDomain string
@@ -105,14 +107,21 @@ var _ = BeforeEach(func() {
 	routingAPIArgs = testrunner.Args{
 		Port:       routingAPIPort,
 		IP:         routingAPIIP,
-		ConfigPath: createConfig(true),
+		ConfigPath: createConfig(true, true),
 		DevMode:    true,
 	}
 
 	routingAPIArgsNoSQL = testrunner.Args{
 		Port:       routingAPIPort,
 		IP:         routingAPIIP,
-		ConfigPath: createConfig(false),
+		ConfigPath: createConfig(false, true),
+		DevMode:    true,
+	}
+
+	routingAPIArgsOnlySQL = testrunner.Args{
+		Port:       routingAPIPort,
+		IP:         routingAPIIP,
+		ConfigPath: createConfig(true, false),
 		DevMode:    true,
 	}
 })
@@ -195,7 +204,7 @@ type customConfig struct {
 	ConsulUrl string
 }
 
-func createConfig(useSQL bool) string {
+func createConfig(useSQL bool, useETCD bool) string {
 	caCertsPath, err := filepath.Abs(filepath.Join("..", "..", "fixtures", "uaa-certs", "uaa-ca.pem"))
 	Expect(err).NotTo(HaveOccurred())
 
@@ -209,16 +218,22 @@ func createConfig(useSQL bool) string {
 	}
 
 	var templatePath string
-	if useSQL {
+	if useSQL && useETCD {
 		templatePath, err = filepath.Abs(filepath.Join("..", "..", "example_config", "example_template_sql.yml"))
-	} else {
+	} else if useSQL {
+		templatePath, err = filepath.Abs(filepath.Join("..", "..", "example_config", "example_template_sql_only.yml"))
+	} else if useETCD {
 		templatePath, err = filepath.Abs(filepath.Join("..", "..", "example_config", "example_template.yml"))
+	} else {
+		err = errors.New("Invalid database selection")
 	}
 	Expect(err).NotTo(HaveOccurred())
 
 	var configFilePath string
-	if useSQL {
+	if useSQL && useETCD {
 		configFilePath = fmt.Sprintf("/tmp/example_sql_%d.yml", GinkgoParallelNode())
+	} else if useSQL {
+		configFilePath = fmt.Sprintf("/tmp/example_sql_only_%d.yml", GinkgoParallelNode())
 	} else {
 		configFilePath = fmt.Sprintf("/tmp/example_%d.yml", GinkgoParallelNode())
 	}
