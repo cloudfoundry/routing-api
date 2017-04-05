@@ -28,6 +28,7 @@ type Client interface {
 	Routes() ([]models.Route, error)
 	DeleteRoutes([]models.Route) error
 	RouterGroups() ([]models.RouterGroup, error)
+	RouterGroupWithName(string) (models.RouterGroup, error)
 	UpdateRouterGroup(models.RouterGroup) error
 	UpsertTcpRouteMappings([]models.TcpRouteMapping) error
 	DeleteTcpRouteMappings([]models.TcpRouteMapping) error
@@ -105,6 +106,15 @@ func (c *client) RouterGroups() ([]models.RouterGroup, error) {
 	var routerGroups []models.RouterGroup
 	err := c.doRequest(ListRouterGroups, nil, nil, nil, &routerGroups)
 	return routerGroups, err
+}
+
+func (c *client) RouterGroupWithName(name string) (models.RouterGroup, error) {
+	var routerGroups []models.RouterGroup
+	err := c.doRequest(ListRouterGroups, nil, url.Values{"name": []string{name}}, nil, &routerGroups)
+	if err != nil {
+		return models.RouterGroup{}, err
+	}
+	return routerGroups[0], err
 }
 
 func (c *client) DeleteRoutes(routes []models.Route) error {

@@ -165,6 +165,20 @@ func (s *SqlDB) ReadRouterGroup(guid string) (models.RouterGroup, error) {
 	return routerGroup, err
 }
 
+func (s *SqlDB) ReadRouterGroupByName(name string) (models.RouterGroup, error) {
+	routerGroupDB := models.RouterGroupDB{}
+	routerGroup := models.RouterGroup{}
+	err := s.Client.Where("name = ?", name).First(&routerGroupDB)
+	if err == nil {
+		routerGroup = routerGroupDB.ToRouterGroup()
+	}
+
+	if recordNotFound(err) {
+		err = nil
+	}
+	return routerGroup, err
+}
+
 func (s *SqlDB) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	existingRouterGroup, err := s.ReadRouterGroup(routerGroup.Guid)
 	if err != nil {

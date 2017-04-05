@@ -28,6 +28,7 @@ type DB interface {
 
 	ReadRouterGroups() (models.RouterGroups, error)
 	ReadRouterGroup(guid string) (models.RouterGroup, error)
+	ReadRouterGroupByName(name string) (models.RouterGroup, error)
 	SaveRouterGroup(routerGroup models.RouterGroup) error
 
 	CancelWatches()
@@ -345,6 +346,10 @@ func (e *EtcdDB) ReadRouterGroup(guid string) (models.RouterGroup, error) {
 	err = json.Unmarshal([]byte(response.Node.Value), &result)
 
 	return result, err
+}
+
+func (e *EtcdDB) ReadRouterGroupByName(name string) (models.RouterGroup, error) {
+	return models.RouterGroup{}, errors.New("Database misconfigured with etcd, should be sql")
 }
 
 func (e *EtcdDB) ReadRouterGroups() (models.RouterGroups, error) {

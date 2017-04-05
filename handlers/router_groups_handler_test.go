@@ -55,12 +55,24 @@ var _ = Describe("RouterGroupsHandler", func() {
 				Type:            DefaultRouterGroupType,
 				ReservablePorts: "1024-65535",
 			},
+			{
+				Guid: "some-guid",
+				Name: "http-group",
+				Type: "http",
+			},
 		}
 		fakeDb.ReadRouterGroupsReturns(fakeRouterGroups, nil)
+		fakeDb.ReadRouterGroupByNameStub = func(name string) (models.RouterGroup, error) {
+			if name == "http-group" {
+				return fakeRouterGroups[1], nil
+			}
+			return models.RouterGroup{}, nil
+		}
+
 	})
 
 	Describe("ListRouterGroups", func() {
-		It("responds with 200 OK and returns default router group details", func() {
+		It("responds with 200 OK and returns details for all the router groups", func() {
 			var err error
 			request, err = http.NewRequest("GET", routing_api.ListRouterGroups, nil)
 			Expect(err).NotTo(HaveOccurred())
@@ -73,7 +85,50 @@ var _ = Describe("RouterGroupsHandler", func() {
 				"name": "default-tcp",
 				"type": "tcp",
 				"reservable_ports": "1024-65535"
+			},
+			{
+				"guid": "some-guid",
+				"name": "http-group",
+				"type": "http",
+				"reservable_ports": ""
 			}]`))
+		})
+
+		Context("when router name is passed in as a query param", func() {
+
+			It("should return router group for that name", func() {
+				request = handlers.NewTestRequest("")
+				requestURL, err := url.Parse("http://foobar.com/routing/v1/router_groups?name=http-group")
+				request.URL = requestURL
+				Expect(err).NotTo(HaveOccurred())
+
+				routerGroupHandler.ListRouterGroups(responseRecorder, request)
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				payload := responseRecorder.Body.String()
+				Expect(payload).To(MatchJSON(`[
+				{
+					"guid": "some-guid",
+					"name": "http-group",
+					"type": "http",
+					"reservable_ports": ""
+				}]`))
+			})
+
+			It("should return 404 if that router group does not exist", func() {
+				request = handlers.NewTestRequest("")
+				requestURL, err := url.Parse("http://foobar.com/routing/v1/router_groups?name=does-not-exist")
+				request.URL = requestURL
+				Expect(err).NotTo(HaveOccurred())
+
+				routerGroupHandler.ListRouterGroups(responseRecorder, request)
+				Expect(responseRecorder.Code).To(Equal(http.StatusNotFound))
+
+				payload := responseRecorder.Body.String()
+				Expect(payload).To(MatchJSON(`{
+				  "name": "ResourceNotFoundError",
+					"message": "Router Group 'does-not-exist' not found"
+				}`))
+			})
 		})
 
 		It("checks for routing.router_groups.read scope", func() {

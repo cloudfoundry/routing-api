@@ -139,6 +139,56 @@ var _ = Describe("SqlDB", func() {
 		})
 	}
 
+	ReadRouterGroupByName := func() {
+		Describe("ReadRouterGroupByName", func() {
+			Context("When the router group exists", func() {
+				BeforeEach(func() {
+					rg := models.RouterGroupDB{
+						Model:           models.Model{Guid: newUuid()},
+						Name:            "other-rg",
+						Type:            "tcp",
+						ReservablePorts: "120",
+					}
+					_, err := sqlDB.Client.Create(&rg)
+					Expect(err).ToNot(HaveOccurred())
+
+					rg = models.RouterGroupDB{
+						Model:           models.Model{Guid: newUuid()},
+						Name:            "pineapple",
+						Type:            "http",
+						ReservablePorts: "",
+					}
+					_, err = sqlDB.Client.Create(&rg)
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				It("returns the router group with that name", func() {
+					routerGroup, err := sqlDB.ReadRouterGroupByName("pineapple")
+					Expect(err).ToNot(HaveOccurred())
+					Expect(routerGroup.Name).To(Equal("pineapple"))
+				})
+			})
+
+			Context("when the router group doesn't exist", func() {
+				BeforeEach(func() {
+					rg := models.RouterGroupDB{
+						Model:           models.Model{Guid: newUuid()},
+						Name:            "other-rg",
+						Type:            "tcp",
+						ReservablePorts: "120",
+					}
+					_, err := sqlDB.Client.Create(&rg)
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				It("returns an empty struct", func() {
+					routerGroup, err := sqlDB.ReadRouterGroupByName("pineapple")
+					Expect(err).ToNot(HaveOccurred())
+					Expect(routerGroup).To(Equal(models.RouterGroup{}))
+				})
+			})
+		})
+	}
 	ReadRouterGroup := func() {
 		Describe("ReadRouterGroup", func() {
 			var (
@@ -1228,6 +1278,7 @@ var _ = Describe("SqlDB", func() {
 		ReadTcpRouteMappings()
 		SaveTcpRouteMapping()
 		ReadRouterGroup()
+		ReadRouterGroupByName()
 		ReadRouterGroups()
 		SaveRouterGroup()
 		Connection()
@@ -1261,6 +1312,7 @@ var _ = Describe("SqlDB", func() {
 		ReadTcpRouteMappings()
 		SaveTcpRouteMapping()
 		ReadRouterGroup()
+		ReadRouterGroupByName()
 		ReadRouterGroups()
 		SaveRouterGroup()
 		Connection()

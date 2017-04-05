@@ -43,7 +43,21 @@ func (h *RouterGroupsHandler) ListRouterGroups(w http.ResponseWriter, req *http.
 		return
 	}
 
-	routerGroups, err := h.db.ReadRouterGroups()
+	var routerGroups []models.RouterGroup
+
+	routerGroupName := req.URL.Query().Get("name")
+	if routerGroupName != "" {
+		var rg models.RouterGroup
+		rg, err = h.db.ReadRouterGroupByName(routerGroupName)
+		if rg == (models.RouterGroup{}) {
+			handleNotFoundError(w, fmt.Errorf("Router Group '%s' not found", routerGroupName), log)
+			return
+		}
+		routerGroups = []models.RouterGroup{rg}
+	} else {
+		routerGroups, err = h.db.ReadRouterGroups()
+	}
+
 	if err != nil {
 		handleDBCommunicationError(w, err, log)
 		return
