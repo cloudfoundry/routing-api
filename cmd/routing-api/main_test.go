@@ -19,14 +19,14 @@ import (
 	"github.com/tedsuo/ifrit/ginkgomon"
 )
 
-var session *Session
-
 const (
 	TOKEN_KEY_ENDPOINT     = "/token_key"
 	DefaultRouterGroupName = "default-tcp"
 )
 
 var _ = Describe("Main", func() {
+	var session *Session
+
 	AfterEach(func() {
 		if session != nil {
 			session.Kill()

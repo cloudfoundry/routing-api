@@ -37,6 +37,11 @@ var _ = Describe("Config", func() {
 					Expect(cfg.ConsulCluster.Servers).To(Equal("http://localhost:5678"))
 					Expect(cfg.ConsulCluster.LockTTL).To(Equal(10 * time.Second))
 					Expect(cfg.ConsulCluster.RetryInterval).To(Equal(5 * time.Second))
+					Expect(cfg.SkipConsulLock).To(BeTrue())
+					Expect(cfg.Locket.LocketAddress).To(Equal("http://localhost:5678"))
+					Expect(cfg.Locket.LocketCACertFile).To(Equal("some-locket-ca-cert"))
+					Expect(cfg.Locket.LocketClientCertFile).To(Equal("some-locket-client-cert"))
+					Expect(cfg.Locket.LocketClientKeyFile).To(Equal("some-locket-client-key"))
 				})
 
 				Context("when there is no token endpoint specified", func() {

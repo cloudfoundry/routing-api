@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -13,7 +15,10 @@ import (
 	"strings"
 	"text/template"
 
+	"google.golang.org/grpc/grpclog"
+
 	"code.cloudfoundry.org/consuladapter/consulrunner"
+	"code.cloudfoundry.org/gorouter/config"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"github.com/jinzhu/gorm"
@@ -31,8 +36,10 @@ var (
 	etcdUrl  string
 
 	client                 routing_api.Client
+	locketBinPath          string
 	routingAPIBinPath      string
 	routingAPIAddress      string
+	routingAPIConfig       config.Config
 	routingAPIArgs         testrunner.Args
 	routingAPIArgsNoSQL    testrunner.Args
 	routingAPIArgsOnlySQL  testrunner.Args
@@ -61,11 +68,20 @@ var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		routingAPIBin, err := gexec.Build("code.cloudfoundry.org/routing-api/cmd/routing-api", "-race")
 		Expect(err).NotTo(HaveOccurred())
-		return []byte(routingAPIBin)
+
+		locketPath, err := gexec.Build("code.cloudfoundry.org/locket/cmd/locket", "-race")
+		Expect(err).NotTo(HaveOccurred())
+
+		return []byte(strings.Join([]string{routingAPIBin, locketPath}, ","))
 	},
-	func(routingAPIBin []byte) {
+	func(binPaths []byte) {
+		grpclog.SetLogger(log.New(ioutil.Discard, "", 0))
+
 		var err error
-		routingAPIBinPath = string(routingAPIBin)
+		path := string(binPaths)
+		routingAPIBinPath = strings.Split(path, ",")[0]
+		locketBinPath = strings.Split(path, ",")[1]
+
 		SetDefaultEventuallyTimeout(15 * time.Second)
 		etcdPort = 4001 + GinkgoParallelNode()
 
@@ -159,7 +175,11 @@ func setupOauthServer() {
 }
 
 func setupConsul() {
-	consulRunner = consulrunner.NewClusterRunner(9001+GinkgoParallelNode()*consulrunner.PortOffsetLength, 1, "http")
+	consulRunner = consulrunner.NewClusterRunner(consulrunner.ClusterRunnerConfig{
+		StartingPort: 9001 + GinkgoParallelNode()*consulrunner.PortOffsetLength,
+		NumNodes:     1,
+		Scheme:       "http",
+	})
 	consulRunner.Start()
 	consulRunner.WaitUntilReady()
 }
@@ -241,7 +261,6 @@ func createConfig(useSQL bool, useETCD bool) string {
 }
 
 func writeConfigFile(templatePath, configFilePath string, actualConfig customConfig) string {
-
 	tmpl, err := template.ParseFiles(templatePath)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -250,8 +269,8 @@ func writeConfigFile(templatePath, configFilePath string, actualConfig customCon
 
 	err = tmpl.Execute(configFile, actualConfig)
 	defer func() {
-		err := configFile.Close()
-		Expect(err).ToNot(HaveOccurred())
+		closeErr := configFile.Close()
+		Expect(closeErr).ToNot(HaveOccurred())
 	}()
 	Expect(err).NotTo(HaveOccurred())
 

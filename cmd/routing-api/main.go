@@ -14,6 +14,7 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerflags"
 	"code.cloudfoundry.org/locket"
+	"code.cloudfoundry.org/locket/lock"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
@@ -35,6 +36,8 @@ import (
 	"github.com/tedsuo/ifrit/sigmon"
 
 	"github.com/tedsuo/rata"
+
+	locketmodels "code.cloudfoundry.org/locket/models"
 )
 
 const (
@@ -117,14 +120,53 @@ func main() {
 	etcdDone := make(chan struct{})
 	releaseLock := make(chan os.Signal)
 	lockErrChan := make(chan error)
-	lockMaintainer := initializeLockMaintainer(logger, cfg.ConsulCluster.Servers, sessionName,
-		cfg.ConsulCluster.LockTTL, cfg.ConsulCluster.RetryInterval, clock)
-	lockAcquirer := initializeLockAcquirer(lockMaintainer, releaseLock, lockErrChan)
-	lockReleaser := initializeLockReleaser(releaseLock, lockErrChan, cfg.ConsulCluster.RetryInterval)
 	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
 	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker, logger.Session("metrics"))
 	migrationProcess := runMigration(cfg, database, &cfg.Etcd, etcdDone, logger.Session("migration"))
 	routerGroupSeeder := seedRouterGroups(cfg, database, logger.Session("seeding"))
+
+	locks := grouper.Members{}
+
+	if !cfg.SkipConsulLock {
+		lockMaintainer := initializeLockMaintainer(logger, cfg.ConsulCluster.Servers, sessionName,
+			cfg.ConsulCluster.LockTTL, cfg.ConsulCluster.RetryInterval, clock)
+		locks = append(locks, grouper.Member{Name: "lock-maintainer", Runner: lockMaintainer})
+	}
+
+	var locketClient locketmodels.LocketClient
+	if cfg.Locket.LocketAddress != "" {
+		locketClient, err = locket.NewClient(logger, cfg.Locket)
+		if err != nil {
+			logger.Fatal("failed-to-create-locket-client", err)
+		}
+		guid, err := uuid.NewV4()
+		if err != nil {
+			logger.Fatal("failed-to-generate-guid", err)
+		}
+
+		lockIdentifier := &locketmodels.Resource{
+			Key:   routingApiLockPath,
+			Owner: guid.String(),
+			Type:  locketmodels.LockType,
+		}
+
+		locks = append(locks, grouper.Member{Name: "sql-lock", Runner: lock.NewLockRunner(
+			logger,
+			locketClient,
+			lockIdentifier,
+			locket.DefaultSessionTTLInSeconds,
+			clock,
+			locket.SQLRetryInterval,
+		)})
+	}
+
+	if len(locks) == 0 {
+		logger.Fatal("no-locks-configured", errors.New("Lock configuration must be provided"))
+	}
+
+	lockGroup := grouper.NewOrdered(os.Interrupt, locks)
+	lockAcquirer := initializeLockAcquirer(lockGroup, releaseLock, lockErrChan)
+	lockReleaser := initializeLockReleaser(releaseLock, lockErrChan, cfg.ConsulCluster.RetryInterval)
 
 	members := grouper.Members{
 		grouper.Member{Name: "migration", Runner: migrationProcess},
