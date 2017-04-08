@@ -53,9 +53,15 @@ List Router Groups
 #### Request Headers
   A bearer token for an OAuth client with `routing.router_groups.read` scope is required.
 
+#### Request Parameters
+
+| Parameter       | Type   | Description |
+|-----------------|--------|-------------|
+| `name`          | string | Name of the router group |
+
 #### Example request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/router_groups
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/router_groups?name=default-tcp
 ```
 
 ### Response
