@@ -175,8 +175,9 @@ func setupOauthServer() {
 }
 
 func setupConsul() {
+
 	consulRunner = consulrunner.NewClusterRunner(consulrunner.ClusterRunnerConfig{
-		StartingPort: 9001 + GinkgoParallelNode()*consulrunner.PortOffsetLength,
+		StartingPort: testPort() + GinkgoParallelNode()*consulrunner.PortOffsetLength,
 		NumNodes:     1,
 		Scheme:       "http",
 	})

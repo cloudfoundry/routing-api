@@ -4,7 +4,7 @@ package fake_routing_api
 import (
 	"sync"
 
-	routing_api "code.cloudfoundry.org/routing-api"
+	"code.cloudfoundry.org/routing-api"
 )
 
 type FakeTcpEventSource struct {
@@ -15,36 +15,23 @@ type FakeTcpEventSource struct {
 		result1 routing_api.TcpEvent
 		result2 error
 	}
-	nextReturnsOnCall map[int]struct {
-		result1 routing_api.TcpEvent
-		result2 error
-	}
 	CloseStub        func() error
 	closeMutex       sync.RWMutex
 	closeArgsForCall []struct{}
 	closeReturns     struct {
 		result1 error
 	}
-	closeReturnsOnCall map[int]struct {
-		result1 error
-	}
-	invocations      map[string][][]interface{}
-	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeTcpEventSource) Next() (routing_api.TcpEvent, error) {
 	fake.nextMutex.Lock()
-	ret, specificReturn := fake.nextReturnsOnCall[len(fake.nextArgsForCall)]
 	fake.nextArgsForCall = append(fake.nextArgsForCall, struct{}{})
-	fake.recordInvocation("Next", []interface{}{})
 	fake.nextMutex.Unlock()
 	if fake.NextStub != nil {
 		return fake.NextStub()
+	} else {
+		return fake.nextReturns.result1, fake.nextReturns.result2
 	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fake.nextReturns.result1, fake.nextReturns.result2
 }
 
 func (fake *FakeTcpEventSource) NextCallCount() int {
@@ -61,33 +48,15 @@ func (fake *FakeTcpEventSource) NextReturns(result1 routing_api.TcpEvent, result
 	}{result1, result2}
 }
 
-func (fake *FakeTcpEventSource) NextReturnsOnCall(i int, result1 routing_api.TcpEvent, result2 error) {
-	fake.NextStub = nil
-	if fake.nextReturnsOnCall == nil {
-		fake.nextReturnsOnCall = make(map[int]struct {
-			result1 routing_api.TcpEvent
-			result2 error
-		})
-	}
-	fake.nextReturnsOnCall[i] = struct {
-		result1 routing_api.TcpEvent
-		result2 error
-	}{result1, result2}
-}
-
 func (fake *FakeTcpEventSource) Close() error {
 	fake.closeMutex.Lock()
-	ret, specificReturn := fake.closeReturnsOnCall[len(fake.closeArgsForCall)]
 	fake.closeArgsForCall = append(fake.closeArgsForCall, struct{}{})
-	fake.recordInvocation("Close", []interface{}{})
 	fake.closeMutex.Unlock()
 	if fake.CloseStub != nil {
 		return fake.CloseStub()
+	} else {
+		return fake.closeReturns.result1
 	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.closeReturns.result1
 }
 
 func (fake *FakeTcpEventSource) CloseCallCount() int {
@@ -101,40 +70,6 @@ func (fake *FakeTcpEventSource) CloseReturns(result1 error) {
 	fake.closeReturns = struct {
 		result1 error
 	}{result1}
-}
-
-func (fake *FakeTcpEventSource) CloseReturnsOnCall(i int, result1 error) {
-	fake.CloseStub = nil
-	if fake.closeReturnsOnCall == nil {
-		fake.closeReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.closeReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeTcpEventSource) Invocations() map[string][][]interface{} {
-	fake.invocationsMutex.RLock()
-	defer fake.invocationsMutex.RUnlock()
-	fake.nextMutex.RLock()
-	defer fake.nextMutex.RUnlock()
-	fake.closeMutex.RLock()
-	defer fake.closeMutex.RUnlock()
-	return fake.invocations
-}
-
-func (fake *FakeTcpEventSource) recordInvocation(key string, args []interface{}) {
-	fake.invocationsMutex.Lock()
-	defer fake.invocationsMutex.Unlock()
-	if fake.invocations == nil {
-		fake.invocations = map[string][][]interface{}{}
-	}
-	if fake.invocations[key] == nil {
-		fake.invocations[key] = [][]interface{}{}
-	}
-	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
 var _ routing_api.TcpEventSource = new(FakeTcpEventSource)

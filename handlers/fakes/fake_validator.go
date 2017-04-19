@@ -45,22 +45,14 @@ type FakeRouteValidator struct {
 	validateDeleteTcpRouteMappingReturns struct {
 		result1 *routing_api.Error
 	}
-	invocations      map[string][][]interface{}
-	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeRouteValidator) ValidateCreate(routes []models.Route, maxTTL int) *routing_api.Error {
-	var routesCopy []models.Route
-	if routes != nil {
-		routesCopy = make([]models.Route, len(routes))
-		copy(routesCopy, routes)
-	}
 	fake.validateCreateMutex.Lock()
 	fake.validateCreateArgsForCall = append(fake.validateCreateArgsForCall, struct {
 		routes []models.Route
 		maxTTL int
-	}{routesCopy, maxTTL})
-	fake.recordInvocation("ValidateCreate", []interface{}{routesCopy, maxTTL})
+	}{routes, maxTTL})
 	fake.validateCreateMutex.Unlock()
 	if fake.ValidateCreateStub != nil {
 		return fake.ValidateCreateStub(routes, maxTTL)
@@ -89,16 +81,10 @@ func (fake *FakeRouteValidator) ValidateCreateReturns(result1 *routing_api.Error
 }
 
 func (fake *FakeRouteValidator) ValidateDelete(routes []models.Route) *routing_api.Error {
-	var routesCopy []models.Route
-	if routes != nil {
-		routesCopy = make([]models.Route, len(routes))
-		copy(routesCopy, routes)
-	}
 	fake.validateDeleteMutex.Lock()
 	fake.validateDeleteArgsForCall = append(fake.validateDeleteArgsForCall, struct {
 		routes []models.Route
-	}{routesCopy})
-	fake.recordInvocation("ValidateDelete", []interface{}{routesCopy})
+	}{routes})
 	fake.validateDeleteMutex.Unlock()
 	if fake.ValidateDeleteStub != nil {
 		return fake.ValidateDeleteStub(routes)
@@ -127,18 +113,12 @@ func (fake *FakeRouteValidator) ValidateDeleteReturns(result1 *routing_api.Error
 }
 
 func (fake *FakeRouteValidator) ValidateCreateTcpRouteMapping(tcpRouteMappings []models.TcpRouteMapping, routerGroups models.RouterGroups, maxTTL int) *routing_api.Error {
-	var tcpRouteMappingsCopy []models.TcpRouteMapping
-	if tcpRouteMappings != nil {
-		tcpRouteMappingsCopy = make([]models.TcpRouteMapping, len(tcpRouteMappings))
-		copy(tcpRouteMappingsCopy, tcpRouteMappings)
-	}
 	fake.validateCreateTcpRouteMappingMutex.Lock()
 	fake.validateCreateTcpRouteMappingArgsForCall = append(fake.validateCreateTcpRouteMappingArgsForCall, struct {
 		tcpRouteMappings []models.TcpRouteMapping
 		routerGroups     models.RouterGroups
 		maxTTL           int
-	}{tcpRouteMappingsCopy, routerGroups, maxTTL})
-	fake.recordInvocation("ValidateCreateTcpRouteMapping", []interface{}{tcpRouteMappingsCopy, routerGroups, maxTTL})
+	}{tcpRouteMappings, routerGroups, maxTTL})
 	fake.validateCreateTcpRouteMappingMutex.Unlock()
 	if fake.ValidateCreateTcpRouteMappingStub != nil {
 		return fake.ValidateCreateTcpRouteMappingStub(tcpRouteMappings, routerGroups, maxTTL)
@@ -167,16 +147,10 @@ func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappingReturns(result1 *ro
 }
 
 func (fake *FakeRouteValidator) ValidateDeleteTcpRouteMapping(tcpRouteMappings []models.TcpRouteMapping) *routing_api.Error {
-	var tcpRouteMappingsCopy []models.TcpRouteMapping
-	if tcpRouteMappings != nil {
-		tcpRouteMappingsCopy = make([]models.TcpRouteMapping, len(tcpRouteMappings))
-		copy(tcpRouteMappingsCopy, tcpRouteMappings)
-	}
 	fake.validateDeleteTcpRouteMappingMutex.Lock()
 	fake.validateDeleteTcpRouteMappingArgsForCall = append(fake.validateDeleteTcpRouteMappingArgsForCall, struct {
 		tcpRouteMappings []models.TcpRouteMapping
-	}{tcpRouteMappingsCopy})
-	fake.recordInvocation("ValidateDeleteTcpRouteMapping", []interface{}{tcpRouteMappingsCopy})
+	}{tcpRouteMappings})
 	fake.validateDeleteTcpRouteMappingMutex.Unlock()
 	if fake.ValidateDeleteTcpRouteMappingStub != nil {
 		return fake.ValidateDeleteTcpRouteMappingStub(tcpRouteMappings)
@@ -202,32 +176,6 @@ func (fake *FakeRouteValidator) ValidateDeleteTcpRouteMappingReturns(result1 *ro
 	fake.validateDeleteTcpRouteMappingReturns = struct {
 		result1 *routing_api.Error
 	}{result1}
-}
-
-func (fake *FakeRouteValidator) Invocations() map[string][][]interface{} {
-	fake.invocationsMutex.RLock()
-	defer fake.invocationsMutex.RUnlock()
-	fake.validateCreateMutex.RLock()
-	defer fake.validateCreateMutex.RUnlock()
-	fake.validateDeleteMutex.RLock()
-	defer fake.validateDeleteMutex.RUnlock()
-	fake.validateCreateTcpRouteMappingMutex.RLock()
-	defer fake.validateCreateTcpRouteMappingMutex.RUnlock()
-	fake.validateDeleteTcpRouteMappingMutex.RLock()
-	defer fake.validateDeleteTcpRouteMappingMutex.RUnlock()
-	return fake.invocations
-}
-
-func (fake *FakeRouteValidator) recordInvocation(key string, args []interface{}) {
-	fake.invocationsMutex.Lock()
-	defer fake.invocationsMutex.Unlock()
-	if fake.invocations == nil {
-		fake.invocations = map[string][][]interface{}{}
-	}
-	if fake.invocations[key] == nil {
-		fake.invocations[key] = [][]interface{}{}
-	}
-	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
 var _ handlers.RouteValidator = new(FakeRouteValidator)
