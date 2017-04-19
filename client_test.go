@@ -866,6 +866,64 @@ var _ = Describe("Client", func() {
 		})
 	})
 
+	Context("CreateRouterGroup", func() {
+
+		var (
+			err          error
+			routerGroup1 models.RouterGroup
+			routerGroup2 models.RouterGroup
+		)
+
+		BeforeEach(func() {
+			routerGroup1 = models.RouterGroup{
+				Name:            DefaultRouterGroupName,
+				Type:            DefaultRouterGroupType,
+				ReservablePorts: "4000-5000",
+			}
+			routerGroup2 = models.RouterGroup{
+				Name: DefaultRouterGroupName,
+				Type: "http",
+			}
+		})
+
+		Context("when the server returns a valid response", func() {
+			BeforeEach(func() {
+				data, _ := json.Marshal(routerGroup1)
+
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyBody(data),
+						ghttp.VerifyRequest("POST", ROUTER_GROUPS_API_URL),
+						ghttp.RespondWith(http.StatusCreated, data),
+					),
+				)
+			})
+
+			It("Sends a UpdateRouterGroup request to the server", func() {
+				err = client.CreateRouterGroup(routerGroup1)
+				Expect(server.ReceivedRequests()).Should(HaveLen(1))
+			})
+		})
+
+		Context("When the server returns an error", func() {
+			BeforeEach(func() {
+				data, _ := json.Marshal(routerGroup2)
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyBody(data),
+						ghttp.VerifyRequest("POST", ROUTER_GROUPS_API_URL),
+						ghttp.RespondWith(http.StatusInternalServerError, nil),
+					),
+				)
+			})
+
+			It("returns an error", func() {
+				err = client.CreateRouterGroup(routerGroup2)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
+
 	Context("SubscribeToEvents", func() {
 		var eventSource routing_api.EventSource
 		var err error

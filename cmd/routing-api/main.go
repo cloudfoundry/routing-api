@@ -309,6 +309,7 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 		routing_api.ListRoute:             route(routesHandler.List),
 		routing_api.EventStreamRoute:      route(eventStreamHandler.EventStream),
 		routing_api.ListRouterGroups:      route(routerGroupsHandler.ListRouterGroups),
+		routing_api.CreateRouterGroup:     route(routerGroupsHandler.CreateRouterGroup),
 		routing_api.UpdateRouterGroup:     route(routerGroupsHandler.UpdateRouterGroup),
 		routing_api.UpsertTcpRouteMapping: route(tcpMappingsHandler.Upsert),
 		routing_api.DeleteTcpRouteMapping: route(tcpMappingsHandler.Delete),
