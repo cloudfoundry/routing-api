@@ -82,7 +82,9 @@ func (h *RouterGroupsHandler) UpdateRouterGroup(w http.ResponseWriter, req *http
 	defer log.Debug("completed")
 	defer func() {
 		err := req.Body.Close()
-		log.Error("failed-to-close-request-body", err)
+		if err != nil {
+			log.Error("failed-to-close-request-body", err)
+		}
 	}()
 
 	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
@@ -139,6 +141,59 @@ func (h *RouterGroupsHandler) UpdateRouterGroup(w http.ResponseWriter, req *http
 	addWarningsHeader(w)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(jsonBytes)
+	if err != nil {
+		log.Error("failed-to-write-to-response", err)
+	}
+	w.Header().Set("Content-Length", strconv.Itoa(len(jsonBytes)))
+}
+
+func (h *RouterGroupsHandler) CreateRouterGroup(w http.ResponseWriter, req *http.Request) {
+	log := h.logger.Session("create-router-group")
+	log.Debug("started")
+	defer log.Debug("completed")
+
+	defer func() {
+		err := req.Body.Close()
+		if err != nil {
+			log.Error("failed-to-close-request-body", err)
+		}
+	}()
+
+	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
+	if err != nil {
+		handleUnauthorizedError(w, err, log)
+		return
+	}
+
+	var rg models.RouterGroup
+	bodyDecoder := json.NewDecoder(req.Body)
+	err = bodyDecoder.Decode(&rg)
+	if err != nil {
+		fmt.Println(err.Error())
+		handleProcessRequestError(w, err, log)
+		return
+	}
+
+	err = rg.Validate()
+	if err != nil {
+		handleProcessRequestError(w, err, log)
+		return
+	}
+
+	err = h.db.SaveRouterGroup(rg)
+	if err != nil {
+		handleDBCommunicationError(w, err, log)
+		return
+	}
+
+	jsonBytes, err := json.Marshal(rg)
+	if err != nil {
+		log.Error("failed-to-marshal", err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	_, err = w.Write(jsonBytes)
 	if err != nil {
 		log.Error("failed-to-write-to-response", err)
