@@ -899,7 +899,7 @@ var _ = Describe("Client", func() {
 				)
 			})
 
-			It("Sends a UpdateRouterGroup request to the server", func() {
+			It("Sends a CreateRouteGroup request to the server", func() {
 				err = client.CreateRouterGroup(routerGroup1)
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
 			})
