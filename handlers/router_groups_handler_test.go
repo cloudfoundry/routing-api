@@ -795,13 +795,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				Expect(savedGroup.Type).To(Equal(models.RouterGroupType("http")))
 				Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 				payload := responseRecorder.Body.String()
-				Expect(payload).To(MatchJSON(`
-			{
-			"guid": "",
-			"name": "test-group",
-			"type": "http",
-			"reservable_ports":""
-			}`))
+				Expect(payload).To(ContainSubstring(`"name":"test-group","type":"http"`))
 			})
 			It("checks for routing.router_groups.write scope", func() {
 				var err error

@@ -194,7 +194,9 @@ func (h *RouterGroupsHandler) CreateRouterGroup(w http.ResponseWriter, req *http
 		return
 	}
 
-	jsonBytes, err := json.Marshal(rg)
+	rgGroup := make([]models.RouterGroup, 1)
+	rgGroup[0] = rg
+	jsonBytes, err := json.Marshal(rgGroup)
 	if err != nil {
 		log.Error("failed-to-marshal", err)
 	}
