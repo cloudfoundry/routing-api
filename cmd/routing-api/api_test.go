@@ -466,9 +466,8 @@ var _ = Describe("Routes API", func() {
 
 			Context("POST", func() {
 				It("returns new router group", func() {
-					var routerGroup models.RouterGroup
-					var routerGroups models.RouterGroups
 
+					var routerGroups models.RouterGroups
 					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 					Eventually(func() error {
 						var err error
@@ -478,10 +477,10 @@ var _ = Describe("Routes API", func() {
 
 					Expect(len(routerGroups)).To(Equal(1))
 
+					var routerGroup models.RouterGroup
 					routerGroup.ReservablePorts = "6000-8000"
 					routerGroup.Name = "test-group"
 					routerGroup.Type = "tcp"
-					routerGroup.Guid = "blah-blue"
 
 					err := client.CreateRouterGroup(routerGroup)
 					Expect(err).NotTo(HaveOccurred())
