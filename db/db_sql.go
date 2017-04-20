@@ -184,8 +184,8 @@ func (s *SqlDB) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	if err != nil {
 		return err
 	}
-	routerGroupDB := models.NewRouterGroupDB(routerGroup)
 
+	routerGroupDB := models.NewRouterGroupDB(routerGroup)
 	if existingRouterGroup.Guid == routerGroup.Guid {
 		updateRouterGroup(&existingRouterGroup, &routerGroup)
 		routerGroupDB = models.NewRouterGroupDB(existingRouterGroup)
