@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -178,6 +179,18 @@ func (h *RouterGroupsHandler) CreateRouterGroup(w http.ResponseWriter, req *http
 
 	err = rg.Validate()
 	if err != nil {
+		handleProcessRequestError(w, err, log)
+		return
+	}
+
+	existingRouterGroup, err := h.db.ReadRouterGroupByName(rg.Name)
+	if err != nil {
+		handleProcessRequestError(w, err, log)
+		return
+	}
+
+	if existingRouterGroup.Guid != "" {
+		err = errors.New(fmt.Sprintf("Router Group %s already exists", rg.Name))
 		handleProcessRequestError(w, err, log)
 		return
 	}
