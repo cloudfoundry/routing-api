@@ -20,6 +20,10 @@ type FakeKeysAPI struct {
 		result1 *client.Response
 		result2 error
 	}
+	getReturnsOnCall map[int]struct {
+		result1 *client.Response
+		result2 error
+	}
 	SetStub        func(ctx context.Context, key, value string, opts *client.SetOptions) (*client.Response, error)
 	setMutex       sync.RWMutex
 	setArgsForCall []struct {
@@ -29,6 +33,10 @@ type FakeKeysAPI struct {
 		opts  *client.SetOptions
 	}
 	setReturns struct {
+		result1 *client.Response
+		result2 error
+	}
+	setReturnsOnCall map[int]struct {
 		result1 *client.Response
 		result2 error
 	}
@@ -43,6 +51,10 @@ type FakeKeysAPI struct {
 		result1 *client.Response
 		result2 error
 	}
+	deleteReturnsOnCall map[int]struct {
+		result1 *client.Response
+		result2 error
+	}
 	CreateStub        func(ctx context.Context, key, value string) (*client.Response, error)
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
@@ -51,6 +63,10 @@ type FakeKeysAPI struct {
 		value string
 	}
 	createReturns struct {
+		result1 *client.Response
+		result2 error
+	}
+	createReturnsOnCall map[int]struct {
 		result1 *client.Response
 		result2 error
 	}
@@ -66,6 +82,10 @@ type FakeKeysAPI struct {
 		result1 *client.Response
 		result2 error
 	}
+	createInOrderReturnsOnCall map[int]struct {
+		result1 *client.Response
+		result2 error
+	}
 	UpdateStub        func(ctx context.Context, key, value string) (*client.Response, error)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
@@ -74,6 +94,10 @@ type FakeKeysAPI struct {
 		value string
 	}
 	updateReturns struct {
+		result1 *client.Response
+		result2 error
+	}
+	updateReturnsOnCall map[int]struct {
 		result1 *client.Response
 		result2 error
 	}
@@ -86,21 +110,30 @@ type FakeKeysAPI struct {
 	watcherReturns struct {
 		result1 client.Watcher
 	}
+	watcherReturnsOnCall map[int]struct {
+		result1 client.Watcher
+	}
+	invocations      map[string][][]interface{}
+	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeKeysAPI) Get(ctx context.Context, key string, opts *client.GetOptions) (*client.Response, error) {
 	fake.getMutex.Lock()
+	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
 		ctx  context.Context
 		key  string
 		opts *client.GetOptions
 	}{ctx, key, opts})
+	fake.recordInvocation("Get", []interface{}{ctx, key, opts})
 	fake.getMutex.Unlock()
 	if fake.GetStub != nil {
 		return fake.GetStub(ctx, key, opts)
-	} else {
-		return fake.getReturns.result1, fake.getReturns.result2
 	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getReturns.result1, fake.getReturns.result2
 }
 
 func (fake *FakeKeysAPI) GetCallCount() int {
@@ -123,20 +156,38 @@ func (fake *FakeKeysAPI) GetReturns(result1 *client.Response, result2 error) {
 	}{result1, result2}
 }
 
+func (fake *FakeKeysAPI) GetReturnsOnCall(i int, result1 *client.Response, result2 error) {
+	fake.GetStub = nil
+	if fake.getReturnsOnCall == nil {
+		fake.getReturnsOnCall = make(map[int]struct {
+			result1 *client.Response
+			result2 error
+		})
+	}
+	fake.getReturnsOnCall[i] = struct {
+		result1 *client.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeKeysAPI) Set(ctx context.Context, key string, value string, opts *client.SetOptions) (*client.Response, error) {
 	fake.setMutex.Lock()
+	ret, specificReturn := fake.setReturnsOnCall[len(fake.setArgsForCall)]
 	fake.setArgsForCall = append(fake.setArgsForCall, struct {
 		ctx   context.Context
 		key   string
 		value string
 		opts  *client.SetOptions
 	}{ctx, key, value, opts})
+	fake.recordInvocation("Set", []interface{}{ctx, key, value, opts})
 	fake.setMutex.Unlock()
 	if fake.SetStub != nil {
 		return fake.SetStub(ctx, key, value, opts)
-	} else {
-		return fake.setReturns.result1, fake.setReturns.result2
 	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.setReturns.result1, fake.setReturns.result2
 }
 
 func (fake *FakeKeysAPI) SetCallCount() int {
@@ -159,19 +210,37 @@ func (fake *FakeKeysAPI) SetReturns(result1 *client.Response, result2 error) {
 	}{result1, result2}
 }
 
+func (fake *FakeKeysAPI) SetReturnsOnCall(i int, result1 *client.Response, result2 error) {
+	fake.SetStub = nil
+	if fake.setReturnsOnCall == nil {
+		fake.setReturnsOnCall = make(map[int]struct {
+			result1 *client.Response
+			result2 error
+		})
+	}
+	fake.setReturnsOnCall[i] = struct {
+		result1 *client.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeKeysAPI) Delete(ctx context.Context, key string, opts *client.DeleteOptions) (*client.Response, error) {
 	fake.deleteMutex.Lock()
+	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
 		ctx  context.Context
 		key  string
 		opts *client.DeleteOptions
 	}{ctx, key, opts})
+	fake.recordInvocation("Delete", []interface{}{ctx, key, opts})
 	fake.deleteMutex.Unlock()
 	if fake.DeleteStub != nil {
 		return fake.DeleteStub(ctx, key, opts)
-	} else {
-		return fake.deleteReturns.result1, fake.deleteReturns.result2
 	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.deleteReturns.result1, fake.deleteReturns.result2
 }
 
 func (fake *FakeKeysAPI) DeleteCallCount() int {
@@ -194,19 +263,37 @@ func (fake *FakeKeysAPI) DeleteReturns(result1 *client.Response, result2 error) 
 	}{result1, result2}
 }
 
+func (fake *FakeKeysAPI) DeleteReturnsOnCall(i int, result1 *client.Response, result2 error) {
+	fake.DeleteStub = nil
+	if fake.deleteReturnsOnCall == nil {
+		fake.deleteReturnsOnCall = make(map[int]struct {
+			result1 *client.Response
+			result2 error
+		})
+	}
+	fake.deleteReturnsOnCall[i] = struct {
+		result1 *client.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeKeysAPI) Create(ctx context.Context, key string, value string) (*client.Response, error) {
 	fake.createMutex.Lock()
+	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
 		ctx   context.Context
 		key   string
 		value string
 	}{ctx, key, value})
+	fake.recordInvocation("Create", []interface{}{ctx, key, value})
 	fake.createMutex.Unlock()
 	if fake.CreateStub != nil {
 		return fake.CreateStub(ctx, key, value)
-	} else {
-		return fake.createReturns.result1, fake.createReturns.result2
 	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.createReturns.result1, fake.createReturns.result2
 }
 
 func (fake *FakeKeysAPI) CreateCallCount() int {
@@ -229,20 +316,38 @@ func (fake *FakeKeysAPI) CreateReturns(result1 *client.Response, result2 error) 
 	}{result1, result2}
 }
 
+func (fake *FakeKeysAPI) CreateReturnsOnCall(i int, result1 *client.Response, result2 error) {
+	fake.CreateStub = nil
+	if fake.createReturnsOnCall == nil {
+		fake.createReturnsOnCall = make(map[int]struct {
+			result1 *client.Response
+			result2 error
+		})
+	}
+	fake.createReturnsOnCall[i] = struct {
+		result1 *client.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeKeysAPI) CreateInOrder(ctx context.Context, dir string, value string, opts *client.CreateInOrderOptions) (*client.Response, error) {
 	fake.createInOrderMutex.Lock()
+	ret, specificReturn := fake.createInOrderReturnsOnCall[len(fake.createInOrderArgsForCall)]
 	fake.createInOrderArgsForCall = append(fake.createInOrderArgsForCall, struct {
 		ctx   context.Context
 		dir   string
 		value string
 		opts  *client.CreateInOrderOptions
 	}{ctx, dir, value, opts})
+	fake.recordInvocation("CreateInOrder", []interface{}{ctx, dir, value, opts})
 	fake.createInOrderMutex.Unlock()
 	if fake.CreateInOrderStub != nil {
 		return fake.CreateInOrderStub(ctx, dir, value, opts)
-	} else {
-		return fake.createInOrderReturns.result1, fake.createInOrderReturns.result2
 	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.createInOrderReturns.result1, fake.createInOrderReturns.result2
 }
 
 func (fake *FakeKeysAPI) CreateInOrderCallCount() int {
@@ -265,19 +370,37 @@ func (fake *FakeKeysAPI) CreateInOrderReturns(result1 *client.Response, result2 
 	}{result1, result2}
 }
 
+func (fake *FakeKeysAPI) CreateInOrderReturnsOnCall(i int, result1 *client.Response, result2 error) {
+	fake.CreateInOrderStub = nil
+	if fake.createInOrderReturnsOnCall == nil {
+		fake.createInOrderReturnsOnCall = make(map[int]struct {
+			result1 *client.Response
+			result2 error
+		})
+	}
+	fake.createInOrderReturnsOnCall[i] = struct {
+		result1 *client.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeKeysAPI) Update(ctx context.Context, key string, value string) (*client.Response, error) {
 	fake.updateMutex.Lock()
+	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
 		ctx   context.Context
 		key   string
 		value string
 	}{ctx, key, value})
+	fake.recordInvocation("Update", []interface{}{ctx, key, value})
 	fake.updateMutex.Unlock()
 	if fake.UpdateStub != nil {
 		return fake.UpdateStub(ctx, key, value)
-	} else {
-		return fake.updateReturns.result1, fake.updateReturns.result2
 	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.updateReturns.result1, fake.updateReturns.result2
 }
 
 func (fake *FakeKeysAPI) UpdateCallCount() int {
@@ -300,18 +423,36 @@ func (fake *FakeKeysAPI) UpdateReturns(result1 *client.Response, result2 error) 
 	}{result1, result2}
 }
 
+func (fake *FakeKeysAPI) UpdateReturnsOnCall(i int, result1 *client.Response, result2 error) {
+	fake.UpdateStub = nil
+	if fake.updateReturnsOnCall == nil {
+		fake.updateReturnsOnCall = make(map[int]struct {
+			result1 *client.Response
+			result2 error
+		})
+	}
+	fake.updateReturnsOnCall[i] = struct {
+		result1 *client.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeKeysAPI) Watcher(key string, opts *client.WatcherOptions) client.Watcher {
 	fake.watcherMutex.Lock()
+	ret, specificReturn := fake.watcherReturnsOnCall[len(fake.watcherArgsForCall)]
 	fake.watcherArgsForCall = append(fake.watcherArgsForCall, struct {
 		key  string
 		opts *client.WatcherOptions
 	}{key, opts})
+	fake.recordInvocation("Watcher", []interface{}{key, opts})
 	fake.watcherMutex.Unlock()
 	if fake.WatcherStub != nil {
 		return fake.WatcherStub(key, opts)
-	} else {
-		return fake.watcherReturns.result1
 	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.watcherReturns.result1
 }
 
 func (fake *FakeKeysAPI) WatcherCallCount() int {
@@ -331,6 +472,50 @@ func (fake *FakeKeysAPI) WatcherReturns(result1 client.Watcher) {
 	fake.watcherReturns = struct {
 		result1 client.Watcher
 	}{result1}
+}
+
+func (fake *FakeKeysAPI) WatcherReturnsOnCall(i int, result1 client.Watcher) {
+	fake.WatcherStub = nil
+	if fake.watcherReturnsOnCall == nil {
+		fake.watcherReturnsOnCall = make(map[int]struct {
+			result1 client.Watcher
+		})
+	}
+	fake.watcherReturnsOnCall[i] = struct {
+		result1 client.Watcher
+	}{result1}
+}
+
+func (fake *FakeKeysAPI) Invocations() map[string][][]interface{} {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	fake.setMutex.RLock()
+	defer fake.setMutex.RUnlock()
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
+	fake.createMutex.RLock()
+	defer fake.createMutex.RUnlock()
+	fake.createInOrderMutex.RLock()
+	defer fake.createInOrderMutex.RUnlock()
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
+	fake.watcherMutex.RLock()
+	defer fake.watcherMutex.RUnlock()
+	return fake.invocations
+}
+
+func (fake *FakeKeysAPI) recordInvocation(key string, args []interface{}) {
+	fake.invocationsMutex.Lock()
+	defer fake.invocationsMutex.Unlock()
+	if fake.invocations == nil {
+		fake.invocations = map[string][][]interface{}{}
+	}
+	if fake.invocations[key] == nil {
+		fake.invocations[key] = [][]interface{}{}
+	}
+	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
 var _ client.KeysAPI = new(FakeKeysAPI)
