@@ -737,37 +737,6 @@ var _ = Describe("RouterGroupsHandler", func() {
 				})
 			})
 
-			Context("when the db fails to save router group", func() {
-				BeforeEach(func() {
-					fakeDb.ReadRouterGroupByNameReturns(models.RouterGroup{Guid: "blue", Name: "test-group", Type: "http"}, nil)
-				})
-
-				It("returns a DB communication error", func() {
-					var err error
-
-					bodyBytes := `{"name":"test-group","type":"http"}`
-					body := bytes.NewReader([]byte(bodyBytes))
-					request, err := http.NewRequest(
-						"POST",
-						routing_api.CreateRouterGroup,
-						body,
-					)
-
-					Expect(err).NotTo(HaveOccurred())
-
-					routerGroupHandler.CreateRouterGroup(responseRecorder, request)
-
-					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
-					Expect(fakeDb.ReadRouterGroupByNameCallCount()).To(Equal(1))
-					payload := responseRecorder.Body.String()
-					Expect(payload).To(MatchJSON(`{
-					"name": "ProcessRequestError",
-					"message": "Cannot process request: Router Group test-group already exists"
-				}`))
-				})
-			})
-
 			Context("when the request body is invalid", func() {
 				Context("when reservable_ports is set", func() {
 					It("does not save the router group and returns a bad request response", func() {
