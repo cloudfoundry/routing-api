@@ -82,6 +82,17 @@ type FakeClient struct {
 	updateRouterGroupReturnsOnCall map[int]struct {
 		result1 error
 	}
+	CreateRouterGroupStub        func(models.RouterGroup) error
+	createRouterGroupMutex       sync.RWMutex
+	createRouterGroupArgsForCall []struct {
+		arg1 models.RouterGroup
+	}
+	createRouterGroupReturns struct {
+		result1 error
+	}
+	createRouterGroupReturnsOnCall map[int]struct {
+		result1 error
+	}
 	UpsertTcpRouteMappingsStub        func([]models.TcpRouteMapping) error
 	upsertTcpRouteMappingsMutex       sync.RWMutex
 	upsertTcpRouteMappingsArgsForCall []struct {
@@ -482,6 +493,54 @@ func (fake *FakeClient) UpdateRouterGroupReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeClient) CreateRouterGroup(arg1 models.RouterGroup) error {
+	fake.createRouterGroupMutex.Lock()
+	ret, specificReturn := fake.createRouterGroupReturnsOnCall[len(fake.createRouterGroupArgsForCall)]
+	fake.createRouterGroupArgsForCall = append(fake.createRouterGroupArgsForCall, struct {
+		arg1 models.RouterGroup
+	}{arg1})
+	fake.recordInvocation("CreateRouterGroup", []interface{}{arg1})
+	fake.createRouterGroupMutex.Unlock()
+	if fake.CreateRouterGroupStub != nil {
+		return fake.CreateRouterGroupStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.createRouterGroupReturns.result1
+}
+
+func (fake *FakeClient) CreateRouterGroupCallCount() int {
+	fake.createRouterGroupMutex.RLock()
+	defer fake.createRouterGroupMutex.RUnlock()
+	return len(fake.createRouterGroupArgsForCall)
+}
+
+func (fake *FakeClient) CreateRouterGroupArgsForCall(i int) models.RouterGroup {
+	fake.createRouterGroupMutex.RLock()
+	defer fake.createRouterGroupMutex.RUnlock()
+	return fake.createRouterGroupArgsForCall[i].arg1
+}
+
+func (fake *FakeClient) CreateRouterGroupReturns(result1 error) {
+	fake.CreateRouterGroupStub = nil
+	fake.createRouterGroupReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) CreateRouterGroupReturnsOnCall(i int, result1 error) {
+	fake.CreateRouterGroupStub = nil
+	if fake.createRouterGroupReturnsOnCall == nil {
+		fake.createRouterGroupReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.createRouterGroupReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeClient) UpsertTcpRouteMappings(arg1 []models.TcpRouteMapping) error {
 	var arg1Copy []models.TcpRouteMapping
 	if arg1 != nil {
@@ -836,6 +895,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.routerGroupWithNameMutex.RUnlock()
 	fake.updateRouterGroupMutex.RLock()
 	defer fake.updateRouterGroupMutex.RUnlock()
+	fake.createRouterGroupMutex.RLock()
+	defer fake.createRouterGroupMutex.RUnlock()
 	fake.upsertTcpRouteMappingsMutex.RLock()
 	defer fake.upsertTcpRouteMappingsMutex.RUnlock()
 	fake.deleteTcpRouteMappingsMutex.RLock()

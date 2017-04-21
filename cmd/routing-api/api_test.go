@@ -307,6 +307,7 @@ var _ = Describe("Routes API", func() {
 			})
 		})
 	}
+
 	TestTCPRoutes := func() {
 		Context("TCP Routes", func() {
 			var (
@@ -401,7 +402,7 @@ var _ = Describe("Routes API", func() {
 		})
 	}
 
-	TestRouterGroups := func() {
+	TestRouterGroups := func(createRouterGroup func()) {
 		Context("Router Groups", func() {
 			Context("GET (LIST)", func() {
 				It("returns seeded router groups", func() {
@@ -463,7 +464,51 @@ var _ = Describe("Routes API", func() {
 					Expect(routerGroups[0].ReservablePorts).To(Equal(models.ReservablePorts("1024-65535")))
 				})
 			})
+
+			Context("POST", func() {
+				It("returns new router group", func() {
+					createRouterGroup()
+				})
+			})
 		})
+	}
+
+	withCreateRouterGroup := func() {
+		var routerGroup models.RouterGroup
+		var routerGroups models.RouterGroups
+
+		client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
+		Eventually(func() error {
+			var err error
+			routerGroups, err = client.RouterGroups()
+			return err
+		}, "30s", "1s").ShouldNot(HaveOccurred(), "Failed to connect to Routing API server after 30s.")
+
+		Expect(len(routerGroups)).To(Equal(1))
+
+		routerGroup.ReservablePorts = "6000-8000"
+		routerGroup.Name = "test-group"
+		routerGroup.Type = "tcp"
+		routerGroup.Guid = "blah-blue"
+
+		err := client.CreateRouterGroup(routerGroup)
+		Expect(err).NotTo(HaveOccurred())
+
+		routerGroups, err = client.RouterGroups()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(routerGroups)).To(Equal(2))
+		for i, rg := range routerGroups {
+			if rg.Guid == "blah-blue" {
+				Expect(routerGroups[i].ReservablePorts).To(Equal(models.ReservablePorts("6000-8000")))
+				Expect(routerGroups[i].Type).To(Equal(models.RouterGroupType("tcp")))
+				Expect(routerGroups[i].Name).To(Equal("test-group"))
+			}
+		}
+	}
+
+	withoutCreateRouterGroup := func() {
+		// NO OP
+		fmt.Println("not supported for etcd")
 	}
 
 	Describe("API with MySQL", func() {
@@ -478,7 +523,7 @@ var _ = Describe("Routes API", func() {
 			ginkgomon.Kill(routingAPIProcess)
 		})
 
-		TestRouterGroups()
+		TestRouterGroups(withCreateRouterGroup)
 		TestTCPRoutes()
 		TestTCPEvents()
 		TestHTTPRoutes()
@@ -501,6 +546,6 @@ var _ = Describe("Routes API", func() {
 		TestHTTPRoutes()
 		TestTCPRoutes()
 		TestTCPEvents()
-		TestRouterGroups()
+		TestRouterGroups(withoutCreateRouterGroup)
 	})
 })
