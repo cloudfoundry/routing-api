@@ -11,6 +11,7 @@ import (
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
 	uaaclient "code.cloudfoundry.org/uaa-go-client"
+	uuid "github.com/nu7hatch/gouuid"
 	"github.com/tedsuo/rata"
 )
 
@@ -174,6 +175,13 @@ func (h *RouterGroupsHandler) CreateRouterGroup(w http.ResponseWriter, req *http
 		handleProcessRequestError(w, err, log)
 		return
 	}
+
+	guid, err := uuid.NewV4()
+	if err != nil {
+		handleGuidGenerationError(w, err, log)
+		return
+	}
+	rg.Guid = guid.String()
 
 	err = rg.Validate()
 	if err != nil {

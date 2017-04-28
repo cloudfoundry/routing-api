@@ -48,6 +48,15 @@ func handleDBCommunicationError(w http.ResponseWriter, err error, log lager.Logg
 	log.Error("error writing to request", writeErr)
 }
 
+func handleGuidGenerationError(w http.ResponseWriter, err error, log lager.Logger) {
+	log.Error("error", err)
+	retErr := marshalRoutingApiError(routing_api.NewError(routing_api.GuidGenerationError, err.Error()), log)
+
+	w.WriteHeader(http.StatusInternalServerError)
+	_, writeErr := w.Write(retErr)
+	log.Error("error generating guid", writeErr)
+}
+
 func handleUnauthorizedError(w http.ResponseWriter, err error, log lager.Logger) {
 	log.Error("error", err)
 
