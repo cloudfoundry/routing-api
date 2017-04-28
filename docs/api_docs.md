@@ -33,6 +33,7 @@ To obtain an token from UAA, use the `uaac` CLI for UAA.
 
 Routing API Endpoints
 ---------------------
+- [Create Router Groups](#create-router-groups)
 - [List Router Groups](#list-router-groups)
 - [Update Router Group](#update-router-group)
 - [List TCP Routes](#list-tcp-routes)
@@ -44,6 +45,49 @@ Routing API Endpoints
 - [Delete HTTP Routes (Experimental)](#delete-http-routes-experimental)
 - [Subscribe to Events for HTTP Routes (Experimental)](#subscribe-to-events-for-http-routes-experimental)
 
+Create Router Groups
+---------------------
+### Request
+  `POST /routing/v1/router_groups`
+
+#### Request Headers
+  A bearer token for an OAuth client with `routing.router_groups.write` scope is required.
+
+#### Request Body
+  A JSON-encoded object for the modified router group. The `name` and `type` fields must be included, and `reservable_ports` must be included if `type` is tcp.
+
+| Object Field       | Type   | Required? | Description |
+|--------------------|--------|-----------|-------------|
+| `name`             | string | yes       | Name of the router group.
+| `type`             | string | yes       | Type of the router group e.g. `http` or `tcp`.
+| `reservable_ports` | string | yes       | Comma delimited list of reservable port or port ranges. These ports must fall between 1024 and 65535 (inclusive).
+
+#### Example Request
+```sh
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/router_groups -X POST -d '{"name": "my-router-group", "type": "tcp", "reservable_ports":"9000-10000"}'
+```
+### Response
+  Expected Status `201 Created`
+
+#### Response Body
+  A JSON-encoded object for the updated `Router Group`.
+
+| Object Field       | Type   | Description |
+|--------------------|--------|-------------|
+| `guid`             | string | GUID of the router group.
+| `name`             | string | External facing port for the TCP route.
+| `type`             | string | Type of the router group e.g. `tcp`.
+| `reservable_ports` | string | Comma delimited list of reservable port or port ranges.
+
+#### Example Response:
+```
+{
+  "guid": "568c0232-e7c0-47ff-4c8a-bc89b49ade5b",
+  "name": "my-router-group",
+  "reservable_ports":"9000-10000",
+  "type": "tcp"
+}
+```
 
 List Router Groups
 -------------------
