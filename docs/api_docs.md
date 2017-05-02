@@ -12,7 +12,7 @@ To obtain an token from UAA, use the `uaac` CLI for UAA.
    ```
    gem install cf-uaac
    ```
-   
+
 1. Set the UAA target:
 
    ```
@@ -47,6 +47,7 @@ Routing API Endpoints
 
 Create Router Groups
 ---------------------
+**NOTE**: TCP Router Group creation is not yet supported by this endpoint, [coming soon](https://www.pivotaltracker.com/story/show/143735865).
 ### Request
   `POST /routing/v1/router_groups`
 
@@ -234,7 +235,7 @@ As routes have a TTL, clients must register routes periodically to keep them act
   A bearer token for an OAuth client with `routing.routes.write` scope is required.
 
 #### Request Body
-  A JSON-encoded array of `TCP Route` objects for each route to register. 
+  A JSON-encoded array of `TCP Route` objects for each route to register.
 
 | Object Field        | Type            | Required? | Description |
 |---------------------|-----------------|-----------|-------------|
@@ -463,6 +464,3 @@ id: 14
 event: Upsert
 data: {"route":"myapp.com/somepath","port":3001,"ip":"1.2.3.5","ttl":120,"log_guid":"routing_api","modification_tag":{"guid":"abc123","index":1155}}
 ```
-
-
-
