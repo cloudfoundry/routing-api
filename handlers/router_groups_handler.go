@@ -183,7 +183,9 @@ func (h *RouterGroupsHandler) CreateRouterGroup(w http.ResponseWriter, req *http
 	}
 	rg.Guid = guid.String()
 
-	err = rg.Validate()
+	routerGroups, err := h.db.ReadRouterGroups()
+	routerGroups = append(routerGroups, rg)
+	err = routerGroups.Validate()
 	if err != nil {
 		handleProcessRequestError(w, err, log)
 		return

@@ -773,6 +773,23 @@ var _ = Describe("RouterGroupsHandler", func() {
 					Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
 					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
 				})
+
+				Context("when the name is already taken", func() {
+					It("does not save the router group and returns a bad request response", func() {
+						var err error
+						bodyBytes := []byte(`{"name":"http-group","type":"http"}`)
+						body := bytes.NewReader(bodyBytes)
+						request, err := http.NewRequest(
+							"POST",
+							routing_api.CreateRouterGroup,
+							body,
+						)
+						Expect(err).NotTo(HaveOccurred())
+						routerGroupHandler.CreateRouterGroup(responseRecorder, request)
+						Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
+					})
+				})
 			})
 
 			Context("when the request body is valid", func() {
