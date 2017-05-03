@@ -65,7 +65,7 @@ Create Router Groups
 
 #### Example Request
 ```sh
-curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/router_groups -X POST -d '{"name": "my-router-group", "type": "tcp", "reservable_ports":"9000-10000"}'
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/router_groups -X POST -d '{"name": "my-router-group", "type": "http"}'
 ```
 ### Response
   Expected Status `201 Created`
@@ -78,15 +78,15 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 | `guid`             | string | GUID of the router group.
 | `name`             | string | External facing port for the TCP route.
 | `type`             | string | Type of the router group e.g. `tcp`.
-| `reservable_ports` | string | Comma delimited list of reservable port or port ranges.
+| `reservable_ports` | string | Comma delimited list of reservable port or port ranges. (For `type` of `TCP`)
 
 #### Example Response:
 ```
 {
   "guid": "568c0232-e7c0-47ff-4c8a-bc89b49ade5b",
   "name": "my-router-group",
-  "reservable_ports":"9000-10000",
-  "type": "tcp"
+  "type": "http"
+  "reservable_ports": ""
 }
 ```
 
