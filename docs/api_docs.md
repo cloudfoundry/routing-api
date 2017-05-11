@@ -244,6 +244,7 @@ As routes have a TTL, clients must register routes periodically to keep them act
 | `backend_port`      | integer         | yes       | Backend port. Must be greater than 0.
 | `ttl`               | integer         | yes       | Time to live, in seconds. The mapping of backend to route will be pruned after this time. Must be greater than 0 seconds and less than 60 seconds.
 | `modification_tag`  | object          | no        | See [Modification Tags](modification_tags.md).
+| `isolation_segment` | string          | no        | Name of the isolation segment for the route.
 
 #### Example Request
 ```sh
