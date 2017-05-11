@@ -47,7 +47,6 @@ Routing API Endpoints
 
 Create Router Groups
 ---------------------
-**NOTE**: TCP Router Group creation is not yet supported by this endpoint, [coming soon](https://www.pivotaltracker.com/story/show/143735865).
 ### Request
   `POST /routing/v1/router_groups`
 
