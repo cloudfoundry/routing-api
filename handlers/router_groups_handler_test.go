@@ -707,36 +707,6 @@ var _ = Describe("RouterGroupsHandler", func() {
 
 	Describe("CreateRouterGroup", func() {
 		Describe("HTTP Router groups", func() {
-			Context("when the db fails to save router group", func() {
-				BeforeEach(func() {
-					fakeDb.SaveRouterGroupReturns(errors.New("db communication failed"))
-				})
-
-				It("returns a DB communication error", func() {
-					var err error
-
-					bodyBytes := `{"name":"test-group","type":"http"}`
-					body := bytes.NewReader([]byte(bodyBytes))
-					request, err := http.NewRequest(
-						"POST",
-						routing_api.CreateRouterGroup,
-						body,
-					)
-
-					Expect(err).NotTo(HaveOccurred())
-
-					routerGroupHandler.CreateRouterGroup(responseRecorder, request)
-
-					Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
-					Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(1))
-					payload := responseRecorder.Body.String()
-					Expect(payload).To(MatchJSON(`{
-					"name": "DBCommunicationError",
-					"message": "db communication failed"
-				}`))
-				})
-			})
-
 			Context("when the request body is invalid", func() {
 				Context("when reservable_ports is set", func() {
 					It("does not save the router group and returns a bad request response", func() {
@@ -756,22 +726,6 @@ var _ = Describe("RouterGroupsHandler", func() {
 						Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
 						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
 					})
-				})
-
-				It("does not save the router group and returns a bad request response", func() {
-					var err error
-
-					bodyBytes := []byte("invalid json")
-					body := bytes.NewReader(bodyBytes)
-					request, err := http.NewRequest(
-						"POST",
-						routing_api.CreateRouterGroup,
-						body,
-					)
-					Expect(err).NotTo(HaveOccurred())
-					routerGroupHandler.CreateRouterGroup(responseRecorder, request)
-					Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
-					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
 				})
 
 				Context("when the name is already taken", func() {
@@ -832,32 +786,6 @@ var _ = Describe("RouterGroupsHandler", func() {
 					Expect(permission).To(ConsistOf(handlers.RouterGroupsWriteScope))
 				})
 
-				Context("when authorization token is invalid", func() {
-					var (
-						currentCount int64
-					)
-					BeforeEach(func() {
-						currentCount = metrics.GetTokenErrors()
-						fakeClient.DecodeTokenReturns(errors.New("kaboom"))
-					})
-					It("returns Unauthorized error", func() {
-						var err error
-
-						bodyBytes := []byte(`{"name":"test-group","type":"http"}`)
-						body := bytes.NewReader(bodyBytes)
-						request, err = http.NewRequest(
-							"POST",
-							routing_api.CreateRouterGroup,
-							body,
-						)
-						Expect(err).NotTo(HaveOccurred())
-						routerGroupHandler.CreateRouterGroup(responseRecorder, request)
-						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
-						Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
-						Expect(metrics.GetTokenErrors()).To(Equal(currentCount + 1))
-					})
-				})
-
 				Context("when extra fields (i.e. guid) are provided", func() {
 					It("doesn't do anything with the extra fields", func() {
 						var err error
@@ -881,6 +809,208 @@ var _ = Describe("RouterGroupsHandler", func() {
 						Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 						payload := responseRecorder.Body.String()
 						jsonPayload := fmt.Sprintf("\n{\n\"guid\": \"%s\",\n\"name\": \"test-group\",\n\"type\": \"http\",\n\"reservable_ports\":\"\"\n}", savedGroup.Guid)
+						Expect(payload).To(MatchJSON(jsonPayload))
+					})
+				})
+			})
+		})
+
+		Describe("Router Group", func() {
+			Context("when the db fails to save router group", func() {
+				BeforeEach(func() {
+					fakeDb.SaveRouterGroupReturns(errors.New("db communication failed"))
+				})
+
+				It("returns a DB communication error", func() {
+					var err error
+
+					bodyBytes := `{"name":"test-group","type":"tcp","reservable_ports":"1025"}`
+					body := bytes.NewReader([]byte(bodyBytes))
+					request, err := http.NewRequest(
+						"POST",
+						routing_api.CreateRouterGroup,
+						body,
+					)
+
+					Expect(err).NotTo(HaveOccurred())
+					routerGroupHandler.CreateRouterGroup(responseRecorder, request)
+
+					Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+					Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(1))
+					payload := responseRecorder.Body.String()
+					Expect(payload).To(MatchJSON(`{
+					"name": "DBCommunicationError",
+					"message": "db communication failed"
+				}`))
+				})
+			})
+			It("does not save the router group and returns a bad request response", func() {
+				var err error
+
+				bodyBytes := []byte("invalid json")
+				body := bytes.NewReader(bodyBytes)
+				request, err := http.NewRequest(
+					"POST",
+					routing_api.CreateRouterGroup,
+					body,
+				)
+				Expect(err).NotTo(HaveOccurred())
+				routerGroupHandler.CreateRouterGroup(responseRecorder, request)
+				Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
+				Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+			})
+
+			It("checks for routing.router_groups.write scope", func() {
+				var err error
+				bodyBytes := []byte(`{"name":"test-group","type":"tcp","reservable_ports":"1025"}`)
+				body := bytes.NewReader(bodyBytes)
+				request, err = http.NewRequest(
+					"POST",
+					routing_api.CreateRouterGroup,
+					body,
+				)
+				Expect(err).NotTo(HaveOccurred())
+				routerGroupHandler.CreateRouterGroup(responseRecorder, request)
+				_, permission := fakeClient.DecodeTokenArgsForCall(0)
+				Expect(permission).To(ConsistOf(handlers.RouterGroupsWriteScope))
+			})
+
+			Context("when authorization token is invalid", func() {
+				var (
+					currentCount int64
+				)
+				BeforeEach(func() {
+					currentCount = metrics.GetTokenErrors()
+					fakeClient.DecodeTokenReturns(errors.New("kaboom"))
+				})
+				It("returns Unauthorized error", func() {
+					var err error
+
+					bodyBytes := []byte(`{"name":"test-group","type":"tcp","reservable_ports":"1025"}`)
+					body := bytes.NewReader(bodyBytes)
+					request, err = http.NewRequest(
+						"POST",
+						routing_api.CreateRouterGroup,
+						body,
+					)
+					Expect(err).NotTo(HaveOccurred())
+					routerGroupHandler.CreateRouterGroup(responseRecorder, request)
+					Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
+					Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
+					Expect(metrics.GetTokenErrors()).To(Equal(currentCount + 1))
+				})
+			})
+		})
+
+		Describe("TCP Router Group", func() {
+			Context("when the request body is invalid", func() {
+				Context("when reservable_ports is not set", func() {
+					It("does not save the router group and returns a bad request response", func() {
+						var err error
+
+						bodyBytes := []byte(`{"name":"test-group","type":"tcp"}`)
+						body := bytes.NewReader(bodyBytes)
+						request, err := http.NewRequest(
+							"POST",
+							routing_api.CreateRouterGroup,
+							body,
+						)
+						Expect(err).NotTo(HaveOccurred())
+
+						routerGroupHandler.CreateRouterGroup(responseRecorder, request)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
+					})
+				})
+				Context("when reservable_ports is invalid", func() {
+					It("does not save the router group and returns a bad request response", func() {
+						var err error
+
+						bodyBytes := []byte(`{"name":"test-group","type":"tcp", "reservable_ports":"1000"}`)
+						body := bytes.NewReader(bodyBytes)
+						request, err := http.NewRequest(
+							"POST",
+							routing_api.CreateRouterGroup,
+							body,
+						)
+						Expect(err).NotTo(HaveOccurred())
+
+						routerGroupHandler.CreateRouterGroup(responseRecorder, request)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
+					})
+				})
+
+				Context("when the name is already taken", func() {
+					It("does not save the router group and returns a bad request response", func() {
+						var err error
+						bodyBytes := []byte(`{"name":"default-tcp","type":"tcp", "reservable_ports":"1028"}`)
+						body := bytes.NewReader(bodyBytes)
+						request, err := http.NewRequest(
+							"POST",
+							routing_api.CreateRouterGroup,
+							body,
+						)
+						Expect(err).NotTo(HaveOccurred())
+						routerGroupHandler.CreateRouterGroup(responseRecorder, request)
+						Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
+					})
+				})
+			})
+
+			Context("when the request body is valid", func() {
+				It("saves the router group", func() {
+					var err error
+					bodyBytes := []byte(`{"name":"test-group","type":"tcp", "reservable_ports":"2000-3000"}`)
+					body := bytes.NewReader(bodyBytes)
+					request, err = http.NewRequest(
+						"POST",
+						routing_api.CreateRouterGroup,
+						body,
+					)
+					Expect(err).NotTo(HaveOccurred())
+
+					routerGroupHandler.CreateRouterGroup(responseRecorder, request)
+
+					Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(1))
+					savedGroup := fakeDb.SaveRouterGroupArgsForCall(0)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(savedGroup.Guid).NotTo(BeEmpty())
+					Expect(savedGroup.Name).To(Equal("test-group"))
+					Expect(savedGroup.Type).To(Equal(models.RouterGroupType("tcp")))
+					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+					payload := responseRecorder.Body.String()
+					jsonPayload := fmt.Sprintf("\n{\n\"guid\": \"%s\",\n\"name\": \"test-group\",\n\"type\": \"tcp\",\n\"reservable_ports\":\"2000-3000\"\n}", savedGroup.Guid)
+					Expect(payload).To(MatchJSON(jsonPayload))
+				})
+
+				Context("when extra fields (i.e. guid) are provided", func() {
+					It("doesn't do anything with the extra fields", func() {
+						var err error
+						bodyBytes := []byte(`{"guid":"some-other-guid","name":"test-group","type":"tcp","banana":"fake-banana","reservable_ports":"1035"}`)
+						body := bytes.NewReader(bodyBytes)
+						request, err = http.NewRequest(
+							"POST",
+							routing_api.CreateRouterGroup,
+							body,
+						)
+						Expect(err).NotTo(HaveOccurred())
+
+						routerGroupHandler.CreateRouterGroup(responseRecorder, request)
+
+						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(1))
+						savedGroup := fakeDb.SaveRouterGroupArgsForCall(0)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(savedGroup.Guid).NotTo(Equal("some-other-guid"))
+						Expect(savedGroup.Name).To(Equal("test-group"))
+						Expect(savedGroup.Type).To(Equal(models.RouterGroupType("tcp")))
+						Expect(savedGroup.ReservablePorts).To(Equal(models.ReservablePorts("1035")))
+						Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+						payload := responseRecorder.Body.String()
+						jsonPayload := fmt.Sprintf("\n{\n\"guid\": \"%s\",\n\"name\": \"test-group\",\n\"type\": \"tcp\",\n\"reservable_ports\":\"1035\"\n}", savedGroup.Guid)
 						Expect(payload).To(MatchJSON(jsonPayload))
 					})
 				})
