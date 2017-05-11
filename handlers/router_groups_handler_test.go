@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -920,9 +921,13 @@ var _ = Describe("RouterGroupsHandler", func() {
 						routerGroupHandler.CreateRouterGroup(responseRecorder, request)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+						responseBody, err := ioutil.ReadAll(responseRecorder.Body)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(responseBody).To(ContainSubstring("Missing reservable_ports in router group: test-group"))
 						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
 					})
 				})
+
 				Context("when reservable_ports is invalid", func() {
 					It("does not save the router group and returns a bad request response", func() {
 						var err error
@@ -955,6 +960,9 @@ var _ = Describe("RouterGroupsHandler", func() {
 						)
 						Expect(err).NotTo(HaveOccurred())
 						routerGroupHandler.CreateRouterGroup(responseRecorder, request)
+						responseBody, err := ioutil.ReadAll(responseRecorder.Body)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(responseBody).To(ContainSubstring("Router group name must be unique"))
 						Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
 						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
 					})
