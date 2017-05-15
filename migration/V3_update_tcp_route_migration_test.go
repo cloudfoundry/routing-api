@@ -89,14 +89,14 @@ var _ = Describe("V3UpdateTcpRouteMigration", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	FDescribe("Version", func() {
+	Describe("Version", func() {
 		It("returns 3 for the version", func() {
 			v3Migration := migration.NewV3UpdateTcpRouteMigration()
 			Expect(v3Migration.Version()).To(Equal(3))
 		})
 	})
 
-	FDescribe("Run", func() {
+	Describe("Run", func() {
 		var v3Migration migration.Migration
 		BeforeEach(func() {
 			v3Migration = migration.NewV3UpdateTcpRouteMigration()
