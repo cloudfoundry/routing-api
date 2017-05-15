@@ -51,23 +51,17 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 
 	Describe("Upsert", func() {
 		Context("POST", func() {
-			var (
-				tcpMapping  models.TcpRouteMapping
-				tcpMappings []models.TcpRouteMapping
-			)
-
 			Context("when an isolation segment is present", func() {
-				tcpMapping = models.TcpRouteMapping{
-					TcpMappingEntity: models.TcpMappingEntity{
-						RouterGroupGuid:  "router-group-guid-001",
-						ExternalPort:     52000,
-						HostIP:           "1.2.3.4",
-						HostPort:         60000,
-						TTL:              &maxTTL,
-						IsolationSegment: "some-iso-seg",
-					}}
-
 				It("sets the isolation segment", func() {
+					tcpMapping := models.TcpRouteMapping{
+						TcpMappingEntity: models.TcpMappingEntity{
+							RouterGroupGuid:  "router-group-guid-001",
+							ExternalPort:     52000,
+							HostIP:           "1.2.3.4",
+							HostPort:         60000,
+							TTL:              &maxTTL,
+							IsolationSegment: "some-iso-seg",
+						}}
 					tcpMappings := []models.TcpRouteMapping{tcpMapping}
 					request = handlers.NewTestRequest(tcpMappings)
 
@@ -103,17 +97,14 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			})
 
 			Context("when ttl is not present", func() {
-				BeforeEach(func() {
-					tcpMapping = models.TcpRouteMapping{
+				It("sets a default ttl", func() {
+					tcpMapping := models.TcpRouteMapping{
 						TcpMappingEntity: models.TcpMappingEntity{
 							RouterGroupGuid: "router-group-guid-001",
 							ExternalPort:    52000,
 							HostIP:          "1.2.3.4",
 							HostPort:        60000,
 						}}
-				})
-
-				It("sets a default ttl", func() {
 					tcpMappings := []models.TcpRouteMapping{tcpMapping}
 					request = handlers.NewTestRequest(tcpMappings)
 
@@ -139,9 +130,10 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			})
 
 			Context("when ttl is present", func() {
+				var tcpMappings []models.TcpRouteMapping
 
 				BeforeEach(func() {
-					tcpMapping = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
+					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
 					tcpMappings = []models.TcpRouteMapping{tcpMapping}
 				})
 
@@ -289,8 +281,11 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			Context("when the UAA token is not valid", func() {
 				var (
 					currentCount int64
+					tcpMappings  []models.TcpRouteMapping
 				)
 				BeforeEach(func() {
+					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
+					tcpMappings = []models.TcpRouteMapping{tcpMapping}
 					currentCount = metrics.GetTokenErrors()
 					fakeClient.DecodeTokenReturns(errors.New("Not valid"))
 				})
