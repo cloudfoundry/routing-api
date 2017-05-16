@@ -728,23 +728,6 @@ var _ = Describe("RouterGroupsHandler", func() {
 						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
 					})
 				})
-
-				Context("when the name is already taken", func() {
-					It("does not save the router group and returns a bad request response", func() {
-						var err error
-						bodyBytes := []byte(`{"name":"http-group","type":"http"}`)
-						body := bytes.NewReader(bodyBytes)
-						request, err := http.NewRequest(
-							"POST",
-							routing_api.CreateRouterGroup,
-							body,
-						)
-						Expect(err).NotTo(HaveOccurred())
-						routerGroupHandler.CreateRouterGroup(responseRecorder, request)
-						Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
-					})
-				})
 			})
 
 			Context("when the request body is valid", func() {
@@ -785,6 +768,61 @@ var _ = Describe("RouterGroupsHandler", func() {
 					routerGroupHandler.CreateRouterGroup(responseRecorder, request)
 					_, permission := fakeClient.DecodeTokenArgsForCall(0)
 					Expect(permission).To(ConsistOf(handlers.RouterGroupsWriteScope))
+				})
+				Context("when the scope is routing.router_groups.write", func() {
+					It("returns 200 when re-creating router group with same attributes", func() {
+						createRouterGroup := func() (error, *httptest.ResponseRecorder) {
+							var err error
+							bodyBytes := []byte(`{"name":"test-group","type":"http"}`)
+							body := bytes.NewReader(bodyBytes)
+							request, err = http.NewRequest(
+								"POST",
+								routing_api.CreateRouterGroup,
+								body,
+							)
+							responseRecorder = httptest.NewRecorder()
+							routerGroupHandler.CreateRouterGroup(responseRecorder, request)
+							return err, responseRecorder
+						}
+
+						err, resp := createRouterGroup()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(resp.Code).To(Equal(http.StatusCreated))
+
+						savedGroup := fakeDb.SaveRouterGroupArgsForCall(0)
+						fakeRouterGroups := []models.RouterGroup{savedGroup}
+						fakeDb.ReadRouterGroupsReturns(fakeRouterGroups, nil)
+
+						err, resp = createRouterGroup()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(resp.Code).To(Equal(http.StatusOK))
+						payload := resp.Body.String()
+						jsonPayload := fmt.Sprintf("\n{\n\"guid\": \"%s\",\n\"name\": \"test-group\",\n\"type\": \"http\",\n\"reservable_ports\":\"\"\n}", savedGroup.Guid)
+						Expect(payload).To(MatchJSON(jsonPayload))
+					})
+				})
+				Context("when the scope is NOT routing.router_groups.write", func() {
+					It("returns unauthorized when creating router group with same attributes", func() {
+						createRouterGroup := func() (error, int) {
+							var err error
+							bodyBytes := []byte(`{"name":"test-group","type":"http"}`)
+							body := bytes.NewReader(bodyBytes)
+							request, err = http.NewRequest(
+								"POST",
+								routing_api.CreateRouterGroup,
+								body,
+							)
+							responseRecorder = httptest.NewRecorder()
+							routerGroupHandler.CreateRouterGroup(responseRecorder, request)
+							return err, responseRecorder.Code
+						}
+
+						fakeClient.DecodeTokenReturns(errors.New("non admin token"))
+
+						err, statusCode := createRouterGroup()
+						Expect(err).ToNot(HaveOccurred())
+						Expect(statusCode).To(Equal(http.StatusUnauthorized))
+					})
 				})
 
 				Context("when extra fields (i.e. guid) are provided", func() {
@@ -943,26 +981,6 @@ var _ = Describe("RouterGroupsHandler", func() {
 
 						routerGroupHandler.CreateRouterGroup(responseRecorder, request)
 						Expect(err).NotTo(HaveOccurred())
-						Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
-					})
-				})
-
-				Context("when the name is already taken", func() {
-					It("does not save the router group and returns a bad request response", func() {
-						var err error
-						bodyBytes := []byte(`{"name":"default-tcp","type":"tcp", "reservable_ports":"1028"}`)
-						body := bytes.NewReader(bodyBytes)
-						request, err := http.NewRequest(
-							"POST",
-							routing_api.CreateRouterGroup,
-							body,
-						)
-						Expect(err).NotTo(HaveOccurred())
-						routerGroupHandler.CreateRouterGroup(responseRecorder, request)
-						responseBody, err := ioutil.ReadAll(responseRecorder.Body)
-						Expect(err).NotTo(HaveOccurred())
-						Expect(responseBody).To(ContainSubstring("Router group name must be unique"))
 						Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
 						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
 					})

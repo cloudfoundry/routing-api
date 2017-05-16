@@ -83,9 +83,6 @@ func (g RouterGroups) validateRouterGroupName() error {
 }
 
 func (g RouterGroups) Validate() error {
-	if err := g.validateRouterGroupName(); err != nil {
-		return err
-	}
 	for _, r := range g {
 		if err := r.Validate(); err != nil {
 			return err

@@ -1,7 +1,6 @@
 package config_test
 
 import (
-	"errors"
 	"time"
 
 	"code.cloudfoundry.org/locket"
@@ -172,14 +171,6 @@ router_groups:
 						},
 					}
 					Expect(cfg.RouterGroups).To(Equal(expectedGroups))
-				})
-			})
-			Context("with same names", func() {
-				It("should error", func() {
-					config := testConfig("router-group-1")
-					err := cfg.Initialize([]byte(config), true)
-					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError(errors.New("Router group name must be unique")))
 				})
 			})
 		})

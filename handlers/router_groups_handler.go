@@ -171,19 +171,26 @@ func (h *RouterGroupsHandler) CreateRouterGroup(w http.ResponseWriter, req *http
 	bodyDecoder := json.NewDecoder(req.Body)
 	err = bodyDecoder.Decode(&rg)
 	if err != nil {
-		fmt.Println(err.Error())
 		handleProcessRequestError(w, err, log)
 		return
 	}
 
+	routerGroups, err := h.db.ReadRouterGroups()
+	if err != nil {
+		handleDBCommunicationError(w, err, log)
+		return
+	}
+	if existingRg := routerGroupExist(routerGroups, rg); existingRg != nil {
+		w.WriteHeader(http.StatusOK)
+		writeRouterGroupResponse(w, *existingRg, log)
+		return
+	}
 	guid, err := uuid.NewV4()
 	if err != nil {
 		handleGuidGenerationError(w, err, log)
 		return
 	}
 	rg.Guid = guid.String()
-
-	routerGroups, err := h.db.ReadRouterGroups()
 	routerGroups = append(routerGroups, rg)
 	err = routerGroups.Validate()
 	if err != nil {
@@ -196,19 +203,31 @@ func (h *RouterGroupsHandler) CreateRouterGroup(w http.ResponseWriter, req *http
 		handleDBCommunicationError(w, err, log)
 		return
 	}
+	w.WriteHeader(http.StatusCreated)
+	writeRouterGroupResponse(w, rg, log)
+}
 
+func writeRouterGroupResponse(w http.ResponseWriter, rg models.RouterGroup, log lager.Logger) {
 	jsonBytes, err := json.Marshal(rg)
 	if err != nil {
 		log.Error("failed-to-marshal", err)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
 	_, err = w.Write(jsonBytes)
 	if err != nil {
 		log.Error("failed-to-write-to-response", err)
 	}
 	w.Header().Set("Content-Length", strconv.Itoa(len(jsonBytes)))
+}
+
+func routerGroupExist(rgs models.RouterGroups, rg models.RouterGroup) *models.RouterGroup {
+	for _, r := range rgs {
+		if r.Name == rg.Name && r.Type == rg.Type {
+			return &r
+		}
+	}
+	return nil
 }
 
 func addWarningsHeader(w http.ResponseWriter) {
