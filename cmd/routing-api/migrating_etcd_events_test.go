@@ -60,7 +60,7 @@ var _ = Describe("ETCD Event Migrations", func() {
 		routingAPIRunner = ginkgomon.New(ginkgomon.Config{
 			Name:       "routing-api",
 			Command:    exec.Command(routingAPIBinPath, routingAPIArgs.ArgSlice()...),
-			StartCheck: "routing-api.lock.acquiring-lock",
+			StartCheck: "routing-api.consul-lock.acquiring-lock",
 		})
 		routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
 		Eventually(routingAPIProcess.Ready(), "5s").Should(BeClosed())
