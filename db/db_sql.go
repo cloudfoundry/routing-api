@@ -328,6 +328,16 @@ func (s *SqlDB) ReadTcpRouteMappings() ([]models.TcpRouteMapping, error) {
 	return tcpRoutes, nil
 }
 
+func (s *SqlDB) ReadFilteredTcpRouteMappings(columnName string, values []string) ([]models.TcpRouteMapping, error) {
+	var tcpRoutes []models.TcpRouteMapping
+	now := time.Now()
+	err := s.Client.Where(columnName+" in (?)", values).Where("expires_at > ?", now).Find(&tcpRoutes)
+	if err != nil {
+		return nil, err
+	}
+	return tcpRoutes, nil
+}
+
 func (s *SqlDB) readTcpRouteMapping(tcpMapping models.TcpRouteMapping) (models.TcpRouteMapping, error) {
 	var routes []models.TcpRouteMapping
 	var tcpRoute models.TcpRouteMapping

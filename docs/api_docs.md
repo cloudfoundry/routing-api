@@ -97,7 +97,7 @@ List Router Groups
 #### Request Headers
   A bearer token for an OAuth client with `routing.router_groups.read` scope is required.
 
-#### Request Parameters
+#### Request Parameters (Optional)
 
 | Parameter       | Type   | Description |
 |-----------------|--------|-------------|
@@ -189,9 +189,24 @@ List TCP Routes
 #### Request Headers
   A bearer token for an OAuth client with `routing.routes.read` scope is required.
 
-#### Example Request
+#### Request Parameters (Optional)
+| Parameter           | Type   | Description |
+|---------------------|--------|-------------|
+| `isolation_segment` | string | Name of the isolation segment. If this parameter is included but a value is not given, then all tcp routes without an isolation segment will be returned. |
+
+#### Example Requests
 ```sh
+# returns all tcp routes
 curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/tcp_routes
+
+# filter for routes from multiple isolation segments
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/tcp_routes?isolation_segment=is1&isolation_segment=is2
+
+# filter for routes without a specified isolation segment
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/tcp_routes?isolation_segment=
+
+# filter for routes from multiple isolation segments and from the unspecified isolation segment
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/tcp_routes?isolation_segment=&isolation_segment=is1&isolation_segment=is2
 ```
 
 ### Response

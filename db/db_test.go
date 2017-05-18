@@ -583,6 +583,14 @@ var _ = Describe("DB", func() {
 				})
 			})
 
+			Describe("ReadFilteredTcpRouteMappings", func() {
+				It("Returns an error", func() {
+					_, err := etcd.ReadFilteredTcpRouteMappings("foo", []string{"1"})
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Database misconfigured"))
+				})
+			})
+
 			Describe("WatchChanges with tcp events", func() {
 				Context("when a tcp route is upserted", func() {
 					It("should return an create watch event", func() {
@@ -759,6 +767,14 @@ var _ = Describe("DB", func() {
 					_, err := fakeEtcd.ReadRouterGroup(routerGroup.Guid)
 					Expect(err).To(HaveOccurred())
 				})
+			})
+		})
+
+		Describe("ReadRouterGroupByName", func() {
+			It("returns an error", func() {
+				_, err := etcd.ReadRouterGroupByName("foobar")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Database misconfigured"))
 			})
 		})
 

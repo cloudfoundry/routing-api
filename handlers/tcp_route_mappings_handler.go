@@ -36,7 +36,13 @@ func (h *TcpRouteMappingsHandler) List(w http.ResponseWriter, req *http.Request)
 		handleUnauthorizedError(w, err, log)
 		return
 	}
-	routes, err := h.db.ReadTcpRouteMappings()
+	query := req.URL.Query()
+	var routes []models.TcpRouteMapping
+	if len(query["isolation_segment"]) > 0 {
+		routes, err = h.db.ReadFilteredTcpRouteMappings("isolation_segment", query["isolation_segment"])
+	} else {
+		routes, err = h.db.ReadTcpRouteMappings()
+	}
 	if err != nil {
 		handleDBCommunicationError(w, err, log)
 		return

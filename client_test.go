@@ -547,16 +547,27 @@ var _ = Describe("Client", func() {
 				)
 			})
 
-			It("Sends a ListRoutes request to the server", func() {
+			It("sends a ListRoutes request to the server", func() {
 				routes, err = client.TcpRouteMappings()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
+				Expect(routes).To(Equal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}))
 			})
 
-			It("gets a list of routes from the server", func() {
-				routes, err = client.TcpRouteMappings()
+			It("can filter routes from the server", func() {
+				tcpRouteMapping1.IsolationSegment = "is1"
+
+				data, _ = json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1})
+				server.SetHandler(0,
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", TCP_ROUTES_API_URL, "isolation_segment=is1"),
+						ghttp.RespondWith(http.StatusOK, data),
+					),
+				)
+				routes, err = client.FilteredTcpRouteMappings([]string{"is1"})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(routes).To(Equal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}))
+				Expect(server.ReceivedRequests()).Should(HaveLen(1))
+				Expect(routes).To(Equal([]models.TcpRouteMapping{tcpRouteMapping1}))
 			})
 
 			It("does not send a body in the request", func() {

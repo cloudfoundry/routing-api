@@ -491,6 +491,98 @@ var _ = Describe("SqlDB", func() {
 		})
 	}
 
+	ReadFilteredTcpRouteMappings := func() {
+		Describe("ReadFilteredTcpRouteMappings", func() {
+			var (
+				err       error
+				tcpRoutes []models.TcpRouteMapping
+			)
+
+			JustBeforeEach(func() {
+				tcpRoutes, err = sqlDB.ReadFilteredTcpRouteMappings(
+					"isolation_segment", []string{"is1", ""},
+				)
+			})
+
+			Context("when at least one tcp route exists", func() {
+				var (
+					routerGroupID      string
+					tcpRoutesWithModel []models.TcpRouteMapping
+				)
+
+				createTcpRouteWithIsoSeg := func(externalPort uint16, routerGroupID string, ttl int, isoSeg string) {
+					tcpRoute := models.NewTcpRouteMapping(routerGroupID, externalPort, "127.0.0.1", 2990, ttl)
+					tcpRoute.IsolationSegment = isoSeg
+					tcpRoute.ModificationTag = models.ModificationTag{Guid: "some-tag", Index: 10}
+					tcpRouteWithModel, err := models.NewTcpRouteMappingWithModel(tcpRoute)
+					Expect(err).NotTo(HaveOccurred())
+					_, err = sqlDB.Client.Create(&tcpRouteWithModel)
+					Expect(err).ToNot(HaveOccurred())
+					tcpRoutesWithModel = append(tcpRoutesWithModel, tcpRouteWithModel)
+				}
+
+				BeforeEach(func() {
+					routerGroupID = newUuid()
+					tcpRoutesWithModel = nil
+
+					createTcpRouteWithIsoSeg(3056, routerGroupID, 5, "")
+					createTcpRouteWithIsoSeg(3057, routerGroupID, 5, "is1")
+					createTcpRouteWithIsoSeg(3058, routerGroupID, 5, "is2")
+				})
+
+				AfterEach(func() {
+					for _, tcpRouteWithModel := range tcpRoutesWithModel {
+						_, err = sqlDB.Client.Delete(&tcpRouteWithModel)
+						Expect(err).ToNot(HaveOccurred())
+					}
+				})
+
+				It("returns the tcp routes", func() {
+					Expect(err).ToNot(HaveOccurred())
+
+					var tcpDBRoutes []models.TcpRouteMapping
+					err := sqlDB.Client.Find(&tcpDBRoutes)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(tcpDBRoutes).To(HaveLen(3))
+
+					Expect(tcpRoutes).To(HaveLen(2))
+					Expect(tcpRoutes).To(ConsistOf(
+						matchers.MatchTcpRoute(tcpRoutesWithModel[0]),
+						matchers.MatchTcpRoute(tcpRoutesWithModel[1]),
+					))
+				})
+
+				Context("when tcp routes have outlived their ttl", func() {
+					BeforeEach(func() {
+						createTcpRouteWithIsoSeg(3059, routerGroupID, -9, "is1")
+					})
+
+					It("does not return the tcp route", func() {
+						Expect(err).ToNot(HaveOccurred())
+
+						var tcpDBRoutes []models.TcpRouteMapping
+						err := sqlDB.Client.Find(&tcpDBRoutes)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(tcpDBRoutes).To(HaveLen(4))
+
+						Expect(tcpRoutes).To(HaveLen(2))
+						Expect(tcpRoutes).To(ConsistOf(
+							matchers.MatchTcpRoute(tcpRoutesWithModel[0]),
+							matchers.MatchTcpRoute(tcpRoutesWithModel[1]),
+						))
+					})
+				})
+			})
+
+			Context("when tcp route doesn't exist", func() {
+				It("returns an empty array", func() {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(tcpRoutes).To(Equal([]models.TcpRouteMapping{}))
+				})
+			})
+		})
+	}
+
 	DeleteTcpRouteMapping := func() {
 		Describe("DeleteTcpRouteMapping", func() {
 			var (
@@ -1276,6 +1368,7 @@ var _ = Describe("SqlDB", func() {
 		SaveRoute()
 		DeleteTcpRouteMapping()
 		ReadTcpRouteMappings()
+		ReadFilteredTcpRouteMappings()
 		SaveTcpRouteMapping()
 		ReadRouterGroup()
 		ReadRouterGroupByName()
@@ -1310,6 +1403,7 @@ var _ = Describe("SqlDB", func() {
 		SaveRoute()
 		DeleteTcpRouteMapping()
 		ReadTcpRouteMappings()
+		ReadFilteredTcpRouteMappings()
 		SaveTcpRouteMapping()
 		ReadRouterGroup()
 		ReadRouterGroupByName()

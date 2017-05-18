@@ -34,6 +34,7 @@ type Client interface {
 	UpsertTcpRouteMappings([]models.TcpRouteMapping) error
 	DeleteTcpRouteMappings([]models.TcpRouteMapping) error
 	TcpRouteMappings() ([]models.TcpRouteMapping, error)
+	FilteredTcpRouteMappings([]string) ([]models.TcpRouteMapping, error)
 
 	SubscribeToEvents() (EventSource, error)
 	SubscribeToEventsWithMaxRetries(retries uint16) (EventSource, error)
@@ -133,6 +134,12 @@ func (c *client) UpsertTcpRouteMappings(tcpRouteMappings []models.TcpRouteMappin
 func (c *client) TcpRouteMappings() ([]models.TcpRouteMapping, error) {
 	var tcpRouteMappings []models.TcpRouteMapping
 	err := c.doRequest(ListTcpRouteMapping, nil, nil, nil, &tcpRouteMappings)
+	return tcpRouteMappings, err
+}
+
+func (c *client) FilteredTcpRouteMappings(isolationSegments []string) ([]models.TcpRouteMapping, error) {
+	var tcpRouteMappings []models.TcpRouteMapping
+	err := c.doRequest(ListTcpRouteMapping, nil, url.Values{"isolation_segment": isolationSegments}, nil, &tcpRouteMappings)
 	return tcpRouteMappings, err
 }
 

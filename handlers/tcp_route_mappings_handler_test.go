@@ -329,6 +329,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				request = handlers.NewTestRequest("")
 				tcpRouteMappingsHandler.List(responseRecorder, request)
 
+				Expect(database.ReadTcpRouteMappingsCallCount()).To(Equal(1))
 				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
 				expectedJson := `[
 							{
@@ -354,6 +355,153 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								},
 								"ttl": 55,
 								"isolation_segment": ""
+							}]`
+				Expect(responseRecorder.Body.String()).To(MatchJSON(expectedJson))
+			})
+		})
+
+		Context("when filtering by isolation segments", func() {
+			var (
+				tcpRoutes []models.TcpRouteMapping
+			)
+
+			BeforeEach(func() {
+				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 55)
+				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 55)
+				mapping2.IsolationSegment = "is1"
+				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
+				database.ReadFilteredTcpRouteMappingsReturns(tcpRoutes, nil)
+			})
+
+			It("returns tcp route mappings for specified isolation segments", func() {
+				request = handlers.NewTestRequest("")
+				q := request.URL.Query()
+				q.Add("isolation_segment", "")
+				q.Add("isolation_segment", "is1")
+				q.Add("isolation_segment", "&isolation_segment=is2")
+				request.URL.RawQuery = q.Encode()
+				tcpRouteMappingsHandler.List(responseRecorder, request)
+				Expect(database.ReadFilteredTcpRouteMappingsCallCount()).To(Equal(1))
+				columnName, values := database.ReadFilteredTcpRouteMappingsArgsForCall(0)
+				Expect(columnName).To(Equal("isolation_segment"))
+				Expect(values).To(ConsistOf("", "is1", "&isolation_segment=is2"))
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				expectedJson := `[
+							{
+								"router_group_guid": "router-group-guid-001",
+								"port": 52000,
+								"backend_ip": "1.2.3.4",
+								"backend_port": 60000,
+								"modification_tag": {
+									"guid": "",
+									"index": 0
+								},
+								"ttl": 55,
+								"isolation_segment": ""
+							},
+							{
+								"router_group_guid": "router-group-guid-001",
+								"port": 52001,
+								"backend_ip": "1.2.3.5",
+								"backend_port": 60001,
+								"modification_tag": {
+									"guid": "",
+									"index": 0
+								},
+								"ttl": 55,
+								"isolation_segment": "is1"
+							}]`
+				Expect(responseRecorder.Body.String()).To(MatchJSON(expectedJson))
+			})
+
+			It("returns all tcp route mappings for unspecified isolation segment", func() {
+				request = handlers.NewTestRequest("")
+				q := request.URL.Query()
+				q.Add("isolation_segment", "")
+				request.URL.RawQuery = q.Encode()
+				tcpRouteMappingsHandler.List(responseRecorder, request)
+				Expect(database.ReadFilteredTcpRouteMappingsCallCount()).To(Equal(1))
+				columnName, values := database.ReadFilteredTcpRouteMappingsArgsForCall(0)
+				Expect(columnName).To(Equal("isolation_segment"))
+				Expect(values).To(ConsistOf(""))
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				expectedJson := `[
+							{
+								"router_group_guid": "router-group-guid-001",
+								"port": 52000,
+								"backend_ip": "1.2.3.4",
+								"backend_port": 60000,
+								"modification_tag": {
+									"guid": "",
+									"index": 0
+								},
+								"ttl": 55,
+								"isolation_segment": ""
+							},
+							{
+								"router_group_guid": "router-group-guid-001",
+								"port": 52001,
+								"backend_ip": "1.2.3.5",
+								"backend_port": 60001,
+								"modification_tag": {
+									"guid": "",
+									"index": 0
+								},
+								"ttl": 55,
+								"isolation_segment": "is1"
+							}]`
+				Expect(responseRecorder.Body.String()).To(MatchJSON(expectedJson))
+			})
+		})
+
+		Context("when providing unknown params", func() {
+			var (
+				tcpRoutes []models.TcpRouteMapping
+			)
+
+			BeforeEach(func() {
+				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 55)
+				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 55)
+				mapping2.IsolationSegment = "is1"
+				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
+				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
+			})
+
+			It("ignores the params and returns all tcp route mappings", func() {
+				request = handlers.NewTestRequest("")
+				q := request.URL.Query()
+				q.Add("something", "blah")
+				request.URL.RawQuery = q.Encode()
+				tcpRouteMappingsHandler.List(responseRecorder, request)
+				Expect(database.ReadTcpRouteMappingsCallCount()).To(Equal(1))
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				expectedJson := `[
+							{
+								"router_group_guid": "router-group-guid-001",
+								"port": 52000,
+								"backend_ip": "1.2.3.4",
+								"backend_port": 60000,
+								"modification_tag": {
+									"guid": "",
+									"index": 0
+								},
+								"ttl": 55,
+								"isolation_segment": ""
+							},
+							{
+								"router_group_guid": "router-group-guid-001",
+								"port": 52001,
+								"backend_ip": "1.2.3.5",
+								"backend_port": 60001,
+								"modification_tag": {
+									"guid": "",
+									"index": 0
+								},
+								"ttl": 55,
+								"isolation_segment": "is1"
 							}]`
 				Expect(responseRecorder.Body.String()).To(MatchJSON(expectedJson))
 			})
