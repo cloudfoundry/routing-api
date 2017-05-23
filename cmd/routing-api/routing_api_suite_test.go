@@ -107,10 +107,9 @@ var _ = SynchronizedAfterSuite(func() {
 
 	teardownConsul()
 	oauthServer.Close()
-},
-	func() {
-		gexec.CleanupBuildArtifacts()
-	})
+}, func() {
+	gexec.CleanupBuildArtifacts()
+})
 
 var _ = BeforeEach(func() {
 	client = routingApiClient()

@@ -129,7 +129,7 @@ var _ = Describe("SqlLock", func() {
 			})
 
 			It("exits", func() {
-				Eventually(session).Should(gexec.Exit(1))
+				Eventually(session, 30).Should(gexec.Exit(1))
 			})
 		})
 
@@ -214,7 +214,7 @@ var _ = Describe("SqlLock", func() {
 
 			args.Port = uint16(5500 + GinkgoParallelNode())
 			session2 := RoutingApi(args.ArgSlice()...)
-			Eventually(session2, 10*time.Second).Should(gbytes.Say("sql-lock.started"))
+			Eventually(session2, 10*time.Second).Should(gbytes.Say("locket-lock.started"))
 
 			done := make(chan struct{})
 			goRoutineFinished := make(chan struct{})
@@ -242,7 +242,7 @@ var _ = Describe("SqlLock", func() {
 
 			session.Interrupt().Wait(10 * time.Second)
 
-			Eventually(session2, 10*time.Second).Should(gbytes.Say("sql-lock.acquired-lock"))
+			Eventually(session2, 10*time.Second).Should(gbytes.Say("locket-lock.acquired-lock"))
 			Eventually(session2, 10*time.Second).Should(gbytes.Say("routing-api.started"))
 
 			close(done)
