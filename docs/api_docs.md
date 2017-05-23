@@ -192,7 +192,7 @@ List TCP Routes
 #### Request Parameters (Optional)
 | Parameter           | Type   | Description |
 |---------------------|--------|-------------|
-| `isolation_segment` | string | Name of the isolation segment. If this parameter is included but a value is not given, then all tcp routes without an isolation segment will be returned. |
+| `isolation_segment` | string | Name of the isolation segment. If this parameter is included but a value is not given, then  tcp routes registered without a specified isolation segment will be returned. |
 
 #### Example Requests
 ```sh
