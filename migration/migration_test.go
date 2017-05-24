@@ -71,12 +71,13 @@ var _ = Describe("Migration", func() {
 				done := make(chan struct{})
 				defer close(done)
 				migrations := migration.InitializeMigrations(etcdConfig, done, logger)
-				Expect(migrations).To(HaveLen(4))
+				Expect(migrations).To(HaveLen(5))
 
-				Expect(migrations[0]).To(BeAssignableToTypeOf(&migration.V0InitMigration{}))
-				Expect(migrations[1]).To(BeAssignableToTypeOf(&migration.V1EtcdMigration{}))
-				Expect(migrations[2]).To(BeAssignableToTypeOf(&migration.V2UpdateRgMigration{}))
-				Expect(migrations[3]).To(BeAssignableToTypeOf(&migration.V3UpdateTcpRouteMigration{}))
+				Expect(migrations[0]).To(BeAssignableToTypeOf(new(migration.V0InitMigration)))
+				Expect(migrations[1]).To(BeAssignableToTypeOf(new(migration.V1EtcdMigration)))
+				Expect(migrations[2]).To(BeAssignableToTypeOf(new(migration.V2UpdateRgMigration)))
+				Expect(migrations[3]).To(BeAssignableToTypeOf(new(migration.V3UpdateTcpRouteMigration)))
+				Expect(migrations[4]).To(BeAssignableToTypeOf(new(migration.V4AddRgUniqIdxTCPRoute)))
 			})
 		})
 

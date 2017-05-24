@@ -341,8 +341,8 @@ func (s *SqlDB) ReadFilteredTcpRouteMappings(columnName string, values []string)
 func (s *SqlDB) readTcpRouteMapping(tcpMapping models.TcpRouteMapping) (models.TcpRouteMapping, error) {
 	var routes []models.TcpRouteMapping
 	var tcpRoute models.TcpRouteMapping
-	err := s.Client.Where("host_ip = ? and host_port = ? and external_port = ?",
-		tcpMapping.HostIP, tcpMapping.HostPort, tcpMapping.ExternalPort).Find(&routes)
+	err := s.Client.Where("router_group_guid = ? and host_ip = ? and host_port = ? and external_port = ?",
+		tcpMapping.RouterGroupGuid, tcpMapping.HostIP, tcpMapping.HostPort, tcpMapping.ExternalPort).Find(&routes)
 
 	if err != nil {
 		return tcpRoute, err

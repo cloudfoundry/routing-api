@@ -84,6 +84,9 @@ func InitializeMigrations(etcdCfg *config.Etcd, etcdDone chan struct{}, logger l
 	migration = NewV3UpdateTcpRouteMigration()
 	migrations = append(migrations, migration)
 
+	migration = NewV4AddRgUniqIdxTCPRouteMigration()
+	migrations = append(migrations, migration)
+
 	return migrations
 }
 

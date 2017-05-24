@@ -164,7 +164,7 @@ var _ = Describe("RoutesHandler", func() {
 				database.ReadRoutesReturns(routes, nil)
 			})
 
-			It("returns a single route", func() {
+			It("returns many routes", func() {
 				request = handlers.NewTestRequest("")
 
 				routesHandler.List(responseRecorder, request)

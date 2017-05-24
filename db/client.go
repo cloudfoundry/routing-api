@@ -22,6 +22,7 @@ type Client interface {
 	Commit() error
 	HasTable(value interface{}) bool
 	AddUniqueIndex(indexName string, columns ...string) (Client, error)
+	RemoveIndex(indexName string) (Client, error)
 	Model(value interface{}) Client
 	Exec(query string, args ...interface{}) int64
 	Rows(tableName string) (*sql.Rows, error)
@@ -44,6 +45,12 @@ func (c *gormClient) Close() error {
 func (c *gormClient) AddUniqueIndex(indexName string, columns ...string) (Client, error) {
 	var newClient gormClient
 	newClient.db = c.db.AddUniqueIndex(indexName, columns...)
+	return &newClient, newClient.db.Error
+}
+
+func (c *gormClient) RemoveIndex(indexName string) (Client, error) {
+	var newClient gormClient
+	newClient.db = c.db.RemoveIndex(indexName)
 	return &newClient, newClient.db.Error
 }
 
