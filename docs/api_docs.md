@@ -218,23 +218,26 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 | Object Field        | Type            | Description |
 |---------------------|-----------------|-------------|
 | `router_group_guid` | string          | GUID of the router group associated with this route.
-| `port`              | integer         | External facing port for the TCP route.
-| `backend_ip`        | string          | IP address of backend.
 | `backend_port`      | integer         | Backend port. Must be greater than 0.
-| `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
+| `backend_ip`        | string          | IP address of backend.
+| `port`              | integer         | External facing port for the TCP route.
 | `modification_tag`  | object     | See [Modification Tags](modification_tags.md).
+| `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
+| `isolation_segment` | string | Isolation segment for the route. |
 
 #### Example Response:
 ```
 [{
   "router_group_guid": "xyz789",
-  "port": 5200,
-  "backend_ip": "10.1.1.12",
   "backend_port": 60000,
+  "backend_ip": "10.1.1.12",
+  "port": 5200,
   "modification_tag":  {
     "guid": "cbdhb4e3-141d-4259-b0ac-99140e8998l0",
     "index": 10
-  }
+  },
+  "ttl": 120,
+  "isolation_segment": ""
 }]
 ```
 
