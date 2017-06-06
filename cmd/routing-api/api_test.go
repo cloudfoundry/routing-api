@@ -339,6 +339,45 @@ var _ = Describe("Routes API", func() {
 					}, "10s", 1).Should(ConsistOf(matchers.MatchTcpRoute(tcpRouteMapping1)))
 
 				})
+				Context("when tcp route mappings already exist", func() {
+					BeforeEach(func() {
+						client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
+						var err error
+						tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
+
+						tcpRouteMappings := []models.TcpRouteMapping{tcpRouteMapping1}
+						err = client.UpsertTcpRouteMappings(tcpRouteMappings)
+						Expect(err).NotTo(HaveOccurred())
+
+						Eventually(func() []models.TcpRouteMapping {
+							tcpRouteMappingsResponse, err := client.TcpRouteMappings()
+							Expect(err).ToNot(HaveOccurred())
+							return tcpRouteMappingsResponse
+						}, "10s", 1).Should(ConsistOf(matchers.MatchTcpRoute(tcpRouteMapping1)))
+
+					})
+					It("allows to update existing tcp route mappings", func() {
+						maxTTL := 60
+						tcpRouteMapping2 = models.TcpRouteMapping{
+							TcpMappingEntity: models.TcpMappingEntity{
+								RouterGroupGuid:  routerGroupGuid,
+								ExternalPort:     52000,
+								HostIP:           "1.2.3.4",
+								HostPort:         60000,
+								TTL:              &maxTTL,
+								IsolationSegment: "some-iso-seg",
+							}}
+						tcpRouteMappings := []models.TcpRouteMapping{tcpRouteMapping2}
+						err := client.UpsertTcpRouteMappings(tcpRouteMappings)
+						Expect(err).NotTo(HaveOccurred())
+
+						Eventually(func() []models.TcpRouteMapping {
+							tcpRouteMappingsResponse, err := client.TcpRouteMappings()
+							Expect(err).ToNot(HaveOccurred())
+							return tcpRouteMappingsResponse
+						}, "10s", 1).Should(ConsistOf(matchers.MatchTcpRoute(tcpRouteMapping2)))
+					})
+				})
 			})
 
 			Context("DELETE", func() {

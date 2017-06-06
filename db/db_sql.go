@@ -212,10 +212,10 @@ func updateTcpRouteMapping(existingTcpRouteMapping models.TcpRouteMapping, curre
 	if currentTcpRouteMapping.TTL != nil {
 		existingTcpRouteMapping.TTL = currentTcpRouteMapping.TTL
 	}
+	existingTcpRouteMapping.IsolationSegment = currentTcpRouteMapping.IsolationSegment
 
 	existingTcpRouteMapping.ExpiresAt = time.Now().
 		Add(time.Duration(*existingTcpRouteMapping.TTL) * time.Second)
-
 	return existingTcpRouteMapping
 }
 

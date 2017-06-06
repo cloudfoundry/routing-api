@@ -51,6 +51,52 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 
 	Describe("Upsert", func() {
 		Context("POST", func() {
+			Context("when a unique TCP route exists in DB", func() {
+				var (
+					tcpMapping  *models.TcpRouteMapping
+					tcpMappings []models.TcpRouteMapping
+				)
+				BeforeEach(func() {
+					tcpMapping = &models.TcpRouteMapping{
+						TcpMappingEntity: models.TcpMappingEntity{
+							RouterGroupGuid: "router-group-guid-001",
+							ExternalPort:    52000,
+							HostIP:          "1.2.3.4",
+							HostPort:        60000,
+							TTL:             &maxTTL,
+						}}
+					tcpMappings = []models.TcpRouteMapping{*tcpMapping}
+					request = handlers.NewTestRequest(tcpMappings)
+
+					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
+					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+
+				})
+				Context("when that TCP route is upserted with an isolation segment", func() {
+					It("Updates the existing route", func() {
+						tcpMapping.IsolationSegment = "some-iso-seg"
+						tcpMappings = []models.TcpRouteMapping{*tcpMapping}
+						request = handlers.NewTestRequest(tcpMappings)
+
+						tcpRouteMappingsHandler.Upsert(responseRecorder, request)
+						Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+
+						data := map[string]interface{}{
+							"port":              float64(52000),
+							"router_group_guid": "router-group-guid-001",
+							"backend_ip":        "1.2.3.4",
+							"backend_port":      float64(60000),
+							"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
+							"ttl":               float64(120),
+							"isolation_segment": "some-iso-seg",
+						}
+						logData := map[string][]interface{}{"tcp_mapping_creation": []interface{}{data}}
+						Expect(len(logger.Logs())).To(BeNumerically(">", 0))
+						Expect(logger.Logs()[1].Message).To(ContainSubstring("request"))
+						Expect(logger.Logs()[1].Data["tcp_mapping_creation"]).To(Equal(logData["tcp_mapping_creation"]))
+					})
+				})
+			})
 			Context("when an isolation segment is present", func() {
 				It("sets the isolation segment", func() {
 					tcpMapping := models.TcpRouteMapping{

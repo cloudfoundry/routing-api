@@ -355,12 +355,19 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				It("updates the existing tcp route mapping and increments modification tag", func() {
+					tcpRoute.IsolationSegment = "some-iso-seg"
+					myTTL := 77
+					tcpRoute.TTL = &myTTL
+
 					err := sqlDB.SaveTcpRouteMapping(tcpRoute)
 					Expect(err).ToNot(HaveOccurred())
+
 					var dbTcpRoute models.TcpRouteMapping
 					err = sqlDB.Client.Where("host_ip = ?", "127.0.0.1").First(&dbTcpRoute)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(dbTcpRoute).ToNot(BeNil())
+					Expect(dbTcpRoute.IsolationSegment).To(Equal("some-iso-seg"))
+					Expect(dbTcpRoute.TTL).To(Equal(&myTTL))
 					Expect(dbTcpRoute.ModificationTag.Index).To(BeNumerically("==", 1))
 				})
 
