@@ -135,7 +135,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
 						Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-						Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal array into Go value of type string"))
+						Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal array"))
 						Expect(database.SaveRouteCallCount()).To(Equal(0))
 						Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
 					})
@@ -268,7 +268,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					request = handlers.NewTestRequest(`[{"router_group_guid": "tcp-default", "port": -1, "backend_ip": "10.1.1.12", "backend_port": 60000}]`)
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number -1 into Go value of type uint16"))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number -1"))
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
 				})
@@ -279,7 +279,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number 65537 into Go value of type uint16"))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number 65537"))
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
 				})
@@ -289,7 +289,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number -1 into Go value of type uint16"))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number -1"))
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
 
@@ -301,7 +301,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number 65537 into Go value of type uint16"))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number 65537"))
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
 
@@ -693,7 +693,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					request = handlers.NewTestRequest(`[{"router_group_guid": "tcp-default", "port": -1, "backend_ip": "10.1.1.12", "backend_port": 60000}]`)
 					tcpRouteMappingsHandler.Delete(responseRecorder, request)
 					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number -1 into Go value of type uint16"))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number -1"))
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
 				})
@@ -704,7 +704,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					tcpRouteMappingsHandler.Delete(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number 65537 into Go value of type uint16"))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number 65537"))
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
 				})
@@ -714,7 +714,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					tcpRouteMappingsHandler.Delete(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number -1 into Go value of type uint16"))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number -1"))
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
 
@@ -726,7 +726,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					tcpRouteMappingsHandler.Delete(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number 65537 into Go value of type uint16"))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number 65537"))
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
 

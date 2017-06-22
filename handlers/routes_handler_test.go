@@ -464,7 +464,7 @@ var _ = Describe("RoutesHandler", func() {
 					routesHandler.Upsert(responseRecorder, request)
 
 					Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number 65537 into Go value of type uint16"))
+					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number 65537"))
 				})
 
 				It("does not write to the key-value store backend", func() {

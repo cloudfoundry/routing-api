@@ -904,7 +904,7 @@ var _ = Describe("DB", func() {
 })
 
 func setupFakeEtcd(keys client.KeysAPI) db.DB {
-	nodeURLs := []string{"127.0.0.1:5000"}
+	nodeURLs := []string{"http://127.0.0.1:5000"}
 
 	cfg := client.Config{
 		Endpoints: nodeURLs,
