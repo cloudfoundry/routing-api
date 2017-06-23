@@ -26,7 +26,7 @@ type SqlDB struct {
 	httpEventHub eventhub.Hub
 }
 
-const DeleteError = "Delete Fails: Route does not exist"
+var DeleteError = DBError{Type: KeyNotFound, Message: "Delete Fails: Route does not exist"}
 
 func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 	if cfg == nil {
@@ -308,7 +308,7 @@ func (s *SqlDB) DeleteRoute(route models.Route) error {
 		return err
 	}
 	if route == (models.Route{}) {
-		return errors.New(DeleteError)
+		return DeleteError
 	}
 
 	_, err = s.Client.Delete(&route)
@@ -415,7 +415,7 @@ func (s *SqlDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 		return err
 	}
 	if tcpMapping == (models.TcpRouteMapping{}) {
-		return errors.New(DeleteError)
+		return DeleteError
 	}
 
 	_, err = s.Client.Delete(&tcpMapping)

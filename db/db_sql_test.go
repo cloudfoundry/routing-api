@@ -690,9 +690,12 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			Context("when the tcp route doesn't exist", func() {
-				It("returns an error", func() {
+				It("returns a DB error", func() {
 					Expect(err).To(HaveOccurred())
 					Expect(err).Should(MatchError(db.DeleteError))
+					dberr, ok := err.(db.DBError)
+					Expect(ok).To(BeTrue())
+					Expect(dberr.Type).To(Equal(db.KeyNotFound))
 				})
 			})
 		})
@@ -942,9 +945,12 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			Context("when the route doesn't exist", func() {
-				It("returns an error", func() {
+				It("returns a DB error", func() {
 					Expect(err).To(HaveOccurred())
 					Expect(err).Should(MatchError(db.DeleteError))
+					dberr, ok := err.(db.DBError)
+					Expect(ok).To(BeTrue())
+					Expect(dberr.Type).To(Equal(db.KeyNotFound))
 				})
 			})
 		})
