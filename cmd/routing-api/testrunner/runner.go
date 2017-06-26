@@ -63,7 +63,7 @@ func New(binPath string, args Args) *ginkgomon.Runner {
 		Name:              "routing-api",
 		Command:           exec.Command(binPath, args.ArgSlice()...),
 		StartCheck:        "routing-api.started",
-		StartCheckTimeout: 10 * time.Second,
+		StartCheckTimeout: 30 * time.Second,
 	})
 }
 
