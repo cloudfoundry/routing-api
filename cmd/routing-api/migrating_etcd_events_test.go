@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"time"
 
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
@@ -58,12 +59,13 @@ var _ = Describe("ETCD Event Migrations", func() {
 		lockHolderProcess = ginkgomon.Invoke(lockHolderRunner)
 
 		routingAPIRunner = ginkgomon.New(ginkgomon.Config{
-			Name:       "routing-api",
-			Command:    exec.Command(routingAPIBinPath, routingAPIArgs.ArgSlice()...),
-			StartCheck: "routing-api.consul-lock.acquiring-lock",
+			Name:              "routing-api",
+			Command:           exec.Command(routingAPIBinPath, routingAPIArgs.ArgSlice()...),
+			StartCheck:        "routing-api.consul-lock.acquiring-lock",
+			StartCheckTimeout: 10 * time.Second,
 		})
 		routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
-		Eventually(routingAPIProcess.Ready(), "5s").Should(BeClosed())
+		Eventually(routingAPIProcess.Ready(), "10s").Should(BeClosed())
 	})
 
 	AfterEach(func() {
