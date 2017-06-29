@@ -21,6 +21,7 @@ import (
 
 const (
 	TOKEN_KEY_ENDPOINT     = "/token_key"
+	OPENID_CONFIG_ENDPOINT = "/.well-known/openid-configuration"
 	DefaultRouterGroupName = "default-tcp"
 )
 
@@ -54,6 +55,10 @@ var _ = Describe("Main", func() {
 	It("exits 1 if the uaa_verification_key is not a valid PEM format", func() {
 		oauthServer.AppendHandlers(
 			ghttp.CombineHandlers(
+				ghttp.VerifyRequest("GET", OPENID_CONFIG_ENDPOINT),
+				ghttp.RespondWith(http.StatusOK, `{"issuer": "https://uaa.domain.com"}`),
+			),
+			ghttp.CombineHandlers(
 				ghttp.VerifyRequest("GET", TOKEN_KEY_ENDPOINT),
 				ghttp.RespondWith(http.StatusOK, `{"alg":"rsa", "value": "Invalid PEM key" }`),
 			),
@@ -65,8 +70,40 @@ var _ = Describe("Main", func() {
 		Eventually(session).Should(Say("Public uaa token must be PEM encoded"))
 	})
 
+	It("exits 1 if the uaa issuer cannot be fetched on startup and non dev mode", func() {
+		oauthServer.AppendHandlers(
+			ghttp.CombineHandlers(
+				ghttp.VerifyRequest("GET", OPENID_CONFIG_ENDPOINT),
+				ghttp.RespondWith(http.StatusInternalServerError, `{}`),
+			),
+		)
+		args := routingAPIArgs
+		args.DevMode = false
+		session = RoutingApi(args.ArgSlice()...)
+		Eventually(session).Should(Exit(1))
+		Eventually(session).Should(Say("Failed to get issuer configuration from UAA"))
+	})
+
+	It("logs the uaa issuer when successfully fetched on startup and non dev mode", func() {
+		oauthServer.AppendHandlers(
+			ghttp.CombineHandlers(
+				ghttp.VerifyRequest("GET", OPENID_CONFIG_ENDPOINT),
+				ghttp.RespondWith(http.StatusOK, `{"issuer": "https://uaa.domain.com"}`),
+			),
+		)
+		args := routingAPIArgs
+		args.DevMode = false
+		session = RoutingApi(args.ArgSlice()...)
+		Eventually(session).Should(Say("received-issuer"))
+		Eventually(session).Should(Say("https://uaa.domain.com"))
+	})
+
 	It("exits 1 if the uaa_verification_key cannot be fetched on startup and non dev mode", func() {
 		oauthServer.AppendHandlers(
+			ghttp.CombineHandlers(
+				ghttp.VerifyRequest("GET", OPENID_CONFIG_ENDPOINT),
+				ghttp.RespondWith(http.StatusOK, `{"issuer": "https://uaa.domain.com"}`),
+			),
 			ghttp.CombineHandlers(
 				ghttp.VerifyRequest("GET", TOKEN_KEY_ENDPOINT),
 				ghttp.RespondWith(http.StatusInternalServerError, `{}`),
@@ -88,6 +125,10 @@ var _ = Describe("Main", func() {
 	Context("when initialized correctly and db is running", func() {
 		BeforeEach(func() {
 			oauthServer.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", OPENID_CONFIG_ENDPOINT),
+					ghttp.RespondWith(http.StatusOK, `{"issuer": "https://uaa.domain.com"}`),
+				),
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", TOKEN_KEY_ENDPOINT),
 					ghttp.RespondWith(http.StatusOK, `{"alg":"rsa", "value": "-----BEGIN PUBLIC KEY-----MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDHFr+KICms+tuT1OXJwhCUmR2dKVy7psa8xzElSyzqx7oJyfJ1JZyOzToj9T5SfTIq396agbHJWVfYphNahvZ/7uMXqHxf+ZH9BL1gk9Y6kCnbM5R60gfwjyW1/dQPjOzn9N394zd2FJoFHwdq9Qs0wBugspULZVNRxq7veq/fzwIDAQAB-----END PUBLIC KEY-----" }`),

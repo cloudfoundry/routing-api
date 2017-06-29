@@ -291,6 +291,13 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 		os.Exit(1)
 	}
 
+	issuer, err := uaaClient.FetchIssuer()
+	if err != nil {
+		logger.Error("Failed to get issuer configuration from UAA", err)
+		os.Exit(1)
+	}
+	logger.Info("received-issuer", lager.Data{"issuer": issuer})
+
 	_, err = uaaClient.FetchKey()
 	if err != nil {
 		logger.Error("Failed to get verification key from UAA", err)
