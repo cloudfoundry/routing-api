@@ -28,9 +28,12 @@ const (
 var _ = Describe("Main", func() {
 	var session *Session
 
+	BeforeEach(func() {
+		oauthServer.Reset()
+	})
 	AfterEach(func() {
 		if session != nil {
-			session.Kill()
+			Eventually(session.Kill()).Should(Exit())
 		}
 	})
 
@@ -90,12 +93,17 @@ var _ = Describe("Main", func() {
 				ghttp.VerifyRequest("GET", OPENID_CONFIG_ENDPOINT),
 				ghttp.RespondWith(http.StatusOK, `{"issuer": "https://uaa.domain.com"}`),
 			),
+			ghttp.CombineHandlers(
+				ghttp.VerifyRequest("GET", TOKEN_KEY_ENDPOINT),
+				ghttp.RespondWith(http.StatusInternalServerError, `{}`),
+			),
 		)
 		args := routingAPIArgs
 		args.DevMode = false
 		session = RoutingApi(args.ArgSlice()...)
 		Eventually(session).Should(Say("received-issuer"))
 		Eventually(session).Should(Say("https://uaa.domain.com"))
+		Eventually(session).Should(Exit(1))
 	})
 
 	It("exits 1 if the uaa_verification_key cannot be fetched on startup and non dev mode", func() {
