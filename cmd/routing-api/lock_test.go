@@ -71,6 +71,7 @@ var _ = Describe("Locking", func() {
 
 			args.Port = uint16(5500 + GinkgoParallelNode())
 			session2 := RoutingApi(args.ArgSlice()...)
+			defer func() { session2.Interrupt().Wait(10 * time.Second) }()
 			Eventually(session2, 10*time.Second).Should(gbytes.Say("acquiring-lock"))
 
 			done := make(chan struct{})
