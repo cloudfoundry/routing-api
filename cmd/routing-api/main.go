@@ -139,14 +139,10 @@ func main() {
 		if err != nil {
 			logger.Fatal("failed-to-create-locket-client", err)
 		}
-		guid, err := uuid.NewV4()
-		if err != nil {
-			logger.Fatal("failed-to-generate-guid", err)
-		}
 
 		lockIdentifier := &locketmodels.Resource{
 			Key:   routingApiLockPath,
-			Owner: guid.String(),
+			Owner: cfg.UUID,
 			Type:  locketmodels.LockType,
 		}
 

@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"golang.org/x/net/context"
+
 	yaml "gopkg.in/yaml.v2"
 
 	"code.cloudfoundry.org/clock"
@@ -116,9 +118,32 @@ var _ = Describe("SqlLock", func() {
 				Eventually(session).Should(gexec.Exit(2))
 			})
 		})
-	})
+		Context("and the UUID is not present", func() {
+			BeforeEach(func() {
+				routingAPIConfig.UUID = ""
+			})
 
+			It("exits with an error", func() {
+				Eventually(session).Should(gexec.Exit(1))
+			})
+		})
+	})
 	Context("with valid configuration", func() {
+		It("uses the configured UUID as the owner", func() {
+			locketClient, err := locket.NewClient(logger, routingAPIConfig.Locket)
+			Expect(err).NotTo(HaveOccurred())
+
+			var lock *locketmodels.FetchResponse
+			Eventually(func() error {
+				lock, err = locketClient.Fetch(context.Background(), &locketmodels.FetchRequest{
+					Key: "routing_api_lock",
+				})
+				return err
+			}).ShouldNot(HaveOccurred())
+
+			Expect(lock.Resource.Owner).To(Equal(routingAPIConfig.UUID))
+		})
+
 		It("acquires the lock in locket and becomes active", func() {
 			routingAPIShouldBeReachable()
 		})

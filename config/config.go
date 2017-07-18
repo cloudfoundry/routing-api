@@ -66,6 +66,7 @@ type Config struct {
 	ConsulCluster                   ConsulCluster             `yaml:"consul_cluster"`
 	SkipConsulLock                  bool                      `yaml:"skip_consul_lock"`
 	Locket                          locket.ClientLocketConfig `yaml:"locket"`
+	UUID                            string                    `yaml:"uuid"`
 }
 
 func NewConfigFromFile(configFile string, authDisabled bool) (Config, error) {
@@ -109,6 +110,9 @@ func (cfg *Config) Initialize(file []byte, authDisabled bool) error {
 	}
 	if cfg.ConsulCluster.RetryInterval == 0 {
 		cfg.ConsulCluster.RetryInterval = locket.RetryInterval
+	}
+	if cfg.UUID == "" {
+		return errors.New("No UUID is specified")
 	}
 
 	err = cfg.process()

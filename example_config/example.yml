@@ -13,6 +13,7 @@ statsd_endpoint: "localhost:8125"
 system_domain: "example.com"
 max_ttl: "2m"
 statsd_client_flush_interval: "10ms"
+uuid: "fake-uuid"
 sqldb:
   username: "username"
   password: "password"

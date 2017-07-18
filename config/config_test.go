@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"errors"
 	"time"
 
 	"code.cloudfoundry.org/locket"
@@ -106,12 +107,58 @@ var _ = Describe("Config", func() {
 		BeforeEach(func() {
 			cfg = &config.Config{}
 		})
+		Context("when UUID property is set", func() {
+			testConfig := func() string {
+				return `log_guid: "my_logs"
+metrics_reporting_interval: "500ms"
+uuid: "fake-uuid"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"
+system_domain: "example.com"
+router_groups:
+- name: router-group-2
+  reservable_ports: 1024-10000,42000
+  type: udp
+consul_cluster:
+  url: "http://localhost:4222"
+`
+			}
+			It("populates the value", func() {
+				config := testConfig()
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.UUID).To(Equal("fake-uuid"))
+			})
+		})
+		Context("when UUID property is not set", func() {
+			testConfig := func() string {
+				return `log_guid: "my_logs"
+metrics_reporting_interval: "500ms"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"
+system_domain: "example.com"
+router_groups:
+- name: router-group-2
+  reservable_ports: 1024-10000,42000
+  type: udp
+consul_cluster:
+  url: "http://localhost:4222"
+`
+			}
+			It("populates the value", func() {
+				config := testConfig()
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(errors.New("No UUID is specified")))
+			})
+		})
 		Context("when consul properties are not set", func() {
 			testConfig := func() string {
 				return `log_guid: "my_logs"
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
+uuid: "fake-uuid"
 system_domain: "example.com"
 router_groups:
 - name: router-group-2
@@ -143,6 +190,7 @@ consul_cluster:
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
+uuid: "fake-uuid"
 system_domain: "example.com"
 router_groups:
 - name: router-group-1
@@ -183,6 +231,7 @@ router_groups:
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
+uuid: "fake-uuid"
 system_domain: "example.com"
 router_groups:
 - name: router-group-1
@@ -265,6 +314,7 @@ router_groups:
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
+uuid: "fake-uuid"
 system_domain: "example.com"
 router_groups:
 - name: router-group-1
@@ -278,6 +328,7 @@ router_groups:
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
+uuid: "fake-uuid"
 system_domain: "example.com"
 router_groups:
 - type: tcp
@@ -291,6 +342,7 @@ router_groups:
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
+uuid: "fake-uuid"
 system_domain: "example.com"
 router_groups:
 - type: tcp
@@ -310,6 +362,7 @@ metron_config:
   address: "1.2.3.4"
   port: "4567"
 metrics_reporting_interval: "500ms"
+uuid: "fake-uuid"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"`
 				err := cfg.Initialize([]byte(test_config), true)
@@ -322,6 +375,7 @@ statsd_client_flush_interval: "10ms"`
 					test_config = `log_guid: "my_logs"
 debug_address: "1.2.3.4:1234"
 system_domain: "example.com"
+uuid: "fake-uuid"
 metron_config:
   address: "1.2.3.4"
   port: "4567"
@@ -350,6 +404,7 @@ statsd_client_flush_interval: "10ms"`
 			testConfig := `log_guid: "my_logs"
 system_domain: "example.com"
 metrics_reporting_interval: "500ms"
+uuid: "fake-uuid"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"`
 
