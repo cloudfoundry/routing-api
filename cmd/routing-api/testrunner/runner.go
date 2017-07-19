@@ -90,6 +90,7 @@ uaa_verification_key: "-----BEGIN PUBLIC KEY-----
 
       -----END PUBLIC KEY-----"
 
+uuid: "routing-api-uuid"
 debug_address: "1.2.3.4:1234"
 metron_config:
   address: "1.2.3.4"
@@ -122,6 +123,7 @@ uaa_verification_key: "-----BEGIN PUBLIC KEY-----
 
       -----END PUBLIC KEY-----"
 
+uuid: "routing-api-uuid"
 debug_address: "1.2.3.4:1234"
 metron_config:
   address: "1.2.3.4"
@@ -159,6 +161,7 @@ uaa_verification_key: "-----BEGIN PUBLIC KEY-----
 
       -----END PUBLIC KEY-----"
 
+uuid: "routing-api-uuid"
 debug_address: "1.2.3.4:1234"
 metron_config:
   address: "1.2.3.4"
