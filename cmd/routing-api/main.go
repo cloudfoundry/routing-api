@@ -141,9 +141,9 @@ func main() {
 		}
 
 		lockIdentifier := &locketmodels.Resource{
-			Key:   routingApiLockPath,
-			Owner: cfg.UUID,
-			Type:  locketmodels.LockType,
+			Key:      routingApiLockPath,
+			Owner:    cfg.UUID,
+			TypeCode: locketmodels.LOCK,
 		}
 
 		locks = append(locks, grouper.Member{Name: "sql-lock", Runner: lock.NewLockRunner(

@@ -193,9 +193,10 @@ var _ = Describe("SqlLock", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				lockIdentifier := &locketmodels.Resource{
-					Key:   "routing_api_lock",
-					Owner: "Your worst enemy.",
-					Value: "Something",
+					Key:      "routing_api_lock",
+					Owner:    "Your worst enemy.",
+					Value:    "Something",
+					TypeCode: locketmodels.LOCK,
 				}
 
 				clock := clock.NewClock()
