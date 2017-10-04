@@ -2,13 +2,10 @@ package main_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
 	"golang.org/x/net/context"
-
-	yaml "gopkg.in/yaml.v2"
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
@@ -36,10 +33,9 @@ var _ = Describe("SqlLock", func() {
 		locketRunner     ifrit.Runner
 		locketProcess    ifrit.Process
 		locketAddress    string
-		routingAPIConfig config.Config
+		routingAPIConfig *config.Config
 		configFilePath   string
 		session          *gexec.Session
-		args             testrunner.Args
 
 		logger lager.Logger
 	)
@@ -66,31 +62,21 @@ var _ = Describe("SqlLock", func() {
 		})
 		locketProcess = ginkgomon.Invoke(locketRunner)
 
-		configBytes, err := ioutil.ReadFile(routingAPIArgsOnlySQL.ConfigPath)
-		Expect(err).ToNot(HaveOccurred())
-		err = yaml.Unmarshal(configBytes, &routingAPIConfig)
-		Expect(err).ToNot(HaveOccurred())
-
+		cc := defaultConfig
+		cc.UseETCD = false
+		routingAPIConfig = getRoutingAPIConfig(cc)
 		routingAPIConfig.Locket = locketrunner.ClientLocketConfig()
 		routingAPIConfig.Locket.LocketAddress = locketAddress
 	})
 
 	JustBeforeEach(func() {
-		configBytes, err := yaml.Marshal(routingAPIConfig)
-		Expect(err).ToNot(HaveOccurred())
-
-		configFile, err := ioutil.TempFile("", "routing-api-config")
-		Expect(err).NotTo(HaveOccurred())
-
-		configFilePath = configFile.Name()
-
-		_, err = configFile.Write(configBytes)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = configFile.Close()
-		Expect(err).NotTo(HaveOccurred())
-
-		args = routingAPIArgsOnlySQL
+		configFilePath = writeConfigToTempFile(routingAPIConfig)
+		args := testrunner.Args{
+			Port:       routingAPIPort,
+			IP:         routingAPIIP,
+			ConfigPath: configFilePath,
+			DevMode:    true,
+		}
 		args.ConfigPath = configFilePath
 		session = RoutingApi(args.ArgSlice()...)
 	})
@@ -240,14 +226,27 @@ var _ = Describe("SqlLock", func() {
 		It("ensures there is no downtime", func() {
 			Eventually(session, 10*time.Second).Should(gbytes.Say("routing-api.started"))
 
-			args.Port = uint16(5500 + GinkgoParallelNode())
-			session2 := RoutingApi(args.ArgSlice()...)
-			defer func() { session2.Interrupt().Wait(10 * time.Second) }()
-			Eventually(session2, 10*time.Second).Should(gbytes.Say("locket-lock.started"))
+			session2Port := uint16(testPort())
+			apiConfig := getRoutingAPIConfig(defaultConfig)
+			apiConfig.AdminSocket = tempUnixSocket()
+			apiConfig.Locket = locketrunner.ClientLocketConfig()
+			apiConfig.Locket.LocketAddress = locketAddress
+			configFilePath := writeConfigToTempFile(apiConfig)
+			session2Args := testrunner.Args{
+				Port:       session2Port,
+				IP:         routingAPIIP,
+				ConfigPath: configFilePath,
+				DevMode:    true,
+			}
+			session2 := RoutingApi(session2Args.ArgSlice()...)
 
+			defer func() {
+				session2.Interrupt().Wait(10 * time.Second)
+			}()
+			Eventually(session2, 10*time.Second).Should(gbytes.Say("locket-lock.started"))
 			done := make(chan struct{})
 			goRoutineFinished := make(chan struct{})
-			client2 := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", args.Port), false)
+			client2 := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", session2Port), false)
 
 			go func() {
 				defer GinkgoRecover()

@@ -1,7 +1,11 @@
 package main_test
 
 import (
+	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/tedsuo/ifrit"
@@ -512,6 +516,36 @@ var _ = Describe("Routes API", func() {
 		})
 	}
 
+	TestRouterGroupsLocking := func() {
+		Context("Locking router groups reads", func() {
+			It("locks when invoked", func() {
+				client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
+				Eventually(func() error {
+					_, err := client.RouterGroups()
+					return err
+				}, "30s", "1s")
+				_, err := client.RouterGroups()
+				Expect(err).NotTo(HaveOccurred())
+
+				req, err := http.NewRequest("PUT", fmt.Sprintf("http://whatever/%s", "lock_router_group_reads"), nil)
+				Expect(err).NotTo(HaveOccurred())
+				tr := &http.Transport{
+					DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+						return net.Dial("unix", routingAPIAdminSocket)
+					},
+				}
+				adminClient := http.Client{Transport: tr}
+				res, err := adminClient.Do(req)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+
+				client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
+				_, err = client.RouterGroups()
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	}
+
 	withCreateRouterGroup := func() {
 		var routerGroup models.RouterGroup
 		var routerGroups models.RouterGroups
@@ -551,15 +585,29 @@ var _ = Describe("Routes API", func() {
 	}
 
 	Describe("API with MySQL", func() {
-		var routingAPIProcess ifrit.Process
+		var (
+			routingAPIProcess ifrit.Process
+			configFilePath    string
+		)
 
 		BeforeEach(func() {
+			rapiConfig := getRoutingAPIConfig(defaultConfig)
+			configFilePath = writeConfigToTempFile(rapiConfig)
+			routingAPIArgs := testrunner.Args{
+				Port:       routingAPIPort,
+				IP:         routingAPIIP,
+				ConfigPath: configFilePath,
+				DevMode:    true,
+			}
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
 		})
 
 		AfterEach(func() {
 			ginkgomon.Kill(routingAPIProcess)
+
+			err := os.RemoveAll(configFilePath)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		TestRouterGroups(withCreateRouterGroup)
@@ -567,18 +615,35 @@ var _ = Describe("Routes API", func() {
 		TestTCPEvents()
 		TestHTTPRoutes()
 		TestHTTPEvents()
+		TestRouterGroupsLocking()
 	})
 
 	Describe("API with ETCD", func() {
-		var routingAPIProcess ifrit.Process
+		var (
+			routingAPIProcess ifrit.Process
+			configFilePath    string
+		)
 
 		BeforeEach(func() {
-			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgsNoSQL)
+			cc := defaultConfig
+			cc.UseSQL = false
+			rapiConfig := getRoutingAPIConfig(defaultConfig)
+			configFilePath = writeConfigToTempFile(rapiConfig)
+			routingAPIArgs := testrunner.Args{
+				Port:       routingAPIPort,
+				IP:         routingAPIIP,
+				ConfigPath: configFilePath,
+				DevMode:    true,
+			}
+			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
 		})
 
 		AfterEach(func() {
 			ginkgomon.Kill(routingAPIProcess)
+
+			err := os.RemoveAll(configFilePath)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		TestHTTPEvents()

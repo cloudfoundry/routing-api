@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"os"
 	"path"
 	"path/filepath"
 
@@ -20,6 +21,7 @@ var _ = Describe("ETCD Migrations", func() {
 	var (
 		etcdClient        db.DB
 		routingAPIProcess ifrit.Process
+		configFilePath    string
 		etcdRouterGroups  []models.RouterGroup
 	)
 
@@ -39,7 +41,14 @@ var _ = Describe("ETCD Migrations", func() {
 
 	})
 	JustBeforeEach(func() {
-		routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+		routingAPIConfig := getRoutingAPIConfig(defaultConfig)
+		configFilePath = writeConfigToTempFile(routingAPIConfig)
+		routingAPIRunner := testrunner.New(routingAPIBinPath, testrunner.Args{
+			Port:       routingAPIPort,
+			IP:         routingAPIIP,
+			ConfigPath: configFilePath,
+			DevMode:    true,
+		})
 		routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
 		Eventually(routingAPIProcess.Ready(), "5s").Should(BeClosed())
 	})
@@ -47,6 +56,8 @@ var _ = Describe("ETCD Migrations", func() {
 	AfterEach(func() {
 		ginkgomon.Kill(routingAPIProcess)
 
+		err := os.RemoveAll(configFilePath)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Context("when etcd already has router groups", func() {

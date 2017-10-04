@@ -35,6 +35,86 @@ var _ = Describe("SqlDB", func() {
 				sqlDB, err = db.NewSqlDB(sqlCfg)
 			})
 
+			Describe("Locking", func() {
+				Context("When reads are locked", func() {
+					JustBeforeEach(func() {
+						sqlDB.LockRouterGroupReads()
+					})
+					It("ReadRouterGroups returns an error", func() {
+						_, err = sqlDB.ReadRouterGroups()
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+					})
+					It("ReadRouterGroup returns an error", func() {
+						_, err = sqlDB.ReadRouterGroup("foobar")
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+					})
+					It("ReadRouterGroupByName returns an error", func() {
+						_, err = sqlDB.ReadRouterGroupByName("foobar")
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+					})
+					It("SaveRouterGroup returns an error", func() {
+						err = sqlDB.SaveRouterGroup(models.RouterGroup{})
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+					})
+				})
+
+				Context("When reads are unlocked", func() {
+					JustBeforeEach(func() {
+						sqlDB.LockRouterGroupReads()
+						sqlDB.UnlockRouterGroupReads()
+					})
+					It("ReadRouterGroups does not return an error", func() {
+						_, err = sqlDB.ReadRouterGroups()
+						Expect(err).ToNot(HaveOccurred())
+					})
+					It("ReadRouterGroup does not return an error", func() {
+						_, err = sqlDB.ReadRouterGroup("foobar")
+						Expect(err).ToNot(HaveOccurred())
+					})
+					It("ReadRouterGroupByName does not return an error", func() {
+						_, err = sqlDB.ReadRouterGroupByName("foobar")
+						Expect(err).ToNot(HaveOccurred())
+					})
+					It("SaveRouterGroup does not return an error", func() {
+						err = sqlDB.SaveRouterGroup(models.RouterGroup{Guid: "foo"})
+						Expect(err).ToNot(HaveOccurred())
+					})
+				})
+
+				Context("When writes are locked", func() {
+					JustBeforeEach(func() {
+						sqlDB.LockRouterGroupWrites()
+					})
+
+					It("does not throw read errors", func() {
+						_, err = sqlDB.ReadRouterGroups()
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("SaveRouterGroup returns an error", func() {
+						err = sqlDB.SaveRouterGroup(models.RouterGroup{})
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+					})
+				})
+
+				Context("When writes are unlocked", func() {
+					JustBeforeEach(func() {
+						sqlDB.LockRouterGroupWrites()
+						sqlDB.UnlockRouterGroupWrites()
+					})
+
+					It("does not throw read errors", func() {
+						_, err = sqlDB.ReadRouterGroups()
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("SaveRouterGroup does not return an error", func() {
+						err = sqlDB.SaveRouterGroup(models.RouterGroup{Guid: "foo"})
+						Expect(err).NotTo(HaveOccurred())
+					})
+				})
+			})
+
 			It("returns a sql db client", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(sqlDB).ToNot(BeNil())
@@ -1365,6 +1445,7 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			Context("when db throws an error", func() {
+
 				BeforeEach(func() {
 					err := sqlDB.Client.Close()
 					Expect(err).ToNot(HaveOccurred())

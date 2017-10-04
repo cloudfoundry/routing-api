@@ -21,6 +21,7 @@ var _ = Describe("Config", func() {
 					cfg, err := config.NewConfigFromFile(cfg_file, false)
 
 					Expect(err).NotTo(HaveOccurred())
+					Expect(cfg.AdminSocket).To(Equal("/some/path/to/socket.sock"))
 					Expect(cfg.LogGuid).To(Equal("my_logs"))
 					Expect(cfg.MetronConfig.Address).To(Equal("1.2.3.4"))
 					Expect(cfg.MetronConfig.Port).To(Equal("4567"))
@@ -110,6 +111,7 @@ var _ = Describe("Config", func() {
 		Context("when UUID property is set", func() {
 			testConfig := func() string {
 				return `log_guid: "my_logs"
+admin_socket: "/some/path"
 metrics_reporting_interval: "500ms"
 uuid: "fake-uuid"
 statsd_endpoint: "localhost:8125"
@@ -133,6 +135,7 @@ consul_cluster:
 		Context("when UUID property is not set", func() {
 			testConfig := func() string {
 				return `log_guid: "my_logs"
+admin_socket: "/some/path"
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
@@ -152,9 +155,56 @@ consul_cluster:
 				Expect(err).To(MatchError(errors.New("No UUID is specified")))
 			})
 		})
+		Context("when AdminSocket property is set", func() {
+			testConfig := func() string {
+				return `admin_socket: "/some/path"
+log_guid: "my_logs"
+metrics_reporting_interval: "500ms"
+uuid: "fake-uuid"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"
+system_domain: "example.com"
+router_groups:
+- name: router-group-2
+  reservable_ports: 1024-10000,42000
+  type: udp
+consul_cluster:
+  url: "http://localhost:4222"
+`
+			}
+			It("populates the value", func() {
+				config := testConfig()
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.AdminSocket).To(Equal("/some/path"))
+			})
+		})
+		Context("when AdminSocket property is not set", func() {
+			testConfig := func() string {
+				return `log_guid: "my_logs"
+metrics_reporting_interval: "500ms"
+uuid: "fake-uuid"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"
+system_domain: "example.com"
+router_groups:
+- name: router-group-2
+  reservable_ports: 1024-10000,42000
+  type: udp
+consul_cluster:
+  url: "http://localhost:4222"
+`
+			}
+			It("returns an error", func() {
+				config := testConfig()
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).To(HaveOccurred())
+			})
+		})
 		Context("when consul properties are not set", func() {
 			testConfig := func() string {
 				return `log_guid: "my_logs"
+admin_socket: "/some/path"
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
@@ -187,6 +237,7 @@ consul_cluster:
 
 			testConfig := func(name string) string {
 				return `log_guid: "my_logs"
+admin_socket: "/some/path"
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
@@ -228,6 +279,7 @@ router_groups:
 
 			testConfig := func(ports string) string {
 				return `log_guid: "my_logs"
+admin_socket: "/some/path"
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
@@ -311,6 +363,7 @@ router_groups:
 
 			It("returns error for invalid router group type", func() {
 				missingType := `log_guid: "my_logs"
+admin_socket: "/some/path"
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
@@ -325,6 +378,7 @@ router_groups:
 
 			It("returns error for invalid router group type", func() {
 				missingName := `log_guid: "my_logs"
+admin_socket: "/some/path"
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
@@ -339,6 +393,7 @@ router_groups:
 
 			It("returns error for missing reservable port range", func() {
 				missingRouterGroup := `log_guid: "my_logs"
+admin_socket: "/some/path"
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
@@ -357,6 +412,7 @@ router_groups:
 			var test_config string
 			It("errors if there is no system_domain", func() {
 				test_config = `log_guid: "my_logs"
+admin_socket: "/some/path"
 debug_address: "1.2.3.4:1234"
 metron_config:
   address: "1.2.3.4"
@@ -373,6 +429,7 @@ statsd_client_flush_interval: "10ms"`
 			Context("UAA errors", func() {
 				BeforeEach(func() {
 					test_config = `log_guid: "my_logs"
+admin_socket: "/some/path"
 debug_address: "1.2.3.4:1234"
 system_domain: "example.com"
 uuid: "fake-uuid"
@@ -402,6 +459,7 @@ statsd_client_flush_interval: "10ms"`
 		Context("when there are no router groups seeded in the configuration file", func() {
 
 			testConfig := `log_guid: "my_logs"
+admin_socket: "/some/path"
 system_domain: "example.com"
 metrics_reporting_interval: "500ms"
 uuid: "fake-uuid"

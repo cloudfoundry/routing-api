@@ -20,10 +20,42 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
+const backupError = "Database unavailable due to backup or restore"
+
+type rwLocker struct {
+	readLock  uint32
+	writeLock uint32
+}
+
+func (l *rwLocker) isReadLocked() bool {
+	return atomic.LoadUint32(&l.readLock) != 0
+}
+
+func (l *rwLocker) isWriteLocked() bool {
+	return atomic.LoadUint32(&l.writeLock) != 0
+}
+
+func (l *rwLocker) lockReads() {
+	atomic.StoreUint32(&l.readLock, 1)
+}
+
+func (l *rwLocker) lockWrites() {
+	atomic.StoreUint32(&l.writeLock, 1)
+}
+
+func (l *rwLocker) unlockReads() {
+	atomic.StoreUint32(&l.readLock, 0)
+}
+
+func (l *rwLocker) unlockWrites() {
+	atomic.StoreUint32(&l.writeLock, 0)
+}
+
 type SqlDB struct {
 	Client       Client
 	tcpEventHub  eventhub.Hub
 	httpEventHub eventhub.Hub
+	locker       *rwLocker
 }
 
 var DeleteError = DBError{Type: KeyNotFound, Message: "Delete Fails: Route does not exist"}
@@ -68,6 +100,7 @@ func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 		Client:       NewGormClient(db),
 		tcpEventHub:  tcpEventHub,
 		httpEventHub: httpEventHub,
+		locker:       &rwLocker{},
 	}, nil
 }
 
@@ -141,6 +174,9 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 }
 
 func (s *SqlDB) ReadRouterGroups() (models.RouterGroups, error) {
+	if s.locker.isReadLocked() {
+		return models.RouterGroups{}, errors.New(backupError)
+	}
 	routerGroupsDB := models.RouterGroupsDB{}
 	routerGroups := models.RouterGroups{}
 	err := s.Client.Find(&routerGroupsDB)
@@ -152,6 +188,9 @@ func (s *SqlDB) ReadRouterGroups() (models.RouterGroups, error) {
 }
 
 func (s *SqlDB) ReadRouterGroup(guid string) (models.RouterGroup, error) {
+	if s.locker.isReadLocked() {
+		return models.RouterGroup{}, errors.New(backupError)
+	}
 	routerGroupDB := models.RouterGroupDB{}
 	routerGroup := models.RouterGroup{}
 	err := s.Client.Where("guid = ?", guid).First(&routerGroupDB)
@@ -166,6 +205,9 @@ func (s *SqlDB) ReadRouterGroup(guid string) (models.RouterGroup, error) {
 }
 
 func (s *SqlDB) ReadRouterGroupByName(name string) (models.RouterGroup, error) {
+	if s.locker.isReadLocked() {
+		return models.RouterGroup{}, errors.New(backupError)
+	}
 	routerGroupDB := models.RouterGroupDB{}
 	routerGroup := models.RouterGroup{}
 	err := s.Client.Where("name = ?", name).First(&routerGroupDB)
@@ -180,6 +222,9 @@ func (s *SqlDB) ReadRouterGroupByName(name string) (models.RouterGroup, error) {
 }
 
 func (s *SqlDB) SaveRouterGroup(routerGroup models.RouterGroup) error {
+	if s.locker.isWriteLocked() {
+		return errors.New(backupError)
+	}
 	existingRouterGroup, err := s.ReadRouterGroup(routerGroup.Guid)
 	if err != nil {
 		return err
@@ -195,6 +240,22 @@ func (s *SqlDB) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	}
 
 	return err
+}
+
+func (s *SqlDB) LockRouterGroupReads() {
+	s.locker.lockReads()
+}
+
+func (s *SqlDB) LockRouterGroupWrites() {
+	s.locker.lockWrites()
+}
+
+func (s *SqlDB) UnlockRouterGroupReads() {
+	s.locker.unlockReads()
+}
+
+func (s *SqlDB) UnlockRouterGroupWrites() {
+	s.locker.unlockWrites()
 }
 
 func updateRouterGroup(existingRouterGroup, currentRouterGroup *models.RouterGroup) {

@@ -16,8 +16,7 @@ const (
 	EventStreamTcpRoute   = "TcpRouteEventStream"
 )
 
-var RoutesMap = map[string]rata.Route{
-	UpsertRoute:           {Path: "/routing/v1/routes", Method: "POST", Name: UpsertRoute},
+var RoutesMap = map[string]rata.Route{UpsertRoute: {Path: "/routing/v1/routes", Method: "POST", Name: UpsertRoute},
 	DeleteRoute:           {Path: "/routing/v1/routes", Method: "DELETE", Name: DeleteRoute},
 	ListRoute:             {Path: "/routing/v1/routes", Method: "GET", Name: ListRoute},
 	EventStreamRoute:      {Path: "/routing/v1/events", Method: "GET", Name: EventStreamRoute},

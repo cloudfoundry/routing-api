@@ -49,6 +49,7 @@ type ConsulCluster struct {
 }
 
 type Config struct {
+	AdminSocket                     string                    `yaml:"admin_socket"`
 	DebugAddress                    string                    `yaml:"debug_address"`
 	LogGuid                         string                    `yaml:"log_guid"`
 	MetronConfig                    MetronConfig              `yaml:"metron_config"`
@@ -113,6 +114,9 @@ func (cfg *Config) Initialize(file []byte, authDisabled bool) error {
 	}
 	if cfg.UUID == "" {
 		return errors.New("No UUID is specified")
+	}
+	if cfg.AdminSocket == "" {
+		return errors.New("No admin socket path is specified")
 	}
 
 	err = cfg.process()

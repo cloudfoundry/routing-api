@@ -17,6 +17,8 @@ import (
 
 var _ = Describe("RoutingApiUpgrade", func() {
 	var (
+		oldRoutingAPIBinPath    string
+		oldConfigFilePath       string
 		oldRoutingAPIProcess    ifrit.Process
 		routingAPIProcess       ifrit.Process
 		routingAPINoETCDProcess ifrit.Process
@@ -27,7 +29,7 @@ var _ = Describe("RoutingApiUpgrade", func() {
 	)
 
 	BeforeEach(func() {
-		oldRoutingAPIBinPath := os.Getenv("OLD_ROUTING_API_BIN_PATH")
+		oldRoutingAPIBinPath = os.Getenv("OLD_ROUTING_API_BIN_PATH")
 		if oldRoutingAPIBinPath == "" {
 			Skip("Skipping Upgrade Test: OLD_ROUTING_API_BIN_PATH not set")
 		}
@@ -35,8 +37,17 @@ var _ = Describe("RoutingApiUpgrade", func() {
 			Skip(fmt.Sprintf("Skipping Upgrade Test: Cannot find %s", oldRoutingAPIBinPath))
 		}
 
+		cc := defaultConfig
+		cc.UseSQL = false
+		routingAPIConfig := getRoutingAPIConfig(cc)
+		oldConfigFilePath = writeConfigToTempFile(routingAPIConfig)
+		oldRoutingAPIRunner := testrunner.New(oldRoutingAPIBinPath, testrunner.Args{
+			Port:       routingAPIPort,
+			IP:         routingAPIIP,
+			ConfigPath: oldConfigFilePath,
+			DevMode:    true,
+		})
 		// Bring up an old version of routing_api
-		oldRoutingAPIRunner := testrunner.New(oldRoutingAPIBinPath, routingAPIArgsNoSQL)
 		oldRoutingAPIProcess = ginkgomon.Invoke(oldRoutingAPIRunner)
 		Eventually(oldRoutingAPIProcess.Ready(), "5s").Should(BeClosed())
 
@@ -48,6 +59,9 @@ var _ = Describe("RoutingApiUpgrade", func() {
 
 	AfterEach(func() {
 		ginkgomon.Interrupt(routingAPINoETCDProcess)
+
+		err := os.RemoveAll(oldConfigFilePath)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("migrates successfully", func() {
@@ -79,8 +93,19 @@ var _ = Describe("RoutingApiUpgrade", func() {
 		// Kill Old Routing API
 		ginkgomon.Interrupt(oldRoutingAPIProcess)
 
+		cc := defaultConfig
+		routingAPIConfig := getRoutingAPIConfig(cc)
+		configFilePath1 := writeConfigToTempFile(routingAPIConfig)
 		// Bring up Routing API with etcd and sql
-		routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+		routingAPIRunner := testrunner.New(oldRoutingAPIBinPath, testrunner.Args{
+			Port:       routingAPIPort,
+			IP:         routingAPIIP,
+			ConfigPath: configFilePath1,
+			DevMode:    true,
+		})
+		defer func() {
+			Expect(os.RemoveAll(configFilePath1)).To(Succeed())
+		}()
 		routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
 		Eventually(routingAPIProcess.Ready(), "5s").Should(BeClosed())
 		Eventually(func() error {
@@ -93,8 +118,19 @@ var _ = Describe("RoutingApiUpgrade", func() {
 		// Kill Old Routing API
 		ginkgomon.Interrupt(routingAPIProcess)
 
+		cc.UseETCD = false
+		routingAPIConfig = getRoutingAPIConfig(cc)
+		configFilePath2 := writeConfigToTempFile(routingAPIConfig)
 		// Bring up Routing API with sql and NO etcd
-		routingAPIRunner = testrunner.New(routingAPIBinPath, routingAPIArgsOnlySQL)
+		routingAPIRunner = testrunner.New(routingAPIBinPath, testrunner.Args{
+			Port:       routingAPIPort,
+			IP:         routingAPIIP,
+			ConfigPath: configFilePath2,
+			DevMode:    true,
+		})
+		defer func() {
+			Expect(os.RemoveAll(configFilePath2)).To(Succeed())
+		}()
 		routingAPINoETCDProcess := ginkgomon.Invoke(routingAPIRunner)
 		Eventually(routingAPINoETCDProcess.Ready(), "5s").Should(BeClosed())
 		Eventually(func() error {

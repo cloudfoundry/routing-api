@@ -3,6 +3,7 @@ package main_test
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"os/exec"
 	"time"
 
@@ -26,15 +27,31 @@ const (
 )
 
 var _ = Describe("Main", func() {
-	var session *Session
+	var (
+		session        *Session
+		routingAPIArgs testrunner.Args
+		configFilePath string
+	)
 
 	BeforeEach(func() {
 		oauthServer.Reset()
+
+		rapiConfig := getRoutingAPIConfig(defaultConfig)
+		configFilePath = writeConfigToTempFile(rapiConfig)
+		routingAPIArgs = testrunner.Args{
+			Port:       routingAPIPort,
+			IP:         routingAPIIP,
+			ConfigPath: configFilePath,
+			DevMode:    true,
+		}
 	})
 	AfterEach(func() {
 		if session != nil {
 			Eventually(session.Kill()).Should(Exit())
 		}
+
+		err := os.RemoveAll(configFilePath)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("exits 1 if no config file is provided", func() {
@@ -199,6 +216,17 @@ var _ = Describe("Main", func() {
 		})
 
 		Context("when etcd is unavailable", func() {
+			BeforeEach(func() {
+				cc := defaultConfig
+				cc.UseSQL = false
+				rapiConfig := getRoutingAPIConfig(cc)
+				routingAPIArgs = testrunner.Args{
+					Port:       routingAPIPort,
+					IP:         routingAPIIP,
+					ConfigPath: writeConfigToTempFile(rapiConfig),
+					DevMode:    true,
+				}
+			})
 			AfterEach(func() {
 				// etcd uses peer port when creating cluster. Defaults to specified etcd port + 3000
 				peerPort := etcdPort + 3000
@@ -210,7 +238,7 @@ var _ = Describe("Main", func() {
 			})
 
 			It("exits 1 when we shut down the routing api", func() {
-				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgsNoSQL)
+				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 				proc := ifrit.Invoke(routingAPIRunner)
 
 				Expect(etcdAllocator.Delete()).NotTo(HaveOccurred())
@@ -224,12 +252,29 @@ var _ = Describe("Main", func() {
 	})
 
 	Context("when multiple router groups with the same name are seeded", func() {
-		var gormDB *gorm.DB
+		var (
+			gormDB     *gorm.DB
+			configPath string
+		)
 		BeforeEach(func() {
+			rapiConfig := getRoutingAPIConfig(defaultConfig)
+			rapiConfig.RouterGroups = models.RouterGroups{
+				models.RouterGroup{
+					Name:            "default-tcp",
+					Type:            "tcp",
+					ReservablePorts: "2000",
+				},
+				models.RouterGroup{
+					Name:            "default-tcp",
+					Type:            "tcp",
+					ReservablePorts: "10000-65535",
+				},
+			}
+			configPath = writeConfigToTempFile(rapiConfig)
 			routingAPIArgs = testrunner.Args{
 				Port:       routingAPIPort,
 				IP:         routingAPIIP,
-				ConfigPath: createConfigWithRg(),
+				ConfigPath: configPath,
 				DevMode:    true,
 			}
 			connectionString := fmt.Sprintf("root:password@/%s?parseTime=true", sqlDBName)
@@ -239,6 +284,7 @@ var _ = Describe("Main", func() {
 		})
 		AfterEach(func() {
 			gormDB.AutoMigrate(&models.RouterGroupDB{})
+			Expect(os.Remove(configPath)).To(Succeed())
 		})
 		It("should fail with an error", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)

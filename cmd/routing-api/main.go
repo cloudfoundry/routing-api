@@ -16,6 +16,7 @@ import (
 	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/locket/lock"
 	"code.cloudfoundry.org/routing-api"
+	"code.cloudfoundry.org/routing-api/admin"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/handlers"
@@ -106,6 +107,7 @@ func main() {
 	}()
 
 	apiServer := constructApiServer(cfg, database, statsdClient, logger.Session("api-server"))
+	adminServer := admin.NewServer(cfg.AdminSocket, database, logger.Session("admin-server"))
 	stopper := constructStopper(database)
 
 	routerRegister := constructRouteRegister(
@@ -169,6 +171,7 @@ func main() {
 		grouper.Member{Name: "lock-acquirer", Runner: lockAcquirer},
 		grouper.Member{Name: "seed-router-groups", Runner: routerGroupSeeder},
 		grouper.Member{Name: "api-server", Runner: apiServer},
+		grouper.Member{Name: "admin-server", Runner: adminServer},
 		grouper.Member{Name: "conn-stopper", Runner: stopper},
 		grouper.Member{Name: "route-register", Runner: routerRegister},
 		grouper.Member{Name: "metrics", Runner: metricsReporter},

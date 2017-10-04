@@ -34,6 +34,11 @@ type DB interface {
 
 	CancelWatches()
 	WatchChanges(watchType string) (<-chan Event, <-chan error, context.CancelFunc)
+
+	LockRouterGroupReads()
+	LockRouterGroupWrites()
+	UnlockRouterGroupReads()
+	UnlockRouterGroupWrites()
 }
 
 const (
@@ -487,6 +492,11 @@ func (e *EtcdDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error 
 
 	return err
 }
+
+func (e *EtcdDB) LockRouterGroupReads()    {}
+func (e *EtcdDB) LockRouterGroupWrites()   {}
+func (e *EtcdDB) UnlockRouterGroupReads()  {}
+func (e *EtcdDB) UnlockRouterGroupWrites() {}
 
 func generateTcpRouteMappingKey(tcpMapping models.TcpRouteMapping) string {
 	// Generating keys following this pattern

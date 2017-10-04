@@ -2,7 +2,6 @@ package main_test
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,17 +11,22 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
-	"text/template"
+	"sync"
+
+	yaml "gopkg.in/yaml.v2"
 
 	"google.golang.org/grpc/grpclog"
 
 	"code.cloudfoundry.org/consuladapter/consulrunner"
-	"code.cloudfoundry.org/gorouter/config"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
+	"code.cloudfoundry.org/routing-api/config"
+	"code.cloudfoundry.org/routing-api/models"
 	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
@@ -35,15 +39,13 @@ var (
 	etcdPort int
 	etcdUrl  string
 
+	defaultConfig          customConfig
 	client                 routing_api.Client
 	locketBinPath          string
 	routingAPIBinPath      string
 	routingAPIAddress      string
-	routingAPIConfig       config.Config
-	routingAPIArgs         testrunner.Args
-	routingAPIArgsNoSQL    testrunner.Args
-	routingAPIArgsOnlySQL  testrunner.Args
 	routingAPIPort         uint16
+	routingAPIAdminSocket  string
 	routingAPIIP           string
 	routingAPISystemDomain string
 	oauthServer            *ghttp.Server
@@ -119,30 +121,120 @@ var _ = BeforeEach(func() {
 	Expect(err).NotTo(HaveOccurred())
 	resetConsul()
 
-	routingAPIArgs = testrunner.Args{
-		Port:       routingAPIPort,
-		IP:         routingAPIIP,
-		ConfigPath: createConfig(true, true),
-		DevMode:    true,
-	}
+	caCertsPath, err := filepath.Abs(filepath.Join("..", "..", "fixtures", "uaa-certs", "uaa-ca.pem"))
+	Expect(err).NotTo(HaveOccurred())
 
-	routingAPIArgsNoSQL = testrunner.Args{
-		Port:       routingAPIPort,
-		IP:         routingAPIIP,
-		ConfigPath: createConfig(false, true),
-		DevMode:    true,
-	}
+	oauthSrvPort, err := strconv.ParseInt(oauthServerPort, 10, 0)
+	Expect(err).NotTo(HaveOccurred())
 
-	routingAPIArgsOnlySQL = testrunner.Args{
-		Port:       routingAPIPort,
-		IP:         routingAPIIP,
-		ConfigPath: createConfig(true, false),
-		DevMode:    true,
+	routingAPIAdminSocket = tempUnixSocket()
+	defaultConfig = customConfig{
+		StatsdPort:  8125 + GinkgoParallelNode(),
+		AdminSocket: routingAPIAdminSocket,
+		UAAPort:     int(oauthSrvPort),
+		CACertsPath: caCertsPath,
+		EtcdPort:    etcdPort,
+		Schema:      sqlDBName,
+		ConsulUrl:   consulRunner.URL(),
+		UseSQL:      true,
+		UseETCD:     true,
 	}
 })
 
+type customConfig struct {
+	EtcdPort    int
+	Port        int
+	StatsdPort  int
+	UAAPort     int
+	AdminSocket string
+	CACertsPath string
+	Schema      string
+	ConsulUrl   string
+	UseETCD     bool
+	UseSQL      bool
+}
+
+func getRoutingAPIConfig(c customConfig) *config.Config {
+	rapiConfig := &config.Config{
+		AdminSocket:  c.AdminSocket,
+		DebugAddress: "1.2.3.4:1234",
+		LogGuid:      "my_logs",
+		MetronConfig: config.MetronConfig{
+			Address: "1.2.3.4",
+			Port:    "4567",
+		},
+		SystemDomain:                    "example.com",
+		MetricsReportingIntervalString:  "500ms",
+		StatsdEndpoint:                  fmt.Sprintf("localhost:%d", c.StatsdPort),
+		StatsdClientFlushIntervalString: "10ms",
+		OAuth: config.OAuthConfig{
+			TokenEndpoint:     "127.0.0.1",
+			Port:              c.UAAPort,
+			SkipSSLValidation: false,
+			CACerts:           c.CACertsPath,
+		},
+		RouterGroups: models.RouterGroups{
+			models.RouterGroup{
+				Name:            "default-tcp",
+				Type:            "tcp",
+				ReservablePorts: "1024-65535",
+			},
+		},
+		ConsulCluster: config.ConsulCluster{
+			Servers:       c.ConsulUrl,
+			RetryInterval: 50 * time.Millisecond,
+		},
+		UUID: "fake-uuid",
+	}
+	if c.UseETCD {
+		rapiConfig.Etcd = config.Etcd{
+			NodeURLS: []string{fmt.Sprintf("http://localhost:%d", c.EtcdPort)},
+		}
+	}
+	if c.UseSQL {
+		rapiConfig.SqlDB = config.SqlDB{
+			Host:     "localhost",
+			Port:     3306,
+			Schema:   c.Schema,
+			Type:     "mysql",
+			Username: "root",
+			Password: "password",
+		}
+	}
+	return rapiConfig
+}
+
+func writeConfigToTempFile(c *config.Config) string {
+	d, err := yaml.Marshal(c)
+	Expect(err).ToNot(HaveOccurred())
+
+	tmpfile, err := ioutil.TempFile("", "routing_api_config.yml")
+	Expect(err).ToNot(HaveOccurred())
+	defer func() {
+		Expect(tmpfile.Close()).To(Succeed())
+	}()
+
+	_, err = tmpfile.Write(d)
+	Expect(err).ToNot(HaveOccurred())
+
+	return tmpfile.Name()
+}
+
 func routingApiClient() routing_api.Client {
 	routingAPIPort = uint16(testPort())
+	routingAPIIP = "127.0.0.1"
+	routingAPISystemDomain = "example.com"
+	routingAPIAddress = fmt.Sprintf("%s:%d", routingAPIIP, routingAPIPort)
+
+	routingAPIURL := &url.URL{
+		Scheme: "http",
+		Host:   routingAPIAddress,
+	}
+
+	return routing_api.NewClient(routingAPIURL.String(), false)
+}
+
+func routingApiClientWithPort(routingAPIPort uint16) routing_api.Client {
 	routingAPIIP = "127.0.0.1"
 	routingAPISystemDomain = "example.com"
 	routingAPIAddress = fmt.Sprintf("%s:%d", routingAPIIP, routingAPIPort)
@@ -192,107 +284,31 @@ func resetConsul() {
 	Expect(err).ToNot(HaveOccurred())
 }
 
-func createConfigWithRg() string {
-	caCertsPath, err := filepath.Abs(filepath.Join("..", "..", "fixtures", "uaa-certs", "uaa-ca.pem"))
-	Expect(err).NotTo(HaveOccurred())
-
-	actualConfig := customConfig{
-		Port:      8125 + GinkgoParallelNode(),
-		UAAPort:   oauthServerPort,
-		CACerts:   caCertsPath,
-		EtcdPort:  etcdPort,
-		Schema:    sqlDBName,
-		ConsulUrl: consulRunner.URL(),
-	}
-	var templatePath string
-	templatePath, err = filepath.Abs(filepath.Join("..", "..", "example_config", "example_template_rg.yml"))
-	Expect(err).NotTo(HaveOccurred())
-
-	var configFilePath string
-	configFilePath = fmt.Sprintf("/tmp/example_rg_%d.yml", GinkgoParallelNode())
-
-	return writeConfigFile(templatePath, configFilePath, actualConfig)
-}
-
-type customConfig struct {
-	EtcdPort  int
-	Port      int
-	UAAPort   string
-	CACerts   string
-	Schema    string
-	ConsulUrl string
-}
-
-func createConfig(useSQL bool, useETCD bool) string {
-	caCertsPath, err := filepath.Abs(filepath.Join("..", "..", "fixtures", "uaa-certs", "uaa-ca.pem"))
-	Expect(err).NotTo(HaveOccurred())
-
-	actualConfig := customConfig{
-		Port:      8125 + GinkgoParallelNode(),
-		UAAPort:   oauthServerPort,
-		CACerts:   caCertsPath,
-		EtcdPort:  etcdPort,
-		Schema:    sqlDBName,
-		ConsulUrl: consulRunner.URL(),
-	}
-
-	var templatePath string
-	if useSQL && useETCD {
-		templatePath, err = filepath.Abs(filepath.Join("..", "..", "example_config", "example_template_sql.yml"))
-	} else if useSQL {
-		templatePath, err = filepath.Abs(filepath.Join("..", "..", "example_config", "example_template_sql_only.yml"))
-	} else if useETCD {
-		templatePath, err = filepath.Abs(filepath.Join("..", "..", "example_config", "example_template.yml"))
-	} else {
-		err = errors.New("Invalid database selection")
-	}
-	Expect(err).NotTo(HaveOccurred())
-
-	var configFilePath string
-	if useSQL && useETCD {
-		configFilePath = fmt.Sprintf("/tmp/example_sql_%d.yml", GinkgoParallelNode())
-	} else if useSQL {
-		configFilePath = fmt.Sprintf("/tmp/example_sql_only_%d.yml", GinkgoParallelNode())
-	} else {
-		configFilePath = fmt.Sprintf("/tmp/example_%d.yml", GinkgoParallelNode())
-	}
-	return writeConfigFile(templatePath, configFilePath, actualConfig)
-}
-
-func writeConfigFile(templatePath, configFilePath string, actualConfig customConfig) string {
-	tmpl, err := template.ParseFiles(templatePath)
-	Expect(err).NotTo(HaveOccurred())
-
-	configFile, err := os.Create(configFilePath)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = tmpl.Execute(configFile, actualConfig)
-	defer func() {
-		closeErr := configFile.Close()
-		Expect(closeErr).ToNot(HaveOccurred())
-	}()
-	Expect(err).NotTo(HaveOccurred())
-
-	return configFilePath
-}
 func getServerPort(url string) string {
 	endpoints := strings.Split(url, ":")
 	Expect(endpoints).To(HaveLen(3))
 	return endpoints[2]
 }
 
+var (
+	lastPortUsed int
+	portLock     sync.Mutex
+	once         sync.Once
+)
+
 func testPort() int {
-	add, err := net.ResolveTCPAddr("tcp", ":0")
-	Expect(err).NotTo(HaveOccurred())
-	l, err := net.ListenTCP("tcp", add)
-	Expect(err).NotTo(HaveOccurred())
+	portLock.Lock()
+	defer portLock.Unlock()
 
-	defer func() {
-		err = l.Close()
-		Expect(err).NotTo(HaveOccurred())
-	}()
+	if lastPortUsed == 0 {
+		once.Do(func() {
+			const portRangeStart = 61000
+			lastPortUsed = portRangeStart + GinkgoConfig.ParallelNode
+		})
+	}
 
-	return l.Addr().(*net.TCPAddr).Port
+	lastPortUsed += GinkgoConfig.ParallelTotal
+	return lastPortUsed
 }
 
 func validatePort(port uint16) {
@@ -303,4 +319,14 @@ func validatePort(port uint16) {
 		}
 		return err
 	}, "60s", "1s").Should(BeNil())
+}
+
+func tempUnixSocket() string {
+	tmpfile, err := ioutil.TempFile("", "admin.sock")
+	Expect(err).ToNot(HaveOccurred())
+	defer Expect(os.Remove(tmpfile.Name())).To(Succeed())
+
+	err = tmpfile.Close()
+	Expect(err).ToNot(HaveOccurred())
+	return tmpfile.Name()
 }

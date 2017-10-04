@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"os"
 	"time"
 
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
@@ -24,10 +25,18 @@ var _ = Describe("Routes API", func() {
 		fakeStatsdServer  *net.UDPConn
 		fakeStatsdChan    chan string
 		routingAPIProcess ifrit.Process
+		configFilePath    string
 	)
 
 	BeforeEach(func() {
-		routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+		routingAPIConfig := getRoutingAPIConfig(defaultConfig)
+		configFilePath = writeConfigToTempFile(routingAPIConfig)
+		routingAPIRunner := testrunner.New(routingAPIBinPath, testrunner.Args{
+			Port:       routingAPIPort,
+			IP:         routingAPIIP,
+			ConfigPath: configFilePath,
+			DevMode:    true,
+		})
 		routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
 		Eventually(routingAPIProcess.Ready(), "5s").Should(BeClosed())
 		addr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("localhost:%d", 8125+GinkgoParallelNode()))
@@ -68,6 +77,9 @@ var _ = Describe("Routes API", func() {
 		err := fakeStatsdServer.Close()
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(fakeStatsdChan).Should(BeClosed())
+
+		err = os.RemoveAll(configFilePath)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Describe("Stats for event subscribers", func() {

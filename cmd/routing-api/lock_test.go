@@ -2,9 +2,11 @@ package main_test
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"code.cloudfoundry.org/routing-api"
+	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -12,15 +14,27 @@ import (
 )
 
 var _ = Describe("Locking", func() {
+	var args testrunner.Args
+	BeforeEach(func() {
+		rapiConfig := getRoutingAPIConfig(defaultConfig)
+		args = testrunner.Args{
+			Port:       routingAPIPort,
+			IP:         routingAPIIP,
+			ConfigPath: writeConfigToTempFile(rapiConfig),
+			DevMode:    true,
+		}
+	})
+	AfterEach(func() {
+		err := os.RemoveAll(args.ConfigPath)
+		Expect(err).ToNot(HaveOccurred())
+	})
 	Describe("vieing for the lock", func() {
 		Context("when two long-lived processes try to run", func() {
 			It("one waits for the other to exit and then grabs the lock", func() {
-				args := routingAPIArgs
-				args.DevMode = true
 				session1 := RoutingApi(args.ArgSlice()...)
 				Eventually(session1, 10*time.Second).Should(gbytes.Say("acquire-lock-succeeded"))
 
-				args.Port = uint16(5500 + GinkgoParallelNode())
+				args.Port = uint16(testPort())
 
 				session2 := RoutingApi(args.ArgSlice()...)
 
@@ -43,8 +57,6 @@ var _ = Describe("Locking", func() {
 	Context("when the lock disappears", func() {
 		Context("long-lived processes", func() {
 			It("should exit 1", func() {
-				args := routingAPIArgs
-				args.DevMode = true
 				session1 := RoutingApi(args.ArgSlice()...)
 				defer func() {
 					session1.Interrupt().Wait(5 * time.Second)
@@ -63,25 +75,31 @@ var _ = Describe("Locking", func() {
 	})
 	Context("when a rolling deploy occurs", func() {
 		It("ensures there is no downtime", func() {
-			args := routingAPIArgs
-			args.DevMode = true
 
 			session1 := RoutingApi(args.ArgSlice()...)
+			client1 := routingApiClientWithPort(args.Port)
 			Eventually(session1, 10*time.Second).Should(gbytes.Say("routing-api.started"))
 
-			args.Port = uint16(5500 + GinkgoParallelNode())
-			session2 := RoutingApi(args.ArgSlice()...)
+			session2Port := uint16(testPort())
+			apiConfig := getRoutingAPIConfig(defaultConfig)
+			apiConfig.AdminSocket = tempUnixSocket()
+			configFilePath := writeConfigToTempFile(apiConfig)
+			session2Args := testrunner.Args{
+				Port:       session2Port,
+				IP:         routingAPIIP,
+				ConfigPath: configFilePath,
+				DevMode:    true,
+			}
+			session2 := RoutingApi(session2Args.ArgSlice()...)
 			defer func() { session2.Interrupt().Wait(10 * time.Second) }()
 			Eventually(session2, 10*time.Second).Should(gbytes.Say("acquiring-lock"))
 
 			done := make(chan struct{})
 			goRoutineFinished := make(chan struct{})
-			client2 := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", args.Port), false)
+			client2 := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", session2Port), false)
 
 			go func() {
 				defer GinkgoRecover()
-
-				client1 := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 
 				var err1, err2 error
 

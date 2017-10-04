@@ -24,9 +24,12 @@ var _ = Describe("ETCD Event Migrations", func() {
 	var (
 		etcdClient        db.DB
 		routingAPIProcess ifrit.Process
+		configFilePath    string
 		routingAPIRunner  *ginkgomon.Runner
 		lockHolderProcess ifrit.Process
 		etcdRouterGroups  []models.RouterGroup
+		lockHolderArgs    testrunner.Args
+		newRAPIArgs       testrunner.Args
 	)
 
 	BeforeEach(func() {
@@ -53,14 +56,30 @@ var _ = Describe("ETCD Event Migrations", func() {
 		etcdRouterGroups, err = etcdClient.ReadRouterGroups()
 		Expect(err).ToNot(HaveOccurred())
 
-		lockHolderArgs := routingAPIArgsNoSQL
-		lockHolderArgs.Port = uint16(testPort())
+		cc := defaultConfig
+		cc.UseSQL = false
+		rapiConfig := getRoutingAPIConfig(cc)
+		configFilePath = writeConfigToTempFile(rapiConfig)
+		lockHolderArgs = testrunner.Args{
+			Port:       uint16(testPort()),
+			IP:         routingAPIIP,
+			ConfigPath: configFilePath,
+			DevMode:    true,
+		}
 		lockHolderRunner := testrunner.New(routingAPIBinPath, lockHolderArgs)
 		lockHolderProcess = ginkgomon.Invoke(lockHolderRunner)
+		Eventually(lockHolderProcess.Ready(), "10s").Should(BeClosed())
+		client = routingApiClientWithPort(lockHolderArgs.Port)
+
+		rapiConfig = getRoutingAPIConfig(defaultConfig)
+		rapiConfig.AdminSocket = tempUnixSocket()
+		newRAPIArgs = lockHolderArgs
+		newRAPIArgs.Port = uint16(testPort())
+		newRAPIArgs.ConfigPath = writeConfigToTempFile(rapiConfig)
 
 		routingAPIRunner = ginkgomon.New(ginkgomon.Config{
 			Name:              "routing-api",
-			Command:           exec.Command(routingAPIBinPath, routingAPIArgs.ArgSlice()...),
+			Command:           exec.Command(routingAPIBinPath, newRAPIArgs.ArgSlice()...),
 			StartCheck:        "routing-api.consul-lock.acquiring-lock",
 			StartCheckTimeout: 10 * time.Second,
 		})
@@ -71,6 +90,9 @@ var _ = Describe("ETCD Event Migrations", func() {
 	AfterEach(func() {
 		ginkgomon.Kill(lockHolderProcess)
 		ginkgomon.Kill(routingAPIProcess)
+
+		err := os.RemoveAll(configFilePath)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Context("when another routing API process is currently the active node", func() {
@@ -123,7 +145,8 @@ var _ = Describe("ETCD Event Migrations", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("does migrate route changes from etcd to SQL", func() {
+		It("migrates route changes from etcd to SQL", func() {
+			newClient := routingApiClientWithPort(newRAPIArgs.Port)
 			Expect(len(etcdRouterGroups)).To(Equal(1))
 			routerGroupGuid := etcdRouterGroups[0].Guid
 			tcpRoute := models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 30)
@@ -143,13 +166,13 @@ var _ = Describe("ETCD Event Migrations", func() {
 			tcpRoute = tcpRoutes[0]
 
 			Eventually(func() []models.TcpRouteMapping {
-				tcpRouteMappings, err := client.TcpRouteMappings()
+				tcpRouteMappings, err := newClient.TcpRouteMappings()
 				Expect(err).NotTo(HaveOccurred())
 				return tcpRouteMappings
 			}).Should(ConsistOf(matchers.MatchTcpRoute(tcpRoute)))
 
 			Eventually(func() []models.Route {
-				httpRoutes, err := client.Routes()
+				httpRoutes, err := newClient.Routes()
 				Expect(err).ToNot(HaveOccurred())
 				return httpRoutes
 			}).Should(ContainElement(matchers.MatchHttpRoute(route)))
