@@ -208,7 +208,7 @@ var _ = Describe("RoutesHandler", func() {
 
 				routesHandler.List(responseRecorder, request)
 
-				Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+				Expect(responseRecorder.Code).To(Equal(http.StatusServiceUnavailable))
 			})
 		})
 	})
@@ -293,7 +293,7 @@ var _ = Describe("RoutesHandler", func() {
 					request = handlers.NewTestRequest(routes)
 					routesHandler.Delete(responseRecorder, request)
 
-					Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+					Expect(responseRecorder.Code).To(Equal(http.StatusServiceUnavailable))
 					Expect(responseRecorder.Body.String()).To(ContainSubstring("stuff broke"))
 				})
 			})
@@ -433,7 +433,7 @@ var _ = Describe("RoutesHandler", func() {
 						request = handlers.NewTestRequest([]models.Route{route})
 						routesHandler.Upsert(responseRecorder, request)
 
-						Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+						Expect(responseRecorder.Code).To(Equal(http.StatusServiceUnavailable))
 						Expect(responseRecorder.Body.String()).To(ContainSubstring("stuff broke"))
 					})
 				})

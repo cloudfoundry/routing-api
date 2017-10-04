@@ -242,7 +242,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 							request = handlers.NewTestRequest(tcpMappings)
 							tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 
-							Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+							Expect(responseRecorder.Code).To(Equal(http.StatusServiceUnavailable))
 							Expect(responseRecorder.Body.String()).To(ContainSubstring("stuff broke"))
 						})
 					})
@@ -575,7 +575,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				request = handlers.NewTestRequest("")
 				tcpRouteMappingsHandler.List(responseRecorder, request)
 
-				Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+				Expect(responseRecorder.Code).To(Equal(http.StatusServiceUnavailable))
 			})
 		})
 
@@ -669,7 +669,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						request = handlers.NewTestRequest(tcpMappings)
 						tcpRouteMappingsHandler.Delete(responseRecorder, request)
 
-						Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+						Expect(responseRecorder.Code).To(Equal(http.StatusServiceUnavailable))
 						Expect(responseRecorder.Body.String()).To(ContainSubstring("stuff broke"))
 					})
 				})

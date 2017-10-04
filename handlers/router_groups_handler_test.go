@@ -152,7 +152,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				Expect(err).NotTo(HaveOccurred())
 				routerGroupHandler.ListRouterGroups(responseRecorder, request)
 				Expect(fakeDb.ReadRouterGroupsCallCount()).To(Equal(1))
-				Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+				Expect(responseRecorder.Code).To(Equal(http.StatusServiceUnavailable))
 				payload := responseRecorder.Body.String()
 				Expect(payload).To(MatchJSON(`{
 					"name": "DBCommunicationError",
@@ -634,7 +634,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				handler.ServeHTTP(responseRecorder, request)
 				Expect(fakeDb.ReadRouterGroupCallCount()).To(Equal(1))
 				Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
-				Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+				Expect(responseRecorder.Code).To(Equal(http.StatusServiceUnavailable))
 				payload := responseRecorder.Body.String()
 				Expect(payload).To(MatchJSON(`{
 					"name": "DBCommunicationError",
@@ -665,7 +665,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				Expect(err).NotTo(HaveOccurred())
 				handler.ServeHTTP(responseRecorder, request)
 				Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(1))
-				Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+				Expect(responseRecorder.Code).To(Equal(http.StatusServiceUnavailable))
 				payload := responseRecorder.Body.String()
 				Expect(payload).To(MatchJSON(`{
 					"name": "DBCommunicationError",
@@ -874,7 +874,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 					Expect(err).NotTo(HaveOccurred())
 					routerGroupHandler.CreateRouterGroup(responseRecorder, request)
 
-					Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
+					Expect(responseRecorder.Code).To(Equal(http.StatusServiceUnavailable))
 					Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(1))
 					payload := responseRecorder.Body.String()
 					Expect(payload).To(MatchJSON(`{

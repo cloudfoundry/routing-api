@@ -43,7 +43,7 @@ func handleDBCommunicationError(w http.ResponseWriter, err error, log lager.Logg
 	log.Error("error", err)
 	retErr := marshalRoutingApiError(routing_api.NewError(routing_api.DBCommunicationError, err.Error()), log)
 
-	w.WriteHeader(http.StatusInternalServerError)
+	w.WriteHeader(http.StatusServiceUnavailable)
 	_, writeErr := w.Write(retErr)
 	log.Error("error writing to request", writeErr)
 }
