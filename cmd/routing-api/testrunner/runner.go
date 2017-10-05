@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/cf-tcp-router/utils"
-
+	. "github.com/onsi/ginkgo"
 	"github.com/tedsuo/ifrit/ginkgomon"
 )
 
@@ -99,7 +99,7 @@ metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
 system_domain: "example.com"
-admin_socket: "/tmp/admin.sock"
+admin_socket: "/tmp/admin_etcd_%d.sock"
 router_groups:
 - name: "default-tcp"
   type: "tcp"
@@ -109,7 +109,7 @@ etcd:
 consul_cluster:
   servers: "%s"
   retry_interval: 50ms`
-		configBytes = []byte(fmt.Sprintf(etcdConfigStr, dbId, consulUrl))
+		configBytes = []byte(fmt.Sprintf(etcdConfigStr, GinkgoParallelNode(), dbId, consulUrl))
 	case "postgres":
 		postgresConfigStr := `log_guid: "my_logs"
 uaa_verification_key: "-----BEGIN PUBLIC KEY-----
@@ -133,7 +133,7 @@ metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
 system_domain: "example.com"
-admin_socket: "/tmp/admin.sock"
+admin_socket: "/tmp/admin_postgres_%d.sock"
 router_groups:
 - name: "default-tcp"
   type: "tcp"
@@ -148,7 +148,7 @@ sqldb:
 consul_cluster:
   servers: "%s"
   retry_interval: 50ms`
-		configBytes = []byte(fmt.Sprintf(postgresConfigStr, dbId, consulUrl))
+		configBytes = []byte(fmt.Sprintf(postgresConfigStr, GinkgoParallelNode(), dbId, consulUrl))
 	default:
 		mysqlConfigStr := `log_guid: "my_logs"
 uaa_verification_key: "-----BEGIN PUBLIC KEY-----
@@ -172,7 +172,7 @@ metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
 system_domain: "example.com"
-admin_socket: "/tmp/admin.sock"
+admin_socket: "/tmp/admin_sql_%d.sock"
 router_groups:
 - name: "default-tcp"
   type: "tcp"
@@ -187,7 +187,7 @@ sqldb:
 consul_cluster:
   servers: "%s"
   retry_interval: 50ms`
-		configBytes = []byte(fmt.Sprintf(mysqlConfigStr, dbId, consulUrl))
+		configBytes = []byte(fmt.Sprintf(mysqlConfigStr, GinkgoParallelNode(), dbId, consulUrl))
 	}
 
 	err = utils.WriteToFile(configBytes, configFilePath)
