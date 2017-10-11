@@ -3,7 +3,6 @@ package migration_test
 import (
 	"time"
 
-	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
@@ -18,17 +17,12 @@ var _ = Describe("V3UpdateTcpRouteMigration", func() {
 	var (
 		sqlDB          *db.SqlDB
 		mysqlAllocator testrunner.DbAllocator
-		etcdConfig     *config.Etcd
-		done           chan struct{}
-		logger         lager.Logger
 	)
 
 	BeforeEach(func() {
 		mysqlAllocator = testrunner.NewMySQLAllocator()
 		mysqlSchema, err := mysqlAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
-
-		logger = lager.NewLogger("test-logger")
 
 		sqlCfg := &config.SqlDB{
 			Username: "root",
@@ -72,13 +66,6 @@ var _ = Describe("V3UpdateTcpRouteMigration", func() {
 		columnList, err := rows.Columns()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(columnList).ToNot(ContainElement("isolation_segment"))
-
-		etcdConfig = &config.Etcd{}
-		done = make(chan struct{})
-
-		v1Migration := migration.NewV1EtcdMigration(etcdConfig, done, logger)
-		err = v1Migration.Run(sqlDB)
-		Expect(err).ToNot(HaveOccurred())
 
 		v2Migration := migration.NewV2UpdateRgMigration()
 		err = v2Migration.Run(sqlDB)

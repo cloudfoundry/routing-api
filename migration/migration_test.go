@@ -1,9 +1,6 @@
 package migration_test
 
 import (
-	"path"
-	"path/filepath"
-
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
@@ -11,7 +8,6 @@ import (
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/migration/fakes"
-	"github.com/cloudfoundry/storeadapter/storerunner/etcdstorerunner"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -44,40 +40,16 @@ var _ = Describe("Migration", func() {
 
 	TestMigrations := func() {
 		Describe("InitializeMigrations", func() {
-			var etcdConfig *config.Etcd
-			BeforeEach(func() {
-				basePath, err := filepath.Abs(path.Join("..", "fixtures", "etcd-certs"))
-				Expect(err).NotTo(HaveOccurred())
-
-				serverSSLConfig := &etcdstorerunner.SSLConfig{
-					CertFile: filepath.Join(basePath, "server.crt"),
-					KeyFile:  filepath.Join(basePath, "server.key"),
-					CAFile:   filepath.Join(basePath, "etcd-ca.crt"),
-				}
-
-				etcdPort := 4001 + GinkgoParallelNode()
-				etcdRunner := etcdstorerunner.NewETCDClusterRunner(etcdPort, 1, serverSSLConfig)
-
-				etcdConfig = &config.Etcd{
-					RequireSSL: true,
-					CertFile:   filepath.Join(basePath, "client.crt"),
-					KeyFile:    filepath.Join(basePath, "client.key"),
-					CAFile:     filepath.Join(basePath, "etcd-ca.crt"),
-					NodeURLS:   etcdRunner.NodeURLS(),
-				}
-			})
-
 			It("initializes all possible migrations", func() {
 				done := make(chan struct{})
 				defer close(done)
-				migrations := migration.InitializeMigrations(etcdConfig, done, logger)
-				Expect(migrations).To(HaveLen(5))
+				migrations := migration.InitializeMigrations()
+				Expect(migrations).To(HaveLen(4))
 
 				Expect(migrations[0]).To(BeAssignableToTypeOf(new(migration.V0InitMigration)))
-				Expect(migrations[1]).To(BeAssignableToTypeOf(new(migration.V1EtcdMigration)))
-				Expect(migrations[2]).To(BeAssignableToTypeOf(new(migration.V2UpdateRgMigration)))
-				Expect(migrations[3]).To(BeAssignableToTypeOf(new(migration.V3UpdateTcpRouteMigration)))
-				Expect(migrations[4]).To(BeAssignableToTypeOf(new(migration.V4AddRgUniqIdxTCPRoute)))
+				Expect(migrations[1]).To(BeAssignableToTypeOf(new(migration.V2UpdateRgMigration)))
+				Expect(migrations[2]).To(BeAssignableToTypeOf(new(migration.V3UpdateTcpRouteMigration)))
+				Expect(migrations[3]).To(BeAssignableToTypeOf(new(migration.V4AddRgUniqIdxTCPRoute)))
 			})
 		})
 

@@ -1,7 +1,6 @@
 package migration_test
 
 import (
-	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
@@ -16,17 +15,12 @@ var _ = Describe("V2UpdateRgMigration", func() {
 	var (
 		sqlDB          *db.SqlDB
 		mysqlAllocator testrunner.DbAllocator
-		etcdConfig     *config.Etcd
-		done           chan struct{}
-		logger         lager.Logger
 	)
 
 	BeforeEach(func() {
 		mysqlAllocator = testrunner.NewMySQLAllocator()
 		mysqlSchema, err := mysqlAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
-
-		logger = lager.NewLogger("test-logger")
 
 		sqlCfg := &config.SqlDB{
 			Username: "root",
@@ -43,14 +37,6 @@ var _ = Describe("V2UpdateRgMigration", func() {
 		v0Migration := migration.NewV0InitMigration()
 		err = v0Migration.Run(sqlDB)
 		Expect(err).ToNot(HaveOccurred())
-
-		etcdConfig = &config.Etcd{}
-		done = make(chan struct{})
-
-		v1Migration := migration.NewV1EtcdMigration(etcdConfig, done, logger)
-		err = v1Migration.Run(sqlDB)
-		Expect(err).ToNot(HaveOccurred())
-
 	})
 	AfterEach(func() {
 		err := mysqlAllocator.Delete()

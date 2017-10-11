@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
 	"github.com/jinzhu/gorm"
 )
@@ -18,27 +17,21 @@ type MigrationData struct {
 }
 
 type Runner struct {
-	etcdCfg  *config.Etcd
-	sqlDB    *db.SqlDB
-	logger   lager.Logger
-	etcdDone chan struct{}
+	sqlDB  *db.SqlDB
+	logger lager.Logger
 }
 
 func NewRunner(
-	etcdCfg *config.Etcd,
-	etcdDone chan struct{},
 	sqlDB *db.SqlDB,
 	logger lager.Logger,
 ) *Runner {
 	return &Runner{
-		etcdCfg:  etcdCfg,
-		sqlDB:    sqlDB,
-		logger:   logger,
-		etcdDone: etcdDone,
+		sqlDB:  sqlDB,
+		logger: logger,
 	}
 }
 func (r *Runner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	migrations := InitializeMigrations(r.etcdCfg, r.etcdDone, r.logger)
+	migrations := InitializeMigrations()
 
 	r.logger.Info("starting-migration")
 	err := RunMigrations(r.sqlDB, migrations, r.logger)
@@ -52,13 +45,9 @@ func (r *Runner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 	select {
 	case sig := <-signals:
-		select {
-		case <-r.etcdDone:
-		default:
-			close(r.etcdDone)
-		}
 		r.logger.Info("received signal", lager.Data{"signal": sig})
 	}
+
 	return nil
 }
 
@@ -68,14 +57,11 @@ type Migration interface {
 	Version() int
 }
 
-func InitializeMigrations(etcdCfg *config.Etcd, etcdDone chan struct{}, logger lager.Logger) []Migration {
+func InitializeMigrations() []Migration {
 	migrations := []Migration{}
 	var migration Migration
 
 	migration = NewV0InitMigration()
-	migrations = append(migrations, migration)
-
-	migration = NewV1EtcdMigration(etcdCfg, etcdDone, logger)
 	migrations = append(migrations, migration)
 
 	migration = NewV2UpdateRgMigration()

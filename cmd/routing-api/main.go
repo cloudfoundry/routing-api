@@ -42,10 +42,9 @@ import (
 )
 
 const (
-	DEFAULT_ETCD_WORKERS = 25
-	routingApiLockPath   = "routing_api_lock"
-	sessionName          = "routing_api"
-	pruningInterval      = 10 * time.Second
+	routingApiLockPath = "routing_api_lock"
+	sessionName        = "routing_api"
+	pruningInterval    = 10 * time.Second
 )
 
 var port = flag.Uint("port", 8080, "Port to run rounting-api server on")
@@ -119,12 +118,11 @@ func main() {
 	)
 	clock := clock.NewClock()
 
-	etcdDone := make(chan struct{})
 	releaseLock := make(chan os.Signal)
 	lockErrChan := make(chan error)
 	metricsTicker := time.NewTicker(cfg.MetricsReportingInterval)
 	metricsReporter := metrics.NewMetricsReporter(database, statsdClient, metricsTicker, logger.Session("metrics"))
-	migrationProcess := runMigration(cfg, database, &cfg.Etcd, etcdDone, logger.Session("migration"))
+	migrationProcess := runMigration(database, logger.Session("migration"))
 	routerGroupSeeder := seedRouterGroups(cfg, database, logger.Session("seeding"))
 
 	locks := grouper.Members{}
@@ -259,11 +257,11 @@ func runCleanupRoutes(sqlDatabase db.DB, logger lager.Logger) ifrit.Runner {
 	})
 }
 
-func runMigration(cfg config.Config, database db.DB, etcdCfg *config.Etcd, etcdDone chan struct{}, logger lager.Logger) ifrit.Runner {
+func runMigration(database db.DB, logger lager.Logger) ifrit.Runner {
 	if sqlDB, ok := database.(*db.SqlDB); ok {
-		return migration.NewRunner(etcdCfg, etcdDone, sqlDB, logger)
+		return migration.NewRunner(sqlDB, logger)
 	}
-	return migration.NewRunner(etcdCfg, etcdDone, nil, logger)
+	return migration.NewRunner(nil, logger)
 }
 
 func constructRouteRegister(
@@ -443,23 +441,12 @@ func buildDatabase(
 	var err error
 	var database db.DB
 
-	// Use SQL database if available, otherwise use ETCD
-	if isSql(cfg.SqlDB) {
-		data := lager.Data{"host": cfg.SqlDB.Host, "port": cfg.SqlDB.Port}
-		logger.Info("database", data)
-		database, err = db.NewSqlDB(&cfg.SqlDB)
-		if err != nil {
-			logger.Error("failed-initialize-sql-connection", err, data)
-			return nil, err
-		}
-	} else {
-		logger.Info("database", lager.Data{"etcd-addresses": cfg.Etcd.NodeURLS})
-		database, err = db.NewETCD(&cfg.Etcd)
-		if err != nil {
-			logger.Error("failed-initialize-etcd-db", err)
-			return nil, err
-		}
+	data := lager.Data{"host": cfg.SqlDB.Host, "port": cfg.SqlDB.Port}
+	logger.Info("database", data)
+	database, err = db.NewSqlDB(&cfg.SqlDB)
+	if err != nil {
+		logger.Error("failed-initialize-sql-connection", err, data)
+		return nil, err
 	}
-
 	return database, nil
 }
