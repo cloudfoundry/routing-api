@@ -72,15 +72,6 @@ func handleUnauthorizedError(w http.ResponseWriter, err error, log lager.Logger)
 	log.Error("error writing to request", writeErr)
 }
 
-func handleDBConflictError(w http.ResponseWriter, err error, log lager.Logger) {
-	log.Error("error", err)
-	retErr := marshalRoutingApiError(routing_api.NewError(routing_api.DBConflictError, err.Error()), log)
-
-	w.WriteHeader(http.StatusConflict)
-	_, writeErr := w.Write(retErr)
-	log.Error("error writing to request", writeErr)
-}
-
 func marshalRoutingApiError(err routing_api.Error, log lager.Logger) []byte {
 	retErr, jsonErr := json.Marshal(err)
 	if jsonErr != nil {

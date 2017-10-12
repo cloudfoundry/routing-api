@@ -2,11 +2,12 @@
 package fakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
-	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 type FakeDB struct {

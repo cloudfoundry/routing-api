@@ -1,11 +1,6 @@
 package db
 
-import (
-	"encoding/json"
-	"fmt"
-
-	"github.com/coreos/etcd/client"
-)
+import "encoding/json"
 
 type Event struct {
 	Type  EventType
@@ -45,32 +40,4 @@ func NewEventFromInterface(eventType EventType, obj interface{}) (Event, error) 
 		Type:  eventType,
 		Value: string(data),
 	}, nil
-}
-
-func NewEventFromEtcd(event *client.Response) (Event, error) {
-	var eventType EventType
-
-	node := event.Node
-	switch event.Action {
-	case "delete", "compareAndDelete":
-		eventType = DeleteEvent
-		node = event.PrevNode
-	case "create":
-		eventType = CreateEvent
-	case "set", "update", "compareAndSwap":
-		eventType = UpdateEvent
-	case "expire":
-		eventType = ExpireEvent
-		node = event.PrevNode
-	default:
-		return Event{}, fmt.Errorf("unknown event: %s", event.Action)
-	}
-
-	newEvent := Event{Type: eventType}
-
-	if node != nil {
-		newEvent.Value = node.Value
-	}
-
-	return newEvent, nil
 }

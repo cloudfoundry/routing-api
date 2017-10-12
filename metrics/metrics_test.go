@@ -1,6 +1,7 @@
 package metrics_test
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	. "code.cloudfoundry.org/routing-api/metrics"
 	fake_statsd "code.cloudfoundry.org/routing-api/metrics/fakes"
 	"code.cloudfoundry.org/routing-api/models"
-	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -246,20 +246,6 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 							Expect(responseRecorder.Body.String()).To(ContainSubstring("stuff broke"))
 						})
 					})
-
-					Context("when conflict error is returned", func() {
-						BeforeEach(func() {
-							database.SaveTcpRouteMappingReturns(db.ErrorConflict)
-						})
-
-						It("responds with a 409 conflict error", func() {
-							request = handlers.NewTestRequest(tcpMappings)
-							tcpRouteMappingsHandler.Upsert(responseRecorder, request)
-
-							Expect(responseRecorder.Code).To(Equal(http.StatusConflict))
-							Expect(responseRecorder.Body.String()).To(ContainSubstring("DBConflictError"))
-						})
-					})
 				})
 			})
 

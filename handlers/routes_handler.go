@@ -83,11 +83,7 @@ func (h *RoutesHandler) Upsert(w http.ResponseWriter, req *http.Request) {
 	for _, route := range routes {
 		err = h.db.SaveRoute(route)
 		if err != nil {
-			if err == db.ErrorConflict {
-				handleDBConflictError(w, err, log)
-			} else {
-				handleDBCommunicationError(w, err, log)
-			}
+			handleDBCommunicationError(w, err, log)
 			return
 		}
 	}

@@ -36,9 +36,6 @@ import (
 )
 
 var (
-	etcdPort int
-	etcdUrl  string
-
 	defaultConfig          customConfig
 	client                 routing_api.Client
 	locketBinPath          string
@@ -56,10 +53,7 @@ var (
 	consulRunner *consulrunner.ClusterRunner
 
 	mysqlAllocator testrunner.DbAllocator
-	etcdAllocator  testrunner.DbAllocator
 )
-
-var etcdVersion = "etcdserver\":\"2.1.1"
 
 func TestMain(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -85,15 +79,10 @@ var _ = SynchronizedBeforeSuite(
 		locketBinPath = strings.Split(path, ",")[1]
 
 		SetDefaultEventuallyTimeout(15 * time.Second)
-		etcdPort = 4001 + GinkgoParallelNode()
 
 		mysqlAllocator = testrunner.NewMySQLAllocator()
-		etcdAllocator = testrunner.NewEtcdAllocator(etcdPort)
 
 		sqlDBName, err = mysqlAllocator.Create()
-		Expect(err).NotTo(HaveOccurred())
-
-		etcdUrl, err = etcdAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
 
 		setupConsul()
@@ -103,8 +92,6 @@ var _ = SynchronizedBeforeSuite(
 
 var _ = SynchronizedAfterSuite(func() {
 	err := mysqlAllocator.Delete()
-	Expect(err).NotTo(HaveOccurred())
-	err = etcdAllocator.Delete()
 	Expect(err).NotTo(HaveOccurred())
 
 	teardownConsul()
@@ -116,8 +103,6 @@ var _ = SynchronizedAfterSuite(func() {
 var _ = BeforeEach(func() {
 	client = routingApiClient()
 	err := mysqlAllocator.Reset()
-	Expect(err).NotTo(HaveOccurred())
-	err = etcdAllocator.Reset()
 	Expect(err).NotTo(HaveOccurred())
 	resetConsul()
 
@@ -133,16 +118,13 @@ var _ = BeforeEach(func() {
 		AdminSocket: routingAPIAdminSocket,
 		UAAPort:     int(oauthSrvPort),
 		CACertsPath: caCertsPath,
-		EtcdPort:    etcdPort,
 		Schema:      sqlDBName,
 		ConsulUrl:   consulRunner.URL(),
 		UseSQL:      true,
-		UseETCD:     true,
 	}
 })
 
 type customConfig struct {
-	EtcdPort    int
 	Port        int
 	StatsdPort  int
 	UAAPort     int
@@ -150,7 +132,6 @@ type customConfig struct {
 	CACertsPath string
 	Schema      string
 	ConsulUrl   string
-	UseETCD     bool
 	UseSQL      bool
 }
 
@@ -186,20 +167,13 @@ func getRoutingAPIConfig(c customConfig) *config.Config {
 		},
 		UUID: "fake-uuid",
 	}
-	if c.UseETCD {
-		rapiConfig.Etcd = config.Etcd{
-			NodeURLS: []string{fmt.Sprintf("http://localhost:%d", c.EtcdPort)},
-		}
-	}
-	if c.UseSQL {
-		rapiConfig.SqlDB = config.SqlDB{
-			Host:     "localhost",
-			Port:     3306,
-			Schema:   c.Schema,
-			Type:     "mysql",
-			Username: "root",
-			Password: "password",
-		}
+	rapiConfig.SqlDB = config.SqlDB{
+		Host:     "localhost",
+		Port:     3306,
+		Schema:   c.Schema,
+		Type:     "mysql",
+		Username: "root",
+		Password: "password",
 	}
 	return rapiConfig
 }

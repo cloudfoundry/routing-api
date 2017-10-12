@@ -1,14 +1,13 @@
 package db
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"runtime"
 	"sync/atomic"
 	"time"
-
-	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 
 	"code.cloudfoundry.org/eventhub"
 	"code.cloudfoundry.org/lager"
@@ -18,6 +17,42 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+)
+
+//go:generate counterfeiter -o fakes/fake_db.go . DB
+type DB interface {
+	ReadRoutes() ([]models.Route, error)
+	SaveRoute(route models.Route) error
+	DeleteRoute(route models.Route) error
+
+	ReadTcpRouteMappings() ([]models.TcpRouteMapping, error)
+	ReadFilteredTcpRouteMappings(columnName string, values []string) ([]models.TcpRouteMapping, error)
+	SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error
+	DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error
+
+	ReadRouterGroups() (models.RouterGroups, error)
+	ReadRouterGroup(guid string) (models.RouterGroup, error)
+	ReadRouterGroupByName(name string) (models.RouterGroup, error)
+	SaveRouterGroup(routerGroup models.RouterGroup) error
+
+	CancelWatches()
+	WatchChanges(watchType string) (<-chan Event, <-chan error, context.CancelFunc)
+
+	LockRouterGroupReads()
+	LockRouterGroupWrites()
+	UnlockRouterGroupReads()
+	UnlockRouterGroupWrites()
+}
+
+const (
+	TCP_MAPPING_BASE_KEY  string = "/v1/tcp_routes/router_groups"
+	HTTP_ROUTE_BASE_KEY   string = "/routes"
+	ROUTER_GROUP_BASE_KEY string = "/v1/router_groups"
+	defaultDialTimeout           = 30 * time.Second
+	maxRetries                   = 3
+	TCP_WATCH             string = "tcp-watch"
+	HTTP_WATCH            string = "http-watch"
+	ROUTER_GROUP_WATCH    string = "router-group-watch"
 )
 
 const backupError = "Database unavailable due to backup or restore"

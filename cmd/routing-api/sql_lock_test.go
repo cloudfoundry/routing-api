@@ -63,7 +63,6 @@ var _ = Describe("SqlLock", func() {
 		locketProcess = ginkgomon.Invoke(locketRunner)
 
 		cc := defaultConfig
-		cc.UseETCD = false
 		routingAPIConfig = getRoutingAPIConfig(cc)
 		routingAPIConfig.Locket = locketrunner.ClientLocketConfig()
 		routingAPIConfig.Locket.LocketAddress = locketAddress

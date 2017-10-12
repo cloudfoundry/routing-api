@@ -23,19 +23,6 @@ if [ ${consul_status} -ne 0 ]; then
   rm ${tmpdir}/consul-0.6.3.zip
 fi
 
-# install etcd if needed
-set +e
-etcd --version
-etcd_status=$?
-set -e
-if [ ${etcd_status} -ne 0 ]; then
-	pushd ../../github.com/coreos/etcd
-		git checkout v2.1.1
-		go install .
-		git checkout -
-	popd
-fi
-
 set +e
 ginkgo version
 ginkgo_status=$?

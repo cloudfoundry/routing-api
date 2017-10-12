@@ -579,11 +579,6 @@ var _ = Describe("Routes API", func() {
 		}
 	}
 
-	withoutCreateRouterGroup := func() {
-		// NO OP
-		fmt.Println("not supported for etcd")
-	}
-
 	Describe("API with MySQL", func() {
 		var (
 			routingAPIProcess ifrit.Process
@@ -616,40 +611,5 @@ var _ = Describe("Routes API", func() {
 		TestHTTPRoutes()
 		TestHTTPEvents()
 		TestRouterGroupsLocking()
-	})
-
-	Describe("API with ETCD", func() {
-		var (
-			routingAPIProcess ifrit.Process
-			configFilePath    string
-		)
-
-		BeforeEach(func() {
-			cc := defaultConfig
-			cc.UseSQL = false
-			rapiConfig := getRoutingAPIConfig(defaultConfig)
-			configFilePath = writeConfigToTempFile(rapiConfig)
-			routingAPIArgs := testrunner.Args{
-				Port:       routingAPIPort,
-				IP:         routingAPIIP,
-				ConfigPath: configFilePath,
-				DevMode:    true,
-			}
-			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
-			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
-		})
-
-		AfterEach(func() {
-			ginkgomon.Kill(routingAPIProcess)
-
-			err := os.RemoveAll(configFilePath)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		TestHTTPEvents()
-		TestHTTPRoutes()
-		TestTCPRoutes()
-		TestTCPEvents()
-		TestRouterGroups(withoutCreateRouterGroup)
 	})
 })

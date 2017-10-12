@@ -22,8 +22,6 @@ sqldb:
   type: mysql
   port: 1234
   host: "localhost"
-etcd:
-  node_urls: ["http://localhost:1234"]
 consul_cluster:
   servers: "http://localhost:5678"
   lock_ttl: 10s

@@ -34,14 +34,6 @@ type SqlDB struct {
 	Password string `yaml:"password"`
 }
 
-type Etcd struct {
-	CertFile   string   `yaml:"cert_file"`
-	KeyFile    string   `yaml:"key_file"`
-	CAFile     string   `yaml:"ca_file"`
-	RequireSSL bool     `yaml:"require_ssl"`
-	NodeURLS   []string `yaml:"node_urls"`
-}
-
 type ConsulCluster struct {
 	Servers       string        `yaml:"servers"`
 	LockTTL       time.Duration `yaml:"lock_ttl"`
@@ -62,7 +54,6 @@ type Config struct {
 	StatsdClientFlushInterval       time.Duration             `yaml:"-"`
 	OAuth                           OAuthConfig               `yaml:"oauth"`
 	RouterGroups                    models.RouterGroups       `yaml:"router_groups"`
-	Etcd                            Etcd                      `yaml:"etcd"`
 	SqlDB                           SqlDB                     `yaml:"sqldb"`
 	ConsulCluster                   ConsulCluster             `yaml:"consul_cluster"`
 	SkipConsulLock                  bool                      `yaml:"skip_consul_lock"`

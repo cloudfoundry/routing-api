@@ -16,8 +16,6 @@ metrics_reporting_interval: "500ms"
 uuid: "fake-uuid"
 statsd_endpoint: "localhost:{{.Port}}"
 statsd_client_flush_interval: "10ms"
-etcd:
-  node_urls: ["http://localhost:{{.EtcdPort}}"]
 router_groups:
 - name: "default-tcp"
   type: "tcp"

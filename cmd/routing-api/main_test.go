@@ -214,41 +214,6 @@ var _ = Describe("Main", func() {
 
 			Eventually(routingAPIRunner.ExitCode(), 2*time.Second).Should(Equal(0))
 		})
-
-		Context("when etcd is unavailable", func() {
-			BeforeEach(func() {
-				cc := defaultConfig
-				cc.UseSQL = false
-				rapiConfig := getRoutingAPIConfig(cc)
-				routingAPIArgs = testrunner.Args{
-					Port:       routingAPIPort,
-					IP:         routingAPIIP,
-					ConfigPath: writeConfigToTempFile(rapiConfig),
-					DevMode:    true,
-				}
-			})
-			AfterEach(func() {
-				// etcd uses peer port when creating cluster. Defaults to specified etcd port + 3000
-				peerPort := etcdPort + 3000
-				validatePort(uint16(etcdPort))
-				validatePort(uint16(peerPort))
-
-				_, err := etcdAllocator.Create()
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("exits 1 when we shut down the routing api", func() {
-				routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
-				proc := ifrit.Invoke(routingAPIRunner)
-
-				Expect(etcdAllocator.Delete()).NotTo(HaveOccurred())
-				// to ensure etcd is stopped completely
-				validatePort(uint16(etcdPort))
-
-				ginkgomon.Interrupt(proc)
-				Eventually(routingAPIRunner).Should(Exit(1))
-			})
-		})
 	})
 
 	Context("when multiple router groups with the same name are seeded", func() {

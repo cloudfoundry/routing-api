@@ -30,5 +30,3 @@ sqldb:
 consul_cluster:
   servers: "{{.ConsulUrl}}"
   retry_interval: 50ms
-etcd:
-  node_urls: ["http://localhost:{{.EtcdPort}}"]
