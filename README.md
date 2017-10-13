@@ -18,40 +18,15 @@ Refer to routing-release [README](https://github.com/cloudfoundry-incubator/rout
 
 ## Development
 
-To run the tests you need a running etcd cluster on version 2.1.1 and RDB(either Postgres or MySQL). Currently there is a helper script under routing-release which runs tests in [docker container](https://github.com/cloudfoundry-incubator/routing-release/blob/develop/scripts/unit-tests-in-docker). `cf-routing-pipeline` docker image used in the below script is configured with correct version of `etcd`, `MySQL` and `Postgres` for testing purposes. To run the tests for routing-api
+To run the tests you need a running RDB(either Postgres or MySQL). Currently there is a helper script under routing-release which runs tests in [docker container](https://github.com/cloudfoundry-incubator/routing-release/blob/develop/scripts/unit-tests-in-docker). `cf-routing-pipeline` docker image used in the below script is configured with correct version of `MySQL` and `Postgres` for testing purposes. To run the tests for routing-api
 
 ```sh
 ./scripts/unit-tests-in-docker routing-api
 ```
 
-If you choose to run unit-tests without docker(mentioned above), you will need to run etcd and SQL locally with the below configuration:
+If you choose to run unit-tests without docker(mentioned above), you will need to run SQL locally with the below configuration:
 [MySQL](https://github.com/cloudfoundry-incubator/routing-api/blob/5e1c34582d6c5a288e0bfd18968dab98f2dfbb29/cmd/routing-api/testrunner/runner.go#L174-L180)
 [Postgres](https://github.com/cloudfoundry-incubator/routing-api/blob/5e1c34582d6c5a288e0bfd18968dab98f2dfbb29/cmd/routing-api/testrunner/runner.go#L138-L143)
-
-### etcd
-
-To get etcd cluster running, do the following commands:
-
-```sh
-go get github.com/coreos/etcd
-cd $GOPATH/src/github.com/coreos/etcd
-git fetch --tags
-git checkout v2.1.1
-go install .
-```
-
-Once installed, you can run etcd with the command `etcd` and you should see the
-output contain the following lines:
-```
-   | etcd: listening for peers on http://localhost:2380
-   | etcd: listening for peers on http://localhost:7001
-   | etcd: listening for client requests on http://localhost:2379
-   | etcd: listening for client requests on http://localhost:4001
-```
-
-Note that this will run an etcd server and create a new directory at that location
-where it stores all of the records. This directory can be removed afterwards, or
-you can simply run etcd in a temporary directory.
 
 ## Running the API Server
 
@@ -135,8 +110,6 @@ Example 1:
 ```sh
 routing-api -ip 127.0.0.1 -systemDomain 127.0.0.1.xip.io -config example_config/example.yml -port 3000 -maxTTL 60
 ```
-
->Note: If you already have Routing API server with `etcd` as backend, update the config file to include both etcd and SQL configuration for backend migration process. For sample configuration take a look at example_config/example.yml
 
 
 ### Profiling the Server
