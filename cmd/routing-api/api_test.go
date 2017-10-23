@@ -441,6 +441,45 @@ var _ = Describe("Routes API", func() {
 					Expect(tcpRouteMappingsResponse).To(ContainElement(matchers.MatchTcpRoute(tcpRouteMapping1)))
 					Expect(tcpRouteMappingsResponse).To(ContainElement(matchers.MatchTcpRoute(tcpRouteMapping2)))
 				})
+
+				Context("when locked for backup (bbr)", func() {
+					var adminClient http.Client
+					lockWrites := func() {
+						putReq, err := http.NewRequest("PUT", "http://dummy/lock_router_group_writes", nil)
+						Expect(err).NotTo(HaveOccurred())
+						resp, err := adminClient.Do(putReq)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(resp.Body.Close()).To(Succeed())
+					}
+					unlockWrites := func() {
+						putReq, err := http.NewRequest("PUT", "http://dummy/unlock_router_group_writes", nil)
+						Expect(err).NotTo(HaveOccurred())
+						resp, err := adminClient.Do(putReq)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(resp.Body.Close()).To(Succeed())
+					}
+					BeforeEach(func() {
+						adminClient = http.Client{
+							Transport: &http.Transport{
+								DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+									return net.Dial("unix", routingAPIAdminSocket)
+								},
+							},
+						}
+						lockWrites()
+					})
+					AfterEach(func() {
+						unlockWrites()
+					})
+
+					It("continues to serve TCP routes", func() {
+						tcpRouteMappingsResponse, err := client.TcpRouteMappings()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(tcpRouteMappingsResponse).NotTo(BeNil())
+						Expect(tcpRouteMappingsResponse).To(ContainElement(matchers.MatchTcpRoute(tcpRouteMapping1)))
+						Expect(tcpRouteMappingsResponse).To(ContainElement(matchers.MatchTcpRoute(tcpRouteMapping2)))
+					})
+				})
 			})
 		})
 	}
