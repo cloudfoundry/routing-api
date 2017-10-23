@@ -106,7 +106,12 @@ func main() {
 	}()
 
 	apiServer := constructApiServer(cfg, database, statsdClient, logger.Session("api-server"))
-	adminServer := admin.NewServer(cfg.AdminSocket, database, logger.Session("admin-server"))
+	adminServer, err := admin.NewServer(cfg.AdminPort, database, logger.Session("admin-server"))
+	if err != nil {
+		logger.Error("failed-to-create-admin-server", err)
+		os.Exit(1)
+	}
+
 	stopper := constructStopper(database)
 
 	routerRegister := constructRouteRegister(

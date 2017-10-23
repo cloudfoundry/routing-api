@@ -1,8 +1,8 @@
 package admin
 
 import (
+	"fmt"
 	"net/http"
-	"os"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api/db"
@@ -34,7 +34,7 @@ func AdminRoutes() rata.Routes {
 
 	return routes
 }
-func NewServer(socket string, db db.DB, logger lager.Logger) ifrit.Runner {
+func NewServer(port int, db db.DB, logger lager.Logger) (ifrit.Runner, error) {
 	rglHandler := NewRouterGroupLockHandler(db, logger)
 	actions := rata.Handlers{
 		LockRouterGroupReadsRoute:    http.HandlerFunc(rglHandler.LockReads),
@@ -44,10 +44,10 @@ func NewServer(socket string, db db.DB, logger lager.Logger) ifrit.Runner {
 	}
 	handler, err := rata.NewRouter(AdminRoutes(), actions)
 	if err != nil {
-		logger.Error("failed to create router", err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	handler = handlers.LogWrap(handler, logger)
-	return http_server.NewUnixServer(socket, handler)
+	server := http_server.New(fmt.Sprintf("127.0.0.1:%d", port), handler)
+	return server, nil
 }

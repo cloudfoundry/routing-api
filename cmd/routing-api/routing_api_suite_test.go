@@ -5,15 +5,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 
 	yaml "gopkg.in/yaml.v2"
 
@@ -24,9 +21,9 @@ import (
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/models"
+	"code.cloudfoundry.org/routing-api/test_helpers"
 	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
@@ -42,7 +39,7 @@ var (
 	routingAPIBinPath      string
 	routingAPIAddress      string
 	routingAPIPort         uint16
-	routingAPIAdminSocket  string
+	routingAPIAdminPort    int
 	routingAPIIP           string
 	routingAPISystemDomain string
 	oauthServer            *ghttp.Server
@@ -112,10 +109,10 @@ var _ = BeforeEach(func() {
 	oauthSrvPort, err := strconv.ParseInt(oauthServerPort, 10, 0)
 	Expect(err).NotTo(HaveOccurred())
 
-	routingAPIAdminSocket = tempUnixSocket()
+	routingAPIAdminPort = test_helpers.NextAvailPort()
 	defaultConfig = customConfig{
 		StatsdPort:  8125 + GinkgoParallelNode(),
-		AdminSocket: routingAPIAdminSocket,
+		AdminPort:   routingAPIAdminPort,
 		UAAPort:     int(oauthSrvPort),
 		CACertsPath: caCertsPath,
 		Schema:      sqlDBName,
@@ -128,7 +125,7 @@ type customConfig struct {
 	Port        int
 	StatsdPort  int
 	UAAPort     int
-	AdminSocket string
+	AdminPort   int
 	CACertsPath string
 	Schema      string
 	ConsulUrl   string
@@ -137,7 +134,7 @@ type customConfig struct {
 
 func getRoutingAPIConfig(c customConfig) *config.Config {
 	rapiConfig := &config.Config{
-		AdminSocket:  c.AdminSocket,
+		AdminPort:    c.AdminPort,
 		DebugAddress: "1.2.3.4:1234",
 		LogGuid:      "my_logs",
 		MetronConfig: config.MetronConfig{
@@ -195,7 +192,7 @@ func writeConfigToTempFile(c *config.Config) string {
 }
 
 func routingApiClient() routing_api.Client {
-	routingAPIPort = uint16(testPort())
+	routingAPIPort = uint16(test_helpers.NextAvailPort())
 	routingAPIIP = "127.0.0.1"
 	routingAPISystemDomain = "example.com"
 	routingAPIAddress = fmt.Sprintf("%s:%d", routingAPIIP, routingAPIPort)
@@ -262,45 +259,4 @@ func getServerPort(url string) string {
 	endpoints := strings.Split(url, ":")
 	Expect(endpoints).To(HaveLen(3))
 	return endpoints[2]
-}
-
-var (
-	lastPortUsed int
-	portLock     sync.Mutex
-	once         sync.Once
-)
-
-func testPort() int {
-	portLock.Lock()
-	defer portLock.Unlock()
-
-	if lastPortUsed == 0 {
-		once.Do(func() {
-			const portRangeStart = 61000
-			lastPortUsed = portRangeStart + GinkgoConfig.ParallelNode
-		})
-	}
-
-	lastPortUsed += GinkgoConfig.ParallelTotal
-	return lastPortUsed
-}
-
-func validatePort(port uint16) {
-	Eventually(func() error {
-		l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-		if l != nil {
-			_ = l.Close()
-		}
-		return err
-	}, "60s", "1s").Should(BeNil())
-}
-
-func tempUnixSocket() string {
-	tmpfile, err := ioutil.TempFile("", "admin.sock")
-	Expect(err).ToNot(HaveOccurred())
-	defer Expect(os.Remove(tmpfile.Name())).To(Succeed())
-
-	err = tmpfile.Close()
-	Expect(err).ToNot(HaveOccurred())
-	return tmpfile.Name()
 }

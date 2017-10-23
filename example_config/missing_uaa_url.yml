@@ -1,7 +1,7 @@
 # values in this example are only suitable for testing and are not recommended
 # for production systems
 log_guid: "my_logs"
-admin_socket: "/some/path"
+admin_port: 9999
 debug_address: "1.2.3.4:1234"
 oauth:
   skip_ssl_validation: true

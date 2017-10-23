@@ -7,6 +7,7 @@ import (
 
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
+	"code.cloudfoundry.org/routing-api/test_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -34,7 +35,7 @@ var _ = Describe("Locking", func() {
 				session1 := RoutingApi(args.ArgSlice()...)
 				Eventually(session1, 10*time.Second).Should(gbytes.Say("acquire-lock-succeeded"))
 
-				args.Port = uint16(testPort())
+				args.Port = uint16(test_helpers.NextAvailPort())
 
 				session2 := RoutingApi(args.ArgSlice()...)
 
@@ -80,9 +81,9 @@ var _ = Describe("Locking", func() {
 			client1 := routingApiClientWithPort(args.Port)
 			Eventually(session1, 10*time.Second).Should(gbytes.Say("routing-api.started"))
 
-			session2Port := uint16(testPort())
+			session2Port := uint16(test_helpers.NextAvailPort())
 			apiConfig := getRoutingAPIConfig(defaultConfig)
-			apiConfig.AdminSocket = tempUnixSocket()
+			apiConfig.AdminPort = test_helpers.NextAvailPort()
 			configFilePath := writeConfigToTempFile(apiConfig)
 			session2Args := testrunner.Args{
 				Port:       session2Port,

@@ -15,6 +15,7 @@ import (
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
+	"code.cloudfoundry.org/routing-api/test_helpers"
 
 	locketconfig "code.cloudfoundry.org/locket/cmd/locket/config"
 	locketrunner "code.cloudfoundry.org/locket/cmd/locket/testrunner"
@@ -225,9 +226,9 @@ var _ = Describe("SqlLock", func() {
 		It("ensures there is no downtime", func() {
 			Eventually(session, 10*time.Second).Should(gbytes.Say("routing-api.started"))
 
-			session2Port := uint16(testPort())
+			session2Port := uint16(test_helpers.NextAvailPort())
 			apiConfig := getRoutingAPIConfig(defaultConfig)
-			apiConfig.AdminSocket = tempUnixSocket()
+			apiConfig.AdminPort = test_helpers.NextAvailPort()
 			apiConfig.Locket = locketrunner.ClientLocketConfig()
 			apiConfig.Locket.LocketAddress = locketAddress
 			configFilePath := writeConfigToTempFile(apiConfig)

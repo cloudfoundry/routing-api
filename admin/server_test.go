@@ -1,16 +1,14 @@
 package admin_test
 
 import (
-	"context"
 	"fmt"
-	"io/ioutil"
-	"net"
 	"net/http"
 	"os"
 
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/routing-api/admin"
 	fake_db "code.cloudfoundry.org/routing-api/db/fakes"
+	"code.cloudfoundry.org/routing-api/test_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -18,50 +16,32 @@ import (
 	"github.com/tedsuo/ifrit/sigmon"
 )
 
-func tempUnixSocket() string {
-	tmpfile, err := ioutil.TempFile("", "admin.sock")
-	Expect(err).ToNot(HaveOccurred())
-	defer Expect(os.Remove(tmpfile.Name())).To(Succeed())
-
-	err = tmpfile.Close()
-	Expect(err).ToNot(HaveOccurred())
-	return tmpfile.Name()
-}
-
 var _ = Describe("AdminServer", func() {
 	var (
 		logger  *lagertest.TestLogger
 		db      *fake_db.FakeDB
-		socket  string
+		port    int
 		process ifrit.Process
 	)
 	BeforeEach(func() {
 		db = new(fake_db.FakeDB)
 		logger = lagertest.NewTestLogger("routing-api-test")
-		socket = tempUnixSocket()
-		server := admin.NewServer(socket, db, logger)
+		port = test_helpers.NextAvailPort()
+		server, err := admin.NewServer(port, db, logger)
+		Expect(err).ToNot(HaveOccurred())
 		process = ifrit.Invoke(sigmon.New(server))
-		Eventually(process.Ready()).Should(BeClosed())
+		Eventually(process.Ready(), "5s").Should(BeClosed())
 	})
 
 	AfterEach(func() {
 		process.Signal(os.Interrupt)
 		Eventually(process.Wait()).Should(Receive())
-		_, err := os.Stat(socket)
-		Expect(os.IsNotExist(err)).To(BeTrue())
 	})
 
 	DescribeTable("testing the admin endpoint",
 		func(endpoint string, callCountFn func(db *fake_db.FakeDB) int) {
-			req, _ := http.NewRequest("PUT", fmt.Sprintf("http://whatever/%s", endpoint), nil)
-			tr := &http.Transport{
-				DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-					return net.Dial("unix", socket)
-				},
-			}
-			client := http.Client{Transport: tr}
-
-			resp, err := client.Do(req)
+			req, _ := http.NewRequest("PUT", fmt.Sprintf("http://127.0.0.1:%d/%s", port, endpoint), nil)
+			resp, err := http.DefaultClient.Do(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp).ToNot(BeNil())
 

@@ -1,6 +1,6 @@
 # values in this example are only suitable for testing and are not recommended
 # for production systems
-admin_socket: "/some/path/to/socket.sock"
+admin_port: 9999
 log_guid: "my_logs"
 oauth:
   token_endpoint: "127.0.0.1"

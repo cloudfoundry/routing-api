@@ -1,9 +1,7 @@
 package main_test
 
 import (
-	"context"
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"time"
@@ -443,29 +441,23 @@ var _ = Describe("Routes API", func() {
 				})
 
 				Context("when locked for backup (bbr)", func() {
-					var adminClient http.Client
+					var baseURL string
 					lockWrites := func() {
-						putReq, err := http.NewRequest("PUT", "http://dummy/lock_router_group_writes", nil)
+						putReq, err := http.NewRequest("PUT", baseURL+"/lock_router_group_writes", nil)
 						Expect(err).NotTo(HaveOccurred())
-						resp, err := adminClient.Do(putReq)
+						resp, err := http.DefaultClient.Do(putReq)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(resp.Body.Close()).To(Succeed())
 					}
 					unlockWrites := func() {
-						putReq, err := http.NewRequest("PUT", "http://dummy/unlock_router_group_writes", nil)
+						putReq, err := http.NewRequest("PUT", baseURL+"/unlock_router_group_writes", nil)
 						Expect(err).NotTo(HaveOccurred())
-						resp, err := adminClient.Do(putReq)
+						resp, err := http.DefaultClient.Do(putReq)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(resp.Body.Close()).To(Succeed())
 					}
 					BeforeEach(func() {
-						adminClient = http.Client{
-							Transport: &http.Transport{
-								DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-									return net.Dial("unix", routingAPIAdminSocket)
-								},
-							},
-						}
+						baseURL = fmt.Sprintf("http://127.0.0.1:%d", routingAPIAdminPort)
 						lockWrites()
 					})
 					AfterEach(func() {
@@ -566,15 +558,11 @@ var _ = Describe("Routes API", func() {
 				_, err := client.RouterGroups()
 				Expect(err).NotTo(HaveOccurred())
 
-				req, err := http.NewRequest("PUT", fmt.Sprintf("http://whatever/%s", "lock_router_group_reads"), nil)
+				baseURL := fmt.Sprintf("http://127.0.0.1:%d", routingAPIAdminPort)
+				req, err := http.NewRequest("PUT", baseURL+"/lock_router_group_reads", nil)
 				Expect(err).NotTo(HaveOccurred())
-				tr := &http.Transport{
-					DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-						return net.Dial("unix", routingAPIAdminSocket)
-					},
-				}
-				adminClient := http.Client{Transport: tr}
-				res, err := adminClient.Do(req)
+
+				res, err := http.DefaultClient.Do(req)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
 
