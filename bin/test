@@ -32,6 +32,7 @@ if [ ${ginkgo_status} -ne 0 ]; then
 fi
 
 # if db ca cert is not set or set to ""
+set +xu
 if [ -z "$SQL_SERVER_CA_CERT" ] ; then
 	ginkgo -r  -p -failOnPending -randomizeAllSpecs -race "$@"
 else

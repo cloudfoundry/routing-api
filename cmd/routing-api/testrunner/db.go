@@ -41,7 +41,6 @@ func NewPostgresAllocator() DbAllocator {
 }
 
 func (a *postgresAllocator) minConfig() *config.SqlDB {
-	fmt.Println("DB CERT ENV", os.Getenv("SQL_SERVER_CA_CERT"))
 	return &config.SqlDB{
 		Username:          "postgres",
 		Password:          "",
@@ -123,7 +122,6 @@ func NewMySQLAllocator() DbAllocator {
 }
 
 func (a *mysqlAllocator) minConfig() *config.SqlDB {
-	fmt.Println("DB CERT ENV", os.Getenv("SQL_SERVER_CA_CERT"))
 	return &config.SqlDB{
 		Username:          "root",
 		Password:          "password",

@@ -61,10 +61,12 @@ var _ = Describe("SqlLock", func() {
 			mysqlConnStr := "root:password@/"
 			cfg.DatabaseConnectionString = mysqlConnStr + sqlDBName
 			cfg.DatabaseDriver = "mysql"
-			caFile, err := ioutil.TempFile("", "")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(ioutil.WriteFile(caFile.Name(), []byte(mysqlConfig.CACert), 0400)).To(Succeed())
-			cfg.SQLCACertFile = caFile.Name()
+			if mysqlConfig.CACert != "" {
+				caFile, err := ioutil.TempFile("", "")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ioutil.WriteFile(caFile.Name(), []byte(mysqlConfig.CACert), 0400)).To(Succeed())
+				cfg.SQLCACertFile = caFile.Name()
+			}
 			cfg.ListenAddress = locketAddress
 		})
 		locketProcess = ginkgomon.Invoke(locketRunner)

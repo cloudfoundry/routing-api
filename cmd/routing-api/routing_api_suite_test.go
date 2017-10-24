@@ -7,10 +7,13 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"testing"
+	"time"
 
 	yaml "gopkg.in/yaml.v2"
 
@@ -27,9 +30,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
-
-	"testing"
-	"time"
 )
 
 var (
