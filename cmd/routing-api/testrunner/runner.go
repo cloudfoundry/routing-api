@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/cf-tcp-router/utils"
-	. "github.com/onsi/ginkgo"
+	"code.cloudfoundry.org/routing-api/test_helpers"
 	"github.com/tedsuo/ifrit/ginkgomon"
 )
 
@@ -72,6 +72,7 @@ func createConfig(dbId, consulUrl string) (string, error) {
 		return "", err
 	}
 	configFilePath := configFile.Name()
+	adminPort := test_helpers.NextAvailPort()
 
 	switch dbEnv {
 	case "postgres":
@@ -97,7 +98,7 @@ metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
 system_domain: "example.com"
-admin_socket: "/tmp/admin_postgres_%d.sock"
+admin_port: %d
 router_groups:
 - name: "default-tcp"
   type: "tcp"
@@ -112,7 +113,7 @@ sqldb:
 consul_cluster:
   servers: "%s"
   retry_interval: 50ms`
-		configBytes = []byte(fmt.Sprintf(postgresConfigStr, GinkgoParallelNode(), dbId, consulUrl))
+		configBytes = []byte(fmt.Sprintf(postgresConfigStr, adminPort, dbId, consulUrl))
 	default:
 		mysqlConfigStr := `log_guid: "my_logs"
 uaa_verification_key: "-----BEGIN PUBLIC KEY-----
@@ -136,7 +137,7 @@ metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
 system_domain: "example.com"
-admin_socket: "/tmp/admin_sql_%d.sock"
+admin_port: %d
 router_groups:
 - name: "default-tcp"
   type: "tcp"
@@ -151,7 +152,7 @@ sqldb:
 consul_cluster:
   servers: "%s"
   retry_interval: 50ms`
-		configBytes = []byte(fmt.Sprintf(mysqlConfigStr, GinkgoParallelNode(), dbId, consulUrl))
+		configBytes = []byte(fmt.Sprintf(mysqlConfigStr, adminPort, dbId, consulUrl))
 	}
 
 	err = utils.WriteToFile(configBytes, configFilePath)

@@ -1,7 +1,7 @@
 # values in this example are only suitable for testing and are not recommended
 # for production systems
 log_guid: "my_logs"
-admin_socket: {{.AdminSocket}}
+admin_port: {{.AdminPort}}
 oauth:
   token_endpoint: "127.0.0.1"
   port: {{.UAAPort}}
