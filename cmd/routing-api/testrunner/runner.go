@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/cf-tcp-router/utils"
+	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/test_helpers"
 	"github.com/tedsuo/ifrit/ginkgomon"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var dbEnv = os.Getenv("DB")
@@ -43,8 +45,8 @@ func NewDbAllocator() DbAllocator {
 	return dbAllocator
 }
 
-func NewRoutingAPIArgs(ip string, port uint16, dbId, consulUrl string) (Args, error) {
-	configPath, err := createConfig(dbId, consulUrl)
+func NewRoutingAPIArgs(ip string, port uint16, dbId, dbCACert, consulUrl string) (Args, error) {
+	configPath, err := createConfig(dbId, dbCACert, consulUrl)
 	if err != nil {
 		return Args{}, err
 	}
@@ -57,15 +59,16 @@ func NewRoutingAPIArgs(ip string, port uint16, dbId, consulUrl string) (Args, er
 }
 
 func New(binPath string, args Args) *ginkgomon.Runner {
+	cmd := exec.Command(binPath, args.ArgSlice()...)
 	return ginkgomon.New(ginkgomon.Config{
 		Name:              "routing-api",
-		Command:           exec.Command(binPath, args.ArgSlice()...),
+		Command:           cmd,
 		StartCheck:        "routing-api.started",
 		StartCheckTimeout: 30 * time.Second,
 	})
 }
 
-func createConfig(dbId, consulUrl string) (string, error) {
+func createConfig(dbId, dbCACert, consulUrl string) (string, error) {
 	var configBytes []byte
 	configFile, err := ioutil.TempFile("", "routing-api-config")
 	if err != nil {
@@ -74,8 +77,29 @@ func createConfig(dbId, consulUrl string) (string, error) {
 	configFilePath := configFile.Name()
 	adminPort := test_helpers.NextAvailPort()
 
+	type SqlConfig struct {
+		SqlDB config.SqlDB `yaml:"sqldb"`
+	}
 	switch dbEnv {
 	case "postgres":
+
+		dbConfig := config.SqlDB{
+			Username: "postgres",
+			Password: "",
+			Schema:   dbId,
+			Port:     5432,
+			Host:     "localhost",
+			Type:     "postgres",
+			CACert:   dbCACert,
+		}
+		config := SqlConfig{
+			SqlDB: dbConfig,
+		}
+		postgresConfig, err := yaml.Marshal(&config)
+		if err != nil {
+			return "", err
+		}
+
 		postgresConfigStr := `log_guid: "my_logs"
 uaa_verification_key: "-----BEGIN PUBLIC KEY-----
 
@@ -103,18 +127,29 @@ router_groups:
 - name: "default-tcp"
   type: "tcp"
   reservable_ports: "1024-65535"
-sqldb:
-  username: "postgres"
-  password: ""
-  schema: "%s"
-  port: 5432
-  host: "localhost"
-  type: "postgres"
 consul_cluster:
   servers: "%s"
-  retry_interval: 50ms`
-		configBytes = []byte(fmt.Sprintf(postgresConfigStr, adminPort, dbId, consulUrl))
+  retry_interval: 50ms
+%s`
+		configBytes = []byte(fmt.Sprintf(postgresConfigStr, adminPort, consulUrl, string(postgresConfig)))
 	default:
+
+		dbConfig := config.SqlDB{
+			Username: "root",
+			Password: "password",
+			Schema:   dbId,
+			Port:     3306,
+			Host:     "localhost",
+			Type:     "mysql",
+			CACert:   dbCACert,
+		}
+		config := SqlConfig{
+			SqlDB: dbConfig,
+		}
+		mysqlConfig, err := yaml.Marshal(&config)
+		if err != nil {
+			return "", err
+		}
 		mysqlConfigStr := `log_guid: "my_logs"
 uaa_verification_key: "-----BEGIN PUBLIC KEY-----
 
@@ -142,17 +177,11 @@ router_groups:
 - name: "default-tcp"
   type: "tcp"
   reservable_ports: "1024-65535"
-sqldb:
-  username: "root"
-  password: "password"
-  schema: "%s"
-  port: 3306
-  host: "localhost"
-  type: "mysql"
 consul_cluster:
   servers: "%s"
-  retry_interval: 50ms`
-		configBytes = []byte(fmt.Sprintf(mysqlConfigStr, adminPort, dbId, consulUrl))
+  retry_interval: 50ms
+%s`
+		configBytes = []byte(fmt.Sprintf(mysqlConfigStr, adminPort, consulUrl, string(mysqlConfig)))
 	}
 
 	err = utils.WriteToFile(configBytes, configFilePath)
