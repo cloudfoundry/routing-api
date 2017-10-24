@@ -2,11 +2,7 @@ package db_test
 
 import (
 	"errors"
-	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -26,183 +22,7 @@ import (
 
 var _ = Describe("SqlDB", func() {
 
-	var (
-		sqlCfg *config.SqlDB
-		sqlDB  *db.SqlDB
-	)
-
-	PostgresConnectionString := func() {
-		Describe("When db type is postgres", func() {
-			var cfg *config.SqlDB
-			BeforeEach(func() {
-				cfg = &config.SqlDB{
-					Username: "root",
-					Password: "",
-					Host:     "localhost",
-					Port:     5432,
-					Type:     "postgres",
-					Schema:   "testDB",
-				}
-			})
-
-			AfterEach(func() {
-				cfg = nil
-			})
-
-			It("returns a correct connection string when no CACert or SkipSSLValidation is provided", func() {
-				connStr, err := db.ConnectionString(cfg)
-				connectionString := fmt.Sprintf(
-					"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(Equal(connectionString))
-			})
-
-			It("returns a correct connection string when no CACert but SkipSSLValidation is provided", func() {
-				cfg.SkipSSLValidation = true
-				connStr, err := db.ConnectionString(cfg)
-
-				connectionString := fmt.Sprintf(
-					"postgres://%s:%s@%s:%d/%s?sslmode=require",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(Equal(connectionString))
-			})
-
-			It("returns a correct connection string when no SkipSSLValidation but CACert is provided", func() {
-				cfg.CACert = "some testCA"
-				connStr, err := db.ConnectionString(cfg)
-				tempDir, err := ioutil.TempDir("", "")
-				Expect(err).ToNot(HaveOccurred())
-				certPath := filepath.Join(tempDir, "postgres_cert.pem")
-				err = ioutil.WriteFile(certPath, []byte(cfg.CACert), 0400)
-
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(ContainSubstring("sslmode=verify-full&sslrootcert"))
-				certFile := strings.TrimRight(connStr, "sslrootcert=")
-				Expect(certFile).To(ContainSubstring("postgres_cert.pem"))
-
-			})
-
-			It("returns a correct connection string when both SkipSSLValidation and CACert are provided", func() {
-				cfg.CACert = "some testCA"
-				cfg.SkipSSLValidation = true
-				connStr, err := db.ConnectionString(cfg)
-
-				connectionString := fmt.Sprintf(
-					"postgres://%s:%s@%s:%d/%s?sslmode=require",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(Equal(connectionString))
-			})
-
-		})
-
-	}
-
-	MySQLConnectionString := func() {
-		Describe("When db type is mySQL", func() {
-			var cfg *config.SqlDB
-			BeforeEach(func() {
-				cfg = &config.SqlDB{
-					Username: "root",
-					Password: "password",
-					Host:     "localhost",
-					Port:     3306,
-					Type:     "mysql",
-					Schema:   "testDB",
-				}
-			})
-
-			AfterEach(func() {
-				cfg = nil
-			})
-
-			It("returns a correct connection string when no CACert or SkipSSLValidation is provided", func() {
-				connStr, err := db.ConnectionString(cfg)
-
-				connectionString := fmt.Sprintf(
-					"%s:%s@tcp(%s:%d)/%s?parseTime=true",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).ToNot(ContainSubstring("tls"))
-				Expect(connStr).To(Equal(connectionString))
-			})
-
-			It("returns a correct connection string when no CACert but SkipSSLValidation is provided", func() {
-				cfg.SkipSSLValidation = true
-				connStr, err := db.ConnectionString(cfg)
-				configKey := "dbTLSSkipVerify"
-				connectionString := fmt.Sprintf(
-					"%s:%s@tcp(%s:%d)/%s?parseTime=true&tls=%s",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-					configKey,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(Equal(connectionString))
-			})
-
-			It("returns a correct connection string when no SkipSSLValidation but CACert is provided", func() {
-				cfg.CACert = "some testCA"
-				connStr, err := db.ConnectionString(cfg)
-				configKey := "dbTLSCertVerify"
-				connectionString := fmt.Sprintf(
-					"%s:%s@tcp(%s:%d)/%s?parseTime=true&tls=%s",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-					configKey,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(Equal(connectionString))
-			})
-
-			It("returns a correct connection string when both SkipSSLValidation and CACert are provided", func() {
-				cfg.CACert = "some testCA"
-				cfg.SkipSSLValidation = true
-				connStr, err := db.ConnectionString(cfg)
-				configKey := "dbTLSSkipVerify"
-				connectionString := fmt.Sprintf(
-					"%s:%s@tcp(%s:%d)/%s?parseTime=true&tls=%s",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-					configKey,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(Equal(connectionString))
-			})
-
-		})
-	}
+	var sqlDB *db.SqlDB
 
 	Connection := func() {
 		Describe("Connection", func() {
@@ -301,39 +121,36 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			Context("when config is nil", func() {
+				BeforeEach(func() {
+					sqlCfg = nil
+				})
+
 				It("returns an error", func() {
-					failedSqlDB, err := db.NewSqlDB(nil)
 					Expect(err).To(HaveOccurred())
-					Expect(failedSqlDB).To(BeNil())
+					Expect(sqlDB).To(BeNil())
 				})
 			})
 
 			Context("when authentication fails", func() {
-				var badAuthConfig config.SqlDB
 				BeforeEach(func() {
-					badAuthConfig = *sqlCfg
-					badAuthConfig.Username = "wrong_username"
-					badAuthConfig.Password = "wrong_password"
+					sqlCfg.Username = "wrong_username"
+					sqlCfg.Password = "wrong_password"
 				})
 
 				It("returns an error", func() {
-					failedSqlDB, err := db.NewSqlDB(&badAuthConfig)
 					Expect(err).To(HaveOccurred())
-					Expect(failedSqlDB).To(BeNil())
+					Expect(sqlDB).To(BeNil())
 				})
 			})
 
 			Context("when connecting to SQL DB fails", func() {
-				var badPortConfig config.SqlDB
 				BeforeEach(func() {
-					badPortConfig = *sqlCfg
-					badPortConfig.Port = 1234
+					sqlCfg.Port = 1234
 				})
 
 				It("returns an error", func() {
-					failedSqlDB, err := db.NewSqlDB(&badPortConfig)
 					Expect(err).To(HaveOccurred())
-					Expect(failedSqlDB).To(BeNil())
+					Expect(sqlDB).To(BeNil())
 				})
 			})
 		})
@@ -1648,19 +1465,25 @@ var _ = Describe("SqlDB", func() {
 	}
 
 	Describe("Test with Mysql", func() {
+
 		var (
 			err error
 		)
-
 		BeforeEach(func() {
-			sqlCfg = mysqlCfg
+			sqlCfg = &config.SqlDB{
+				Username: "root",
+				Password: "password",
+				Schema:   sqlDBName,
+				Host:     "localhost",
+				Port:     3306,
+				Type:     "mysql",
+			}
 			sqlDB, err = db.NewSqlDB(sqlCfg)
 			Expect(err).ToNot(HaveOccurred())
 			err = migration.NewV0InitMigration().Run(sqlDB)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		MySQLConnectionString()
 		CleanupRoutes()
 		WatcherRouteChanges()
 		DeleteRoute()
@@ -1681,16 +1504,21 @@ var _ = Describe("SqlDB", func() {
 		var (
 			err error
 		)
-
 		BeforeEach(func() {
-			sqlCfg = postgresCfg
+			sqlCfg = &config.SqlDB{
+				Username: "postgres",
+				Password: "",
+				Schema:   postgresDBName,
+				Host:     "localhost",
+				Port:     5432,
+				Type:     "postgres",
+			}
 			sqlDB, err = db.NewSqlDB(sqlCfg)
 			Expect(err).ToNot(HaveOccurred())
 			err = migration.NewV0InitMigration().Run(sqlDB)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		PostgresConnectionString()
 		CleanupRoutes()
 		WatcherRouteChanges()
 		DeleteRoute()

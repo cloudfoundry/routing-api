@@ -6,7 +6,6 @@ oauth:
   token_endpoint: "127.0.0.1"
   port: 3000
   ca_certs: "some-ca-cert"
-  skip_ssl_validation: true
 metron_config:
   address: "1.2.3.4"
   port: "4567"
@@ -23,7 +22,6 @@ sqldb:
   type: mysql
   port: 1234
   host: "localhost"
-  ca_cert: "some CA cert"
 consul_cluster:
   servers: "http://localhost:5678"
   lock_ttl: 10s

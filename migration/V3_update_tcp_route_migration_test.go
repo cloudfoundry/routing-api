@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
+	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/models"
@@ -20,8 +21,17 @@ var _ = Describe("V3UpdateTcpRouteMigration", func() {
 
 	BeforeEach(func() {
 		mysqlAllocator = testrunner.NewMySQLAllocator()
-		sqlCfg, err := mysqlAllocator.Create()
+		mysqlSchema, err := mysqlAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
+
+		sqlCfg := &config.SqlDB{
+			Username: "root",
+			Password: "password",
+			Schema:   mysqlSchema,
+			Host:     "localhost",
+			Port:     3306,
+			Type:     "mysql",
+		}
 
 		sqlDB, err = db.NewSqlDB(sqlCfg)
 		Expect(err).ToNot(HaveOccurred())
