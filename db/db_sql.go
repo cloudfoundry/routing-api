@@ -2,12 +2,18 @@ package db
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sync/atomic"
 	"time"
+
+	"github.com/go-sql-driver/mysql"
 
 	"code.cloudfoundry.org/eventhub"
 	"code.cloudfoundry.org/lager"
@@ -100,30 +106,16 @@ func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 		return nil, errors.New("SQL configuration cannot be nil")
 	}
 
-	var (
-		connectionString string
-	)
-
-	switch cfg.Type {
-	case "mysql":
-		connectionString = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
-			cfg.Username,
-			cfg.Password,
-			cfg.Host,
-			cfg.Port,
-			cfg.Schema)
-	case "postgres":
-		connectionString = fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable",
-			cfg.Username,
-			cfg.Password,
-			cfg.Host,
-			cfg.Port,
-			cfg.Schema)
-	default:
+	if cfg.Type != "mysql" && cfg.Type != "postgres" {
 		return &SqlDB{}, errors.New(fmt.Sprintf("Unknown type %s", cfg.Type))
 	}
 
-	db, err := gorm.Open(cfg.Type, connectionString)
+	connStr, err := ConnectionString(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := gorm.Open(cfg.Type, connStr)
 	if err != nil {
 		return nil, err
 	}
@@ -600,4 +592,74 @@ func recordNotFound(err error) bool {
 		return true
 	}
 	return false
+}
+
+func ConnectionString(cfg *config.SqlDB) (string, error) {
+	var connectionString string
+	switch cfg.Type {
+	case "mysql":
+		rootCA := x509.NewCertPool()
+		queryString := "?parseTime=true"
+		if cfg.SkipSSLValidation {
+			tlsConfig := tls.Config{}
+			tlsConfig.InsecureSkipVerify = cfg.SkipSSLValidation
+			configKey := "dbTLSSkipVerify"
+			err := mysql.RegisterTLSConfig(configKey, &tlsConfig)
+			if err != nil {
+				return "", err
+			}
+			queryString = fmt.Sprintf("%s&tls=%s", queryString, configKey)
+
+		} else if cfg.CACert != "" {
+			tlsConfig := tls.Config{}
+			rootCA.AppendCertsFromPEM([]byte(cfg.CACert))
+			tlsConfig.ServerName = cfg.Host
+			tlsConfig.RootCAs = rootCA
+			configKey := "dbTLSCertVerify"
+			err := mysql.RegisterTLSConfig(configKey, &tlsConfig)
+			if err != nil {
+				return "", err
+			}
+			queryString = fmt.Sprintf("%s&tls=%s", queryString, configKey)
+		}
+		connectionString = fmt.Sprintf(
+			"%s:%s@tcp(%s:%d)/%s%s",
+			cfg.Username,
+			cfg.Password,
+			cfg.Host,
+			cfg.Port,
+			cfg.Schema,
+			queryString,
+		)
+
+	case "postgres":
+		var queryString string
+		if cfg.SkipSSLValidation {
+			queryString = "?sslmode=require"
+		} else if cfg.CACert != "" {
+			tempDir, err := ioutil.TempDir("", "")
+			if err != nil {
+				return "", err
+			}
+			certPath := filepath.Join(tempDir, "postgres_cert.pem")
+			err = ioutil.WriteFile(certPath, []byte(cfg.CACert), 0400)
+			if err != nil {
+				return "", err
+			}
+			queryString = fmt.Sprintf("?sslmode=verify-full&sslrootcert=%s", certPath)
+		} else {
+			queryString = "?sslmode=disable"
+		}
+		connectionString = fmt.Sprintf(
+			"postgres://%s:%s@%s:%d/%s%s",
+			cfg.Username,
+			cfg.Password,
+			cfg.Host,
+			cfg.Port,
+			cfg.Schema,
+			queryString,
+		)
+	}
+
+	return connectionString, nil
 }

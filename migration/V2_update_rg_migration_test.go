@@ -2,7 +2,6 @@ package migration_test
 
 import (
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
-	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/models"
@@ -19,17 +18,8 @@ var _ = Describe("V2UpdateRgMigration", func() {
 
 	BeforeEach(func() {
 		mysqlAllocator = testrunner.NewMySQLAllocator()
-		mysqlSchema, err := mysqlAllocator.Create()
+		sqlCfg, err := mysqlAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
-
-		sqlCfg := &config.SqlDB{
-			Username: "root",
-			Password: "password",
-			Schema:   mysqlSchema,
-			Host:     "localhost",
-			Port:     3306,
-			Type:     "mysql",
-		}
 
 		sqlDB, err = db.NewSqlDB(sqlCfg)
 		Expect(err).ToNot(HaveOccurred())

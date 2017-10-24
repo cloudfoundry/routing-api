@@ -9,6 +9,7 @@ import (
 
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
+	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
 	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
@@ -165,7 +166,9 @@ var _ = Describe("Main", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
 
-			connectionString := fmt.Sprintf("root:password@/%s?parseTime=true", sqlDBName)
+			rapiConfig := getRoutingAPIConfig(defaultConfig)
+			connectionString, err := db.ConnectionString(&rapiConfig.SqlDB)
+			Expect(err).NotTo(HaveOccurred())
 			gormDB, err := gorm.Open("mysql", connectionString)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -242,8 +245,8 @@ var _ = Describe("Main", func() {
 				ConfigPath: configPath,
 				DevMode:    true,
 			}
-			connectionString := fmt.Sprintf("root:password@/%s?parseTime=true", sqlDBName)
-			var err error
+			connectionString, err := db.ConnectionString(&rapiConfig.SqlDB)
+			Expect(err).NotTo(HaveOccurred())
 			gormDB, err = gorm.Open("mysql", connectionString)
 			Expect(err).NotTo(HaveOccurred())
 		})

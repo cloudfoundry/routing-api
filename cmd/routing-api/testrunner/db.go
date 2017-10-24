@@ -4,18 +4,22 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math/rand"
+	"os"
+	"time"
 
-	. "github.com/onsi/ginkgo"
+	"routing-release/src/code.cloudfoundry.org/routing-api/db"
+
+	"code.cloudfoundry.org/routing-api/config"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	. "github.com/onsi/ginkgo"
 )
 
 type DbAllocator interface {
-	Create() (string, error)
+	Create() (*config.SqlDB, error)
 	Reset() error
 	Delete() error
-	ConnectionString() string
+	minConfig() *config.SqlDB
 }
 
 type mysqlAllocator struct {
@@ -29,48 +33,64 @@ type postgresAllocator struct {
 }
 
 func randSchemaName() string {
-	return fmt.Sprintf("test%d%d", rand.Int(), GinkgoParallelNode())
+	return fmt.Sprintf("test%d%d", time.Now().UnixNano(), GinkgoParallelNode())
 }
 
 func NewPostgresAllocator() DbAllocator {
 	return &postgresAllocator{schemaName: randSchemaName()}
 }
-func NewMySQLAllocator() DbAllocator {
-	return &mysqlAllocator{schemaName: randSchemaName()}
+
+func (a *postgresAllocator) minConfig() *config.SqlDB {
+	fmt.Println("DB CERT ENV", os.Getenv("SQL_SERVER_CA_CERT"))
+	return &config.SqlDB{
+		Username:          "postgres",
+		Password:          "",
+		Host:              "localhost",
+		Port:              5432,
+		Type:              "postgres",
+		CACert:            os.Getenv("SQL_SERVER_CA_CERT"),
+		SkipSSLValidation: os.Getenv("DB_SKIP_SSL_VALIDATION") == "true",
+	}
 }
 
-func (a *postgresAllocator) ConnectionString() string {
-	return "postgres://postgres:@localhost/?sslmode=disable"
-}
+func (a *postgresAllocator) Create() (*config.SqlDB, error) {
+	var (
+		err error
+		cfg *config.SqlDB
+	)
 
-func (a *postgresAllocator) Create() (string, error) {
-	var err error
-	a.sqlDB, err = sql.Open("postgres", a.ConnectionString())
+	cfg = a.minConfig()
+	connStr, err := db.ConnectionString(cfg)
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+	a.sqlDB, err = sql.Open("postgres", connStr)
+	if err != nil {
+		return nil, err
 	}
 	err = a.sqlDB.Ping()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	for i := 0; i < 5; i++ {
 		dbExists, err := a.sqlDB.Exec(fmt.Sprintf("SELECT * FROM pg_database WHERE datname='%s'", a.schemaName))
 		rowsAffected, err := dbExists.RowsAffected()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		if rowsAffected == 0 {
 			_, err = a.sqlDB.Exec(fmt.Sprintf("CREATE DATABASE %s", a.schemaName))
 			if err != nil {
-				return "", err
+				return nil, err
 			}
-			return a.schemaName, nil
+			cfg.Schema = a.schemaName
+			return cfg, nil
 		} else {
 			a.schemaName = randSchemaName()
 		}
 	}
-	return "", errors.New("Failed to create unique database ")
+	return nil, errors.New("Failed to create unique database ")
 }
 
 func (a *postgresAllocator) Reset() error {
@@ -98,38 +118,61 @@ func (a *postgresAllocator) Delete() error {
 	return err
 }
 
-func (a *mysqlAllocator) ConnectionString() string {
-	return "root:password@/"
+func NewMySQLAllocator() DbAllocator {
+	return &mysqlAllocator{schemaName: randSchemaName()}
 }
 
-func (a *mysqlAllocator) Create() (string, error) {
-	var err error
-	a.sqlDB, err = sql.Open("mysql", a.ConnectionString())
+func (a *mysqlAllocator) minConfig() *config.SqlDB {
+	fmt.Println("DB CERT ENV", os.Getenv("SQL_SERVER_CA_CERT"))
+	return &config.SqlDB{
+		Username:          "root",
+		Password:          "password",
+		Host:              "localhost",
+		Port:              3306,
+		Type:              "mysql",
+		CACert:            os.Getenv("SQL_SERVER_CA_CERT"),
+		SkipSSLValidation: os.Getenv("DB_SKIP_SSL_VALIDATION") == "true",
+	}
+}
+
+func (a *mysqlAllocator) Create() (*config.SqlDB, error) {
+	var (
+		err error
+		cfg *config.SqlDB
+	)
+
+	cfg = a.minConfig()
+	connStr, err := db.ConnectionString(cfg)
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+	a.sqlDB, err = sql.Open("mysql", connStr)
+	if err != nil {
+		return nil, err
 	}
 	err = a.sqlDB.Ping()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	for i := 0; i < 5; i++ {
 		dbExists, err := a.sqlDB.Exec(fmt.Sprintf("SHOW DATABASES LIKE '%s'", a.schemaName))
 		rowsAffected, err := dbExists.RowsAffected()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		if rowsAffected == 0 {
 			_, err = a.sqlDB.Exec(fmt.Sprintf("CREATE DATABASE %s", a.schemaName))
 			if err != nil {
-				return "", err
+				return nil, err
 			}
-			return a.schemaName, nil
+			cfg.Schema = a.schemaName
+			return cfg, nil
 		} else {
 			a.schemaName = randSchemaName()
 		}
 	}
-	return "", errors.New("Failed to create unique database ")
+	return nil, errors.New("Failed to create unique database ")
 }
 
 func (a *mysqlAllocator) Reset() error {

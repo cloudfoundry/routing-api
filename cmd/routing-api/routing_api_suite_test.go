@@ -50,6 +50,7 @@ var (
 	consulRunner *consulrunner.ClusterRunner
 
 	mysqlAllocator testrunner.DbAllocator
+	mysqlConfig    *config.SqlDB
 )
 
 func TestMain(t *testing.T) {
@@ -70,7 +71,6 @@ var _ = SynchronizedBeforeSuite(
 	func(binPaths []byte) {
 		grpclog.SetLogger(log.New(ioutil.Discard, "", 0))
 
-		var err error
 		path := string(binPaths)
 		routingAPIBinPath = strings.Split(path, ",")[0]
 		locketBinPath = strings.Split(path, ",")[1]
@@ -79,7 +79,9 @@ var _ = SynchronizedBeforeSuite(
 
 		mysqlAllocator = testrunner.NewMySQLAllocator()
 
-		sqlDBName, err = mysqlAllocator.Create()
+		var err error
+		mysqlConfig, err = mysqlAllocator.Create()
+		sqlDBName = mysqlConfig.Schema
 		Expect(err).NotTo(HaveOccurred())
 
 		setupConsul()
@@ -165,12 +167,14 @@ func getRoutingAPIConfig(c customConfig) *config.Config {
 		UUID: "fake-uuid",
 	}
 	rapiConfig.SqlDB = config.SqlDB{
-		Host:     "localhost",
-		Port:     3306,
-		Schema:   c.Schema,
-		Type:     "mysql",
-		Username: "root",
-		Password: "password",
+		Host:              "localhost",
+		Port:              3306,
+		Schema:            c.Schema,
+		Type:              "mysql",
+		Username:          "root",
+		Password:          "password",
+		CACert:            os.Getenv("SQL_SERVER_CA_CERT"),
+		SkipSSLValidation: os.Getenv("DB_SKIP_SSL_VALIDATION") == "true",
 	}
 	return rapiConfig
 }
