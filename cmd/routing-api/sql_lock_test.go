@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"time"
 
@@ -57,8 +58,13 @@ var _ = Describe("SqlLock", func() {
 		locketAddress = fmt.Sprintf("localhost:%d", locketPort)
 		locketRunner = locketrunner.NewLocketRunner(locketBinPath, func(cfg *locketconfig.LocketConfig) {
 			cfg.ConsulCluster = consulRunner.ConsulCluster()
-			cfg.DatabaseConnectionString = mysqlAllocator.ConnectionString() + sqlDBName
+			mysqlConnStr := "root:password@/"
+			cfg.DatabaseConnectionString = mysqlConnStr + sqlDBName
 			cfg.DatabaseDriver = "mysql"
+			caFile, err := ioutil.TempFile("", "")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ioutil.WriteFile(caFile.Name(), []byte(mysqlConfig.CACert), 0400)).To(Succeed())
+			cfg.SQLCACertFile = caFile.Name()
 			cfg.ListenAddress = locketAddress
 		})
 		locketProcess = ginkgomon.Invoke(locketRunner)

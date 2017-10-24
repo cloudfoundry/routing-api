@@ -26,12 +26,14 @@ type OAuthConfig struct {
 }
 
 type SqlDB struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Schema   string `yaml:"schema"`
-	Type     string `yaml:"type"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	Host              string `yaml:"host"`
+	Port              int    `yaml:"port"`
+	Schema            string `yaml:"schema"`
+	Type              string `yaml:"type"`
+	Username          string `yaml:"username"`
+	Password          string `yaml:"password"`
+	CACert            string `yaml:"ca_cert"`
+	SkipSSLValidation bool
 }
 
 type ConsulCluster struct {
@@ -100,6 +102,7 @@ func (cfg *Config) Initialize(file []byte, authDisabled bool) error {
 	if cfg.ConsulCluster.LockTTL == 0 {
 		cfg.ConsulCluster.LockTTL = locket.DefaultSessionTTL
 	}
+
 	if cfg.ConsulCluster.RetryInterval == 0 {
 		cfg.ConsulCluster.RetryInterval = locket.RetryInterval
 	}
@@ -114,6 +117,8 @@ func (cfg *Config) Initialize(file []byte, authDisabled bool) error {
 	if err != nil {
 		return err
 	}
+
+	cfg.SqlDB.SkipSSLValidation = cfg.OAuth.SkipSSLValidation
 
 	return nil
 }
