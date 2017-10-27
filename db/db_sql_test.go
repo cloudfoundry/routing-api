@@ -3,10 +3,7 @@ package db_test
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -49,70 +46,87 @@ var _ = Describe("SqlDB", func() {
 				cfg = nil
 			})
 
-			It("returns a correct connection string when no CACert or SkipSSLValidation is provided", func() {
-				connStr, err := db.ConnectionString(cfg)
-				connectionString := fmt.Sprintf(
-					"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(Equal(connectionString))
+			Context("when no CACert is provided", func() {
+				Context("when SkipSSLValidation is true", func() {
+					BeforeEach(func() {
+						cfg.SkipSSLValidation = true
+					})
+					It("returns a correct connection string with 'sslmode=disable'", func() {
+						connStr, err := db.ConnectionString(cfg)
+						connectionString := fmt.Sprintf(
+							"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+							cfg.Username,
+							cfg.Password,
+							cfg.Host,
+							cfg.Port,
+							cfg.Schema,
+						)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(connStr).To(Equal(connectionString))
+					})
+				})
+				Context("when SkipSSLValidation is false", func() {
+					BeforeEach(func() {
+						cfg.SkipSSLValidation = false
+					})
+					It("returns a correct connection string with 'sslmode=disable", func() {
+						connStr, err := db.ConnectionString(cfg)
+						connectionString := fmt.Sprintf(
+							"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+							cfg.Username,
+							cfg.Password,
+							cfg.Host,
+							cfg.Port,
+							cfg.Schema,
+						)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(connStr).To(Equal(connectionString))
+					})
+				})
 			})
 
-			It("returns a correct connection string when no CACert but SkipSSLValidation is provided", func() {
-				cfg.SkipSSLValidation = true
-				connStr, err := db.ConnectionString(cfg)
-
-				connectionString := fmt.Sprintf(
-					"postgres://%s:%s@%s:%d/%s?sslmode=require",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(Equal(connectionString))
+			Context("when CACert is provided", func() {
+				BeforeEach(func() {
+					cfg.CACert = "testCA"
+				})
+				Context("when SkipSSLValidation is true", func() {
+					BeforeEach(func() {
+						cfg.SkipSSLValidation = true
+					})
+					It("returns a correct connection string with 'sslmode=require'", func() {
+						connStr, err := db.ConnectionString(cfg)
+						connectionString := fmt.Sprintf(
+							"postgres://%s:%s@%s:%d/%s?sslmode=require",
+							cfg.Username,
+							cfg.Password,
+							cfg.Host,
+							cfg.Port,
+							cfg.Schema,
+						)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(connStr).To(Equal(connectionString))
+					})
+				})
+				Context("when SkipSSLValidation is false", func() {
+					BeforeEach(func() {
+						cfg.SkipSSLValidation = false
+					})
+					It("returns a correct connection string with 'sslmode=verify-full&sslrootcert=/some/path/postgres_cert.pem", func() {
+						connStr, err := db.ConnectionString(cfg)
+						connectionString := fmt.Sprintf(
+							`postgres://%s:%s@%s:%d/%s\?sslmode=verify-full&sslrootcert=.*/postgres_cert\.pem`,
+							cfg.Username,
+							cfg.Password,
+							cfg.Host,
+							cfg.Port,
+							cfg.Schema,
+						)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(connStr).To(MatchRegexp(connectionString))
+					})
+				})
 			})
-
-			It("returns a correct connection string when no SkipSSLValidation but CACert is provided", func() {
-				cfg.CACert = "some testCA"
-				connStr, err := db.ConnectionString(cfg)
-				tempDir, err := ioutil.TempDir("", "")
-				Expect(err).ToNot(HaveOccurred())
-				certPath := filepath.Join(tempDir, "postgres_cert.pem")
-				err = ioutil.WriteFile(certPath, []byte(cfg.CACert), 0400)
-
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(ContainSubstring("sslmode=verify-full&sslrootcert"))
-				certFile := strings.TrimRight(connStr, "sslrootcert=")
-				Expect(certFile).To(ContainSubstring("postgres_cert.pem"))
-
-			})
-
-			It("returns a correct connection string when both SkipSSLValidation and CACert are provided", func() {
-				cfg.CACert = "some testCA"
-				cfg.SkipSSLValidation = true
-				connStr, err := db.ConnectionString(cfg)
-
-				connectionString := fmt.Sprintf(
-					"postgres://%s:%s@%s:%d/%s?sslmode=require",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(Equal(connectionString))
-			})
-
 		})
-
 	}
 
 	MySQLConnectionString := func() {
@@ -133,74 +147,94 @@ var _ = Describe("SqlDB", func() {
 				cfg = nil
 			})
 
-			It("returns a correct connection string when no CACert or SkipSSLValidation is provided", func() {
-				connStr, err := db.ConnectionString(cfg)
+			Context("when no CACert is provided", func() {
+				Context("when SkipSSLValidation is true", func() {
+					BeforeEach(func() {
+						cfg.SkipSSLValidation = true
+					})
+					It("returns a correct connection string with 'tls=dbTLSSkipVerify'", func() {
+						connStr, err := db.ConnectionString(cfg)
+						configKey := "dbTLSSkipVerify"
+						connectionString := fmt.Sprintf(
+							"%s:%s@tcp(%s:%d)/%s?parseTime=true&tls=%s",
+							cfg.Username,
+							cfg.Password,
+							cfg.Host,
+							cfg.Port,
+							cfg.Schema,
+							configKey,
+						)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(connStr).To(Equal(connectionString))
+					})
+				})
+				Context("when SkipSSLValidation is false", func() {
+					BeforeEach(func() {
+						cfg.SkipSSLValidation = false
+					})
+					It("returns a correct connection string without 'tls' param", func() {
+						connStr, err := db.ConnectionString(cfg)
 
-				connectionString := fmt.Sprintf(
-					"%s:%s@tcp(%s:%d)/%s?parseTime=true",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).ToNot(ContainSubstring("tls"))
-				Expect(connStr).To(Equal(connectionString))
+						connectionString := fmt.Sprintf(
+							"%s:%s@tcp(%s:%d)/%s?parseTime=true",
+							cfg.Username,
+							cfg.Password,
+							cfg.Host,
+							cfg.Port,
+							cfg.Schema,
+						)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(connStr).ToNot(ContainSubstring("tls"))
+						Expect(connStr).To(Equal(connectionString))
+					})
+				})
 			})
 
-			It("returns a correct connection string when no CACert but SkipSSLValidation is provided", func() {
-				cfg.SkipSSLValidation = true
-				connStr, err := db.ConnectionString(cfg)
-				configKey := "dbTLSSkipVerify"
-				connectionString := fmt.Sprintf(
-					"%s:%s@tcp(%s:%d)/%s?parseTime=true&tls=%s",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-					configKey,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(Equal(connectionString))
+			Context("when CACert is provided", func() {
+				BeforeEach(func() {
+					cfg.CACert = "testCA"
+				})
+				Context("when SkipSSLValidation is true", func() {
+					BeforeEach(func() {
+						cfg.SkipSSLValidation = true
+					})
+					It("returns a correct connection string with 'tls=dbTLSSkipVerify'", func() {
+						connStr, err := db.ConnectionString(cfg)
+						configKey := "dbTLSSkipVerify"
+						connectionString := fmt.Sprintf(
+							"%s:%s@tcp(%s:%d)/%s?parseTime=true&tls=%s",
+							cfg.Username,
+							cfg.Password,
+							cfg.Host,
+							cfg.Port,
+							cfg.Schema,
+							configKey,
+						)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(connStr).To(Equal(connectionString))
+					})
+				})
+				Context("when SkipSSLValidation is false", func() {
+					BeforeEach(func() {
+						cfg.SkipSSLValidation = false
+					})
+					It("returns a correct connection string with 'tls=dbTLSSkipVerify'", func() {
+						connStr, err := db.ConnectionString(cfg)
+						configKey := "dbTLSCertVerify"
+						connectionString := fmt.Sprintf(
+							"%s:%s@tcp(%s:%d)/%s?parseTime=true&tls=%s",
+							cfg.Username,
+							cfg.Password,
+							cfg.Host,
+							cfg.Port,
+							cfg.Schema,
+							configKey,
+						)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(connStr).To(Equal(connectionString))
+					})
+				})
 			})
-
-			It("returns a correct connection string when no SkipSSLValidation but CACert is provided", func() {
-				cfg.CACert = "some testCA"
-				connStr, err := db.ConnectionString(cfg)
-				configKey := "dbTLSCertVerify"
-				connectionString := fmt.Sprintf(
-					"%s:%s@tcp(%s:%d)/%s?parseTime=true&tls=%s",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-					configKey,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(Equal(connectionString))
-			})
-
-			It("returns a correct connection string when both SkipSSLValidation and CACert are provided", func() {
-				cfg.CACert = "some testCA"
-				cfg.SkipSSLValidation = true
-				connStr, err := db.ConnectionString(cfg)
-				configKey := "dbTLSSkipVerify"
-				connectionString := fmt.Sprintf(
-					"%s:%s@tcp(%s:%d)/%s?parseTime=true&tls=%s",
-					cfg.Username,
-					cfg.Password,
-					cfg.Host,
-					cfg.Port,
-					cfg.Schema,
-					configKey,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(connStr).To(Equal(connectionString))
-			})
-
 		})
 	}
 

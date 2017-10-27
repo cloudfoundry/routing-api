@@ -634,21 +634,23 @@ func ConnectionString(cfg *config.SqlDB) (string, error) {
 
 	case "postgres":
 		var queryString string
-		if cfg.SkipSSLValidation {
-			queryString = "?sslmode=require"
-		} else if cfg.CACert != "" {
-			tempDir, err := ioutil.TempDir("", "")
-			if err != nil {
-				return "", err
-			}
-			certPath := filepath.Join(tempDir, "postgres_cert.pem")
-			err = ioutil.WriteFile(certPath, []byte(cfg.CACert), 0400)
-			if err != nil {
-				return "", err
-			}
-			queryString = fmt.Sprintf("?sslmode=verify-full&sslrootcert=%s", certPath)
-		} else {
+		if cfg.CACert == "" {
 			queryString = "?sslmode=disable"
+		} else {
+			if cfg.SkipSSLValidation {
+				queryString = "?sslmode=require"
+			} else {
+				tempDir, err := ioutil.TempDir("", "")
+				if err != nil {
+					return "", err
+				}
+				certPath := filepath.Join(tempDir, "postgres_cert.pem")
+				err = ioutil.WriteFile(certPath, []byte(cfg.CACert), 0400)
+				if err != nil {
+					return "", err
+				}
+				queryString = fmt.Sprintf("?sslmode=verify-full&sslrootcert=%s", certPath)
+			}
 		}
 		connectionString = fmt.Sprintf(
 			"postgres://%s:%s@%s:%d/%s%s",
