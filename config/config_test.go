@@ -292,7 +292,12 @@ router_groups:
   type: tcp
 - name: router-group-2
   reservable_ports: 1024-10000,42000
-  type: udp`
+  type: udp
+- name: router-group-special
+  reservable_ports:
+  - 1122
+  - 1123
+  type: tcp`
 			}
 
 			It("populates the router groups", func() {
@@ -310,8 +315,32 @@ router_groups:
 						ReservablePorts: "1024-10000,42000",
 						Type:            "udp",
 					},
+					{
+						Name:            "router-group-special",
+						ReservablePorts: "1122,1123",
+						Type:            "tcp",
+					},
 				}
 				Expect(cfg.RouterGroups).To(Equal(expectedGroups))
+			})
+
+			It("returns an error when port array has invalid type", func() {
+				config := `log_guid: "my_logs"
+admin_port: 9999
+metrics_reporting_interval: "500ms"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"
+uuid: "fake-uuid"
+system_domain: "example.com"
+router_groups:
+- name: router-group-special
+  reservable_ports:
+  - "1122"
+  - 1123
+  type: tcp`
+				err := cfg.Initialize([]byte(config), true)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("invalid type for reservable port"))
 			})
 
 			It("returns error for invalid ports", func() {

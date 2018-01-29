@@ -95,27 +95,60 @@ func (g RouterGroup) Validate() error {
 	if g.Name == "" {
 		return errors.New("Missing name in router group")
 	}
+
 	if g.Type == "" {
 		return errors.New("Missing type in router group")
 	}
+
 	if g.ReservablePorts == "" {
 		if g.Type == RouterGroup_TCP {
-			return errors.New(fmt.Sprintf("Missing reservable_ports in router group: %s", g.Name))
+			return fmt.Errorf("Missing reservable_ports in router group: %s", g.Name)
 		}
+
 		return nil
 	}
+
 	if g.Type == RouterGroup_HTTP {
 		return errors.New("Reservable ports are not supported for router groups of type http")
 	}
 
-	err := g.ReservablePorts.Validate()
-	if err != nil {
-		return err
-	}
-	return nil
+	return g.ReservablePorts.Validate()
 }
 
 type ReservablePorts string
+
+func (p *ReservablePorts) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var input interface{}
+
+	err := unmarshal(&input)
+	if err != nil {
+		return err // untested
+	}
+
+	switch t := input.(type) {
+	case int:
+		*p = ReservablePorts(strconv.Itoa(t))
+	case string:
+		*p = ReservablePorts(input.(string))
+	case []interface{}:
+		var s []string
+
+		for _, v := range t {
+			val, ok := v.(int)
+			if !ok {
+				return errors.New("invalid type for reservable port")
+			}
+
+			s = append(s, strconv.Itoa(val))
+		}
+
+		*p = ReservablePorts(strings.Join(s, ","))
+	default:
+		return errors.New("reservable port unmarshal failed") // untested
+	}
+
+	return nil
+}
 
 func (p ReservablePorts) Validate() error {
 	portRanges, err := p.Parse()
@@ -228,20 +261,20 @@ func parseRange(r string) (Range, error) {
 	case 2:
 		start, err := strconv.ParseUint(endpoints[0], 10, 64)
 		if err != nil {
-			return Range{}, errors.New(fmt.Sprintf("range (%s) requires a starting port", r))
+			return Range{}, fmt.Errorf("range (%s) requires a starting port", r)
 		}
 
 		end, err := strconv.ParseUint(endpoints[1], 10, 64)
 		if err != nil {
-			return Range{}, errors.New(fmt.Sprintf("range (%s) requires an ending port", r))
+			return Range{}, fmt.Errorf("range (%s) requires an ending port", r)
 		}
 
 		if start > end {
-			return Range{}, errors.New(fmt.Sprintf("range (%s) must be in ascending numeric order", r))
+			return Range{}, fmt.Errorf("range (%s) must be in ascending numeric order", r)
 		}
 
 		return NewRange(start, end)
 	default:
-		return Range{}, errors.New(fmt.Sprintf("range (%s) has too many '-' separators", r))
+		return Range{}, fmt.Errorf("range (%s) has too many '-' separators", r)
 	}
 }
