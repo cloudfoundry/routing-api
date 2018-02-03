@@ -9,24 +9,24 @@ The purpose of the Routing API is to present a RESTful interface for registering
 ### External Dependencies
 
 - Go should be installed and in the PATH
-- This repo is part of [routing-release](https://github.com/cloudfoundry-incubator/routing-release) bosh release repo, which also acts as cannonical GOPATH. So to work on routing-api you will need to checkout [routing-release](https://github.com/cloudfoundry-incubator/routing-release) and follow instructions in its [README](https://github.com/cloudfoundry-incubator/routing-release/blob/develop/README.md) to setup GOPATH.
+- This repo is part of [routing-release](https://github.com/cloudfoundry/routing-release) bosh release repo, which also acts as cannonical GOPATH. So to work on routing-api you will need to checkout [routing-release](https://github.com/cloudfoundry/routing-release) and follow instructions in its [README](https://github.com/cloudfoundry/routing-release/blob/develop/README.md) to setup GOPATH.
 
 
 ### Development Setup
 
-Refer to routing-release [README](https://github.com/cloudfoundry-incubator/routing-release/blob/develop/README.md) for development setup.
+Refer to routing-release [README](https://github.com/cloudfoundry/routing-release/blob/develop/README.md) for development setup.
 
 ## Development
 
-To run the tests you need a running RDB(either Postgres or MySQL). Currently there is a helper script under routing-release which runs tests in [docker container](https://github.com/cloudfoundry-incubator/routing-release/blob/develop/scripts/unit-tests-in-docker). `cf-routing-pipeline` docker image used in the below script is configured with correct version of `MySQL` and `Postgres` for testing purposes. To run the tests for routing-api
+To run the tests you need a running RDB(either Postgres or MySQL). Currently there is a helper script under routing-release which runs tests in [docker container](https://github.com/cloudfoundry/routing-release/blob/develop/scripts/unit-tests-in-docker). `cf-routing-pipeline` docker image used in the below script is configured with correct version of `MySQL` and `Postgres` for testing purposes. To run the tests for routing-api
 
 ```sh
 ./scripts/unit-tests-in-docker routing-api
 ```
 
 If you choose to run unit-tests without docker(mentioned above), you will need to run SQL locally with the below configuration:
-[MySQL](https://github.com/cloudfoundry-incubator/routing-api/blob/5e1c34582d6c5a288e0bfd18968dab98f2dfbb29/cmd/routing-api/testrunner/runner.go#L174-L180)
-[Postgres](https://github.com/cloudfoundry-incubator/routing-api/blob/5e1c34582d6c5a288e0bfd18968dab98f2dfbb29/cmd/routing-api/testrunner/runner.go#L138-L143)
+[MySQL](https://github.com/cloudfoundry/routing-api/blob/5e1c34582d6c5a288e0bfd18968dab98f2dfbb29/cmd/routing-api/testrunner/runner.go#L174-L180)
+[Postgres](https://github.com/cloudfoundry/routing-api/blob/5e1c34582d6c5a288e0bfd18968dab98f2dfbb29/cmd/routing-api/testrunner/runner.go#L138-L143)
 
 ## Running the API Server
 
@@ -114,7 +114,7 @@ routing-api -ip 127.0.0.1 -systemDomain 127.0.0.1.xip.io -config example_config/
 
 ### Profiling the Server
 
-The Routing API runs the [cf_debug_server](https://github.com/cloudfoundry-incubator/cf-debug-server), which is a wrapper around the go pprof tool. In order to generate this profile, do the following:
+The Routing API runs the [cf_debug_server](https://github.com/cloudfoundry/debugserver), which is a wrapper around the go pprof tool. In order to generate this profile, do the following:
 
 ```bash
 # Establish a SSH tunnel to your server (not necessary if you can connect directly)
@@ -123,7 +123,7 @@ ssh -L localhost:8080:[INTERNAL_SERVER_IP]:17002 vcap@[BOSH_DIRECTOR]
 go tool pprof http://localhost:8080/debug/pprof/profile
 ```
 
-> Note: Debug server should run on loopback interface i.e., 0.0.0.0 for the SSH tunnel to work. Current default value for interface is set to [localhost](https://github.com/cloudfoundry-incubator/routing-release/blob/master/jobs/gorouter/spec#L52)
+> Note: Debug server should run on loopback interface i.e., 0.0.0.0 for the SSH tunnel to work. Current default value for interface is set to [localhost](https://github.com/cloudfoundry/routing-release/blob/master/jobs/gorouter/spec#L52)
 
 ## Using the API
 
@@ -133,8 +133,8 @@ The Routing API uses OAuth tokens to authenticate clients. To obtain a token fro
 
 A CLI client called `rtr` has been created for the Routing API that simplifies interactions by abstracting authentication.
 
-- [Documentation](https://github.com/cloudfoundry-incubator/routing-api-cli)
-- [Downloads](https://github.com/cloudfoundry-incubator/routing-api-cli/releases)
+- [Documentation](https://github.com/cloudfoundry/routing-api-cli)
+- [Downloads](https://github.com/cloudfoundry/routing-api-cli/releases)
 
 ### Using the API manually
 
