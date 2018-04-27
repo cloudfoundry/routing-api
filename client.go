@@ -27,7 +27,6 @@ const (
 
 //go:generate counterfeiter -o fake_routing_api/fake_client.go . Client
 type Client interface {
-	SetToken(string)
 	SetOAuthCredentials(string, string, string)
 	UpsertRoutes([]models.Route) error
 	Routes() ([]models.Route, error)
@@ -74,18 +73,11 @@ type client struct {
 	streamingHTTPClient *http.Client
 
 	tokenMutex   *sync.RWMutex
-	authToken    string
 	uaaURL       string
 	clientID     string
 	clientSecret string
 
 	reqGen *rata.RequestGenerator
-}
-
-func (c *client) SetToken(token string) {
-	c.tokenMutex.Lock()
-	defer c.tokenMutex.Unlock()
-	c.authToken = token
 }
 
 func (c *client) SetOAuthCredentials(uaaURL string, clientID string, clientSecret string) {

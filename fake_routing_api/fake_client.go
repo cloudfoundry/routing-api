@@ -9,11 +9,6 @@ import (
 )
 
 type FakeClient struct {
-	SetTokenStub        func(string)
-	setTokenMutex       sync.RWMutex
-	setTokenArgsForCall []struct {
-		arg1 string
-	}
 	SetOAuthCredentialsStub        func(string, string, string)
 	setOAuthCredentialsMutex       sync.RWMutex
 	setOAuthCredentialsArgsForCall []struct {
@@ -196,30 +191,6 @@ type FakeClient struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *FakeClient) SetToken(arg1 string) {
-	fake.setTokenMutex.Lock()
-	fake.setTokenArgsForCall = append(fake.setTokenArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	fake.recordInvocation("SetToken", []interface{}{arg1})
-	fake.setTokenMutex.Unlock()
-	if fake.SetTokenStub != nil {
-		fake.SetTokenStub(arg1)
-	}
-}
-
-func (fake *FakeClient) SetTokenCallCount() int {
-	fake.setTokenMutex.RLock()
-	defer fake.setTokenMutex.RUnlock()
-	return len(fake.setTokenArgsForCall)
-}
-
-func (fake *FakeClient) SetTokenArgsForCall(i int) string {
-	fake.setTokenMutex.RLock()
-	defer fake.setTokenMutex.RUnlock()
-	return fake.setTokenArgsForCall[i].arg1
 }
 
 func (fake *FakeClient) SetOAuthCredentials(arg1 string, arg2 string, arg3 string) {
@@ -983,8 +954,6 @@ func (fake *FakeClient) SubscribeToTcpEventsWithMaxRetriesReturnsOnCall(i int, r
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.setTokenMutex.RLock()
-	defer fake.setTokenMutex.RUnlock()
 	fake.setOAuthCredentialsMutex.RLock()
 	defer fake.setOAuthCredentialsMutex.RUnlock()
 	fake.upsertRoutesMutex.RLock()
