@@ -47,43 +47,45 @@ type Client interface {
 }
 
 func NewClient(url string, skipTLSVerification bool) Client {
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: skipTLSVerification,
-	}
-	streamingClient := &http.Client{
+	bc := &http.Client{
 		Transport: &http.Transport{
 			Dial: (&net.Dialer{
 				Timeout:   5 * time.Second,
 				KeepAlive: 30 * time.Second,
 			}).Dial,
-			TLSClientConfig: tlsConfig,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: skipTLSVerification,
+			},
 		},
 	}
 
 	return &client{
-		streamingHTTPClient: streamingClient,
-
+		baseClient: bc,
 		tokenMutex: &sync.RWMutex{},
-
-		reqGen: rata.NewRequestGenerator(url, Routes()),
+		reqGen:     rata.NewRequestGenerator(url, Routes()),
 	}
 }
 
 type client struct {
-	streamingHTTPClient *http.Client
+	baseClient  *http.Client
+	oauthClient *http.Client
 
-	tokenMutex   *sync.RWMutex
-	uaaURL       string
-	clientID     string
-	clientSecret string
+	tokenMutex *sync.RWMutex
 
 	reqGen *rata.RequestGenerator
 }
 
-func (c *client) SetOAuthCredentials(uaaURL string, clientID string, clientSecret string) {
-	c.uaaURL = uaaURL
-	c.clientID = clientID
-	c.clientSecret = clientSecret
+func (c *client) SetOAuthCredentials(uaaURL, clientID, clientSecret string) {
+	conf := &clientcredentials.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		TokenURL:     fmt.Sprintf("%s/oauth/token", uaaURL),
+	}
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, c.baseClient)
+
+	c.oauthClient = conf.Client(ctx)
 }
 
 func (c *client) UpsertRoutes(routes []models.Route) error {
@@ -176,19 +178,8 @@ func (c *client) SubscribeToTcpEventsWithMaxRetries(retries uint16) (TcpEventSou
 }
 
 func (c *client) doSubscribe(routeName string, retries uint16) (RawEventSource, error) {
-	conf := &clientcredentials.Config{
-		ClientID:     c.clientID,
-		ClientSecret: c.clientSecret,
-		TokenURL:     fmt.Sprintf("%s/oauth/token", c.uaaURL),
-	}
-
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, oauth2.HTTPClient, c.streamingHTTPClient)
-
-	client := conf.Client(ctx)
-
 	config := sse.Config{
-		Client: client,
+		Client: c.oauthClient,
 		RetryParams: sse.RetryParams{
 			MaxRetries:    retries,
 			RetryInterval: time.Second,
@@ -248,18 +239,7 @@ func (c *client) doRequest(requestName string, params rata.Params, queryParams u
 
 	trace.DumpRequest(req)
 
-	conf := &clientcredentials.Config{
-		ClientID:     c.clientID,
-		ClientSecret: c.clientSecret,
-		TokenURL:     fmt.Sprintf("%s/oauth/token", c.uaaURL),
-	}
-
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, oauth2.HTTPClient, c.streamingHTTPClient)
-
-	client := conf.Client(ctx)
-
-	res, err := client.Do(req)
+	res, err := c.oauthClient.Do(req)
 	if err != nil {
 		return err
 	}
