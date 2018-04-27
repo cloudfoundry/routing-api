@@ -2,8 +2,10 @@ package routing_api
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -15,6 +17,8 @@ import (
 	trace "code.cloudfoundry.org/trace-logger"
 	"github.com/tedsuo/rata"
 	"github.com/vito/go-sse/sse"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 const (
@@ -24,6 +28,7 @@ const (
 //go:generate counterfeiter -o fake_routing_api/fake_client.go . Client
 type Client interface {
 	SetToken(string)
+	SetOAuthCredentials(string, string, string)
 	UpsertRoutes([]models.Route) error
 	Routes() ([]models.Route, error)
 	DeleteRoutes([]models.Route) error
@@ -46,14 +51,6 @@ func NewClient(url string, skipTLSVerification bool) Client {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: skipTLSVerification,
 	}
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			Dial: (&net.Dialer{
-				Timeout: 5 * time.Second,
-			}).Dial,
-			TLSClientConfig: tlsConfig,
-		},
-	}
 	streamingClient := &http.Client{
 		Transport: &http.Transport{
 			Dial: (&net.Dialer{
@@ -65,7 +62,6 @@ func NewClient(url string, skipTLSVerification bool) Client {
 	}
 
 	return &client{
-		httpClient:          httpClient,
 		streamingHTTPClient: streamingClient,
 
 		tokenMutex: &sync.RWMutex{},
@@ -75,11 +71,13 @@ func NewClient(url string, skipTLSVerification bool) Client {
 }
 
 type client struct {
-	httpClient          *http.Client
 	streamingHTTPClient *http.Client
 
-	tokenMutex *sync.RWMutex
-	authToken  string
+	tokenMutex   *sync.RWMutex
+	authToken    string
+	uaaURL       string
+	clientID     string
+	clientSecret string
 
 	reqGen *rata.RequestGenerator
 }
@@ -88,6 +86,12 @@ func (c *client) SetToken(token string) {
 	c.tokenMutex.Lock()
 	defer c.tokenMutex.Unlock()
 	c.authToken = token
+}
+
+func (c *client) SetOAuthCredentials(uaaURL string, clientID string, clientSecret string) {
+	c.uaaURL = uaaURL
+	c.clientID = clientID
+	c.clientSecret = clientSecret
 }
 
 func (c *client) UpsertRoutes(routes []models.Route) error {
@@ -180,17 +184,25 @@ func (c *client) SubscribeToTcpEventsWithMaxRetries(retries uint16) (TcpEventSou
 }
 
 func (c *client) doSubscribe(routeName string, retries uint16) (RawEventSource, error) {
+	conf := &clientcredentials.Config{
+		ClientID:     c.clientID,
+		ClientSecret: c.clientSecret,
+		TokenURL:     fmt.Sprintf("%s/oauth/token", c.uaaURL),
+	}
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, c.streamingHTTPClient)
+
+	client := conf.Client(ctx)
+
 	config := sse.Config{
-		Client: c.streamingHTTPClient,
+		Client: client,
 		RetryParams: sse.RetryParams{
 			MaxRetries:    retries,
 			RetryInterval: time.Second,
 		},
 		RequestCreator: func() *http.Request {
 			request, err := c.reqGen.CreateRequest(routeName, nil, nil)
-			c.tokenMutex.RLock()
-			defer c.tokenMutex.RUnlock()
-			request.Header.Add("Authorization", "bearer "+c.authToken)
 			if err != nil {
 				panic(err) // totally shouldn't happen
 			}
@@ -232,9 +244,6 @@ func (c *client) createRequest(requestName string, params rata.Params, queryPara
 	req.URL.RawQuery = queryParams.Encode()
 	req.ContentLength = int64(len(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
-	c.tokenMutex.RLock()
-	defer c.tokenMutex.RUnlock()
-	req.Header.Add("Authorization", "bearer "+c.authToken)
 
 	return req, nil
 }
@@ -244,19 +253,25 @@ func (c *client) doRequest(requestName string, params rata.Params, queryParams u
 	if err != nil {
 		return err
 	}
-	return c.do(req, response)
-}
 
-func (c *client) do(req *http.Request, response interface{}) error {
 	trace.DumpRequest(req)
 
-	res, err := c.httpClient.Do(req)
+	conf := &clientcredentials.Config{
+		ClientID:     c.clientID,
+		ClientSecret: c.clientSecret,
+		TokenURL:     fmt.Sprintf("%s/oauth/token", c.uaaURL),
+	}
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, c.streamingHTTPClient)
+
+	client := conf.Client(ctx)
+
+	res, err := client.Do(req)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = res.Body.Close()
-	}()
+	defer res.Body.Close()
 
 	trace.DumpResponse(res)
 

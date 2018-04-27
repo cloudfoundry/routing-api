@@ -20,21 +20,23 @@ var _ = Describe("Client", func() {
 		ROUTES_API_URL = "/routing/v1/routes"
 		EVENTS_SSE_URL = "/routing/v1/events"
 	)
-	var server *ghttp.Server
-	var client routing_api.Client
-	var stdout *bytes.Buffer
+	var (
+		server    *ghttp.Server
+		uaaServer *ghttp.Server
+		client    routing_api.Client
+		stdout    *bytes.Buffer
+	)
 
 	BeforeEach(func() {
 		stdout = bytes.NewBuffer([]byte{})
 		trace.SetStdout(stdout)
 		trace.Logger = trace.NewLogger("true")
-	})
 
-	BeforeEach(func() {
 		server = ghttp.NewTLSServer()
 		data, _ := json.Marshal([]models.Route{})
 		server.RouteToHandler("GET", ROUTES_API_URL,
 			ghttp.CombineHandlers(
+				ghttp.VerifyHeaderKV("Authorization", "Bearer mango"),
 				ghttp.VerifyRequest("GET", ROUTES_API_URL),
 				ghttp.RespondWith(http.StatusOK, data),
 			),
@@ -49,21 +51,32 @@ var _ = Describe("Client", func() {
 		headers := make(http.Header)
 		headers.Set("Content-Type", "text/event-stream; charset=utf-8")
 
+		uaaServer = ghttp.NewServer()
 		server.RouteToHandler("GET", EVENTS_SSE_URL,
 			ghttp.CombineHandlers(
 				ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
 				ghttp.RespondWith(http.StatusOK, event.Encode(), headers),
 			),
 		)
+
+		uaaServer.RouteToHandler(
+			"POST", "/oauth/token", ghttp.RespondWith(http.StatusOK, `{
+              "access_token" : "mango",
+              "token_type" : "bearer"
+            }`, http.Header{"Content-Type": []string{"application/JSON"}},
+			),
+		)
 	})
 
 	AfterEach(func() {
 		server.Close()
+		uaaServer.Close()
 	})
 
 	Context("without skip SSL validation", func() {
 		BeforeEach(func() {
 			client = routing_api.NewClient(server.URL(), false)
+			client.SetOAuthCredentials(uaaServer.URL(), "client-id", "client-secret")
 		})
 
 		It("fails to connect to the Routing API", func() {
@@ -82,6 +95,7 @@ var _ = Describe("Client", func() {
 	Context("with skip SSL validation", func() {
 		BeforeEach(func() {
 			client = routing_api.NewClient(server.URL(), true)
+			client.SetOAuthCredentials(uaaServer.URL(), "client-id", "client-secret")
 		})
 
 		It("successfully connect to the Routing API", func() {

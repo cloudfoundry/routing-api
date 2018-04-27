@@ -35,27 +35,39 @@ var _ = Describe("Client", func() {
 		TCP_EVENTS_SSE_URL                = "/routing/v1/tcp_routes/events"
 	)
 
-	var server *ghttp.Server
-	var client routing_api.Client
-	var route1 models.Route
-	var route2 models.Route
-	var stdout *bytes.Buffer
+	var (
+		server    *ghttp.Server
+		uaaServer *ghttp.Server
+		client    routing_api.Client
+		route1    models.Route
+		route2    models.Route
+		stdout    *bytes.Buffer
+	)
 
 	BeforeEach(func() {
 		stdout = bytes.NewBuffer([]byte{})
 		trace.SetStdout(stdout)
 		trace.Logger = trace.NewLogger("true")
-	})
 
-	BeforeEach(func() {
 		route1 = models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 55)
 		route2 = models.NewRoute("d.e.f", 35, "2.2.2.2", "banana", "", 66)
 		server = ghttp.NewServer()
+		uaaServer = ghttp.NewServer()
 		client = routing_api.NewClient(server.URL(), false)
+		client.SetOAuthCredentials(uaaServer.URL(), "client-id", "client-secret")
+
+		uaaServer.RouteToHandler(
+			"POST", "/oauth/token", ghttp.RespondWith(http.StatusOK, `{
+              "access_token" : "mango",
+              "token_type" : "bearer"
+            }`, http.Header{"Content-Type": []string{"application/JSON"}},
+			),
+		)
 	})
 
 	AfterEach(func() {
 		server.Close()
+		uaaServer.Close()
 	})
 
 	Context("UpsertRoutes", func() {
@@ -142,12 +154,12 @@ var _ = Describe("Client", func() {
 	})
 
 	Context("UpsertTcpRouteMappings", func() {
-
 		var (
 			err              error
 			tcpRouteMapping1 models.TcpRouteMapping
 			tcpRouteMapping2 models.TcpRouteMapping
 		)
+
 		BeforeEach(func() {
 			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
 			tcpRouteMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60)
@@ -261,6 +273,7 @@ var _ = Describe("Client", func() {
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("DELETE", ROUTES_API_URL),
 						ghttp.VerifyJSONRepresenting([]models.Route{route1, route2}),
+						ghttp.VerifyHeaderKV("Authorization", "Bearer mango"),
 					),
 				)
 			})
@@ -285,6 +298,24 @@ var _ = Describe("Client", func() {
 
 				Expect(log).To(ContainSubstring("RESPONSE: "))
 				Expect(log).To(ContainSubstring("HTTP/1.1 200 OK"))
+			})
+		})
+
+		Context("When the oauth server returns an error", func() {
+			Context("With unauthorized", func() {
+				BeforeEach(func() {
+					uaaServer.RouteToHandler("POST", "/oauth/token", ghttp.CombineHandlers(
+						ghttp.RespondWith(http.StatusUnauthorized, ""),
+					))
+				})
+
+				It("doesn't make a request to the routing server", func() {
+					Expect(server.ReceivedRequests()).To(HaveLen(0))
+				})
+
+				It("returns an error", func() {
+					Expect(err).To(HaveOccurred())
+				})
 			})
 		})
 
@@ -356,10 +387,12 @@ var _ = Describe("Client", func() {
 			tcpRouteMapping1 models.TcpRouteMapping
 			tcpRouteMapping2 models.TcpRouteMapping
 		)
+
 		BeforeEach(func() {
 			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
 			tcpRouteMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60)
 		})
+
 		JustBeforeEach(func() {
 			err = client.DeleteTcpRouteMappings([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 		})
@@ -430,9 +463,11 @@ var _ = Describe("Client", func() {
 	})
 
 	Context("Routes", func() {
-		var routes []models.Route
-		var err error
-		var data []byte
+		var (
+			routes []models.Route
+			err    error
+			data   []byte
+		)
 
 		Context("when the server returns a valid response", func() {
 			BeforeEach(func() {
@@ -522,7 +557,6 @@ var _ = Describe("Client", func() {
 	})
 
 	Context("TcpRouteMappings", func() {
-
 		var (
 			err              error
 			tcpRouteMapping1 models.TcpRouteMapping
@@ -530,6 +564,7 @@ var _ = Describe("Client", func() {
 			routes           []models.TcpRouteMapping
 			data             []byte
 		)
+
 		BeforeEach(func() {
 			tcpRouteMapping1 = models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
 			tcpRouteMapping2 = models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60)
@@ -878,7 +913,6 @@ var _ = Describe("Client", func() {
 	})
 
 	Context("CreateRouterGroup", func() {
-
 		var (
 			err          error
 			routerGroup1 models.RouterGroup
@@ -936,9 +970,11 @@ var _ = Describe("Client", func() {
 	})
 
 	Context("SubscribeToEvents", func() {
-		var eventSource routing_api.EventSource
-		var err error
-		var event sse.Event
+		var (
+			eventSource routing_api.EventSource
+			err         error
+			event       sse.Event
+		)
 
 		BeforeEach(func() {
 			data, _ := json.Marshal(route1)
@@ -951,9 +987,7 @@ var _ = Describe("Client", func() {
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
-					ghttp.VerifyHeader(http.Header{
-						"Authorization": []string{"bearer"},
-					}),
+					ghttp.VerifyHeaderKV("Authorization", "Bearer mango"),
 					func(w http.ResponseWriter, req *http.Request) {
 						defer GinkgoRecover()
 						writeErr := event.Write(w)
@@ -961,6 +995,8 @@ var _ = Describe("Client", func() {
 					},
 				),
 			)
+
+			uaaServer.UnhandledRequestStatusCode = 418
 		})
 
 		JustBeforeEach(func() {
@@ -1039,9 +1075,7 @@ var _ = Describe("Client", func() {
 			attemptChan = make(chan struct{}, 3)
 			handler := ghttp.CombineHandlers(
 				ghttp.VerifyRequest("GET", EVENTS_SSE_URL),
-				ghttp.VerifyHeader(http.Header{
-					"Authorization": []string{"bearer"},
-				}),
+				ghttp.VerifyHeaderKV("Authorization", "Bearer mango"),
 				func(w http.ResponseWriter, req *http.Request) {
 					attemptChan <- struct{}{}
 					server.CloseClientConnections()
@@ -1080,14 +1114,23 @@ var _ = Describe("Client", func() {
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", TCP_EVENTS_SSE_URL),
-					ghttp.VerifyHeader(http.Header{
-						"Authorization": []string{"bearer"},
-					}),
+					ghttp.VerifyHeaderKV("Authorization", "Bearer mango"),
 					func(w http.ResponseWriter, req *http.Request) {
 						defer GinkgoRecover()
 						writeErr := event.Write(w)
 						Expect(writeErr).ToNot(HaveOccurred())
 					},
+				),
+			)
+
+			uaaServer.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("POST", "/oauth/token"),
+					ghttp.RespondWith(http.StatusOK, `{
+              "access_token" : "mango",
+              "token_type" : "bearer"
+            }`,
+						http.Header{"Content-Type": []string{"application/JSON"}}),
 				),
 			)
 		})
@@ -1147,9 +1190,7 @@ var _ = Describe("Client", func() {
 			attemptChan = make(chan struct{}, 3)
 			handler := ghttp.CombineHandlers(
 				ghttp.VerifyRequest("GET", TCP_EVENTS_SSE_URL),
-				ghttp.VerifyHeader(http.Header{
-					"Authorization": []string{"bearer"},
-				}),
+				ghttp.VerifyHeaderKV("Authorization", "Bearer mango"),
 				func(w http.ResponseWriter, req *http.Request) {
 					attemptChan <- struct{}{}
 					server.CloseClientConnections()

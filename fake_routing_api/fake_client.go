@@ -14,6 +14,13 @@ type FakeClient struct {
 	setTokenArgsForCall []struct {
 		arg1 string
 	}
+	SetOAuthCredentialsStub        func(string, string, string)
+	setOAuthCredentialsMutex       sync.RWMutex
+	setOAuthCredentialsArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+	}
 	UpsertRoutesStub        func([]models.Route) error
 	upsertRoutesMutex       sync.RWMutex
 	upsertRoutesArgsForCall []struct {
@@ -213,6 +220,32 @@ func (fake *FakeClient) SetTokenArgsForCall(i int) string {
 	fake.setTokenMutex.RLock()
 	defer fake.setTokenMutex.RUnlock()
 	return fake.setTokenArgsForCall[i].arg1
+}
+
+func (fake *FakeClient) SetOAuthCredentials(arg1 string, arg2 string, arg3 string) {
+	fake.setOAuthCredentialsMutex.Lock()
+	fake.setOAuthCredentialsArgsForCall = append(fake.setOAuthCredentialsArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("SetOAuthCredentials", []interface{}{arg1, arg2, arg3})
+	fake.setOAuthCredentialsMutex.Unlock()
+	if fake.SetOAuthCredentialsStub != nil {
+		fake.SetOAuthCredentialsStub(arg1, arg2, arg3)
+	}
+}
+
+func (fake *FakeClient) SetOAuthCredentialsCallCount() int {
+	fake.setOAuthCredentialsMutex.RLock()
+	defer fake.setOAuthCredentialsMutex.RUnlock()
+	return len(fake.setOAuthCredentialsArgsForCall)
+}
+
+func (fake *FakeClient) SetOAuthCredentialsArgsForCall(i int) (string, string, string) {
+	fake.setOAuthCredentialsMutex.RLock()
+	defer fake.setOAuthCredentialsMutex.RUnlock()
+	return fake.setOAuthCredentialsArgsForCall[i].arg1, fake.setOAuthCredentialsArgsForCall[i].arg2, fake.setOAuthCredentialsArgsForCall[i].arg3
 }
 
 func (fake *FakeClient) UpsertRoutes(arg1 []models.Route) error {
@@ -952,6 +985,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.setTokenMutex.RLock()
 	defer fake.setTokenMutex.RUnlock()
+	fake.setOAuthCredentialsMutex.RLock()
+	defer fake.setOAuthCredentialsMutex.RUnlock()
 	fake.upsertRoutesMutex.RLock()
 	defer fake.upsertRoutesMutex.RUnlock()
 	fake.routesMutex.RLock()
