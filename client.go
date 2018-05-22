@@ -243,7 +243,7 @@ func (c *client) doRequest(requestName string, params rata.Params, queryParams u
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	// defer res.Body.Close()
 
 	trace.DumpResponse(res)
 

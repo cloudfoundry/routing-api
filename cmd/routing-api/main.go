@@ -52,8 +52,10 @@ var configPath = flag.String("config", "", "Configuration for routing-api")
 var devMode = flag.Bool("devMode", false, "Disable authentication for easier development iteration")
 var ip = flag.String("ip", "", "The public ip of the routing api")
 
-func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
-	return http.HandlerFunc(f)
+func route(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+	})
 }
 
 func main() {
@@ -313,17 +315,17 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(uaaClient, validator, database, int(cfg.MaxTTL.Seconds()), logger)
 
 	actions := rata.Handlers{
-		routing_api.UpsertRoute:           route(routesHandler.Upsert),
-		routing_api.DeleteRoute:           route(routesHandler.Delete),
-		routing_api.ListRoute:             route(routesHandler.List),
-		routing_api.EventStreamRoute:      route(eventStreamHandler.EventStream),
-		routing_api.ListRouterGroups:      route(routerGroupsHandler.ListRouterGroups),
-		routing_api.CreateRouterGroup:     route(routerGroupsHandler.CreateRouterGroup),
-		routing_api.UpdateRouterGroup:     route(routerGroupsHandler.UpdateRouterGroup),
-		routing_api.UpsertTcpRouteMapping: route(tcpMappingsHandler.Upsert),
-		routing_api.DeleteTcpRouteMapping: route(tcpMappingsHandler.Delete),
-		routing_api.ListTcpRouteMapping:   route(tcpMappingsHandler.List),
-		routing_api.EventStreamTcpRoute:   route(eventStreamHandler.TcpEventStream),
+		routing_api.UpsertRoute:           route(http.HandlerFunc(routesHandler.Upsert)),
+		routing_api.DeleteRoute:           route(http.HandlerFunc(routesHandler.Delete)),
+		routing_api.ListRoute:             route(http.HandlerFunc(routesHandler.List)),
+		routing_api.EventStreamRoute:      route(http.HandlerFunc(eventStreamHandler.EventStream)),
+		routing_api.ListRouterGroups:      route(http.HandlerFunc(routerGroupsHandler.ListRouterGroups)),
+		routing_api.CreateRouterGroup:     route(http.HandlerFunc(routerGroupsHandler.CreateRouterGroup)),
+		routing_api.UpdateRouterGroup:     route(http.HandlerFunc(routerGroupsHandler.UpdateRouterGroup)),
+		routing_api.UpsertTcpRouteMapping: route(http.HandlerFunc(tcpMappingsHandler.Upsert)),
+		routing_api.DeleteTcpRouteMapping: route(http.HandlerFunc(tcpMappingsHandler.Delete)),
+		routing_api.ListTcpRouteMapping:   route(http.HandlerFunc(tcpMappingsHandler.List)),
+		routing_api.EventStreamTcpRoute:   route(http.HandlerFunc(eventStreamHandler.TcpEventStream)),
 	}
 
 	handler, err := rata.NewRouter(routing_api.Routes(), actions)
