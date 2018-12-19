@@ -5,8 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"code.cloudfoundry.org/consuladapter"
@@ -15,7 +17,7 @@ import (
 	"code.cloudfoundry.org/lager/lagerflags"
 	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/locket/lock"
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/admin"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
@@ -28,7 +30,7 @@ import (
 	uaaconfig "code.cloudfoundry.org/uaa-go-client/config"
 	"github.com/cactus/go-statsd-client/statsd"
 	"github.com/cloudfoundry/dropsonde"
-	"github.com/nu7hatch/gouuid"
+	uuid "github.com/nu7hatch/gouuid"
 
 	"code.cloudfoundry.org/clock"
 	"github.com/tedsuo/ifrit"
@@ -52,8 +54,18 @@ var configPath = flag.String("config", "", "Configuration for routing-api")
 var devMode = flag.Bool("devMode", false, "Disable authentication for easier development iteration")
 var ip = flag.String("ip", "", "The public ip of the routing api")
 
-func route(next http.Handler) http.Handler {
+func route(oauthConfig OAuthConfig, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data := url.Values{}
+		data.Set("token", r.Header.Get("Authorization"))
+		data.Set("scopes")
+		uaaURL := oauthConfig.TokenEndpoint + ":" + oauthConfig.Port
+		req := http.NewRequest("POST", uaaURL+"/check_token", strings.NewReader(data.Encode()))
+		client := http.DefaultClient()
+		client.Transport.TLSConfig.SkipSSLValidation = true
+
+		resp := client.Do(req)
+
 		next.ServeHTTP(w, r)
 	})
 }
@@ -315,17 +327,17 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(uaaClient, validator, database, int(cfg.MaxTTL.Seconds()), logger)
 
 	actions := rata.Handlers{
-		routing_api.UpsertRoute:           route(http.HandlerFunc(routesHandler.Upsert)),
-		routing_api.DeleteRoute:           route(http.HandlerFunc(routesHandler.Delete)),
-		routing_api.ListRoute:             route(http.HandlerFunc(routesHandler.List)),
-		routing_api.EventStreamRoute:      route(http.HandlerFunc(eventStreamHandler.EventStream)),
-		routing_api.ListRouterGroups:      route(http.HandlerFunc(routerGroupsHandler.ListRouterGroups)),
-		routing_api.CreateRouterGroup:     route(http.HandlerFunc(routerGroupsHandler.CreateRouterGroup)),
-		routing_api.UpdateRouterGroup:     route(http.HandlerFunc(routerGroupsHandler.UpdateRouterGroup)),
-		routing_api.UpsertTcpRouteMapping: route(http.HandlerFunc(tcpMappingsHandler.Upsert)),
-		routing_api.DeleteTcpRouteMapping: route(http.HandlerFunc(tcpMappingsHandler.Delete)),
-		routing_api.ListTcpRouteMapping:   route(http.HandlerFunc(tcpMappingsHandler.List)),
-		routing_api.EventStreamTcpRoute:   route(http.HandlerFunc(eventStreamHandler.TcpEventStream)),
+		routing_api.UpsertRoute:           route(cfg.OAuth, http.HandlerFunc(routesHandler.Upsert)),
+		routing_api.DeleteRoute:           route(cfg.OAuth, http.HandlerFunc(routesHandler.Delete)),
+		routing_api.ListRoute:             route(cfg.OAuth, http.HandlerFunc(routesHandler.List)),
+		routing_api.EventStreamRoute:      route(cfg.OAuth, http.HandlerFunc(eventStreamHandler.EventStream)),
+		routing_api.ListRouterGroups:      route(cfg.OAuth, http.HandlerFunc(routerGroupsHandler.ListRouterGroups)),
+		routing_api.CreateRouterGroup:     route(cfg.OAuth, http.HandlerFunc(routerGroupsHandler.CreateRouterGroup)),
+		routing_api.UpdateRouterGroup:     route(cfg.OAuth, http.HandlerFunc(routerGroupsHandler.UpdateRouterGroup)),
+		routing_api.UpsertTcpRouteMapping: route(cfg.OAuth, http.HandlerFunc(tcpMappingsHandler.Upsert)),
+		routing_api.DeleteTcpRouteMapping: route(cfg.OAuth, http.HandlerFunc(tcpMappingsHandler.Delete)),
+		routing_api.ListTcpRouteMapping:   route(cfg.OAuth, http.HandlerFunc(tcpMappingsHandler.List)),
+		routing_api.EventStreamTcpRoute:   route(cfg.OAuth, http.HandlerFunc(eventStreamHandler.TcpEventStream)),
 	}
 
 	handler, err := rata.NewRouter(routing_api.Routes(), actions)
