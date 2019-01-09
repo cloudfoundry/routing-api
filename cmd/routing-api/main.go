@@ -54,17 +54,21 @@ var configPath = flag.String("config", "", "Configuration for routing-api")
 var devMode = flag.Bool("devMode", false, "Disable authentication for easier development iteration")
 var ip = flag.String("ip", "", "The public ip of the routing api")
 
-func route(oauthConfig OAuthConfig, next http.Handler) http.Handler {
+func route(oauthConfig OAuthConfig, next http.Handler, scope string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		data := url.Values{}
 		data.Set("token", r.Header.Get("Authorization"))
-		data.Set("scopes")
+		data.Set("scopes", scope)
 		uaaURL := oauthConfig.TokenEndpoint + ":" + oauthConfig.Port
 		req := http.NewRequest("POST", uaaURL+"/check_token", strings.NewReader(data.Encode()))
 		client := http.DefaultClient()
 		client.Transport.TLSConfig.SkipSSLValidation = true
 
 		resp := client.Do(req)
+		fmt.Println(resp.Body)
+		// if "scopes are wrong or bad token" {
+		// 	handleUnauthorizedError(w, err, log)
+		// }
 
 		next.ServeHTTP(w, r)
 	})
@@ -327,17 +331,17 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(uaaClient, validator, database, int(cfg.MaxTTL.Seconds()), logger)
 
 	actions := rata.Handlers{
-		routing_api.UpsertRoute:           route(cfg.OAuth, http.HandlerFunc(routesHandler.Upsert)),
-		routing_api.DeleteRoute:           route(cfg.OAuth, http.HandlerFunc(routesHandler.Delete)),
-		routing_api.ListRoute:             route(cfg.OAuth, http.HandlerFunc(routesHandler.List)),
-		routing_api.EventStreamRoute:      route(cfg.OAuth, http.HandlerFunc(eventStreamHandler.EventStream)),
-		routing_api.ListRouterGroups:      route(cfg.OAuth, http.HandlerFunc(routerGroupsHandler.ListRouterGroups)),
-		routing_api.CreateRouterGroup:     route(cfg.OAuth, http.HandlerFunc(routerGroupsHandler.CreateRouterGroup)),
-		routing_api.UpdateRouterGroup:     route(cfg.OAuth, http.HandlerFunc(routerGroupsHandler.UpdateRouterGroup)),
-		routing_api.UpsertTcpRouteMapping: route(cfg.OAuth, http.HandlerFunc(tcpMappingsHandler.Upsert)),
-		routing_api.DeleteTcpRouteMapping: route(cfg.OAuth, http.HandlerFunc(tcpMappingsHandler.Delete)),
-		routing_api.ListTcpRouteMapping:   route(cfg.OAuth, http.HandlerFunc(tcpMappingsHandler.List)),
-		routing_api.EventStreamTcpRoute:   route(cfg.OAuth, http.HandlerFunc(eventStreamHandler.TcpEventStream)),
+		routing_api.UpsertRoute:           route(cfg.OAuth, http.HandlerFunc(routesHandler.Upsert), RoutingRoutesWriteScope),
+		routing_api.DeleteRoute:           route(cfg.OAuth, http.HandlerFunc(routesHandler.Delete), RoutingRoutesWriteScope),
+		routing_api.ListRoute:             route(cfg.OAuth, http.HandlerFunc(routesHandler.List), RoutingRoutesReadScope),
+		routing_api.EventStreamRoute:      route(cfg.OAuth, http.HandlerFunc(eventStreamHandler.EventStream, "")),
+		routing_api.ListRouterGroups:      route(cfg.OAuth, http.HandlerFunc(routerGroupsHandler.ListRouterGroups), RouterGroupsReadScope),
+		routing_api.CreateRouterGroup:     route(cfg.OAuth, http.HandlerFunc(routerGroupsHandler.CreateRouterGroup), RouterGroupsWriteScope),
+		routing_api.UpdateRouterGroup:     route(cfg.OAuth, http.HandlerFunc(routerGroupsHandler.UpdateRouterGroup), RouterGroupsWriteScope),
+		routing_api.UpsertTcpRouteMapping: route(cfg.OAuth, http.HandlerFunc(tcpMappingsHandler.Upsert), RoutingRoutesWriteScope),
+		routing_api.DeleteTcpRouteMapping: route(cfg.OAuth, http.HandlerFunc(tcpMappingsHandler.Delete), RoutingRoutesWriteScope),
+		routing_api.ListTcpRouteMapping:   route(cfg.OAuth, http.HandlerFunc(tcpMappingsHandler.List), RoutingRoutesReadScope),
+		routing_api.EventStreamTcpRoute:   route(cfg.OAuth, http.HandlerFunc(eventStreamHandler.TcpEventStream, "")),
 	}
 
 	handler, err := rata.NewRouter(routing_api.Routes(), actions)
