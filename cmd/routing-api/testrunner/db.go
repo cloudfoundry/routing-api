@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"routing-release/src/code.cloudfoundry.org/routing-api/db"
+	"code.cloudfoundry.org/routing-api/db"
 
 	"code.cloudfoundry.org/routing-api/config"
 	_ "github.com/jinzhu/gorm/dialects/mysql"

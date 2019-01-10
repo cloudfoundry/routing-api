@@ -2,14 +2,13 @@ package main_test
 
 import (
 	"crypto/tls"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -51,6 +50,8 @@ var (
 
 	mysqlAllocator testrunner.DbAllocator
 	mysqlConfig    *config.SqlDB
+	serverCert     tls.Certificate
+	caCertsPath    string
 )
 
 func TestMain(t *testing.T) {
@@ -85,6 +86,24 @@ var _ = SynchronizedBeforeSuite(
 		Expect(err).NotTo(HaveOccurred())
 
 		setupConsul()
+
+		caCert, caPrivKey, err := createCA()
+		Expect(err).ToNot(HaveOccurred())
+
+		f, err := ioutil.TempFile("", "routing-api-uaa-ca")
+		Expect(err).ToNot(HaveOccurred())
+
+		caCertsPath = f.Name()
+
+		err = pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: caCert.Raw})
+		Expect(err).ToNot(HaveOccurred())
+
+		err = f.Close()
+		Expect(err).ToNot(HaveOccurred())
+
+		serverCert, err = createCertificate(caCert, caPrivKey, isCA)
+		Expect(err).ToNot(HaveOccurred())
+
 		setupOauthServer()
 	},
 )
@@ -95,6 +114,9 @@ var _ = SynchronizedAfterSuite(func() {
 
 	teardownConsul()
 	oauthServer.Close()
+
+	err = os.Remove(caCertsPath)
+	Expect(err).NotTo(HaveOccurred())
 }, func() {
 	gexec.CleanupBuildArtifacts()
 })
@@ -104,9 +126,6 @@ var _ = BeforeEach(func() {
 	err := mysqlAllocator.Reset()
 	Expect(err).NotTo(HaveOccurred())
 	resetConsul()
-
-	caCertsPath, err := filepath.Abs(filepath.Join("..", "..", "fixtures", "uaa-certs", "uaa-ca.pem"))
-	Expect(err).NotTo(HaveOccurred())
 
 	oauthSrvPort, err := strconv.ParseInt(oauthServerPort, 10, 0)
 	Expect(err).NotTo(HaveOccurred())
@@ -224,13 +243,9 @@ func routingApiClientWithPort(routingAPIPort uint16) routing_api.Client {
 
 func setupOauthServer() {
 	oauthServer = ghttp.NewUnstartedServer()
-	basePath, err := filepath.Abs(path.Join("..", "..", "fixtures", "uaa-certs"))
-	Expect(err).ToNot(HaveOccurred())
 
-	cert, err := tls.LoadX509KeyPair(filepath.Join(basePath, "server.pem"), filepath.Join(basePath, "server.key"))
-	Expect(err).ToNot(HaveOccurred())
 	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
+		Certificates: []tls.Certificate{serverCert},
 	}
 	oauthServer.HTTPTestServer.TLS = tlsConfig
 	oauthServer.AllowUnhandledRequests = true

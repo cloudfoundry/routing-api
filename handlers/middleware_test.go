@@ -27,7 +27,8 @@ var _ = Describe("Middleware", func() {
 
 		// dummy handler
 		dummyHandler = func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintf(w, "Dummy handler")
+			_, err := fmt.Fprintf(w, "Dummy handler")
+			Expect(err).NotTo(HaveOccurred())
 		}
 
 		// wrap dummy handler in logwrap
