@@ -26,14 +26,15 @@ type OAuthConfig struct {
 }
 
 type SqlDB struct {
-	Host              string `yaml:"host"`
-	Port              int    `yaml:"port"`
-	Schema            string `yaml:"schema"`
-	Type              string `yaml:"type"`
-	Username          string `yaml:"username"`
-	Password          string `yaml:"password"`
-	CACert            string `yaml:"ca_cert"`
-	SkipSSLValidation bool   `yaml:"-"`
+	Host                   string `yaml:"host"`
+	Port                   int    `yaml:"port"`
+	Schema                 string `yaml:"schema"`
+	Type                   string `yaml:"type"`
+	Username               string `yaml:"username"`
+	Password               string `yaml:"password"`
+	CACert                 string `yaml:"ca_cert"`
+	SkipSSLValidation      bool   `yaml:"-"`
+	SkipHostnameValidation bool
 }
 
 type ConsulCluster struct {
