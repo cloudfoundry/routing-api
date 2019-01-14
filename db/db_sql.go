@@ -598,6 +598,8 @@ func ConnectionString(cfg *config.SqlDB) (string, error) {
 	var connectionString string
 	switch cfg.Type {
 	case "mysql":
+		connStringBuilder := &MySQLConnectionStringBuilder{MySQLAdapter: &MySQLAdapter{}}
+		return connStringBuilder.Build(cfg)
 		rootCA := x509.NewCertPool()
 		queryString := "?parseTime=true"
 		if cfg.SkipSSLValidation {
