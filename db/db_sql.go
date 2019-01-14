@@ -2,8 +2,6 @@ package db
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -12,8 +10,6 @@ import (
 	"runtime"
 	"sync/atomic"
 	"time"
-
-	"github.com/go-sql-driver/mysql"
 
 	"code.cloudfoundry.org/eventhub"
 	"code.cloudfoundry.org/lager"
@@ -600,39 +596,6 @@ func ConnectionString(cfg *config.SqlDB) (string, error) {
 	case "mysql":
 		connStringBuilder := &MySQLConnectionStringBuilder{MySQLAdapter: &MySQLAdapter{}}
 		return connStringBuilder.Build(cfg)
-		rootCA := x509.NewCertPool()
-		queryString := "?parseTime=true"
-		if cfg.SkipSSLValidation {
-			tlsConfig := tls.Config{}
-			tlsConfig.InsecureSkipVerify = cfg.SkipSSLValidation
-			configKey := "dbTLSSkipVerify"
-			err := mysql.RegisterTLSConfig(configKey, &tlsConfig)
-			if err != nil {
-				return "", err
-			}
-			queryString = fmt.Sprintf("%s&tls=%s", queryString, configKey)
-
-		} else if cfg.CACert != "" {
-			tlsConfig := tls.Config{}
-			rootCA.AppendCertsFromPEM([]byte(cfg.CACert))
-			tlsConfig.ServerName = cfg.Host
-			tlsConfig.RootCAs = rootCA
-			configKey := "dbTLSCertVerify"
-			err := mysql.RegisterTLSConfig(configKey, &tlsConfig)
-			if err != nil {
-				return "", err
-			}
-			queryString = fmt.Sprintf("%s&tls=%s", queryString, configKey)
-		}
-		connectionString = fmt.Sprintf(
-			"%s:%s@tcp(%s:%d)/%s%s",
-			cfg.Username,
-			cfg.Password,
-			cfg.Host,
-			cfg.Port,
-			cfg.Schema,
-			queryString,
-		)
 
 	case "postgres":
 		var queryString string
