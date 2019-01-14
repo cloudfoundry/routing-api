@@ -34,7 +34,7 @@ type SqlDB struct {
 	Password               string `yaml:"password"`
 	CACert                 string `yaml:"ca_cert"`
 	SkipSSLValidation      bool   `yaml:"-"`
-	SkipHostnameValidation bool
+	SkipHostnameValidation bool   `yaml:"skip_hostname_validation"`
 }
 
 type ConsulCluster struct {

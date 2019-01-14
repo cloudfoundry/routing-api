@@ -24,6 +24,7 @@ sqldb:
   port: 1234
   host: "localhost"
   ca_cert: "some CA cert"
+  skip_hostname_validation: true
 consul_cluster:
   servers: "http://localhost:5678"
   lock_ttl: 10s

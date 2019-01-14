@@ -35,6 +35,7 @@ var _ = Describe("Config", func() {
 					Expect(cfg.SqlDB.Port).To(Equal(1234))
 					Expect(cfg.SqlDB.CACert).To(Equal("some CA cert"))
 					Expect(cfg.SqlDB.SkipSSLValidation).To(Equal(cfg.OAuth.SkipSSLValidation))
+					Expect(cfg.SqlDB.SkipHostnameValidation).To(Equal(true))
 					Expect(cfg.MaxTTL).To(Equal(2 * time.Minute))
 					Expect(cfg.ConsulCluster.Servers).To(Equal("http://localhost:5678"))
 					Expect(cfg.ConsulCluster.LockTTL).To(Equal(10 * time.Second))
