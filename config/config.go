@@ -19,7 +19,7 @@ type MetronConfig struct {
 type OAuthConfig struct {
 	TokenEndpoint     string `yaml:"token_endpoint"`
 	Port              int    `yaml:"port"`
-	SkipSSLValidation bool   `yaml:"skip_ssl_validation"`
+	SkipSSLValidation bool   `yaml:"-"`
 	ClientName        string `yaml:"client_name"`
 	ClientSecret      string `yaml:"client_secret"`
 	CACerts           string `yaml:"ca_certs"`
@@ -62,6 +62,7 @@ type Config struct {
 	SkipConsulLock                  bool                      `yaml:"skip_consul_lock"`
 	Locket                          locket.ClientLocketConfig `yaml:"locket"`
 	UUID                            string                    `yaml:"uuid"`
+	SkipSSLValidation               bool                      `yaml:"skip_ssl_validation"`
 }
 
 func NewConfigFromFile(configFile string, authDisabled bool) (Config, error) {
@@ -119,7 +120,8 @@ func (cfg *Config) Initialize(file []byte, authDisabled bool) error {
 		return err
 	}
 
-	cfg.SqlDB.SkipSSLValidation = cfg.OAuth.SkipSSLValidation
+	cfg.SqlDB.SkipSSLValidation = cfg.SkipSSLValidation
+	cfg.OAuth.SkipSSLValidation = cfg.SkipSSLValidation
 
 	return nil
 }
