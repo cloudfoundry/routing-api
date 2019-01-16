@@ -27,10 +27,10 @@ var _ = BeforeSuite(func() {
 
 	postgresAllocator = testrunner.NewPostgresAllocator()
 	postgresCfg, err = postgresAllocator.Create()
-	Expect(err).ToNot(HaveOccurred())
+	Expect(err).ToNot(HaveOccurred(), "error occurred starting postgres client, is postgres running?")
 	mysqlAllocator = testrunner.NewMySQLAllocator()
 	mysqlCfg, err = mysqlAllocator.Create()
-	Expect(err).ToNot(HaveOccurred())
+	Expect(err).ToNot(HaveOccurred(), "error occurred starting mysql client, is mysql running?")
 })
 
 var _ = AfterSuite(func() {

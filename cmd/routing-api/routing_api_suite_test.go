@@ -82,8 +82,8 @@ var _ = SynchronizedBeforeSuite(
 
 		var err error
 		mysqlConfig, err = mysqlAllocator.Create()
+		Expect(err).NotTo(HaveOccurred(), "error occurred starting mySQL client, is mySQL running?")
 		sqlDBName = mysqlConfig.Schema
-		Expect(err).NotTo(HaveOccurred())
 
 		setupConsul()
 
