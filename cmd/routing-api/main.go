@@ -105,7 +105,10 @@ func main() {
 		}
 	}()
 
-	apiServer := constructApiServer(cfg, database, statsdClient, logger.Session("api-server"))
+	uaaClient := initializeUAAClient(cfg, logger)
+	apiHandler := apiHandler(cfg, uaaClient, database, statsdClient, logger.Session("api-server"))
+	apiServer := http_server.New(":"+strconv.Itoa(int(*port)), apiHandler)
+
 	adminServer, err := admin.NewServer(cfg.AdminPort, database, logger.Session("admin-server"))
 	if err != nil {
 		logger.Error("failed-to-create-admin-server", err)
@@ -285,9 +288,28 @@ func constructRouteRegister(
 	return helpers.NewRouteRegister(database, route, ticker, logger)
 }
 
-func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.Statter, logger lager.Logger) ifrit.Runner {
+func initializeUAAClient(cfg config.Config, logger lager.Logger) uaaclient.Client {
+	if *devMode {
+		return uaaclient.NewNoOpUaaClient()
+	}
 
-	uaaClient, err := newUaaClient(logger, cfg)
+	if cfg.OAuth.Port == -1 {
+		err := errors.New("GoRouter requires TLS enabled to get OAuth token")
+		logger.Fatal("tls-not-enabled", err, lager.Data{
+			"token-endpoint": cfg.OAuth.TokenEndpoint,
+			"port":           cfg.OAuth.Port,
+		})
+	}
+
+	scheme := "https"
+	tokenURL := fmt.Sprintf("%s://%s:%d", scheme, cfg.OAuth.TokenEndpoint, cfg.OAuth.Port)
+
+	uaaCfg := &uaaconfig.Config{
+		UaaEndpoint:      tokenURL,
+		SkipVerification: cfg.OAuth.SkipSSLValidation,
+		CACerts:          cfg.OAuth.CACerts,
+	}
+	uaaClient, err := uaaclient.NewClient(logger, uaaCfg, clock.NewClock())
 	if err != nil {
 		logger.Error("Failed to create uaa client", err)
 		os.Exit(1)
@@ -305,7 +327,10 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 		logger.Error("Failed to get verification key from UAA", err)
 		os.Exit(1)
 	}
+	return uaaClient
+}
 
+func apiHandler(cfg config.Config, uaaClient uaaclient.Client, database db.DB, statsdClient statsd.Statter, logger lager.Logger) http.Handler {
 	validator := handlers.NewValidator()
 	routesHandler := handlers.NewRoutesHandler(uaaClient, int(cfg.MaxTTL.Seconds()), validator, database, logger)
 	eventStreamHandler := handlers.NewEventStreamHandler(uaaClient, database, logger, statsdClient)
@@ -331,29 +356,7 @@ func constructApiServer(cfg config.Config, database db.DB, statsdClient statsd.S
 		logger.Error("failed to create router", err)
 		os.Exit(1)
 	}
-
-	handler = handlers.LogWrap(handler, logger)
-	return http_server.New(":"+strconv.Itoa(int(*port)), handler)
-}
-
-func newUaaClient(logger lager.Logger, routingApiConfig config.Config) (uaaclient.Client, error) {
-	if *devMode {
-		return uaaclient.NewNoOpUaaClient(), nil
-	}
-
-	if routingApiConfig.OAuth.Port == -1 {
-		logger.Fatal("tls-not-enabled", errors.New("GoRouter requires TLS enabled to get OAuth token"), lager.Data{"token-endpoint": routingApiConfig.OAuth.TokenEndpoint, "port": routingApiConfig.OAuth.Port})
-	}
-
-	scheme := "https"
-	tokenURL := fmt.Sprintf("%s://%s:%d", scheme, routingApiConfig.OAuth.TokenEndpoint, routingApiConfig.OAuth.Port)
-
-	cfg := &uaaconfig.Config{
-		UaaEndpoint:      tokenURL,
-		SkipVerification: routingApiConfig.OAuth.SkipSSLValidation,
-		CACerts:          routingApiConfig.OAuth.CACerts,
-	}
-	return uaaclient.NewClient(logger, cfg, clock.NewClock())
+	return handlers.LogWrap(handler, logger)
 }
 
 func checkFlags() error {
