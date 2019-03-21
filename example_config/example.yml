@@ -4,7 +4,7 @@ admin_port: 9999
 log_guid: "my_logs"
 oauth:
   token_endpoint: "127.0.0.1"
-  port: 3000
+  port: 8080
   ca_certs: "some-ca-cert"
 skip_ssl_validation: true
 metron_config:
@@ -16,6 +16,9 @@ system_domain: "example.com"
 max_ttl: "2m"
 statsd_client_flush_interval: "10ms"
 uuid: "fake-uuid"
+api:
+  listen_address: 0.0.0.0????
+  listen_port: 3000
 sqldb:
   username: "username"
   password: "password"

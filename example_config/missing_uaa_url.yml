@@ -1,6 +1,8 @@
 # values in this example are only suitable for testing and are not recommended
 # for production systems
 log_guid: "my_logs"
+api:
+  listen_port: 3000
 admin_port: 9999
 debug_address: "1.2.3.4:1234"
 oauth:

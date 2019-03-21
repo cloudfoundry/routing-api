@@ -32,7 +32,6 @@ var _ = Describe("Routes API", func() {
 		routingAPIConfig := getRoutingAPIConfig(defaultConfig)
 		configFilePath = writeConfigToTempFile(routingAPIConfig)
 		routingAPIRunner := testrunner.New(routingAPIBinPath, testrunner.Args{
-			Port:       routingAPIPort,
 			IP:         routingAPIIP,
 			ConfigPath: configFilePath,
 			DevMode:    true,

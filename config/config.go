@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"time"
 
@@ -43,7 +44,12 @@ type ConsulCluster struct {
 	RetryInterval time.Duration `yaml:"retry_interval"`
 }
 
+type APIConfig struct {
+	ListenPort int `yaml:"listen_port"`
+}
+
 type Config struct {
+	API                             APIConfig                 `yaml:"api"`
 	AdminPort                       int                       `yaml:"admin_port"`
 	DebugAddress                    string                    `yaml:"debug_address"`
 	LogGuid                         string                    `yaml:"log_guid"`
@@ -70,22 +76,30 @@ func NewConfigFromFile(configFile string, authDisabled bool) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	return NewConfigFromBytes(c, authDisabled)
+}
 
-	// Init things
+func NewConfigFromBytes(bytes []byte, authDisabled bool) (Config, error) {
 	config := Config{}
-	if err = config.Initialize(c, authDisabled); err != nil {
+	err := yaml.Unmarshal(bytes, &config)
+	if err != nil {
+		return config, err
+	}
+
+	err = config.validate(authDisabled)
+	if err != nil {
+		return config, err
+	}
+
+	err = config.process()
+	if err != nil {
 		return config, err
 	}
 
 	return config, nil
 }
 
-func (cfg *Config) Initialize(file []byte, authDisabled bool) error {
-	err := yaml.Unmarshal(file, &cfg)
-	if err != nil {
-		return err
-	}
-
+func (cfg *Config) validate(authDisabled bool) error {
 	if cfg.SystemDomain == "" {
 		return errors.New("No system_domain specified")
 	}
@@ -101,6 +115,35 @@ func (cfg *Config) Initialize(file []byte, authDisabled bool) error {
 	if !authDisabled && cfg.OAuth.TokenEndpoint != "" && cfg.OAuth.Port == -1 {
 		return errors.New("Routing API requires TLS enabled to get OAuth token")
 	}
+
+	if cfg.UUID == "" {
+		return errors.New("No UUID is specified")
+	}
+
+	if err := validatePort(cfg.AdminPort); err != nil {
+		return fmt.Errorf("invalid admin port: %s", err)
+	}
+
+	if err := validatePort(cfg.API.ListenPort); err != nil {
+		return fmt.Errorf("invalid API listen port: %s", err)
+	}
+
+	if err := cfg.RouterGroups.Validate(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validatePort(port int) error {
+	if port < 1 || port > 65535 {
+		return fmt.Errorf("port number is invalid: %d (1-65535)", port)
+	}
+
+	return nil
+}
+
+func (cfg *Config) process() error {
 	if cfg.ConsulCluster.LockTTL == 0 {
 		cfg.ConsulCluster.LockTTL = locket.DefaultSessionTTL
 	}
@@ -108,25 +151,10 @@ func (cfg *Config) Initialize(file []byte, authDisabled bool) error {
 	if cfg.ConsulCluster.RetryInterval == 0 {
 		cfg.ConsulCluster.RetryInterval = locket.RetryInterval
 	}
-	if cfg.UUID == "" {
-		return errors.New("No UUID is specified")
-	}
-	if cfg.AdminPort == 0 {
-		return errors.New("expected positive number for admin port")
-	}
-
-	err = cfg.process()
-	if err != nil {
-		return err
-	}
 
 	cfg.SqlDB.SkipSSLValidation = cfg.SkipSSLValidation
 	cfg.OAuth.SkipSSLValidation = cfg.SkipSSLValidation
 
-	return nil
-}
-
-func (cfg *Config) process() error {
 	metricsReportingInterval, err := time.ParseDuration(cfg.MetricsReportingIntervalString)
 	if err != nil {
 		return err
@@ -141,10 +169,6 @@ func (cfg *Config) process() error {
 
 	if cfg.MaxTTL == 0 {
 		cfg.MaxTTL = 2 * time.Minute
-	}
-
-	if err := cfg.RouterGroups.Validate(); err != nil {
-		return err
 	}
 
 	return nil

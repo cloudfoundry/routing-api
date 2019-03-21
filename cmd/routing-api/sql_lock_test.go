@@ -80,7 +80,6 @@ var _ = Describe("SqlLock", func() {
 	JustBeforeEach(func() {
 		configFilePath = writeConfigToTempFile(routingAPIConfig)
 		args := testrunner.Args{
-			Port:       routingAPIPort,
 			IP:         routingAPIIP,
 			ConfigPath: configFilePath,
 			DevMode:    true,
@@ -236,12 +235,12 @@ var _ = Describe("SqlLock", func() {
 
 			session2Port := uint16(test_helpers.NextAvailPort())
 			apiConfig := getRoutingAPIConfig(defaultConfig)
+			apiConfig.API.ListenPort = int(session2Port)
 			apiConfig.AdminPort = test_helpers.NextAvailPort()
 			apiConfig.Locket = locketrunner.ClientLocketConfig()
 			apiConfig.Locket.LocketAddress = locketAddress
 			configFilePath := writeConfigToTempFile(apiConfig)
 			session2Args := testrunner.Args{
-				Port:       session2Port,
 				IP:         routingAPIIP,
 				ConfigPath: configFilePath,
 				DevMode:    true,

@@ -47,7 +47,6 @@ const (
 	pruningInterval    = 10 * time.Second
 )
 
-var port = flag.Uint("port", 8080, "Port to run rounting-api server on")
 var configPath = flag.String("config", "", "Configuration for routing-api")
 var devMode = flag.Bool("devMode", false, "Disable authentication for easier development iteration")
 var ip = flag.String("ip", "", "The public ip of the routing api")
@@ -107,7 +106,7 @@ func main() {
 
 	uaaClient := initializeUAAClient(cfg, logger)
 	apiHandler := apiHandler(cfg, uaaClient, database, statsdClient, logger.Session("api-server"))
-	apiServer := http_server.New(":"+strconv.Itoa(int(*port)), apiHandler)
+	apiServer := http_server.New(":"+strconv.Itoa(cfg.API.ListenPort), apiHandler)
 
 	adminServer, err := admin.NewServer(cfg.AdminPort, database, logger.Session("admin-server"))
 	if err != nil {
@@ -118,6 +117,7 @@ func main() {
 	stopper := constructStopper(database)
 
 	routerRegister := constructRouteRegister(
+		cfg.API.ListenPort,
 		cfg.LogGuid,
 		cfg.SystemDomain,
 		cfg.MaxTTL,
@@ -193,7 +193,7 @@ func main() {
 	process := ifrit.Invoke(sigmon.New(group))
 
 	// This is used by testrunner to signal ready for tests.
-	logger.Info("started", lager.Data{"port": *port})
+	logger.Info("started", lager.Data{"port": cfg.API.ListenPort})
 
 	errChan := process.Wait()
 	err = <-errChan
@@ -273,6 +273,7 @@ func runMigration(database db.DB, logger lager.Logger) ifrit.Runner {
 }
 
 func constructRouteRegister(
+	port int,
 	logGuid string,
 	systemDomain string,
 	maxTTL time.Duration,
@@ -280,7 +281,7 @@ func constructRouteRegister(
 	logger lager.Logger,
 ) ifrit.Runner {
 	host := fmt.Sprintf("api.%s/routing", systemDomain)
-	route := models.NewRoute(host, uint16(*port), *ip, logGuid, "", int(maxTTL.Seconds()))
+	route := models.NewRoute(host, uint16(port), *ip, logGuid, "", int(maxTTL.Seconds()))
 
 	registerInterval := int(maxTTL.Seconds()) / 2
 	ticker := time.NewTicker(time.Duration(registerInterval) * time.Second)
@@ -366,10 +367,6 @@ func checkFlags() error {
 
 	if *ip == "" {
 		return errors.New("No ip address provided")
-	}
-
-	if *port > 65535 {
-		return errors.New("Port must be in range 0 - 65535")
 	}
 
 	return nil

@@ -40,7 +40,6 @@ var _ = Describe("Main", func() {
 		rapiConfig := getRoutingAPIConfig(defaultConfig)
 		configFilePath = writeConfigToTempFile(rapiConfig)
 		routingAPIArgs = testrunner.Args{
-			Port:       routingAPIPort,
 			IP:         routingAPIIP,
 			ConfigPath: configFilePath,
 			DevMode:    true,
@@ -65,12 +64,6 @@ var _ = Describe("Main", func() {
 		session = RoutingApi("-config=../../example_config/example.yml")
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("No ip address provided"))
-	})
-
-	It("exits 1 if an illegal port number is provided", func() {
-		session = RoutingApi("-port=65538", "-config=../../example_config/example.yml", "-ip='127.0.0.1'")
-		Eventually(session).Should(Exit(1))
-		Eventually(session).Should(Say("Port must be in range 0 - 65535"))
 	})
 
 	It("exits 1 if the uaa_verification_key is not a valid PEM format", func() {
@@ -240,7 +233,6 @@ var _ = Describe("Main", func() {
 			}
 			configPath = writeConfigToTempFile(rapiConfig)
 			routingAPIArgs = testrunner.Args{
-				Port:       routingAPIPort,
 				IP:         routingAPIIP,
 				ConfigPath: configPath,
 				DevMode:    true,

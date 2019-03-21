@@ -132,6 +132,7 @@ var _ = BeforeEach(func() {
 
 	routingAPIAdminPort = test_helpers.NextAvailPort()
 	defaultConfig = customConfig{
+		Port:        int(routingAPIPort),
 		StatsdPort:  8125 + GinkgoParallelNode(),
 		AdminPort:   routingAPIAdminPort,
 		UAAPort:     int(oauthSrvPort),
@@ -155,6 +156,9 @@ type customConfig struct {
 
 func getRoutingAPIConfig(c customConfig) *config.Config {
 	rapiConfig := &config.Config{
+		API: config.APIConfig{
+			ListenPort: c.Port,
+		},
 		AdminPort:    c.AdminPort,
 		DebugAddress: "1.2.3.4:1234",
 		LogGuid:      "my_logs",

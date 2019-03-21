@@ -18,7 +18,6 @@ import (
 var dbEnv = os.Getenv("DB")
 
 type Args struct {
-	Port       uint16
 	ConfigPath string
 	DevMode    bool
 	IP         string
@@ -26,7 +25,6 @@ type Args struct {
 
 func (args Args) ArgSlice() []string {
 	return []string{
-		"-port", strconv.Itoa(int(args.Port)),
 		"-ip", args.IP,
 		"-config", args.ConfigPath,
 		"-logLevel=debug",
@@ -51,7 +49,6 @@ func NewRoutingAPIArgs(ip string, port uint16, dbId, dbCACert, consulUrl string)
 		return Args{}, err
 	}
 	return Args{
-		Port:       port,
 		IP:         ip,
 		ConfigPath: configPath,
 		DevMode:    true,

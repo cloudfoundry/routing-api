@@ -616,7 +616,6 @@ var _ = Describe("Routes API", func() {
 			rapiConfig := getRoutingAPIConfig(defaultConfig)
 			configFilePath = writeConfigToTempFile(rapiConfig)
 			routingAPIArgs := testrunner.Args{
-				Port:       routingAPIPort,
 				IP:         routingAPIIP,
 				ConfigPath: configFilePath,
 				DevMode:    true,

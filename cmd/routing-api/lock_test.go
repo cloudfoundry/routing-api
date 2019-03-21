@@ -19,23 +19,22 @@ var _ = Describe("Locking", func() {
 	BeforeEach(func() {
 		rapiConfig := getRoutingAPIConfig(defaultConfig)
 		args = testrunner.Args{
-			Port:       routingAPIPort,
 			IP:         routingAPIIP,
 			ConfigPath: writeConfigToTempFile(rapiConfig),
 			DevMode:    true,
 		}
 	})
+
 	AfterEach(func() {
 		err := os.RemoveAll(args.ConfigPath)
 		Expect(err).ToNot(HaveOccurred())
 	})
+
 	Describe("vieing for the lock", func() {
 		Context("when two long-lived processes try to run", func() {
 			It("one waits for the other to exit and then grabs the lock", func() {
 				session1 := RoutingApi(args.ArgSlice()...)
 				Eventually(session1, 10*time.Second).Should(gbytes.Say("acquire-lock-succeeded"))
-
-				args.Port = uint16(test_helpers.NextAvailPort())
 
 				session2 := RoutingApi(args.ArgSlice()...)
 
@@ -78,15 +77,15 @@ var _ = Describe("Locking", func() {
 		It("ensures there is no downtime", func() {
 
 			session1 := RoutingApi(args.ArgSlice()...)
-			client1 := routingApiClientWithPort(args.Port)
+			client1 := routingApiClientWithPort(routingAPIPort)
 			Eventually(session1, 10*time.Second).Should(gbytes.Say("routing-api.started"))
 
 			session2Port := uint16(test_helpers.NextAvailPort())
 			apiConfig := getRoutingAPIConfig(defaultConfig)
+			apiConfig.API.ListenPort = int(session2Port)
 			apiConfig.AdminPort = test_helpers.NextAvailPort()
 			configFilePath := writeConfigToTempFile(apiConfig)
 			session2Args := testrunner.Args{
-				Port:       session2Port,
 				IP:         routingAPIIP,
 				ConfigPath: configFilePath,
 				DevMode:    true,
