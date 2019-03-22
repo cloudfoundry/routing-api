@@ -1,8 +1,8 @@
 package config_test
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"code.cloudfoundry.org/locket"
@@ -105,455 +105,353 @@ var _ = Describe("Config", func() {
 		})
 	})
 
-	Describe("parsing and validating the configuration", func() {
-		Context("when UUID property is set", func() {
-			It("populates the value", func() {
-				testConfig := `log_guid: "my_logs"
-admin_port: 9999
-api:
-  listen_port: 3000
-metrics_reporting_interval: "500ms"
-uuid: "fake-uuid"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-system_domain: "example.com"
-router_groups:
-- name: router-group-2
-  reservable_ports: 1024-10000,42000
-  type: udp
-consul_cluster:
-  url: "http://localhost:4222"
-`
-				cfg, err := config.NewConfigFromBytes([]byte(testConfig), true)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(cfg.UUID).To(Equal("fake-uuid"))
-			})
-		})
+	Describe("NewConfigFromBytes", func() {
+		var (
+			validHash  map[string]interface{}
+			testConfig []byte
+		)
 
-		Context("when the api listen port is invalid", func() {
-			testConfig := func(apiPort int) string {
-				return fmt.Sprintf(`log_guid: "my_logs"
-admin_port: 9999
-api:
-  listen_port: %d
-metrics_reporting_interval: "500ms"
-uuid: "fake-uuid"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-system_domain: "example.com"
-router_groups:
-- name: router-group-2
-  reservable_ports: 1024-10000,42000
-  type: udp
-consul_cluster:
-  url: "http://localhost:4222"
-`, apiPort)
+		BeforeEach(func() {
+			validHash = map[string]interface{}{
+				"system_domain": "example.com",
+				"log_guid":      "my_logs",
+				"uuid":          "fake-uuid",
+				"admin_port":    9999,
+				"api": map[string]interface{}{
+					"listen_port": 3000,
+				},
+				"metrics_reporting_interval":   "500ms",
+				"statsd_client_flush_interval": "10ms",
 			}
-			Context("when it is too high", func() {
-				It("returns an error", func() {
-					_, err := config.NewConfigFromBytes([]byte(testConfig(65535)), true)
+		})
+
+		JustBeforeEach(func() {
+			var err error
+			testConfig, err = json.Marshal(validHash)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		Describe("parsing and validating the configuration", func() {
+			Context("when UUID property is set", func() {
+				It("populates the value", func() {
+					cfg, err := config.NewConfigFromBytes(testConfig, true)
 					Expect(err).NotTo(HaveOccurred())
-
-					_, err = config.NewConfigFromBytes([]byte(testConfig(65536)), true)
-					Expect(err).To(HaveOccurred())
+					Expect(cfg.UUID).To(Equal("fake-uuid"))
 				})
 			})
 
-			Context("when it is too low", func() {
-				It("returns an error", func() {
-					_, err := config.NewConfigFromBytes([]byte(testConfig(0)), true)
-					Expect(err).To(HaveOccurred())
-
-					_, err = config.NewConfigFromBytes([]byte(testConfig(1)), true)
-					Expect(err).NotTo(HaveOccurred())
-				})
-			})
-		})
-
-		Context("when UUID property is not set", func() {
-			It("populates the value", func() {
-				testConfig :=
-					`log_guid: "my_logs"
-admin_port: 9999
-api:
-  listen_port: 3000
-metrics_reporting_interval: "500ms"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-system_domain: "example.com"
-router_groups:
-- name: router-group-2
-  reservable_ports: 1024-10000,42000
-  type: udp
-consul_cluster:
-  url: "http://localhost:4222"
-`
-				_, err := config.NewConfigFromBytes([]byte(testConfig), true)
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(errors.New("No UUID is specified")))
-			})
-		})
-
-		Context("when AdminPort property is set", func() {
-			It("populates the value", func() {
-				testConfig := `admin_port: 9999
-log_guid: "my_logs"
-api:
-  listen_port: 3000
-metrics_reporting_interval: "500ms"
-uuid: "fake-uuid"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-system_domain: "example.com"
-router_groups:
-- name: router-group-2
-  reservable_ports: 1024-10000,42000
-  type: udp
-consul_cluster:
-  url: "http://localhost:4222"
-`
-				cfg, err := config.NewConfigFromBytes([]byte(testConfig), true)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(cfg.AdminPort).To(Equal(9999))
-			})
-		})
-
-		Context("when AdminPort property is not set", func() {
-			It("returns an error", func() {
-				testConfig := `log_guid: "my_logs"
-metrics_reporting_interval: "500ms"
-uuid: "fake-uuid"
-api:
-  listen_port: 3000
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-system_domain: "example.com"
-router_groups:
-- name: router-group-2
-  reservable_ports: 1024-10000,42000
-  type: udp
-consul_cluster:
-  url: "http://localhost:4222"
-`
-				_, err := config.NewConfigFromBytes([]byte(testConfig), true)
-				Expect(err).To(HaveOccurred())
-			})
-		})
-
-		Context("when consul properties are not set", func() {
-			var testConfig string
-
-			BeforeEach(func() {
-				testConfig = `log_guid: "my_logs"
-admin_port: 9999
-api:
-  listen_port: 3000
-metrics_reporting_interval: "500ms"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-uuid: "fake-uuid"
-system_domain: "example.com"
-router_groups:
-- name: router-group-2
-  reservable_ports: 1024-10000,42000
-  type: udp
-consul_cluster:
-  url: "http://localhost:4222"
-`
-			})
-
-			It("populates the default value for LockTTL from locket library", func() {
-				cfg, err := config.NewConfigFromBytes([]byte(testConfig), true)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(cfg.ConsulCluster.LockTTL).To(Equal(locket.DefaultSessionTTL))
-			})
-
-			It("populates the default value for RetryInterval from locket library", func() {
-				cfg, err := config.NewConfigFromBytes([]byte(testConfig), true)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(cfg.ConsulCluster.RetryInterval).To(Equal(locket.RetryInterval))
-			})
-		})
-
-		Context("when multiple router groups are seeded with different names", func() {
-			It("should not error", func() {
-				testConfigStr := `log_guid: "my_logs"
-admin_port: 9999
-api:
-  listen_port: 3000
-metrics_reporting_interval: "500ms"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-uuid: "fake-uuid"
-system_domain: "example.com"
-router_groups:
-- name: router-group-1
-  reservable_ports: 1200
-  type: tcp
-- name: router-group-2
-  reservable_ports: 10000-42000
-  type: tcp`
-
-				cfg, err := config.NewConfigFromBytes([]byte(testConfigStr), true)
-				Expect(err).NotTo(HaveOccurred())
-				expectedGroups := models.RouterGroups{
-					{
-						Name:            "router-group-1",
-						ReservablePorts: "1200",
-						Type:            "tcp",
-					},
-					{
-						Name:            "router-group-2",
-						ReservablePorts: "10000-42000",
-						Type:            "tcp",
-					},
-				}
-				Expect(cfg.RouterGroups).To(Equal(expectedGroups))
-			})
-		})
-
-		Context("when router groups are seeded in the configuration file", func() {
-			var expectedGroups models.RouterGroups
-
-			testConfig := func(ports string) string {
-				return `log_guid: "my_logs"
-admin_port: 9999
-api:
-  listen_port: 3000
-metrics_reporting_interval: "500ms"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-uuid: "fake-uuid"
-system_domain: "example.com"
-router_groups:
-- name: router-group-1
-  reservable_ports: ` + ports + `
-  type: tcp
-- name: router-group-2
-  reservable_ports: 1024-10000,42000
-  type: udp
-- name: router-group-special
-  reservable_ports:
-  - 1122
-  - 1123
-  type: tcp`
-			}
-
-			It("populates the router groups", func() {
-				configStr := testConfig("12000")
-				cfg, err := config.NewConfigFromBytes([]byte(configStr), true)
-				Expect(err).NotTo(HaveOccurred())
-				expectedGroups = models.RouterGroups{
-					{
-						Name:            "router-group-1",
-						ReservablePorts: "12000",
-						Type:            "tcp",
-					},
-					{
-						Name:            "router-group-2",
-						ReservablePorts: "1024-10000,42000",
-						Type:            "udp",
-					},
-					{
-						Name:            "router-group-special",
-						ReservablePorts: "1122,1123",
-						Type:            "tcp",
-					},
-				}
-				Expect(cfg.RouterGroups).To(Equal(expectedGroups))
-			})
-
-			It("returns an error when port array has invalid type", func() {
-				configStr := `log_guid: "my_logs"
-admin_port: 9999
-api:
-  listen_port: 3000
-metrics_reporting_interval: "500ms"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-uuid: "fake-uuid"
-system_domain: "example.com"
-router_groups:
-- name: router-group-special
-  reservable_ports:
-  - "1122"
-  - 1123
-  type: tcp`
-				_, err := config.NewConfigFromBytes([]byte(configStr), true)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("invalid type for reservable port"))
-			})
-
-			It("returns error for invalid ports", func() {
-				configStr := testConfig("abc")
-				_, err := config.NewConfigFromBytes([]byte(configStr), true)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
-			})
-
-			It("does not returns error for ports prefixed with zero", func() {
-				configStr := testConfig("00003202-4000")
-				_, err := config.NewConfigFromBytes([]byte(configStr), true)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("returns error for invalid port", func() {
-				configStr := testConfig("70000")
-				_, err := config.NewConfigFromBytes([]byte(configStr), true)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
-			})
-
-			It("returns error for invalid ranges of ports", func() {
-				configStr := testConfig("1024-65535,10000-20000")
-				_, err := config.NewConfigFromBytes([]byte(configStr), true)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Overlapping values: [1024-65535] and [10000-20000]"))
-			})
-
-			It("returns error for invalid range of ports", func() {
-				configStr := testConfig("1023-65530")
-				_, err := config.NewConfigFromBytes([]byte(configStr), true)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
-			})
-
-			It("returns error for invalid start range", func() {
-				configStr := testConfig("1024-65535,-10000")
-				_, err := config.NewConfigFromBytes([]byte(configStr), true)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("range (-10000) requires a starting port"))
-			})
-
-			It("returns error for invalid end range", func() {
-				configStr := testConfig("10000-")
-				_, err := config.NewConfigFromBytes([]byte(configStr), true)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("range (10000-) requires an ending port"))
-			})
-
-			It("returns error for invalid router group type", func() {
-				missingType := `log_guid: "my_logs"
-admin_port: 9999
-api:
-  listen_port: 3000
-metrics_reporting_interval: "500ms"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-uuid: "fake-uuid"
-system_domain: "example.com"
-router_groups:
-- name: router-group-1
-  reservable_ports: 1024-65535`
-				_, err := config.NewConfigFromBytes([]byte(missingType), true)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("returns error for invalid router group type", func() {
-				missingName := `log_guid: "my_logs"
-admin_port: 9999
-api:
-  listen_port: 3000
-metrics_reporting_interval: "500ms"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-uuid: "fake-uuid"
-system_domain: "example.com"
-router_groups:
-- type: tcp
-  reservable_ports: 1024-65535`
-				_, err := config.NewConfigFromBytes([]byte(missingName), true)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("returns error for missing reservable port range", func() {
-				missingRouterGroup := `log_guid: "my_logs"
-admin_port: 9999
-api:
-  listen_port: 3000
-metrics_reporting_interval: "500ms"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-uuid: "fake-uuid"
-system_domain: "example.com"
-router_groups:
-- type: tcp
-  name: default-tcp`
-				_, err := config.NewConfigFromBytes([]byte(missingRouterGroup), true)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Missing reservable_ports in router group:"))
-			})
-		})
-
-		Context("when there are errors in the yml file", func() {
-			It("errors if there is no system_domain", func() {
-				testConfig := `log_guid: "my_logs"
-admin_port: 9999
-api:
-  listen_port: 3000
-debug_address: "1.2.3.4:1234"
-metron_config:
-  address: "1.2.3.4"
-  port: "4567"
-metrics_reporting_interval: "500ms"
-uuid: "fake-uuid"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"`
-				_, err := config.NewConfigFromBytes([]byte(testConfig), true)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("system_domain"))
-			})
-
-			Context("UAA errors", func() {
-				var testConfig string
-				BeforeEach(func() {
-					testConfig = `log_guid: "my_logs"
-admin_port: 9999
-api:
-  listen_port: 3000
-debug_address: "1.2.3.4:1234"
-system_domain: "example.com"
-uuid: "fake-uuid"
-metron_config:
-  address: "1.2.3.4"
-  port: "4567"
-metrics_reporting_interval: "500ms"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"`
-				})
-
-				Context("when auth is enabled", func() {
-					It("errors if no token endpoint url is found", func() {
-						_, err := config.NewConfigFromBytes([]byte(testConfig), false)
+			Context("when the api listen port is invalid", func() {
+				Context("when it is too high", func() {
+					BeforeEach(func() {
+						validHash["api"].(map[string]interface{})["listen_port"] = 65536
+					})
+					It("returns an error", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
 						Expect(err).To(HaveOccurred())
 					})
 				})
 
-				Context("when auth is disabled", func() {
-					It("it return valid config", func() {
-						_, err := config.NewConfigFromBytes([]byte(testConfig), true)
-						Expect(err).NotTo(HaveOccurred())
+				Context("when it is too low", func() {
+					BeforeEach(func() {
+						validHash["api"].(map[string]interface{})["listen_port"] = 0
+					})
+					It("returns an error", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).To(HaveOccurred())
 					})
 				})
 			})
-		})
 
-		Context("when there are no router groups seeded in the configuration file", func() {
-			It("does not populates the router group", func() {
-				testConfig := `log_guid: "my_logs"
-admin_port: 9999
-api:
-  listen_port: 3000
-system_domain: "example.com"
-metrics_reporting_interval: "500ms"
-uuid: "fake-uuid"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"`
-				cfg, err := config.NewConfigFromBytes([]byte(testConfig), true)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(cfg.RouterGroups).To(BeNil())
+			Context("when system domain is not set", func() {
+				BeforeEach(func() {
+					delete(validHash, "system_domain")
+				})
+				It("returns an error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("system_domain"))
+				})
 			})
 
+			Context("when UUID property is not set", func() {
+				BeforeEach(func() {
+					delete(validHash, "uuid")
+				})
+				It("populates the value", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError(errors.New("No UUID is specified")))
+				})
+			})
+
+			Context("when AdminPort property is set", func() {
+				It("populates the value", func() {
+					cfg, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(cfg.AdminPort).To(Equal(9999))
+				})
+			})
+
+			Context("when AdminPort property is not set", func() {
+				BeforeEach(func() {
+					delete(validHash, "admin_port")
+				})
+				It("returns an error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+				})
+			})
+
+			Context("when consul properties are not set", func() {
+				It("populates the default value for LockTTL from locket library", func() {
+					cfg, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(cfg.ConsulCluster.LockTTL).To(Equal(locket.DefaultSessionTTL))
+				})
+
+				It("populates the default value for RetryInterval from locket library", func() {
+					cfg, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(cfg.ConsulCluster.RetryInterval).To(Equal(locket.RetryInterval))
+				})
+			})
+
+			Context("when multiple router groups are seeded with different names", func() {
+				BeforeEach(func() {
+					validHash["router_groups"] = []interface{}{
+						map[string]interface{}{
+							"name":             "router-group-1",
+							"reservable_ports": 12000,
+							"type":             "tcp",
+						},
+						map[string]interface{}{
+							"name":             "router-group-2",
+							"reservable_ports": "1024-10000,42000",
+							"type":             "udp",
+						},
+						map[string]interface{}{
+							"name":             "router-group-special",
+							"reservable_ports": "1122,1123",
+							"type":             "tcp",
+						},
+					}
+				})
+				It("should not error", func() {
+					cfg, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).NotTo(HaveOccurred())
+					expectedGroups := models.RouterGroups{
+						{
+							Name:            "router-group-1",
+							ReservablePorts: "12000",
+							Type:            "tcp",
+						},
+						{
+							Name:            "router-group-2",
+							ReservablePorts: "1024-10000,42000",
+							Type:            "udp",
+						},
+						{
+							Name:            "router-group-special",
+							ReservablePorts: "1122,1123",
+							Type:            "tcp",
+						},
+					}
+					Expect(cfg.RouterGroups).To(Equal(expectedGroups))
+				})
+			})
+
+			Context("when router groups are seeded in the configuration file", func() {
+				addRouterGroupWithPorts := func(ports string) {
+					validHash["router_groups"] = []interface{}{
+						map[string]interface{}{
+							"name":             "router-group-1",
+							"reservable_ports": ports,
+							"type":             "tcp",
+						},
+					}
+				}
+
+				Context("when the router group port has an invalid type", func() {
+					BeforeEach(func() {
+						validHash["router_groups"] = []interface{}{
+							map[string]interface{}{
+								"name": "router-group-1",
+								"reservable_ports": []interface{}{
+									"1122",
+									1123,
+								},
+								"type": "tcp",
+							},
+						}
+					})
+					It("returns an error when port array has invalid type", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("invalid type for reservable port"))
+					})
+				})
+
+				Context("when there are alphabetic ports", func() {
+					BeforeEach(func() {
+						addRouterGroupWithPorts("abc")
+					})
+
+					It("returns error", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
+					})
+				})
+
+				Context("when the port is prefixed with zero", func() {
+					BeforeEach(func() {
+						addRouterGroupWithPorts("00003202-4000")
+					})
+
+					It("does not returns error for ports prefixed with zero", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).NotTo(HaveOccurred())
+					})
+				})
+
+				Context("when the port is too high", func() {
+					BeforeEach(func() {
+						addRouterGroupWithPorts("70000")
+					})
+
+					It("returns an error", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
+					})
+				})
+
+				Context("when the port ranges overlap", func() {
+					BeforeEach(func() {
+						addRouterGroupWithPorts("1024-65535,10000-20000")
+					})
+
+					It("returns an error", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("Overlapping values: [1024-65535] and [10000-20000]"))
+					})
+				})
+
+				Context("when the port range ends begins to low", func() {
+					BeforeEach(func() {
+						addRouterGroupWithPorts("1023-65530")
+					})
+
+					It("returns an error", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
+					})
+				})
+
+				Context("when the port range is missing a start value", func() {
+					BeforeEach(func() {
+						addRouterGroupWithPorts("1024-65535,-10000")
+					})
+
+					It("returns an error", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("range (-10000) requires a starting port"))
+					})
+				})
+
+				Context("when the port range is missing an end value", func() {
+					BeforeEach(func() {
+						addRouterGroupWithPorts("10000-")
+					})
+
+					It("returns an error", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("range (10000-) requires an ending port"))
+					})
+				})
+
+				Context("when the router group type is missing", func() {
+					BeforeEach(func() {
+						validHash["router_groups"] = []interface{}{
+							map[string]interface{}{
+								"name":             "router-group-1",
+								"reservable_ports": 1200,
+							},
+						}
+					})
+					It("returns an error", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).To(HaveOccurred())
+					})
+				})
+
+				Context("when the router group name is missing", func() {
+					BeforeEach(func() {
+						validHash["router_groups"] = []interface{}{
+							map[string]interface{}{
+								"reservable_ports": 1200,
+								"type":             "tcp",
+							},
+						}
+					})
+					It("returns an error", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).To(HaveOccurred())
+					})
+				})
+
+				Context("when the router group reservable ports is missing", func() {
+					BeforeEach(func() {
+						validHash["router_groups"] = []interface{}{
+							map[string]interface{}{
+								"name": "router-group-1",
+								"type": "tcp",
+							},
+						}
+					})
+					It("returns an error", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("Missing reservable_ports in router group:"))
+					})
+				})
+
+				Context("UAA errors", func() {
+					var authDisabled bool
+
+					Context("when auth is enabled", func() {
+						BeforeEach(func() {
+							authDisabled = false
+						})
+						It("errors if no token endpoint url is found", func() {
+							_, err := config.NewConfigFromBytes(testConfig, authDisabled)
+							Expect(err).To(HaveOccurred())
+						})
+					})
+
+					Context("when auth is disabled", func() {
+						BeforeEach(func() {
+							authDisabled = true
+						})
+						It("it return valid config", func() {
+							_, err := config.NewConfigFromBytes(testConfig, authDisabled)
+							Expect(err).NotTo(HaveOccurred())
+						})
+					})
+				})
+			})
+
+			Context("when there are no router groups seeded in the configuration file", func() {
+				It("does not populates the router group", func() {
+					cfg, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(cfg.RouterGroups).To(BeNil())
+				})
+			})
 		})
 	})
 })
