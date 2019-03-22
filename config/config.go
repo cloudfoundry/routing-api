@@ -46,6 +46,12 @@ type ConsulCluster struct {
 
 type APIConfig struct {
 	ListenPort int `yaml:"listen_port"`
+
+	MTLSEnabled        bool   `yaml:"mtls_enabled"`
+	MTLSListenPort     int    `yaml:"mtls_listen_port"`
+	MTLSClientCAPath   string `yaml:"mtls_client_ca_file"`
+	MTLSServerCertPath string `yaml:"mtls_server_cert_file"`
+	MTLSServerKeyPath  string `yaml:"mtls_server_key_file"`
 }
 
 type Config struct {
@@ -126,6 +132,12 @@ func (cfg *Config) validate(authDisabled bool) error {
 
 	if err := validatePort(cfg.API.ListenPort); err != nil {
 		return fmt.Errorf("invalid API listen port: %s", err)
+	}
+
+	if cfg.API.MTLSEnabled {
+		if err := validatePort(cfg.API.MTLSListenPort); err != nil {
+			return fmt.Errorf("invalid API mTLS listen port: %s", err)
+		}
 	}
 
 	if err := cfg.RouterGroups.Validate(); err != nil {

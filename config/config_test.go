@@ -48,6 +48,11 @@ var _ = Describe("Config", func() {
 					Expect(cfg.Locket.LocketCACertFile).To(Equal("some-locket-ca-cert"))
 					Expect(cfg.Locket.LocketClientCertFile).To(Equal("some-locket-client-cert"))
 					Expect(cfg.Locket.LocketClientKeyFile).To(Equal("some-locket-client-key"))
+					Expect(cfg.API.MTLSEnabled).To(Equal(false))
+					Expect(cfg.API.MTLSListenPort).To(Equal(3001))
+					Expect(cfg.API.MTLSClientCAPath).To(Equal("client ca file path"))
+					Expect(cfg.API.MTLSServerCertPath).To(Equal("server cert file path"))
+					Expect(cfg.API.MTLSServerKeyPath).To(Equal("server key file path"))
 				})
 
 				Context("when there is no token endpoint specified", func() {
@@ -131,70 +136,18 @@ var _ = Describe("Config", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		Describe("parsing and validating the configuration", func() {
-			Context("when UUID property is set", func() {
-				It("populates the value", func() {
-					cfg, err := config.NewConfigFromBytes(testConfig, true)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(cfg.UUID).To(Equal("fake-uuid"))
-				})
+		Context("when UUID property is set", func() {
+			It("populates the value", func() {
+				cfg, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.UUID).To(Equal("fake-uuid"))
 			})
+		})
 
-			Context("when the api listen port is invalid", func() {
-				Context("when it is too high", func() {
-					BeforeEach(func() {
-						validHash["api"].(map[string]interface{})["listen_port"] = 65536
-					})
-					It("returns an error", func() {
-						_, err := config.NewConfigFromBytes(testConfig, true)
-						Expect(err).To(HaveOccurred())
-					})
-				})
-
-				Context("when it is too low", func() {
-					BeforeEach(func() {
-						validHash["api"].(map[string]interface{})["listen_port"] = 0
-					})
-					It("returns an error", func() {
-						_, err := config.NewConfigFromBytes(testConfig, true)
-						Expect(err).To(HaveOccurred())
-					})
-				})
-			})
-
-			Context("when system domain is not set", func() {
+		Context("when the api listen port is invalid", func() {
+			Context("when it is too high", func() {
 				BeforeEach(func() {
-					delete(validHash, "system_domain")
-				})
-				It("returns an error", func() {
-					_, err := config.NewConfigFromBytes(testConfig, true)
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("system_domain"))
-				})
-			})
-
-			Context("when UUID property is not set", func() {
-				BeforeEach(func() {
-					delete(validHash, "uuid")
-				})
-				It("populates the value", func() {
-					_, err := config.NewConfigFromBytes(testConfig, true)
-					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError(errors.New("No UUID is specified")))
-				})
-			})
-
-			Context("when AdminPort property is set", func() {
-				It("populates the value", func() {
-					cfg, err := config.NewConfigFromBytes(testConfig, true)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(cfg.AdminPort).To(Equal(9999))
-				})
-			})
-
-			Context("when AdminPort property is not set", func() {
-				BeforeEach(func() {
-					delete(validHash, "admin_port")
+					validHash["api"].(map[string]interface{})["listen_port"] = 65536
 				})
 				It("returns an error", func() {
 					_, err := config.NewConfigFromBytes(testConfig, true)
@@ -202,245 +155,326 @@ var _ = Describe("Config", func() {
 				})
 			})
 
-			Context("when consul properties are not set", func() {
-				It("populates the default value for LockTTL from locket library", func() {
-					cfg, err := config.NewConfigFromBytes(testConfig, true)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(cfg.ConsulCluster.LockTTL).To(Equal(locket.DefaultSessionTTL))
-				})
-
-				It("populates the default value for RetryInterval from locket library", func() {
-					cfg, err := config.NewConfigFromBytes(testConfig, true)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(cfg.ConsulCluster.RetryInterval).To(Equal(locket.RetryInterval))
-				})
-			})
-
-			Context("when multiple router groups are seeded with different names", func() {
+			Context("when it is too low", func() {
 				BeforeEach(func() {
-					validHash["router_groups"] = []interface{}{
-						map[string]interface{}{
-							"name":             "router-group-1",
-							"reservable_ports": 12000,
-							"type":             "tcp",
-						},
-						map[string]interface{}{
-							"name":             "router-group-2",
-							"reservable_ports": "1024-10000,42000",
-							"type":             "udp",
-						},
-						map[string]interface{}{
-							"name":             "router-group-special",
-							"reservable_ports": "1122,1123",
-							"type":             "tcp",
-						},
-					}
+					validHash["api"].(map[string]interface{})["listen_port"] = 0
 				})
-				It("should not error", func() {
-					cfg, err := config.NewConfigFromBytes(testConfig, true)
-					Expect(err).NotTo(HaveOccurred())
-					expectedGroups := models.RouterGroups{
-						{
-							Name:            "router-group-1",
-							ReservablePorts: "12000",
-							Type:            "tcp",
-						},
-						{
-							Name:            "router-group-2",
-							ReservablePorts: "1024-10000,42000",
-							Type:            "udp",
-						},
-						{
-							Name:            "router-group-special",
-							ReservablePorts: "1122,1123",
-							Type:            "tcp",
-						},
-					}
-					Expect(cfg.RouterGroups).To(Equal(expectedGroups))
+				It("returns an error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
 				})
 			})
+		})
 
-			Context("when router groups are seeded in the configuration file", func() {
-				addRouterGroupWithPorts := func(ports string) {
-					validHash["router_groups"] = []interface{}{
-						map[string]interface{}{
-							"name":             "router-group-1",
-							"reservable_ports": ports,
-							"type":             "tcp",
-						},
-					}
+		Context("when api mtls enabled is set true", func() {
+			BeforeEach(func() {
+				validHash["api"].(map[string]interface{})["mtls_enabled"] = true
+				validHash["api"].(map[string]interface{})["mtls_listen_port"] = 3001
+				validHash["api"].(map[string]interface{})["mtls_client_ca_file"] = "client ca file path"
+				validHash["api"].(map[string]interface{})["mtls_server_cert_file"] = "server cert file path"
+				validHash["api"].(map[string]interface{})["mtls_server_key_file"] = "server key file path"
+			})
+
+			It("parses mTLS things", func() {
+				cfg, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cfg.API.MTLSEnabled).To(BeTrue())
+				Expect(cfg.API.MTLSListenPort).To(Equal(3001))
+				Expect(cfg.API.MTLSClientCAPath).To(Equal("client ca file path"))
+				Expect(cfg.API.MTLSServerCertPath).To(Equal("server cert file path"))
+				Expect(cfg.API.MTLSServerKeyPath).To(Equal("server key file path"))
+			})
+
+			Context("when api mtls port is too high", func() {
+				BeforeEach(func() {
+					validHash["api"].(map[string]interface{})["mtls_listen_port"] = 928334
+				})
+
+				It("does not validate", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+				})
+			})
+		})
+
+		Context("when system domain is not set", func() {
+			BeforeEach(func() {
+				delete(validHash, "system_domain")
+			})
+			It("returns an error", func() {
+				_, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("system_domain"))
+			})
+		})
+
+		Context("when UUID property is not set", func() {
+			BeforeEach(func() {
+				delete(validHash, "uuid")
+			})
+			It("populates the value", func() {
+				_, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(errors.New("No UUID is specified")))
+			})
+		})
+
+		Context("when AdminPort property is set", func() {
+			It("populates the value", func() {
+				cfg, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.AdminPort).To(Equal(9999))
+			})
+		})
+
+		Context("when AdminPort property is not set", func() {
+			BeforeEach(func() {
+				delete(validHash, "admin_port")
+			})
+			It("returns an error", func() {
+				_, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("when consul properties are not set", func() {
+			It("populates the default value for LockTTL from locket library", func() {
+				cfg, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.ConsulCluster.LockTTL).To(Equal(locket.DefaultSessionTTL))
+			})
+
+			It("populates the default value for RetryInterval from locket library", func() {
+				cfg, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.ConsulCluster.RetryInterval).To(Equal(locket.RetryInterval))
+			})
+		})
+
+		Context("when multiple router groups are seeded with different names", func() {
+			BeforeEach(func() {
+				validHash["router_groups"] = []interface{}{
+					map[string]interface{}{
+						"name":             "router-group-1",
+						"reservable_ports": 12000,
+						"type":             "tcp",
+					},
+					map[string]interface{}{
+						"name":             "router-group-2",
+						"reservable_ports": "1024-10000,42000",
+						"type":             "udp",
+					},
+					map[string]interface{}{
+						"name":             "router-group-special",
+						"reservable_ports": "1122,1123",
+						"type":             "tcp",
+					},
 				}
+			})
+			It("should not error", func() {
+				cfg, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).NotTo(HaveOccurred())
+				expectedGroups := models.RouterGroups{
+					{
+						Name:            "router-group-1",
+						ReservablePorts: "12000",
+						Type:            "tcp",
+					},
+					{
+						Name:            "router-group-2",
+						ReservablePorts: "1024-10000,42000",
+						Type:            "udp",
+					},
+					{
+						Name:            "router-group-special",
+						ReservablePorts: "1122,1123",
+						Type:            "tcp",
+					},
+				}
+				Expect(cfg.RouterGroups).To(Equal(expectedGroups))
+			})
+		})
 
-				Context("when the router group port has an invalid type", func() {
-					BeforeEach(func() {
-						validHash["router_groups"] = []interface{}{
-							map[string]interface{}{
-								"name": "router-group-1",
-								"reservable_ports": []interface{}{
-									"1122",
-									1123,
-								},
-								"type": "tcp",
+		Context("when router groups are seeded in the configuration file", func() {
+			addRouterGroupWithPorts := func(ports string) {
+				validHash["router_groups"] = []interface{}{
+					map[string]interface{}{
+						"name":             "router-group-1",
+						"reservable_ports": ports,
+						"type":             "tcp",
+					},
+				}
+			}
+
+			Context("when the router group port has an invalid type", func() {
+				BeforeEach(func() {
+					validHash["router_groups"] = []interface{}{
+						map[string]interface{}{
+							"name": "router-group-1",
+							"reservable_ports": []interface{}{
+								"1122",
+								1123,
 							},
-						}
+							"type": "tcp",
+						},
+					}
+				})
+				It("returns an error when port array has invalid type", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("invalid type for reservable port"))
+				})
+			})
+
+			Context("when there are alphabetic ports", func() {
+				BeforeEach(func() {
+					addRouterGroupWithPorts("abc")
+				})
+
+				It("returns error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
+				})
+			})
+
+			Context("when the port is prefixed with zero", func() {
+				BeforeEach(func() {
+					addRouterGroupWithPorts("00003202-4000")
+				})
+
+				It("does not returns error for ports prefixed with zero", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
+			Context("when the port is too high", func() {
+				BeforeEach(func() {
+					addRouterGroupWithPorts("70000")
+				})
+
+				It("returns an error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
+				})
+			})
+
+			Context("when the port ranges overlap", func() {
+				BeforeEach(func() {
+					addRouterGroupWithPorts("1024-65535,10000-20000")
+				})
+
+				It("returns an error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Overlapping values: [1024-65535] and [10000-20000]"))
+				})
+			})
+
+			Context("when the port range ends begins to low", func() {
+				BeforeEach(func() {
+					addRouterGroupWithPorts("1023-65530")
+				})
+
+				It("returns an error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
+				})
+			})
+
+			Context("when the port range is missing a start value", func() {
+				BeforeEach(func() {
+					addRouterGroupWithPorts("1024-65535,-10000")
+				})
+
+				It("returns an error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("range (-10000) requires a starting port"))
+				})
+			})
+
+			Context("when the port range is missing an end value", func() {
+				BeforeEach(func() {
+					addRouterGroupWithPorts("10000-")
+				})
+
+				It("returns an error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("range (10000-) requires an ending port"))
+				})
+			})
+
+			Context("when the router group type is missing", func() {
+				BeforeEach(func() {
+					validHash["router_groups"] = []interface{}{
+						map[string]interface{}{
+							"name":             "router-group-1",
+							"reservable_ports": 1200,
+						},
+					}
+				})
+				It("returns an error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+				})
+			})
+
+			Context("when the router group name is missing", func() {
+				BeforeEach(func() {
+					validHash["router_groups"] = []interface{}{
+						map[string]interface{}{
+							"reservable_ports": 1200,
+							"type":             "tcp",
+						},
+					}
+				})
+				It("returns an error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+				})
+			})
+
+			Context("when the router group reservable ports is missing", func() {
+				BeforeEach(func() {
+					validHash["router_groups"] = []interface{}{
+						map[string]interface{}{
+							"name": "router-group-1",
+							"type": "tcp",
+						},
+					}
+				})
+				It("returns an error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Missing reservable_ports in router group:"))
+				})
+			})
+
+			Context("UAA errors", func() {
+				var authDisabled bool
+
+				Context("when auth is enabled", func() {
+					BeforeEach(func() {
+						authDisabled = false
 					})
-					It("returns an error when port array has invalid type", func() {
-						_, err := config.NewConfigFromBytes(testConfig, true)
+					It("errors if no token endpoint url is found", func() {
+						_, err := config.NewConfigFromBytes(testConfig, authDisabled)
 						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring("invalid type for reservable port"))
 					})
 				})
 
-				Context("when there are alphabetic ports", func() {
+				Context("when auth is disabled", func() {
 					BeforeEach(func() {
-						addRouterGroupWithPorts("abc")
+						authDisabled = true
 					})
-
-					It("returns error", func() {
-						_, err := config.NewConfigFromBytes(testConfig, true)
-						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
-					})
-				})
-
-				Context("when the port is prefixed with zero", func() {
-					BeforeEach(func() {
-						addRouterGroupWithPorts("00003202-4000")
-					})
-
-					It("does not returns error for ports prefixed with zero", func() {
-						_, err := config.NewConfigFromBytes(testConfig, true)
+					It("it return valid config", func() {
+						_, err := config.NewConfigFromBytes(testConfig, authDisabled)
 						Expect(err).NotTo(HaveOccurred())
-					})
-				})
-
-				Context("when the port is too high", func() {
-					BeforeEach(func() {
-						addRouterGroupWithPorts("70000")
-					})
-
-					It("returns an error", func() {
-						_, err := config.NewConfigFromBytes(testConfig, true)
-						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
-					})
-				})
-
-				Context("when the port ranges overlap", func() {
-					BeforeEach(func() {
-						addRouterGroupWithPorts("1024-65535,10000-20000")
-					})
-
-					It("returns an error", func() {
-						_, err := config.NewConfigFromBytes(testConfig, true)
-						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring("Overlapping values: [1024-65535] and [10000-20000]"))
-					})
-				})
-
-				Context("when the port range ends begins to low", func() {
-					BeforeEach(func() {
-						addRouterGroupWithPorts("1023-65530")
-					})
-
-					It("returns an error", func() {
-						_, err := config.NewConfigFromBytes(testConfig, true)
-						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
-					})
-				})
-
-				Context("when the port range is missing a start value", func() {
-					BeforeEach(func() {
-						addRouterGroupWithPorts("1024-65535,-10000")
-					})
-
-					It("returns an error", func() {
-						_, err := config.NewConfigFromBytes(testConfig, true)
-						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring("range (-10000) requires a starting port"))
-					})
-				})
-
-				Context("when the port range is missing an end value", func() {
-					BeforeEach(func() {
-						addRouterGroupWithPorts("10000-")
-					})
-
-					It("returns an error", func() {
-						_, err := config.NewConfigFromBytes(testConfig, true)
-						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring("range (10000-) requires an ending port"))
-					})
-				})
-
-				Context("when the router group type is missing", func() {
-					BeforeEach(func() {
-						validHash["router_groups"] = []interface{}{
-							map[string]interface{}{
-								"name":             "router-group-1",
-								"reservable_ports": 1200,
-							},
-						}
-					})
-					It("returns an error", func() {
-						_, err := config.NewConfigFromBytes(testConfig, true)
-						Expect(err).To(HaveOccurred())
-					})
-				})
-
-				Context("when the router group name is missing", func() {
-					BeforeEach(func() {
-						validHash["router_groups"] = []interface{}{
-							map[string]interface{}{
-								"reservable_ports": 1200,
-								"type":             "tcp",
-							},
-						}
-					})
-					It("returns an error", func() {
-						_, err := config.NewConfigFromBytes(testConfig, true)
-						Expect(err).To(HaveOccurred())
-					})
-				})
-
-				Context("when the router group reservable ports is missing", func() {
-					BeforeEach(func() {
-						validHash["router_groups"] = []interface{}{
-							map[string]interface{}{
-								"name": "router-group-1",
-								"type": "tcp",
-							},
-						}
-					})
-					It("returns an error", func() {
-						_, err := config.NewConfigFromBytes(testConfig, true)
-						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring("Missing reservable_ports in router group:"))
-					})
-				})
-
-				Context("UAA errors", func() {
-					var authDisabled bool
-
-					Context("when auth is enabled", func() {
-						BeforeEach(func() {
-							authDisabled = false
-						})
-						It("errors if no token endpoint url is found", func() {
-							_, err := config.NewConfigFromBytes(testConfig, authDisabled)
-							Expect(err).To(HaveOccurred())
-						})
-					})
-
-					Context("when auth is disabled", func() {
-						BeforeEach(func() {
-							authDisabled = true
-						})
-						It("it return valid config", func() {
-							_, err := config.NewConfigFromBytes(testConfig, authDisabled)
-							Expect(err).NotTo(HaveOccurred())
-						})
 					})
 				})
 			})
