@@ -236,6 +236,7 @@ var _ = Describe("SqlLock", func() {
 			session2Port := uint16(test_helpers.NextAvailPort())
 			apiConfig := getRoutingAPIConfig(defaultConfig)
 			apiConfig.API.ListenPort = int(session2Port)
+			apiConfig.API.MTLSListenPort = test_helpers.NextAvailPort()
 			apiConfig.AdminPort = test_helpers.NextAvailPort()
 			apiConfig.Locket = locketrunner.ClientLocketConfig()
 			apiConfig.Locket.LocketAddress = locketAddress

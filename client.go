@@ -46,6 +46,10 @@ func NewClient(url string, skipTLSVerification bool) Client {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: skipTLSVerification,
 	}
+	return NewTLSClient(url, tlsConfig)
+}
+
+func NewTLSClient(url string, tlsConfig *tls.Config) Client {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			Dial: (&net.Dialer{

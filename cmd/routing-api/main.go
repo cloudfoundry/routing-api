@@ -24,6 +24,7 @@ import (
 	"code.cloudfoundry.org/routing-api/metrics"
 	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/models"
+	"code.cloudfoundry.org/tlsconfig"
 	uaaclient "code.cloudfoundry.org/uaa-go-client"
 	uaaconfig "code.cloudfoundry.org/uaa-go-client/config"
 	"github.com/cactus/go-statsd-client/statsd"
@@ -104,10 +105,6 @@ func main() {
 		}
 	}()
 
-	uaaClient := initializeUAAClient(cfg, logger)
-	apiHandler := apiHandler(cfg, uaaClient, database, statsdClient, logger.Session("api-server"))
-	apiServer := http_server.New(":"+strconv.Itoa(cfg.API.ListenPort), apiHandler)
-
 	adminServer, err := admin.NewServer(cfg.AdminPort, database, logger.Session("admin-server"))
 	if err != nil {
 		logger.Error("failed-to-create-admin-server", err)
@@ -172,16 +169,42 @@ func main() {
 	lockAcquirer := initializeLockAcquirer(lockGroup, releaseLock, lockErrChan)
 	lockReleaser := initializeLockReleaser(releaseLock, lockErrChan, cfg.ConsulCluster.RetryInterval)
 
+	uaaClient := initializeUAAClient(cfg, logger)
+
+	httpAPIHandler := apiHandler(cfg, uaaClient, database, statsdClient, logger.Session("api-http-server"))
+	httpAPIServer := http_server.New(":"+strconv.Itoa(cfg.API.ListenPort), httpAPIHandler)
+
 	members := grouper.Members{
 		grouper.Member{Name: "migration", Runner: migrationProcess},
 		grouper.Member{Name: "lock-acquirer", Runner: lockAcquirer},
 		grouper.Member{Name: "seed-router-groups", Runner: routerGroupSeeder},
-		grouper.Member{Name: "api-server", Runner: apiServer},
+		grouper.Member{Name: "api-server", Runner: httpAPIServer},
+	}
+
+	if cfg.API.MTLSEnabled {
+		config, err := tlsconfig.Build(
+			tlsconfig.WithInternalServiceDefaults(),
+			tlsconfig.WithIdentityFromFile(cfg.API.MTLSServerCertPath, cfg.API.MTLSServerKeyPath),
+		).Server(
+			tlsconfig.WithClientAuthenticationFromFile(cfg.API.MTLSClientCAPath),
+		)
+		if err != nil {
+			logger.Fatal("mtls-mis-configured", err)
+		}
+
+		mtlsAPIHandler := apiHandler(cfg, uaaClient, database, statsdClient, logger.Session("api-mtls-server"))
+		mtlsAPIServer := http_server.NewTLSServer(":"+strconv.Itoa(cfg.API.MTLSListenPort), mtlsAPIHandler, config)
+		members = append(members, grouper.Member{
+			Name: "api-mtls-server", Runner: mtlsAPIServer},
+		)
+	}
+
+	members = append(members,
 		grouper.Member{Name: "admin-server", Runner: adminServer},
 		grouper.Member{Name: "conn-stopper", Runner: stopper},
 		grouper.Member{Name: "route-register", Runner: routerRegister},
 		grouper.Member{Name: "metrics", Runner: metricsReporter},
-	}
+	)
 
 	if isSql(cfg.SqlDB) {
 		routePruner := runCleanupRoutes(database, logger)

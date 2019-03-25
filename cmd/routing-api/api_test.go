@@ -13,13 +13,13 @@ import (
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/matchers"
 	"code.cloudfoundry.org/routing-api/models"
+	"code.cloudfoundry.org/tlsconfig"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Routes API", func() {
 	getRouterGroupGuid := func() string {
-		client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 		var routerGroups []models.RouterGroup
 		Eventually(func() error {
 			var err error
@@ -325,7 +325,6 @@ var _ = Describe("Routes API", func() {
 
 			Context("POST", func() {
 				It("allows to create given tcp route mappings", func() {
-					client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 					var err error
 					tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
 					tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 3)
@@ -343,7 +342,6 @@ var _ = Describe("Routes API", func() {
 				})
 				Context("when tcp route mappings already exist", func() {
 					BeforeEach(func() {
-						client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 						var err error
 						tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
 
@@ -385,12 +383,10 @@ var _ = Describe("Routes API", func() {
 			Context("DELETE", func() {
 				var (
 					tcpRouteMappings []models.TcpRouteMapping
-					client           routing_api.Client
 					err              error
 				)
 
 				BeforeEach(func() {
-					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 					routerGroupGuid = getRouterGroupGuid()
 				})
 
@@ -418,12 +414,9 @@ var _ = Describe("Routes API", func() {
 			Context("GET (LIST)", func() {
 				var (
 					tcpRouteMappings []models.TcpRouteMapping
-					client           routing_api.Client
 				)
 
 				JustBeforeEach(func() {
-					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
-
 					tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
 					tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 60)
 					tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
@@ -480,7 +473,6 @@ var _ = Describe("Routes API", func() {
 		Context("Router Groups", func() {
 			Context("GET (LIST)", func() {
 				It("returns seeded router groups", func() {
-					client := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 					Eventually(func() error {
 						_, err := client.RouterGroups()
 						return err
@@ -498,7 +490,6 @@ var _ = Describe("Routes API", func() {
 			Context("PUT", func() {
 				It("returns updated router groups", func() {
 					var routerGroups models.RouterGroups
-					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 					Eventually(func() error {
 						var err error
 						routerGroups, err = client.RouterGroups()
@@ -519,7 +510,6 @@ var _ = Describe("Routes API", func() {
 
 				It("validates updates", func() {
 					var routerGroups models.RouterGroups
-					client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 					Eventually(func() error {
 						var err error
 						routerGroups, err = client.RouterGroups()
@@ -550,7 +540,6 @@ var _ = Describe("Routes API", func() {
 	TestRouterGroupsLocking := func() {
 		Context("Locking router groups reads", func() {
 			It("locks when invoked", func() {
-				client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 				Eventually(func() error {
 					_, err := client.RouterGroups()
 					return err
@@ -622,6 +611,48 @@ var _ = Describe("Routes API", func() {
 			}
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
+			client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
+		})
+
+		AfterEach(func() {
+			ginkgomon.Kill(routingAPIProcess)
+
+			err := os.RemoveAll(configFilePath)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		TestRouterGroups(withCreateRouterGroup)
+		TestTCPRoutes()
+		TestTCPEvents()
+		TestHTTPRoutes()
+		TestHTTPEvents()
+		TestRouterGroupsLocking()
+	})
+
+	Describe("mTLS API with MySQL", func() {
+		var (
+			routingAPIProcess ifrit.Process
+			configFilePath    string
+		)
+
+		BeforeEach(func() {
+			rapiConfig := getRoutingAPIConfig(defaultConfig)
+			configFilePath = writeConfigToTempFile(rapiConfig)
+			routingAPIArgs := testrunner.Args{
+				IP:         routingAPIIP,
+				ConfigPath: configFilePath,
+				DevMode:    true,
+			}
+			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
+			tlsConfig, err := tlsconfig.Build(
+				tlsconfig.WithInternalServiceDefaults(),
+				tlsconfig.WithIdentity(mtlsAPIClientCert),
+			).Client(
+				tlsconfig.WithAuthorityFromFile(apiCAPath),
+			)
+			Expect(err).ToNot(HaveOccurred())
+			client = routing_api.NewTLSClient(fmt.Sprintf("https://127.0.0.1:%d", routingAPIMTLSPort), tlsConfig)
 		})
 
 		AfterEach(func() {

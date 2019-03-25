@@ -75,7 +75,6 @@ var _ = Describe("Locking", func() {
 	})
 	Context("when a rolling deploy occurs", func() {
 		It("ensures there is no downtime", func() {
-
 			session1 := RoutingApi(args.ArgSlice()...)
 			client1 := routingApiClientWithPort(routingAPIPort)
 			Eventually(session1, 10*time.Second).Should(gbytes.Say("routing-api.started"))
@@ -83,6 +82,7 @@ var _ = Describe("Locking", func() {
 			session2Port := uint16(test_helpers.NextAvailPort())
 			apiConfig := getRoutingAPIConfig(defaultConfig)
 			apiConfig.API.ListenPort = int(session2Port)
+			apiConfig.API.MTLSListenPort = test_helpers.NextAvailPort()
 			apiConfig.AdminPort = test_helpers.NextAvailPort()
 			configFilePath := writeConfigToTempFile(apiConfig)
 			session2Args := testrunner.Args{

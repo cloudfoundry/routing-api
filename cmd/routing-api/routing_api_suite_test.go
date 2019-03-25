@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	testhelpers "test-helpers"
 	"testing"
 	"time"
 
@@ -38,6 +39,7 @@ var (
 	routingAPIBinPath      string
 	routingAPIAddress      string
 	routingAPIPort         uint16
+	routingAPIMTLSPort     uint16
 	routingAPIAdminPort    int
 	routingAPIIP           string
 	routingAPISystemDomain string
@@ -50,8 +52,13 @@ var (
 
 	mysqlAllocator testrunner.DbAllocator
 	mysqlConfig    *config.SqlDB
-	serverCert     tls.Certificate
-	caCertsPath    string
+
+	uaaCACertsPath string
+
+	mtlsAPIServerKeyPath  string
+	mtlsAPIServerCertPath string
+	apiCAPath             string
+	mtlsAPIClientCert     tls.Certificate
 )
 
 func TestMain(t *testing.T) {
@@ -93,7 +100,7 @@ var _ = SynchronizedBeforeSuite(
 		f, err := ioutil.TempFile("", "routing-api-uaa-ca")
 		Expect(err).ToNot(HaveOccurred())
 
-		caCertsPath = f.Name()
+		uaaCACertsPath = f.Name()
 
 		err = pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: caCert.Raw})
 		Expect(err).ToNot(HaveOccurred())
@@ -101,10 +108,12 @@ var _ = SynchronizedBeforeSuite(
 		err = f.Close()
 		Expect(err).ToNot(HaveOccurred())
 
-		serverCert, err = createCertificate(caCert, caPrivKey, isCA)
+		uaaServerCert, err := createCertificate(caCert, caPrivKey, isCA)
 		Expect(err).ToNot(HaveOccurred())
 
-		setupOauthServer()
+		apiCAPath, mtlsAPIServerCertPath, mtlsAPIServerKeyPath, mtlsAPIClientCert = testhelpers.GenerateCaAndMutualTlsCerts()
+
+		setupOauthServer(uaaServerCert)
 	},
 )
 
@@ -115,14 +124,17 @@ var _ = SynchronizedAfterSuite(func() {
 	teardownConsul()
 	oauthServer.Close()
 
-	err = os.Remove(caCertsPath)
+	err = os.Remove(uaaCACertsPath)
 	Expect(err).NotTo(HaveOccurred())
 }, func() {
 	gexec.CleanupBuildArtifacts()
 })
 
 var _ = BeforeEach(func() {
-	client = routingApiClient()
+	routingAPIPort = uint16(test_helpers.NextAvailPort())
+	routingAPIMTLSPort = uint16(test_helpers.NextAvailPort())
+
+	client = routingApiClientWithPort(routingAPIPort)
 	err := mysqlAllocator.Reset()
 	Expect(err).NotTo(HaveOccurred())
 	resetConsul()
@@ -136,10 +148,16 @@ var _ = BeforeEach(func() {
 		StatsdPort:  8125 + GinkgoParallelNode(),
 		AdminPort:   routingAPIAdminPort,
 		UAAPort:     int(oauthSrvPort),
-		CACertsPath: caCertsPath,
+		CACertsPath: uaaCACertsPath,
 		Schema:      sqlDBName,
 		ConsulUrl:   consulRunner.URL(),
 		UseSQL:      true,
+
+		// mTLS API
+		APIServerMTLSPort: int(routingAPIMTLSPort),
+		APIServerCertPath: mtlsAPIServerCertPath,
+		APIServerKeyPath:  mtlsAPIServerKeyPath,
+		APICAPath:         apiCAPath,
 	}
 })
 
@@ -152,12 +170,22 @@ type customConfig struct {
 	Schema      string
 	ConsulUrl   string
 	UseSQL      bool
+
+	APIServerMTLSPort int
+	APIServerCertPath string
+	APIServerKeyPath  string
+	APICAPath         string
 }
 
 func getRoutingAPIConfig(c customConfig) *config.Config {
 	rapiConfig := &config.Config{
 		API: config.APIConfig{
-			ListenPort: c.Port,
+			ListenPort:         c.Port,
+			MTLSEnabled:        true,
+			MTLSListenPort:     c.APIServerMTLSPort,
+			MTLSClientCAPath:   c.APICAPath,
+			MTLSServerCertPath: c.APIServerCertPath,
+			MTLSServerKeyPath:  c.APIServerKeyPath,
 		},
 		AdminPort:    c.AdminPort,
 		DebugAddress: "1.2.3.4:1234",
@@ -218,20 +246,6 @@ func writeConfigToTempFile(c *config.Config) string {
 	return tmpfile.Name()
 }
 
-func routingApiClient() routing_api.Client {
-	routingAPIPort = uint16(test_helpers.NextAvailPort())
-	routingAPIIP = "127.0.0.1"
-	routingAPISystemDomain = "example.com"
-	routingAPIAddress = fmt.Sprintf("%s:%d", routingAPIIP, routingAPIPort)
-
-	routingAPIURL := &url.URL{
-		Scheme: "http",
-		Host:   routingAPIAddress,
-	}
-
-	return routing_api.NewClient(routingAPIURL.String(), false)
-}
-
 func routingApiClientWithPort(routingAPIPort uint16) routing_api.Client {
 	routingAPIIP = "127.0.0.1"
 	routingAPISystemDomain = "example.com"
@@ -245,11 +259,11 @@ func routingApiClientWithPort(routingAPIPort uint16) routing_api.Client {
 	return routing_api.NewClient(routingAPIURL.String(), false)
 }
 
-func setupOauthServer() {
+func setupOauthServer(uaaServerCert tls.Certificate) {
 	oauthServer = ghttp.NewUnstartedServer()
 
 	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{serverCert},
+		Certificates: []tls.Certificate{uaaServerCert},
 	}
 	oauthServer.HTTPTestServer.TLS = tlsConfig
 	oauthServer.AllowUnhandledRequests = true
