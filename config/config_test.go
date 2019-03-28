@@ -48,6 +48,7 @@ var _ = Describe("Config", func() {
 					Expect(cfg.Locket.LocketCACertFile).To(Equal("some-locket-ca-cert"))
 					Expect(cfg.Locket.LocketClientCertFile).To(Equal("some-locket-client-cert"))
 					Expect(cfg.Locket.LocketClientKeyFile).To(Equal("some-locket-client-key"))
+					Expect(cfg.API.HTTPEnabled).To(Equal(false))
 					Expect(cfg.API.MTLSEnabled).To(Equal(false))
 					Expect(cfg.API.MTLSListenPort).To(Equal(3001))
 					Expect(cfg.API.MTLSClientCAPath).To(Equal("client ca file path"))
@@ -163,6 +164,17 @@ var _ = Describe("Config", func() {
 					_, err := config.NewConfigFromBytes(testConfig, true)
 					Expect(err).To(HaveOccurred())
 				})
+			})
+		})
+
+		Context("when api http enabled is set true", func() {
+			BeforeEach(func() {
+				validHash["api"].(map[string]interface{})["http_enabled"] = true
+			})
+			It("parses http_enabled", func() {
+				cfg, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cfg.API.HTTPEnabled).To(BeTrue())
 			})
 		})
 

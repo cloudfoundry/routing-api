@@ -627,6 +627,42 @@ var _ = Describe("Routes API", func() {
 		TestRouterGroupsLocking()
 	})
 
+	Describe("disabling the HTTP API", func() {
+		var (
+			routingAPIProcess ifrit.Process
+			configFilePath    string
+		)
+
+		BeforeEach(func() {
+			rapiConfig := getRoutingAPIConfig(defaultConfig)
+			rapiConfig.API.HTTPEnabled = false
+			rapiConfig.API.MTLSEnabled = true
+			configFilePath = writeConfigToTempFile(rapiConfig)
+			routingAPIArgs := testrunner.Args{
+				IP:         routingAPIIP,
+				ConfigPath: configFilePath,
+				DevMode:    true,
+			}
+			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
+		})
+
+		AfterEach(func() {
+			ginkgomon.Kill(routingAPIProcess)
+
+			err := os.RemoveAll(configFilePath)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("does not listen on HTTP", func() {
+			client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
+
+			_, err := client.RouterGroups()
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("connection refused")))
+		})
+	})
+
 	Describe("mTLS API with MySQL", func() {
 		var (
 			routingAPIProcess ifrit.Process
@@ -635,6 +671,7 @@ var _ = Describe("Routes API", func() {
 
 		BeforeEach(func() {
 			rapiConfig := getRoutingAPIConfig(defaultConfig)
+			rapiConfig.API.MTLSEnabled = true
 			configFilePath = writeConfigToTempFile(rapiConfig)
 			routingAPIArgs := testrunner.Args{
 				IP:         routingAPIIP,

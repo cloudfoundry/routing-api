@@ -15,10 +15,6 @@ import (
 	"testing"
 	"time"
 
-	yaml "gopkg.in/yaml.v2"
-
-	"google.golang.org/grpc/grpclog"
-
 	"code.cloudfoundry.org/consuladapter/consulrunner"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
@@ -30,6 +26,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
+	"google.golang.org/grpc/grpclog"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var (
@@ -144,14 +142,15 @@ var _ = BeforeEach(func() {
 
 	routingAPIAdminPort = test_helpers.NextAvailPort()
 	defaultConfig = customConfig{
-		Port:        int(routingAPIPort),
-		StatsdPort:  8125 + GinkgoParallelNode(),
-		AdminPort:   routingAPIAdminPort,
-		UAAPort:     int(oauthSrvPort),
-		CACertsPath: uaaCACertsPath,
-		Schema:      sqlDBName,
-		ConsulUrl:   consulRunner.URL(),
-		UseSQL:      true,
+		APIServerHTTPEnabled: true,
+		Port:                 int(routingAPIPort),
+		StatsdPort:           8125 + GinkgoParallelNode(),
+		AdminPort:            routingAPIAdminPort,
+		UAAPort:              int(oauthSrvPort),
+		CACertsPath:          uaaCACertsPath,
+		Schema:               sqlDBName,
+		ConsulUrl:            consulRunner.URL(),
+		UseSQL:               true,
 
 		// mTLS API
 		APIServerMTLSPort: int(routingAPIMTLSPort),
@@ -171,18 +170,21 @@ type customConfig struct {
 	ConsulUrl   string
 	UseSQL      bool
 
-	APIServerMTLSPort int
-	APIServerCertPath string
-	APIServerKeyPath  string
-	APICAPath         string
+	APIServerHTTPEnabled bool
+	APIServerMTLSEnabled bool
+	APIServerMTLSPort    int
+	APIServerCertPath    string
+	APIServerKeyPath     string
+	APICAPath            string
 }
 
 func getRoutingAPIConfig(c customConfig) *config.Config {
 	rapiConfig := &config.Config{
 		API: config.APIConfig{
 			ListenPort:         c.Port,
-			MTLSEnabled:        true,
+			MTLSEnabled:        c.APIServerMTLSEnabled,
 			MTLSListenPort:     c.APIServerMTLSPort,
+			HTTPEnabled:        c.APIServerHTTPEnabled,
 			MTLSClientCAPath:   c.APICAPath,
 			MTLSServerCertPath: c.APIServerCertPath,
 			MTLSServerKeyPath:  c.APIServerKeyPath,

@@ -9,12 +9,14 @@ import (
 	"strconv"
 	"time"
 
+	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/consuladapter"
 	"code.cloudfoundry.org/debugserver"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerflags"
 	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/locket/lock"
+	locketmodels "code.cloudfoundry.org/locket/models"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/admin"
 	"code.cloudfoundry.org/routing-api/config"
@@ -30,16 +32,11 @@ import (
 	"github.com/cactus/go-statsd-client/statsd"
 	"github.com/cloudfoundry/dropsonde"
 	"github.com/nu7hatch/gouuid"
-
-	"code.cloudfoundry.org/clock"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
-
 	"github.com/tedsuo/rata"
-
-	locketmodels "code.cloudfoundry.org/locket/models"
 )
 
 const (
@@ -171,14 +168,18 @@ func main() {
 
 	uaaClient := initializeUAAClient(cfg, logger)
 
-	httpAPIHandler := apiHandler(cfg, uaaClient, database, statsdClient, logger.Session("api-http-server"))
-	httpAPIServer := http_server.New(":"+strconv.Itoa(cfg.API.ListenPort), httpAPIHandler)
-
 	members := grouper.Members{
 		grouper.Member{Name: "migration", Runner: migrationProcess},
 		grouper.Member{Name: "lock-acquirer", Runner: lockAcquirer},
 		grouper.Member{Name: "seed-router-groups", Runner: routerGroupSeeder},
-		grouper.Member{Name: "api-server", Runner: httpAPIServer},
+	}
+
+	if cfg.API.HTTPEnabled {
+		httpAPIHandler := apiHandler(cfg, uaaClient, database, statsdClient, logger.Session("api-http-server"))
+		httpAPIServer := http_server.New(":"+strconv.Itoa(cfg.API.ListenPort), httpAPIHandler)
+		members = append(members,
+			grouper.Member{Name: "api-server", Runner: httpAPIServer},
+		)
 	}
 
 	if cfg.API.MTLSEnabled {

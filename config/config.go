@@ -45,7 +45,8 @@ type ConsulCluster struct {
 }
 
 type APIConfig struct {
-	ListenPort int `yaml:"listen_port"`
+	ListenPort  int  `yaml:"listen_port"`
+	HTTPEnabled bool `yaml:"http_enabled"`
 
 	MTLSEnabled        bool   `yaml:"mtls_enabled"`
 	MTLSListenPort     int    `yaml:"mtls_listen_port"`
