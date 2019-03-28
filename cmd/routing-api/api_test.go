@@ -555,7 +555,6 @@ var _ = Describe("Routes API", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
 
-				client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 				_, err = client.RouterGroups()
 				Expect(err).To(HaveOccurred())
 			})
@@ -566,7 +565,6 @@ var _ = Describe("Routes API", func() {
 		var routerGroup models.RouterGroup
 		var routerGroups models.RouterGroups
 
-		client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
 		Eventually(func() error {
 			var err error
 			routerGroups, err = client.RouterGroups()
