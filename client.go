@@ -52,18 +52,18 @@ func NewClient(url string, skipTLSVerification bool) Client {
 func NewTLSClient(url string, tlsConfig *tls.Config) Client {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
-			Dial: (&net.Dialer{
+			DialContext: (&net.Dialer{
 				Timeout: 5 * time.Second,
-			}).Dial,
+			}).DialContext,
 			TLSClientConfig: tlsConfig,
 		},
 	}
 	streamingClient := &http.Client{
 		Transport: &http.Transport{
-			Dial: (&net.Dialer{
+			DialContext: (&net.Dialer{
 				Timeout:   5 * time.Second,
 				KeepAlive: 30 * time.Second,
-			}).Dial,
+			}).DialContext,
 			TLSClientConfig: tlsConfig,
 		},
 	}
