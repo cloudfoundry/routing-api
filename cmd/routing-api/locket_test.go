@@ -2,7 +2,6 @@ package main_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -11,15 +10,12 @@ import (
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	"code.cloudfoundry.org/localip"
 	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/test_helpers"
 
-	locketconfig "code.cloudfoundry.org/locket/cmd/locket/config"
-	locketrunner "code.cloudfoundry.org/locket/cmd/locket/testrunner"
 	"code.cloudfoundry.org/locket/lock"
 	locketmodels "code.cloudfoundry.org/locket/models"
 	. "github.com/onsi/ginkgo"
@@ -30,11 +26,8 @@ import (
 	"github.com/tedsuo/ifrit/ginkgomon"
 )
 
-var _ = Describe("SqlLock", func() {
+var _ = Describe("Locket", func() {
 	var (
-		locketRunner     ifrit.Runner
-		locketProcess    ifrit.Process
-		locketAddress    string
 		routingAPIConfig *config.Config
 		configFilePath   string
 		session          *gexec.Session
@@ -50,31 +43,10 @@ var _ = Describe("SqlLock", func() {
 	}
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("sql-lock-test")
-
-		locketPort, err := localip.LocalPort()
-		Expect(err).NotTo(HaveOccurred())
-
-		locketAddress = fmt.Sprintf("localhost:%d", locketPort)
-		locketRunner = locketrunner.NewLocketRunner(locketBinPath, func(cfg *locketconfig.LocketConfig) {
-			cfg.ConsulCluster = consulRunner.ConsulCluster()
-			mysqlConnStr := "root:password@/"
-			cfg.DatabaseConnectionString = mysqlConnStr + sqlDBName
-			cfg.DatabaseDriver = "mysql"
-			if mysqlConfig.CACert != "" {
-				caFile, err := ioutil.TempFile("", "")
-				Expect(err).ToNot(HaveOccurred())
-				Expect(ioutil.WriteFile(caFile.Name(), []byte(mysqlConfig.CACert), 0400)).To(Succeed())
-				cfg.SQLCACertFile = caFile.Name()
-			}
-			cfg.ListenAddress = locketAddress
-		})
-		locketProcess = ginkgomon.Invoke(locketRunner)
+		logger = lagertest.NewTestLogger("locket-test")
 
 		cc := defaultConfig
 		routingAPIConfig = getRoutingAPIConfig(cc)
-		routingAPIConfig.Locket = locketrunner.ClientLocketConfig()
-		routingAPIConfig.Locket.LocketAddress = locketAddress
 	})
 
 	JustBeforeEach(func() {
@@ -93,24 +65,11 @@ var _ = Describe("SqlLock", func() {
 			session.Kill().Wait(10 * time.Second)
 		}
 
-		ginkgomon.Interrupt(locketProcess)
-		locketProcess.Wait()
-
 		err := os.RemoveAll(configFilePath)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Context("with invalid configuration", func() {
-		Context("and the locket address is not configured", func() {
-			BeforeEach(func() {
-				routingAPIConfig.Locket.LocketAddress = ""
-				routingAPIConfig.SkipConsulLock = true
-			})
-
-			It("exits with an error", func() {
-				Eventually(session).Should(gexec.Exit(2))
-			})
-		})
 		Context("and the UUID is not present", func() {
 			BeforeEach(func() {
 				routingAPIConfig.UUID = ""
@@ -150,31 +109,6 @@ var _ = Describe("SqlLock", func() {
 
 			It("exits", func() {
 				Eventually(session, 30).Should(gexec.Exit(1))
-			})
-		})
-
-		Context("when consul lock isn't required", func() {
-			var competingLockProcess ifrit.Process
-
-			BeforeEach(func() {
-				routingAPIConfig.SkipConsulLock = true
-				competingLock := locket.NewLock(
-					logger,
-					consulRunner.NewClient(),
-					locket.LockSchemaPath("routing_api_lock"),
-					[]byte{}, clock.NewClock(),
-					locket.RetryInterval,
-					locket.DefaultSessionTTL,
-				)
-				competingLockProcess = ifrit.Invoke(competingLock)
-			})
-
-			AfterEach(func() {
-				ginkgomon.Kill(competingLockProcess)
-			})
-
-			It("does not acquire the consul lock", func() {
-				routingAPIShouldBeReachable()
 			})
 		})
 
@@ -226,10 +160,6 @@ var _ = Describe("SqlLock", func() {
 	})
 
 	Context("when a rolling deploy occurs", func() {
-		BeforeEach(func() {
-			routingAPIConfig.SkipConsulLock = true
-		})
-
 		It("ensures there is no downtime", func() {
 			Eventually(session, 10*time.Second).Should(gbytes.Say("routing-api.started"))
 
@@ -237,8 +167,6 @@ var _ = Describe("SqlLock", func() {
 			apiConfig := getRoutingAPIConfig(defaultConfig)
 			apiConfig.API.ListenPort = int(session2Port)
 			apiConfig.AdminPort = test_helpers.NextAvailPort()
-			apiConfig.Locket = locketrunner.ClientLocketConfig()
-			apiConfig.Locket.LocketAddress = locketAddress
 			configFilePath := writeConfigToTempFile(apiConfig)
 			session2Args := testrunner.Args{
 				IP:         routingAPIIP,

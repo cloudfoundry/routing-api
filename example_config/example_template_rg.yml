@@ -30,6 +30,4 @@ sqldb:
   port: 3306
   host: "localhost"
   type: "mysql"
-consul_cluster:
-  servers: "{{.ConsulUrl}}"
-  retry_interval: 50ms
+retry_interval: 50ms

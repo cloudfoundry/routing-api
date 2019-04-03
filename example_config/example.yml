@@ -32,11 +32,8 @@ sqldb:
   host: "localhost"
   ca_cert: "some CA cert"
   skip_hostname_validation: true
-consul_cluster:
-  servers: "http://localhost:5678"
-  lock_ttl: 10s
-  retry_interval: 5s
-skip_consul_lock: true
+lock_ttl: 10s
+retry_interval: 5s
 locket:
   locket_address: "http://localhost:5678"
   locket_ca_cert_file: "some-locket-ca-cert"

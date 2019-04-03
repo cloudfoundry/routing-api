@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/clock"
-	"code.cloudfoundry.org/consuladapter"
 	"code.cloudfoundry.org/debugserver"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerflags"
@@ -129,34 +128,26 @@ func main() {
 
 	locks := grouper.Members{}
 
-	if !cfg.SkipConsulLock {
-		lockMaintainer := initializeLockMaintainer(logger, cfg.ConsulCluster.Servers, sessionName,
-			cfg.ConsulCluster.LockTTL, cfg.ConsulCluster.RetryInterval, clock)
-		locks = append(locks, grouper.Member{Name: "lock-maintainer", Runner: lockMaintainer})
-	}
-
 	var locketClient locketmodels.LocketClient
-	if cfg.Locket.LocketAddress != "" {
-		locketClient, err = locket.NewClient(logger, cfg.Locket)
-		if err != nil {
-			logger.Fatal("failed-to-create-locket-client", err)
-		}
-
-		lockIdentifier := &locketmodels.Resource{
-			Key:      routingApiLockPath,
-			Owner:    cfg.UUID,
-			TypeCode: locketmodels.LOCK,
-		}
-
-		locks = append(locks, grouper.Member{Name: "sql-lock", Runner: lock.NewLockRunner(
-			logger,
-			locketClient,
-			lockIdentifier,
-			locket.DefaultSessionTTLInSeconds,
-			clock,
-			locket.SQLRetryInterval,
-		)})
+	locketClient, err = locket.NewClient(logger, cfg.Locket)
+	if err != nil {
+		logger.Fatal("failed-to-create-locket-client", err)
 	}
+
+	lockIdentifier := &locketmodels.Resource{
+		Key:      routingApiLockPath,
+		Owner:    cfg.UUID,
+		TypeCode: locketmodels.LOCK,
+	}
+
+	locks = append(locks, grouper.Member{Name: "sql-lock", Runner: lock.NewLockRunner(
+		logger,
+		locketClient,
+		lockIdentifier,
+		locket.DefaultSessionTTLInSeconds,
+		clock,
+		locket.SQLRetryInterval,
+	)})
 
 	if len(locks) == 0 {
 		logger.Fatal("no-locks-configured", errors.New("Lock configuration must be provided"))
@@ -164,7 +155,7 @@ func main() {
 
 	lockGroup := grouper.NewOrdered(os.Interrupt, locks)
 	lockAcquirer := initializeLockAcquirer(lockGroup, releaseLock, lockErrChan)
-	lockReleaser := initializeLockReleaser(releaseLock, lockErrChan, cfg.ConsulCluster.RetryInterval)
+	lockReleaser := initializeLockReleaser(releaseLock, lockErrChan, cfg.RetryInterval)
 
 	uaaClient := initializeUAAClient(cfg, logger)
 
@@ -396,20 +387,6 @@ func checkFlags() error {
 	return nil
 }
 
-func initializeLockMaintainer(
-	logger lager.Logger,
-	consulCluster, sessionName string,
-	lockTTL, lockRetryInterval time.Duration,
-	clock clock.Clock,
-) ifrit.Runner {
-	client, err := consuladapter.NewClientFromUrl(consulCluster)
-	if err != nil {
-		logger.Fatal("new-client-failed", err)
-	}
-
-	return newLockRunner(logger, client, clock, lockRetryInterval, lockTTL)
-}
-
 func initializeLockAcquirer(lockRunner ifrit.Runner, releaseLock chan os.Signal, lockErrChan chan error) ifrit.Runner {
 	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
 
@@ -434,33 +411,14 @@ func initializeLockReleaser(releaseLock chan os.Signal, lockErrChan chan error, 
 				releaseLock <- signal
 
 			case err = <-lockErrChan:
-				consulLockRetryInterval := 5 * time.Second // DefaultLockRetryTime from consul API
+				lockRetryInterval := 5 * time.Second
 				//Give other routing-api enough time to grab the lock
-				time.Sleep(retryInterval + consulLockRetryInterval)
+				time.Sleep(retryInterval + lockRetryInterval)
 
 				return err
 			}
 		}
 	})
-}
-
-func newLockRunner(
-	logger lager.Logger,
-	consulClient consuladapter.Client,
-	clock clock.Clock,
-	lockRetryInterval time.Duration,
-	lockTTL time.Duration,
-) ifrit.Runner {
-	lockSchemaPath := locket.LockSchemaPath(routingApiLockPath)
-
-	routingApiUUID, err := uuid.NewV4()
-	if err != nil {
-		logger.Fatal("Couldn't generate tcp Emitter UUID", err)
-	}
-	routingApiID := []byte(routingApiUUID.String())
-
-	return locket.NewLock(logger, consulClient, lockSchemaPath,
-		routingApiID, clock, lockRetryInterval, lockTTL)
 }
 
 func buildDatabase(

@@ -15,3 +15,5 @@ metron_config:
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
+locket:
+  locket_address: "http://localhost:5678"

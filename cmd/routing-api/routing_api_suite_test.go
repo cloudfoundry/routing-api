@@ -1,9 +1,12 @@
 package main_test
 
 import (
+	"code.cloudfoundry.org/locket"
 	"crypto/tls"
 	"encoding/pem"
 	"fmt"
+	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/ginkgomon"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,7 +18,8 @@ import (
 	"testing"
 	"time"
 
-	"code.cloudfoundry.org/consuladapter/consulrunner"
+	locketconfig "code.cloudfoundry.org/locket/cmd/locket/config"
+	locketrunner "code.cloudfoundry.org/locket/cmd/locket/testrunner"
 	"code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
@@ -43,10 +47,12 @@ var (
 	routingAPISystemDomain string
 	oauthServer            *ghttp.Server
 	oauthServerPort        string
+	locketPort             uint16
+	locketRunner           ifrit.Runner
+	locketProcess          ifrit.Process
 
-	sqlDBName    string
-	gormDB       *gorm.DB
-	consulRunner *consulrunner.ClusterRunner
+	sqlDBName string
+	gormDB    *gorm.DB
 
 	mysqlAllocator testrunner.DbAllocator
 	mysqlConfig    *config.SqlDB
@@ -90,8 +96,6 @@ var _ = SynchronizedBeforeSuite(
 		Expect(err).NotTo(HaveOccurred(), "error occurred starting mySQL client, is mySQL running?")
 		sqlDBName = mysqlConfig.Schema
 
-		setupConsul()
-
 		caCert, caPrivKey, err := createCA()
 		Expect(err).ToNot(HaveOccurred())
 
@@ -119,7 +123,6 @@ var _ = SynchronizedAfterSuite(func() {
 	err := mysqlAllocator.Delete()
 	Expect(err).NotTo(HaveOccurred())
 
-	teardownConsul()
 	oauthServer.Close()
 
 	err = os.Remove(uaaCACertsPath)
@@ -135,10 +138,15 @@ var _ = BeforeEach(func() {
 	client = routingApiClientWithPort(routingAPIPort)
 	err := mysqlAllocator.Reset()
 	Expect(err).NotTo(HaveOccurred())
-	resetConsul()
+
+	startLocket()
 
 	oauthSrvPort, err := strconv.ParseInt(oauthServerPort, 10, 0)
 	Expect(err).NotTo(HaveOccurred())
+
+	locketAddress := fmt.Sprintf("localhost:%d", locketPort)
+	locketConfig := locketrunner.ClientLocketConfig()
+	locketConfig.LocketAddress = locketAddress
 
 	routingAPIAdminPort = test_helpers.NextAvailPort()
 	defaultConfig = customConfig{
@@ -149,8 +157,10 @@ var _ = BeforeEach(func() {
 		UAAPort:              int(oauthSrvPort),
 		CACertsPath:          uaaCACertsPath,
 		Schema:               sqlDBName,
-		ConsulUrl:            consulRunner.URL(),
+
 		UseSQL:               true,
+
+		LocketConfig: locketConfig,
 
 		// mTLS API
 		APIServerMTLSPort: int(routingAPIMTLSPort),
@@ -160,15 +170,19 @@ var _ = BeforeEach(func() {
 	}
 })
 
+var _ = AfterEach(func() {
+	stopLocket()
+})
+
 type customConfig struct {
-	Port        int
-	StatsdPort  int
-	UAAPort     int
-	AdminPort   int
-	CACertsPath string
-	Schema      string
-	ConsulUrl   string
-	UseSQL      bool
+	Port         int
+	StatsdPort   int
+	UAAPort      int
+	AdminPort    int
+	LocketConfig locket.ClientLocketConfig
+	CACertsPath  string
+	Schema       string
+	UseSQL       bool
 
 	APIServerHTTPEnabled bool
 	APIServerMTLSEnabled bool
@@ -213,11 +227,9 @@ func getRoutingAPIConfig(c customConfig) *config.Config {
 				ReservablePorts: "1024-65535",
 			},
 		},
-		ConsulCluster: config.ConsulCluster{
-			Servers:       c.ConsulUrl,
-			RetryInterval: 50 * time.Millisecond,
-		},
-		UUID: "fake-uuid",
+		RetryInterval: 50 * time.Millisecond,
+		UUID:          "fake-uuid",
+		Locket:        c.LocketConfig,
 	}
 	rapiConfig.SqlDB = config.SqlDB{
 		Host:              "localhost",
@@ -275,23 +287,27 @@ func setupOauthServer(uaaServerCert tls.Certificate) {
 	oauthServerPort = getServerPort(oauthServer.URL())
 }
 
-func setupConsul() {
-	consulRunner = consulrunner.NewClusterRunner(consulrunner.ClusterRunnerConfig{
-		StartingPort: 9001 + GinkgoParallelNode()*consulrunner.PortOffsetLength,
-		NumNodes:     1,
-		Scheme:       "http",
+func startLocket() {
+	locketPort = uint16(test_helpers.NextAvailPort())
+	locketAddress := fmt.Sprintf("localhost:%d", locketPort)
+	locketRunner := locketrunner.NewLocketRunner(locketBinPath, func(cfg *locketconfig.LocketConfig) {
+		mysqlConnStr := "root:password@/"
+		cfg.DatabaseConnectionString = mysqlConnStr + sqlDBName
+		cfg.DatabaseDriver = "mysql"
+		if mysqlConfig.CACert != "" {
+			caFile, err := ioutil.TempFile("", "")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ioutil.WriteFile(caFile.Name(), []byte(mysqlConfig.CACert), 0400)).To(Succeed())
+			cfg.SQLCACertFile = caFile.Name()
+		}
+		cfg.ListenAddress = locketAddress
 	})
-	consulRunner.Start()
-	consulRunner.WaitUntilReady()
+	locketProcess = ginkgomon.Invoke(locketRunner)
 }
 
-func teardownConsul() {
-	consulRunner.Stop()
-}
-
-func resetConsul() {
-	err := consulRunner.Reset()
-	Expect(err).ToNot(HaveOccurred())
+func stopLocket() {
+	ginkgomon.Interrupt(locketProcess)
+	locketProcess.Wait()
 }
 
 func getServerPort(url string) string {

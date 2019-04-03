@@ -20,6 +20,4 @@ router_groups:
 - name: "default-tcp"
   type: "tcp"
   reservable_ports: "1024-65535"
-consul_cluster:
-  servers: "{{.ConsulUrl}}"
-  retry_interval: 50ms
+retry_interval: 50ms

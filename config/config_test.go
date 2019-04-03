@@ -40,10 +40,8 @@ var _ = Describe("Config", func() {
 					Expect(cfg.SqlDB.SkipSSLValidation).To(Equal(true))
 					Expect(cfg.SqlDB.SkipHostnameValidation).To(Equal(true))
 					Expect(cfg.MaxTTL).To(Equal(2 * time.Minute))
-					Expect(cfg.ConsulCluster.Servers).To(Equal("http://localhost:5678"))
-					Expect(cfg.ConsulCluster.LockTTL).To(Equal(10 * time.Second))
-					Expect(cfg.ConsulCluster.RetryInterval).To(Equal(5 * time.Second))
-					Expect(cfg.SkipConsulLock).To(BeTrue())
+					Expect(cfg.LockTTL).To(Equal(10 * time.Second))
+					Expect(cfg.RetryInterval).To(Equal(5 * time.Second))
 					Expect(cfg.Locket.LocketAddress).To(Equal("http://localhost:5678"))
 					Expect(cfg.Locket.LocketCACertFile).To(Equal("some-locket-ca-cert"))
 					Expect(cfg.Locket.LocketClientCertFile).To(Equal("some-locket-client-cert"))
@@ -128,6 +126,9 @@ var _ = Describe("Config", func() {
 				},
 				"metrics_reporting_interval":   "500ms",
 				"statsd_client_flush_interval": "10ms",
+				"locket": map[string]interface{}{
+					"locket_address": "127.0.0.1:5678",
+				},
 			}
 		})
 
@@ -249,17 +250,28 @@ var _ = Describe("Config", func() {
 			})
 		})
 
-		Context("when consul properties are not set", func() {
+		Context("when Locket Address property is not set", func() {
+			BeforeEach(func() {
+				delete(validHash["locket"].(map[string]interface{}), "locket_address")
+			})
+
+			It("returns an error", func() {
+				_, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("when lock properties are not set", func() {
 			It("populates the default value for LockTTL from locket library", func() {
 				cfg, err := config.NewConfigFromBytes(testConfig, true)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(cfg.ConsulCluster.LockTTL).To(Equal(locket.DefaultSessionTTL))
+				Expect(cfg.LockTTL).To(Equal(locket.DefaultSessionTTL))
 			})
 
 			It("populates the default value for RetryInterval from locket library", func() {
 				cfg, err := config.NewConfigFromBytes(testConfig, true)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(cfg.ConsulCluster.RetryInterval).To(Equal(locket.RetryInterval))
+				Expect(cfg.RetryInterval).To(Equal(locket.RetryInterval))
 			})
 		})
 

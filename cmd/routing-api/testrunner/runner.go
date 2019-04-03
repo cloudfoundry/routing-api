@@ -43,8 +43,8 @@ func NewDbAllocator() DbAllocator {
 	return dbAllocator
 }
 
-func NewRoutingAPIArgs(ip string, port uint16, dbId, dbCACert, consulUrl string) (Args, error) {
-	configPath, err := createConfig(dbId, dbCACert, consulUrl)
+func NewRoutingAPIArgs(ip string, port uint16, dbId, dbCACert string) (Args, error) {
+	configPath, err := createConfig(dbId, dbCACert)
 	if err != nil {
 		return Args{}, err
 	}
@@ -65,7 +65,7 @@ func New(binPath string, args Args) *ginkgomon.Runner {
 	})
 }
 
-func createConfig(dbId, dbCACert, consulUrl string) (string, error) {
+func createConfig(dbId, dbCACert string) (string, error) {
 	var configBytes []byte
 	configFile, err := ioutil.TempFile("", "routing-api-config")
 	if err != nil {
@@ -124,11 +124,9 @@ router_groups:
 - name: "default-tcp"
   type: "tcp"
   reservable_ports: "1024-65535"
-consul_cluster:
-  servers: "%s"
-  retry_interval: 50ms
+retry_interval: 50ms
 %s`
-		configBytes = []byte(fmt.Sprintf(postgresConfigStr, adminPort, consulUrl, string(postgresConfig)))
+		configBytes = []byte(fmt.Sprintf(postgresConfigStr, adminPort, string(postgresConfig)))
 	default:
 
 		dbConfig := config.SqlDB{
@@ -174,11 +172,9 @@ router_groups:
 - name: "default-tcp"
   type: "tcp"
   reservable_ports: "1024-65535"
-consul_cluster:
-  servers: "%s"
-  retry_interval: 50ms
+retry_interval: 50ms
 %s`
-		configBytes = []byte(fmt.Sprintf(mysqlConfigStr, adminPort, consulUrl, string(mysqlConfig)))
+		configBytes = []byte(fmt.Sprintf(mysqlConfigStr, adminPort, string(mysqlConfig)))
 	}
 
 	err = utils.WriteToFile(configBytes, configFilePath)

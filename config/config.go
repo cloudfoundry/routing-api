@@ -38,12 +38,6 @@ type SqlDB struct {
 	SkipHostnameValidation bool   `yaml:"skip_hostname_validation"`
 }
 
-type ConsulCluster struct {
-	Servers       string        `yaml:"servers"`
-	LockTTL       time.Duration `yaml:"lock_ttl"`
-	RetryInterval time.Duration `yaml:"retry_interval"`
-}
-
 type APIConfig struct {
 	ListenPort  int  `yaml:"listen_port"`
 	HTTPEnabled bool `yaml:"http_enabled"`
@@ -71,11 +65,11 @@ type Config struct {
 	OAuth                           OAuthConfig               `yaml:"oauth"`
 	RouterGroups                    models.RouterGroups       `yaml:"router_groups"`
 	SqlDB                           SqlDB                     `yaml:"sqldb"`
-	ConsulCluster                   ConsulCluster             `yaml:"consul_cluster"`
-	SkipConsulLock                  bool                      `yaml:"skip_consul_lock"`
 	Locket                          locket.ClientLocketConfig `yaml:"locket"`
 	UUID                            string                    `yaml:"uuid"`
 	SkipSSLValidation               bool                      `yaml:"skip_ssl_validation"`
+	LockTTL                         time.Duration             `yaml:"lock_ttl"`
+	RetryInterval                   time.Duration             `yaml:"retry_interval"`
 }
 
 func NewConfigFromFile(configFile string, authDisabled bool) (Config, error) {
@@ -141,6 +135,10 @@ func (cfg *Config) validate(authDisabled bool) error {
 		}
 	}
 
+	if cfg.Locket.LocketAddress == "" {
+		return errors.New("locket address is required")
+	}
+
 	if err := cfg.RouterGroups.Validate(); err != nil {
 		return err
 	}
@@ -157,12 +155,12 @@ func validatePort(port int) error {
 }
 
 func (cfg *Config) process() error {
-	if cfg.ConsulCluster.LockTTL == 0 {
-		cfg.ConsulCluster.LockTTL = locket.DefaultSessionTTL
+	if cfg.LockTTL == 0 {
+		cfg.LockTTL = locket.DefaultSessionTTL
 	}
 
-	if cfg.ConsulCluster.RetryInterval == 0 {
-		cfg.ConsulCluster.RetryInterval = locket.RetryInterval
+	if cfg.RetryInterval == 0 {
+		cfg.RetryInterval = locket.RetryInterval
 	}
 
 	cfg.SqlDB.SkipSSLValidation = cfg.SkipSSLValidation
