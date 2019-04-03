@@ -2,23 +2,24 @@ package routing_api
 
 import (
 	"bytes"
+	"code.cloudfoundry.org/cfhttp/v2"
 	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
 
 	"code.cloudfoundry.org/routing-api/models"
-	trace "code.cloudfoundry.org/trace-logger"
+	"code.cloudfoundry.org/trace-logger"
 	"github.com/tedsuo/rata"
 	"github.com/vito/go-sse/sse"
 )
 
 const (
 	defaultMaxRetries = uint16(0)
+	defaultHttpTimeout = 60 * time.Second
 )
 
 //go:generate counterfeiter -o fake_routing_api/fake_client.go . Client
@@ -50,23 +51,15 @@ func NewClient(url string, skipTLSVerification bool) Client {
 }
 
 func NewTLSClient(url string, tlsConfig *tls.Config) Client {
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			DialContext: (&net.Dialer{
-				Timeout: 5 * time.Second,
-			}).DialContext,
-			TLSClientConfig: tlsConfig,
-		},
-	}
-	streamingClient := &http.Client{
-		Transport: &http.Transport{
-			DialContext: (&net.Dialer{
-				Timeout:   5 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}).DialContext,
-			TLSClientConfig: tlsConfig,
-		},
-	}
+	httpClient := cfhttp.NewClient(
+		cfhttp.WithRequestTimeout(defaultHttpTimeout),
+		cfhttp.WithTLSConfig(tlsConfig),
+	)
+
+	streamingClient := cfhttp.NewClient(
+		cfhttp.WithStreamingDefaults(),
+		cfhttp.WithTLSConfig(tlsConfig),
+	)
 
 	return &client{
 		httpClient:          httpClient,
