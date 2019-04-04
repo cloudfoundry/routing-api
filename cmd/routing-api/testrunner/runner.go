@@ -1,7 +1,6 @@
 package testrunner
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -9,8 +8,10 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/cf-tcp-router/utils"
+	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/locket/cmd/locket/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
+	"code.cloudfoundry.org/routing-api/models"
 	"code.cloudfoundry.org/routing-api/test_helpers"
 	"github.com/tedsuo/ifrit/ginkgomon"
 	yaml "gopkg.in/yaml.v2"
@@ -76,47 +77,44 @@ func New(binPath string, args Args) *ginkgomon.Runner {
 }
 
 func createConfig(port uint16, dbId, dbCACert, locketAddr string) (string, error) {
-	var configBytes []byte
-	configFile, err := ioutil.TempFile("", "routing-api-config")
-	if err != nil {
-		return "", err
-	}
-	configFilePath := configFile.Name()
 	adminPort := test_helpers.NextAvailPort()
+	locketConfig := testrunner.ClientLocketConfig()
 
-	type SqlConfig struct {
-		SqlDB config.SqlDB `yaml:"sqldb"`
+	routingAPIConfig := config.Config{
+		LogGuid: "my_logs",
+		UUID:    "routing-api-uuid",
+		Locket: locket.ClientLocketConfig{
+			LocketAddress:        locketAddr,
+			LocketCACertFile:     locketConfig.LocketCACertFile,
+			LocketClientCertFile: locketConfig.LocketClientCertFile,
+			LocketClientKeyFile:  locketConfig.LocketClientKeyFile,
+		},
+		MetronConfig: config.MetronConfig{
+			Address: "1.2.3.4",
+			Port:    "4567",
+		},
+		API: config.APIConfig{
+			HTTPEnabled: true,
+			ListenPort:  int(port),
+		},
+		MetricsReportingIntervalString:  "500ms",
+		StatsdEndpoint:                  "localhost:8125",
+		StatsdClientFlushIntervalString: "10ms",
+		SystemDomain:                    "example.com",
+		AdminPort:                       adminPort,
+		RouterGroups: models.RouterGroups{
+			{
+				Name:            "default-tcp",
+				Type:            "tcp",
+				ReservablePorts: "1024-65535",
+			},
+		},
+		RetryInterval: 50 * time.Millisecond,
 	}
-
-	configStr := `log_guid: "my_logs"
-uuid: "routing-api-uuid"
-debug_address: "1.2.3.4:1234"
-locket:
-  locket_address: %s
-  locket_ca_cert_file: %s
-  locket_client_cert_file: %s
-  locket_client_key_file: %s
-metron_config:
-  address: "1.2.3.4"
-  port: "4567"
-api:
-  http_enabled: true
-  listen_port: %d
-metrics_reporting_interval: "500ms"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-system_domain: "example.com"
-admin_port: %d
-router_groups:
-- name: "default-tcp"
-  type: "tcp"
-  reservable_ports: "1024-65535"
-retry_interval: 50ms
-%s`
 
 	switch dbEnv {
 	case "postgres":
-		dbConfig := config.SqlDB{
+		routingAPIConfig.SqlDB = config.SqlDB{
 			Username: "postgres",
 			Password: "",
 			Schema:   dbId,
@@ -125,18 +123,8 @@ retry_interval: 50ms
 			Type:     "postgres",
 			CACert:   dbCACert,
 		}
-		config := SqlConfig{
-			SqlDB: dbConfig,
-		}
-		postgresConfig, err := yaml.Marshal(&config)
-		if err != nil {
-			return "", err
-		}
-
-		locketConfig := testrunner.ClientLocketConfig()
-		configBytes = []byte(fmt.Sprintf(configStr, locketAddr, locketConfig.LocketCACertFile, locketConfig.LocketClientCertFile, locketConfig.LocketClientKeyFile, port, adminPort, string(postgresConfig)))
 	default:
-		dbConfig := config.SqlDB{
+		routingAPIConfig.SqlDB = config.SqlDB{
 			Username: "root",
 			Password: "password",
 			Schema:   dbId,
@@ -145,17 +133,20 @@ retry_interval: 50ms
 			Type:     "mysql",
 			CACert:   dbCACert,
 		}
-		config := SqlConfig{
-			SqlDB: dbConfig,
-		}
-		mysqlConfig, err := yaml.Marshal(&config)
-		if err != nil {
-			return "", err
-		}
-		locketConfig := testrunner.ClientLocketConfig()
-		configBytes = []byte(fmt.Sprintf(configStr, locketAddr, locketConfig.LocketCACertFile, locketConfig.LocketClientCertFile, locketConfig.LocketClientKeyFile, port, adminPort, string(mysqlConfig)))
 	}
 
-	err = utils.WriteToFile(configBytes, configFilePath)
+	routingAPIConfigBytes, err := yaml.Marshal(routingAPIConfig)
+	if err != nil {
+		return "", err
+	}
+
+	configFile, err := ioutil.TempFile("", "routing-api-config")
+	if err != nil {
+		return "", err
+	}
+	defer configFile.Close()
+	configFilePath := configFile.Name()
+
+	err = utils.WriteToFile(routingAPIConfigBytes, configFilePath)
 	return configFilePath, err
 }
