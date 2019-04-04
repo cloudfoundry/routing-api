@@ -87,9 +87,46 @@ func createConfig(port uint16, dbId, dbCACert, locketAddr string) (string, error
 	type SqlConfig struct {
 		SqlDB config.SqlDB `yaml:"sqldb"`
 	}
+
+	configStr := `log_guid: "my_logs"
+uaa_verification_key: "-----BEGIN PUBLIC KEY-----
+
+      MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDHFr+KICms+tuT1OXJwhCUmR2d
+
+      KVy7psa8xzElSyzqx7oJyfJ1JZyOzToj9T5SfTIq396agbHJWVfYphNahvZ/7uMX
+
+      qHxf+ZH9BL1gk9Y6kCnbM5R60gfwjyW1/dQPjOzn9N394zd2FJoFHwdq9Qs0wBug
+
+      spULZVNRxq7veq/fzwIDAQAB
+
+      -----END PUBLIC KEY-----"
+uuid: "routing-api-uuid"
+debug_address: "1.2.3.4:1234"
+locket:
+  locket_address: %s
+  locket_ca_cert_file: %s
+  locket_client_cert_file: %s
+  locket_client_key_file: %s
+metron_config:
+  address: "1.2.3.4"
+  port: "4567"
+api:
+  http_enabled: true
+  listen_port: %d
+metrics_reporting_interval: "500ms"
+statsd_endpoint: "localhost:8125"
+statsd_client_flush_interval: "10ms"
+system_domain: "example.com"
+admin_port: %d
+router_groups:
+- name: "default-tcp"
+  type: "tcp"
+  reservable_ports: "1024-65535"
+retry_interval: 50ms
+%s`
+
 	switch dbEnv {
 	case "postgres":
-
 		dbConfig := config.SqlDB{
 			Username: "postgres",
 			Password: "",
@@ -107,46 +144,9 @@ func createConfig(port uint16, dbId, dbCACert, locketAddr string) (string, error
 			return "", err
 		}
 
-		postgresConfigStr := `log_guid: "my_logs"
-uaa_verification_key: "-----BEGIN PUBLIC KEY-----
-
-      MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDHFr+KICms+tuT1OXJwhCUmR2d
-
-      KVy7psa8xzElSyzqx7oJyfJ1JZyOzToj9T5SfTIq396agbHJWVfYphNahvZ/7uMX
-
-      qHxf+ZH9BL1gk9Y6kCnbM5R60gfwjyW1/dQPjOzn9N394zd2FJoFHwdq9Qs0wBug
-
-      spULZVNRxq7veq/fzwIDAQAB
-
-      -----END PUBLIC KEY-----"
-uuid: "routing-api-uuid"
-debug_address: "1.2.3.4:1234"
-locket:
-  locket_address: %s
-  locket_ca_cert_file: %s
-  locket_client_cert_file: %s
-  locket_client_key_file: %s
-metron_config:
-  address: "1.2.3.4"
-  port: "4567"
-api:
-  http_enabled: true
-  listen_port: %d
-metrics_reporting_interval: "500ms"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-system_domain: "example.com"
-admin_port: %d
-router_groups:
-- name: "default-tcp"
-  type: "tcp"
-  reservable_ports: "1024-65535"
-retry_interval: 50ms
-%s`
 		locketConfig := testrunner.ClientLocketConfig()
-		configBytes = []byte(fmt.Sprintf(postgresConfigStr, locketAddr, locketConfig.LocketCACertFile, locketConfig.LocketClientCertFile, locketConfig.LocketClientKeyFile, port, adminPort, string(postgresConfig)))
+		configBytes = []byte(fmt.Sprintf(configStr, locketAddr, locketConfig.LocketCACertFile, locketConfig.LocketClientCertFile, locketConfig.LocketClientKeyFile, port, adminPort, string(postgresConfig)))
 	default:
-
 		dbConfig := config.SqlDB{
 			Username: "root",
 			Password: "password",
@@ -163,45 +163,8 @@ retry_interval: 50ms
 		if err != nil {
 			return "", err
 		}
-		mysqlConfigStr := `log_guid: "my_logs"
-uaa_verification_key: "-----BEGIN PUBLIC KEY-----
-
-      MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDHFr+KICms+tuT1OXJwhCUmR2d
-
-      KVy7psa8xzElSyzqx7oJyfJ1JZyOzToj9T5SfTIq396agbHJWVfYphNahvZ/7uMX
-
-      qHxf+ZH9BL1gk9Y6kCnbM5R60gfwjyW1/dQPjOzn9N394zd2FJoFHwdq9Qs0wBug
-
-      spULZVNRxq7veq/fzwIDAQAB
-
-      -----END PUBLIC KEY-----"
-
-uuid: "routing-api-uuid"
-debug_address: "1.2.3.4:1234"
-locket:
-  locket_address: %s
-  locket_ca_cert_file: %s
-  locket_client_cert_file: %s
-  locket_client_key_file: %s
-metron_config:
-  address: "1.2.3.4"
-  port: "4567"
-api:
-  http_enabled: true
-  listen_port: %d
-metrics_reporting_interval: "500ms"
-statsd_endpoint: "localhost:8125"
-statsd_client_flush_interval: "10ms"
-system_domain: "example.com"
-admin_port: %d
-router_groups:
-- name: "default-tcp"
-  type: "tcp"
-  reservable_ports: "1024-65535"
-retry_interval: 50ms
-%s`
 		locketConfig := testrunner.ClientLocketConfig()
-		configBytes = []byte(fmt.Sprintf(mysqlConfigStr, locketAddr, locketConfig.LocketCACertFile, locketConfig.LocketClientCertFile, locketConfig.LocketClientKeyFile, port, adminPort, string(mysqlConfig)))
+		configBytes = []byte(fmt.Sprintf(configStr, locketAddr, locketConfig.LocketCACertFile, locketConfig.LocketClientCertFile, locketConfig.LocketClientKeyFile, port, adminPort, string(mysqlConfig)))
 	}
 
 	err = utils.WriteToFile(configBytes, configFilePath)
