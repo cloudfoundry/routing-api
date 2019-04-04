@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
@@ -66,7 +66,7 @@ var _ = Describe("Main", func() {
 		Eventually(session).Should(Say("No ip address provided"))
 	})
 
-	It("exits 1 if the uaa_verification_key is not a valid PEM format", func() {
+	It("exits 1 if the uaa verification key is not a valid PEM format", func() {
 		oauthServer.AppendHandlers(
 			ghttp.CombineHandlers(
 				ghttp.VerifyRequest("GET", OPENID_CONFIG_ENDPOINT),

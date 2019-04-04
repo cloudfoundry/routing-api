@@ -89,17 +89,6 @@ func createConfig(port uint16, dbId, dbCACert, locketAddr string) (string, error
 	}
 
 	configStr := `log_guid: "my_logs"
-uaa_verification_key: "-----BEGIN PUBLIC KEY-----
-
-      MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDHFr+KICms+tuT1OXJwhCUmR2d
-
-      KVy7psa8xzElSyzqx7oJyfJ1JZyOzToj9T5SfTIq396agbHJWVfYphNahvZ/7uMX
-
-      qHxf+ZH9BL1gk9Y6kCnbM5R60gfwjyW1/dQPjOzn9N394zd2FJoFHwdq9Qs0wBug
-
-      spULZVNRxq7veq/fzwIDAQAB
-
-      -----END PUBLIC KEY-----"
 uuid: "routing-api-uuid"
 debug_address: "1.2.3.4:1234"
 locket:
