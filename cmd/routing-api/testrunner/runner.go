@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/cf-tcp-router/utils"
+	"code.cloudfoundry.org/locket/cmd/locket/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/test_helpers"
 	"github.com/tedsuo/ifrit/ginkgomon"
@@ -32,6 +33,15 @@ func (args Args) ArgSlice() []string {
 	}
 }
 
+func (args Args) Port() uint16 {
+	cfg, err := config.NewConfigFromFile(args.ConfigPath, true)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return uint16(cfg.API.ListenPort)
+}
+
 func NewDbAllocator() DbAllocator {
 	var dbAllocator DbAllocator
 	switch dbEnv {
@@ -43,8 +53,8 @@ func NewDbAllocator() DbAllocator {
 	return dbAllocator
 }
 
-func NewRoutingAPIArgs(ip string, port uint16, dbId, dbCACert string) (Args, error) {
-	configPath, err := createConfig(dbId, dbCACert)
+func NewRoutingAPIArgs(ip string, port uint16, dbId, dbCACert, locketAddr string) (Args, error) {
+	configPath, err := createConfig(port, dbId, dbCACert, locketAddr)
 	if err != nil {
 		return Args{}, err
 	}
@@ -65,7 +75,7 @@ func New(binPath string, args Args) *ginkgomon.Runner {
 	})
 }
 
-func createConfig(dbId, dbCACert string) (string, error) {
+func createConfig(port uint16, dbId, dbCACert, locketAddr string) (string, error) {
 	var configBytes []byte
 	configFile, err := ioutil.TempFile("", "routing-api-config")
 	if err != nil {
@@ -109,12 +119,19 @@ uaa_verification_key: "-----BEGIN PUBLIC KEY-----
       spULZVNRxq7veq/fzwIDAQAB
 
       -----END PUBLIC KEY-----"
-
 uuid: "routing-api-uuid"
 debug_address: "1.2.3.4:1234"
+locket:
+  locket_address: %s
+  locket_ca_cert_file: %s
+  locket_client_cert_file: %s
+  locket_client_key_file: %s
 metron_config:
   address: "1.2.3.4"
   port: "4567"
+api:
+  http_enabled: true
+  listen_port: %d
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
@@ -126,7 +143,8 @@ router_groups:
   reservable_ports: "1024-65535"
 retry_interval: 50ms
 %s`
-		configBytes = []byte(fmt.Sprintf(postgresConfigStr, adminPort, string(postgresConfig)))
+		locketConfig := testrunner.ClientLocketConfig()
+		configBytes = []byte(fmt.Sprintf(postgresConfigStr, locketAddr, locketConfig.LocketCACertFile, locketConfig.LocketClientCertFile, locketConfig.LocketClientKeyFile, port, adminPort, string(postgresConfig)))
 	default:
 
 		dbConfig := config.SqlDB{
@@ -160,9 +178,17 @@ uaa_verification_key: "-----BEGIN PUBLIC KEY-----
 
 uuid: "routing-api-uuid"
 debug_address: "1.2.3.4:1234"
+locket:
+  locket_address: %s
+  locket_ca_cert_file: %s
+  locket_client_cert_file: %s
+  locket_client_key_file: %s
 metron_config:
   address: "1.2.3.4"
   port: "4567"
+api:
+  http_enabled: true
+  listen_port: %d
 metrics_reporting_interval: "500ms"
 statsd_endpoint: "localhost:8125"
 statsd_client_flush_interval: "10ms"
@@ -174,7 +200,8 @@ router_groups:
   reservable_ports: "1024-65535"
 retry_interval: 50ms
 %s`
-		configBytes = []byte(fmt.Sprintf(mysqlConfigStr, adminPort, string(mysqlConfig)))
+		locketConfig := testrunner.ClientLocketConfig()
+		configBytes = []byte(fmt.Sprintf(mysqlConfigStr, locketAddr, locketConfig.LocketCACertFile, locketConfig.LocketClientCertFile, locketConfig.LocketClientKeyFile, port, adminPort, string(mysqlConfig)))
 	}
 
 	err = utils.WriteToFile(configBytes, configFilePath)

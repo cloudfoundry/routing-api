@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/routing-api/models"

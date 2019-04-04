@@ -1,12 +1,9 @@
 package main_test
 
 import (
-	"code.cloudfoundry.org/locket"
 	"crypto/tls"
 	"encoding/pem"
 	"fmt"
-	"github.com/tedsuo/ifrit"
-	"github.com/tedsuo/ifrit/ginkgomon"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -18,9 +15,13 @@ import (
 	"testing"
 	"time"
 
+	"code.cloudfoundry.org/locket"
+	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/ginkgomon"
+
 	locketconfig "code.cloudfoundry.org/locket/cmd/locket/config"
 	locketrunner "code.cloudfoundry.org/locket/cmd/locket/testrunner"
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/models"
@@ -158,7 +159,7 @@ var _ = BeforeEach(func() {
 		CACertsPath:          uaaCACertsPath,
 		Schema:               sqlDBName,
 
-		UseSQL:               true,
+		UseSQL: true,
 
 		LocketConfig: locketConfig,
 

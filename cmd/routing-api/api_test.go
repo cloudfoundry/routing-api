@@ -9,7 +9,7 @@ import (
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/matchers"
 	"code.cloudfoundry.org/routing-api/models"
@@ -687,7 +687,7 @@ var _ = Describe("Routes API", func() {
 				tlsconfig.WithAuthorityFromFile(apiCAPath),
 			)
 			Expect(err).ToNot(HaveOccurred())
-			client = routing_api.NewTLSClient(fmt.Sprintf("https://127.0.0.1:%d", routingAPIMTLSPort), tlsConfig)
+			client = routing_api.NewClientWithTLSConfig(fmt.Sprintf("https://127.0.0.1:%d", routingAPIMTLSPort), tlsConfig)
 		})
 
 		AfterEach(func() {
