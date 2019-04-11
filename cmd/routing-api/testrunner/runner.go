@@ -54,8 +54,27 @@ func NewDbAllocator() DbAllocator {
 	return dbAllocator
 }
 
-func NewRoutingAPIArgs(ip string, port uint16, dbId, dbCACert, locketAddr string) (Args, error) {
-	configPath, err := createConfig(port, dbId, dbCACert, locketAddr)
+func NewRoutingAPIArgs(
+	ip string,
+	port int,
+	mtlsPort int,
+	dbId string,
+	dbCACert string,
+	locketAddr string,
+	mtlsClientCAPath string,
+	mtlsServerCertPath string,
+	mtlsServerKeyPath string,
+) (Args, error) {
+	configPath, err := createConfig(
+		port,
+		mtlsPort,
+		dbId,
+		dbCACert,
+		locketAddr,
+		mtlsClientCAPath,
+		mtlsServerCertPath,
+		mtlsServerKeyPath,
+	)
 	if err != nil {
 		return Args{}, err
 	}
@@ -76,7 +95,16 @@ func New(binPath string, args Args) *ginkgomon.Runner {
 	})
 }
 
-func createConfig(port uint16, dbId, dbCACert, locketAddr string) (string, error) {
+func createConfig(
+	port int,
+	mtlsPort int,
+	dbId string,
+	dbCACert string,
+	locketAddr string,
+	mtlsClientCAPath string,
+	mtlsServerCertPath string,
+	mtlsServerKeyPath string,
+) (string, error) {
 	adminPort := test_helpers.NextAvailPort()
 	locketConfig := testrunner.ClientLocketConfig()
 
@@ -94,8 +122,13 @@ func createConfig(port uint16, dbId, dbCACert, locketAddr string) (string, error
 			Port:    "4567",
 		},
 		API: config.APIConfig{
-			HTTPEnabled: true,
-			ListenPort:  int(port),
+			ListenPort:         port,
+			HTTPEnabled:        true,
+			MTLSEnabled:        true,
+			MTLSListenPort:     mtlsPort,
+			MTLSClientCAPath:   mtlsClientCAPath,
+			MTLSServerCertPath: mtlsServerCertPath,
+			MTLSServerKeyPath:  mtlsServerKeyPath,
 		},
 		MetricsReportingIntervalString:  "500ms",
 		StatsdEndpoint:                  "localhost:8125",
