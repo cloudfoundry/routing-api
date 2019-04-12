@@ -186,7 +186,6 @@ type customConfig struct {
 	UseSQL       bool
 
 	APIServerHTTPEnabled bool
-	APIServerMTLSEnabled bool
 	APIServerMTLSPort    int
 	APIServerCertPath    string
 	APIServerKeyPath     string
@@ -197,9 +196,8 @@ func getRoutingAPIConfig(c customConfig) *config.Config {
 	rapiConfig := &config.Config{
 		API: config.APIConfig{
 			ListenPort:         c.Port,
-			MTLSEnabled:        c.APIServerMTLSEnabled,
-			MTLSListenPort:     c.APIServerMTLSPort,
 			HTTPEnabled:        c.APIServerHTTPEnabled,
+			MTLSListenPort:     c.APIServerMTLSPort,
 			MTLSClientCAPath:   c.APICAPath,
 			MTLSServerCertPath: c.APIServerCertPath,
 			MTLSServerKeyPath:  c.APIServerKeyPath,

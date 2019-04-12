@@ -17,7 +17,7 @@ max_ttl: "2m"
 statsd_client_flush_interval: "10ms"
 uuid: "fake-uuid"
 api:
-  listen_address: 0.0.0.0????
+  listen_address: 0.0.0.0
   listen_port: 3000
   mtls_listen_port: 3001
   mtls_client_ca_file: "client ca file path"

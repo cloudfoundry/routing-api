@@ -636,7 +636,6 @@ var _ = Describe("Routes API", func() {
 		BeforeEach(func() {
 			rapiConfig := getRoutingAPIConfig(defaultConfig)
 			rapiConfig.API.HTTPEnabled = false
-			rapiConfig.API.MTLSEnabled = true
 			configFilePath = writeConfigToTempFile(rapiConfig)
 			routingAPIArgs := testrunner.Args{
 				IP:         routingAPIIP,
@@ -671,7 +670,6 @@ var _ = Describe("Routes API", func() {
 
 		BeforeEach(func() {
 			rapiConfig := getRoutingAPIConfig(defaultConfig)
-			rapiConfig.API.MTLSEnabled = true
 			configFilePath = writeConfigToTempFile(rapiConfig)
 			routingAPIArgs := testrunner.Args{
 				IP:         routingAPIIP,

@@ -164,8 +164,10 @@ var _ = Describe("Locket", func() {
 			Eventually(session, 10*time.Second).Should(gbytes.Say("routing-api.started"))
 
 			session2Port := uint16(test_helpers.NextAvailPort())
+			session2MTLSPort := uint16(test_helpers.NextAvailPort())
 			apiConfig := getRoutingAPIConfig(defaultConfig)
 			apiConfig.API.ListenPort = int(session2Port)
+			apiConfig.API.MTLSListenPort = int(session2MTLSPort)
 			apiConfig.AdminPort = test_helpers.NextAvailPort()
 			configFilePath := writeConfigToTempFile(apiConfig)
 			session2Args := testrunner.Args{

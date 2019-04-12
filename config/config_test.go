@@ -47,7 +47,6 @@ var _ = Describe("Config", func() {
 					Expect(cfg.Locket.LocketClientCertFile).To(Equal("some-locket-client-cert"))
 					Expect(cfg.Locket.LocketClientKeyFile).To(Equal("some-locket-client-key"))
 					Expect(cfg.API.HTTPEnabled).To(Equal(false))
-					Expect(cfg.API.MTLSEnabled).To(Equal(false))
 					Expect(cfg.API.MTLSListenPort).To(Equal(3001))
 					Expect(cfg.API.MTLSClientCAPath).To(Equal("client ca file path"))
 					Expect(cfg.API.MTLSServerCertPath).To(Equal("server cert file path"))
@@ -122,7 +121,11 @@ var _ = Describe("Config", func() {
 				"uuid":          "fake-uuid",
 				"admin_port":    9999,
 				"api": map[string]interface{}{
-					"listen_port": 3000,
+					"listen_port":           3000,
+					"mtls_listen_port":      3001,
+					"mtls_client_ca_file":   "client ca file path",
+					"mtls_server_key_file":  "server key file path",
+					"mtls_server_cert_file": "server cert file path",
 				},
 				"metrics_reporting_interval":   "500ms",
 				"statsd_client_flush_interval": "10ms",
@@ -146,28 +149,6 @@ var _ = Describe("Config", func() {
 			})
 		})
 
-		Context("when the api listen port is invalid", func() {
-			Context("when it is too high", func() {
-				BeforeEach(func() {
-					validHash["api"].(map[string]interface{})["listen_port"] = 65536
-				})
-				It("returns an error", func() {
-					_, err := config.NewConfigFromBytes(testConfig, true)
-					Expect(err).To(HaveOccurred())
-				})
-			})
-
-			Context("when it is too low", func() {
-				BeforeEach(func() {
-					validHash["api"].(map[string]interface{})["listen_port"] = 0
-				})
-				It("returns an error", func() {
-					_, err := config.NewConfigFromBytes(testConfig, true)
-					Expect(err).To(HaveOccurred())
-				})
-			})
-		})
-
 		Context("when api http enabled is set true", func() {
 			BeforeEach(func() {
 				validHash["api"].(map[string]interface{})["http_enabled"] = true
@@ -177,36 +158,37 @@ var _ = Describe("Config", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cfg.API.HTTPEnabled).To(BeTrue())
 			})
+			Context("when the api listen port is invalid", func() {
+				Context("when it is too high", func() {
+					BeforeEach(func() {
+						validHash["api"].(map[string]interface{})["listen_port"] = 65536
+					})
+					It("returns an error", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).To(HaveOccurred())
+					})
+				})
+
+				Context("when it is too low", func() {
+					BeforeEach(func() {
+						validHash["api"].(map[string]interface{})["listen_port"] = 0
+					})
+					It("returns an error", func() {
+						_, err := config.NewConfigFromBytes(testConfig, true)
+						Expect(err).To(HaveOccurred())
+					})
+				})
+			})
 		})
 
-		Context("when api mtls enabled is set true", func() {
+		Context("when api mtls port is too high", func() {
 			BeforeEach(func() {
-				validHash["api"].(map[string]interface{})["mtls_enabled"] = true
-				validHash["api"].(map[string]interface{})["mtls_listen_port"] = 3001
-				validHash["api"].(map[string]interface{})["mtls_client_ca_file"] = "client ca file path"
-				validHash["api"].(map[string]interface{})["mtls_server_cert_file"] = "server cert file path"
-				validHash["api"].(map[string]interface{})["mtls_server_key_file"] = "server key file path"
+				validHash["api"].(map[string]interface{})["mtls_listen_port"] = 928334
 			})
 
-			It("parses mTLS things", func() {
-				cfg, err := config.NewConfigFromBytes(testConfig, true)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(cfg.API.MTLSEnabled).To(BeTrue())
-				Expect(cfg.API.MTLSListenPort).To(Equal(3001))
-				Expect(cfg.API.MTLSClientCAPath).To(Equal("client ca file path"))
-				Expect(cfg.API.MTLSServerCertPath).To(Equal("server cert file path"))
-				Expect(cfg.API.MTLSServerKeyPath).To(Equal("server key file path"))
-			})
-
-			Context("when api mtls port is too high", func() {
-				BeforeEach(func() {
-					validHash["api"].(map[string]interface{})["mtls_listen_port"] = 928334
-				})
-
-				It("does not validate", func() {
-					_, err := config.NewConfigFromBytes(testConfig, true)
-					Expect(err).To(HaveOccurred())
-				})
+			It("does not validate", func() {
+				_, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).To(HaveOccurred())
 			})
 		})
 

@@ -173,23 +173,21 @@ func main() {
 		)
 	}
 
-	if cfg.API.MTLSEnabled {
-		config, err := tlsconfig.Build(
-			tlsconfig.WithInternalServiceDefaults(),
-			tlsconfig.WithIdentityFromFile(cfg.API.MTLSServerCertPath, cfg.API.MTLSServerKeyPath),
-		).Server(
-			tlsconfig.WithClientAuthenticationFromFile(cfg.API.MTLSClientCAPath),
-		)
-		if err != nil {
-			logger.Fatal("mtls-mis-configured", err)
-		}
-
-		mtlsAPIHandler := apiHandler(cfg, uaaClient, database, statsdClient, logger.Session("api-mtls-server"))
-		mtlsAPIServer := http_server.NewTLSServer(":"+strconv.Itoa(cfg.API.MTLSListenPort), mtlsAPIHandler, config)
-		members = append(members, grouper.Member{
-			Name: "api-mtls-server", Runner: mtlsAPIServer},
-		)
+	config, err := tlsconfig.Build(
+		tlsconfig.WithInternalServiceDefaults(),
+		tlsconfig.WithIdentityFromFile(cfg.API.MTLSServerCertPath, cfg.API.MTLSServerKeyPath),
+	).Server(
+		tlsconfig.WithClientAuthenticationFromFile(cfg.API.MTLSClientCAPath),
+	)
+	if err != nil {
+		logger.Fatal("mtls-mis-configured", err)
 	}
+
+	mtlsAPIHandler := apiHandler(cfg, uaaClient, database, statsdClient, logger.Session("api-mtls-server"))
+	mtlsAPIServer := http_server.NewTLSServer(":"+strconv.Itoa(cfg.API.MTLSListenPort), mtlsAPIHandler, config)
+	members = append(members, grouper.Member{
+		Name: "api-mtls-server", Runner: mtlsAPIServer},
+	)
 
 	members = append(members,
 		grouper.Member{Name: "admin-server", Runner: adminServer},

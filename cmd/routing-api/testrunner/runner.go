@@ -124,7 +124,6 @@ func createConfig(
 		API: config.APIConfig{
 			ListenPort:         port,
 			HTTPEnabled:        true,
-			MTLSEnabled:        true,
 			MTLSListenPort:     mtlsPort,
 			MTLSClientCAPath:   mtlsClientCAPath,
 			MTLSServerCertPath: mtlsServerCertPath,

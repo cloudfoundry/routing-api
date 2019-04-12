@@ -42,7 +42,6 @@ type APIConfig struct {
 	ListenPort  int  `yaml:"listen_port"`
 	HTTPEnabled bool `yaml:"http_enabled"`
 
-	MTLSEnabled        bool   `yaml:"mtls_enabled"`
 	MTLSListenPort     int    `yaml:"mtls_listen_port"`
 	MTLSClientCAPath   string `yaml:"mtls_client_ca_file"`
 	MTLSServerCertPath string `yaml:"mtls_server_cert_file"`
@@ -129,10 +128,8 @@ func (cfg *Config) validate(authDisabled bool) error {
 		return fmt.Errorf("invalid API listen port: %s", err)
 	}
 
-	if cfg.API.MTLSEnabled {
-		if err := validatePort(cfg.API.MTLSListenPort); err != nil {
-			return fmt.Errorf("invalid API mTLS listen port: %s", err)
-		}
+	if err := validatePort(cfg.API.MTLSListenPort); err != nil {
+		return fmt.Errorf("invalid API mTLS listen port: %s", err)
 	}
 
 	if cfg.Locket.LocketAddress == "" {
