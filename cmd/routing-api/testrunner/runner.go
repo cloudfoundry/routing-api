@@ -177,7 +177,9 @@ func createConfig(
 	if err != nil {
 		return "", err
 	}
-	defer configFile.Close()
+	if err := configFile.Close(); err != nil {
+		return "", err
+	}
 	configFilePath := configFile.Name()
 
 	err = utils.WriteToFile(routingAPIConfigBytes, configFilePath)
