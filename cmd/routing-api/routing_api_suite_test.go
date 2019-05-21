@@ -11,7 +11,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	testhelpers "test-helpers"
 	"testing"
 	"time"
 
@@ -19,6 +18,7 @@ import (
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
+	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
 	locketconfig "code.cloudfoundry.org/locket/cmd/locket/config"
 	locketrunner "code.cloudfoundry.org/locket/cmd/locket/testrunner"
 	routing_api "code.cloudfoundry.org/routing-api"
@@ -26,6 +26,7 @@ import (
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/models"
 	"code.cloudfoundry.org/routing-api/test_helpers"
+
 	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -114,7 +115,7 @@ var _ = SynchronizedBeforeSuite(
 		uaaServerCert, err := createCertificate(caCert, caPrivKey, isCA)
 		Expect(err).ToNot(HaveOccurred())
 
-		apiCAPath, mtlsAPIServerCertPath, mtlsAPIServerKeyPath, mtlsAPIClientCert = testhelpers.GenerateCaAndMutualTlsCerts()
+		apiCAPath, mtlsAPIServerCertPath, mtlsAPIServerKeyPath, mtlsAPIClientCert = tls_helpers.GenerateCaAndMutualTlsCerts()
 
 		setupOauthServer(uaaServerCert)
 	},
