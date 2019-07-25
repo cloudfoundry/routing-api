@@ -2,11 +2,11 @@
 package fakes
 
 import (
-	context "context"
-	sync "sync"
+	"context"
+	"sync"
 
-	db "code.cloudfoundry.org/routing-api/db"
-	models "code.cloudfoundry.org/routing-api/models"
+	"code.cloudfoundry.org/routing-api/db"
+	"code.cloudfoundry.org/routing-api/models"
 )
 
 type FakeDB struct {
@@ -23,6 +23,17 @@ type FakeDB struct {
 		result1 error
 	}
 	deleteRouteReturnsOnCall map[int]struct {
+		result1 error
+	}
+	DeleteRouterGroupStub        func(string) error
+	deleteRouterGroupMutex       sync.RWMutex
+	deleteRouterGroupArgsForCall []struct {
+		arg1 string
+	}
+	deleteRouterGroupReturns struct {
+		result1 error
+	}
+	deleteRouterGroupReturnsOnCall map[int]struct {
 		result1 error
 	}
 	DeleteTcpRouteMappingStub        func(models.TcpRouteMapping) error
@@ -259,6 +270,66 @@ func (fake *FakeDB) DeleteRouteReturnsOnCall(i int, result1 error) {
 		})
 	}
 	fake.deleteRouteReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeDB) DeleteRouterGroup(arg1 string) error {
+	fake.deleteRouterGroupMutex.Lock()
+	ret, specificReturn := fake.deleteRouterGroupReturnsOnCall[len(fake.deleteRouterGroupArgsForCall)]
+	fake.deleteRouterGroupArgsForCall = append(fake.deleteRouterGroupArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("DeleteRouterGroup", []interface{}{arg1})
+	fake.deleteRouterGroupMutex.Unlock()
+	if fake.DeleteRouterGroupStub != nil {
+		return fake.DeleteRouterGroupStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.deleteRouterGroupReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeDB) DeleteRouterGroupCallCount() int {
+	fake.deleteRouterGroupMutex.RLock()
+	defer fake.deleteRouterGroupMutex.RUnlock()
+	return len(fake.deleteRouterGroupArgsForCall)
+}
+
+func (fake *FakeDB) DeleteRouterGroupCalls(stub func(string) error) {
+	fake.deleteRouterGroupMutex.Lock()
+	defer fake.deleteRouterGroupMutex.Unlock()
+	fake.DeleteRouterGroupStub = stub
+}
+
+func (fake *FakeDB) DeleteRouterGroupArgsForCall(i int) string {
+	fake.deleteRouterGroupMutex.RLock()
+	defer fake.deleteRouterGroupMutex.RUnlock()
+	argsForCall := fake.deleteRouterGroupArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeDB) DeleteRouterGroupReturns(result1 error) {
+	fake.deleteRouterGroupMutex.Lock()
+	defer fake.deleteRouterGroupMutex.Unlock()
+	fake.DeleteRouterGroupStub = nil
+	fake.deleteRouterGroupReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeDB) DeleteRouterGroupReturnsOnCall(i int, result1 error) {
+	fake.deleteRouterGroupMutex.Lock()
+	defer fake.deleteRouterGroupMutex.Unlock()
+	fake.DeleteRouterGroupStub = nil
+	if fake.deleteRouterGroupReturnsOnCall == nil {
+		fake.deleteRouterGroupReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.deleteRouterGroupReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -1028,6 +1099,8 @@ func (fake *FakeDB) Invocations() map[string][][]interface{} {
 	defer fake.cancelWatchesMutex.RUnlock()
 	fake.deleteRouteMutex.RLock()
 	defer fake.deleteRouteMutex.RUnlock()
+	fake.deleteRouterGroupMutex.RLock()
+	defer fake.deleteRouterGroupMutex.RUnlock()
 	fake.deleteTcpRouteMappingMutex.RLock()
 	defer fake.deleteTcpRouteMappingMutex.RUnlock()
 	fake.lockRouterGroupReadsMutex.RLock()

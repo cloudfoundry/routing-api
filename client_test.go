@@ -877,6 +877,56 @@ var _ = Describe("Client", func() {
 		})
 	})
 
+	Context("DeleteRouterGroup", func() {
+		var (
+			err          error
+			routerGroup1 models.RouterGroup
+		)
+
+		BeforeEach(func() {
+			routerGroup1 = models.RouterGroup{
+				Guid:            DefaultRouterGroupGuid,
+				Name:            DefaultRouterGroupName,
+				Type:            DefaultRouterGroupType,
+				ReservablePorts: "4000-5000",
+			}
+		})
+
+		Context("when the server returns a valid response", func() {
+			BeforeEach(func() {
+				data, _ := json.Marshal([]models.RouterGroup{routerGroup1})
+
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("DELETE", fmt.Sprintf("%s/%s", ROUTER_GROUPS_API_URL, routerGroup1.Guid)),
+						ghttp.RespondWith(http.StatusNoContent, data),
+					),
+				)
+			})
+
+			It("Sends a DeleteRouterGroup request to the server", func() {
+				err = client.DeleteRouterGroup(routerGroup1)
+				Expect(server.ReceivedRequests()).Should(HaveLen(1))
+			})
+		})
+
+		Context("When the server returns an error", func() {
+			BeforeEach(func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("DELETE", fmt.Sprintf("%s/%s", ROUTER_GROUPS_API_URL, routerGroup1.Guid)),
+						ghttp.RespondWith(http.StatusInternalServerError, nil),
+					),
+				)
+			})
+
+			It("returns an error", func() {
+				err = client.DeleteRouterGroup(routerGroup1)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
+
 	Context("CreateRouterGroup", func() {
 
 		var (

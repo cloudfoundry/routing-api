@@ -534,6 +534,26 @@ var _ = Describe("Routes API", func() {
 					createRouterGroup()
 				})
 			})
+
+			Context("DELETE", func() {
+				It("deletes router groups", func() {
+					var routerGroups models.RouterGroups
+					Eventually(func() error {
+						var err error
+						routerGroups, err = client.RouterGroups()
+						return err
+					}, "30s", "1s").ShouldNot(HaveOccurred(), "Failed to connect to Routing API server after 30s.")
+					Expect(len(routerGroups)).To(Equal(1))
+					routerGroup := routerGroups[0]
+
+					err := client.DeleteRouterGroup(routerGroup)
+					Expect(err).NotTo(HaveOccurred())
+
+					routerGroups, err = client.RouterGroups()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(len(routerGroups)).To(Equal(0))
+				})
+			})
 		})
 	}
 

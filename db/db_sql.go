@@ -34,6 +34,7 @@ type DB interface {
 
 	ReadRouterGroups() (models.RouterGroups, error)
 	ReadRouterGroup(guid string) (models.RouterGroup, error)
+	DeleteRouterGroup(guid string) error
 	ReadRouterGroupByName(name string) (models.RouterGroup, error)
 	SaveRouterGroup(routerGroup models.RouterGroup) error
 
@@ -95,7 +96,8 @@ type SqlDB struct {
 	locker       *rwLocker
 }
 
-var DeleteError = DBError{Type: KeyNotFound, Message: "Delete Fails: Route does not exist"}
+var DeleteRouteError = DBError{Type: KeyNotFound, Message: "Delete Fails: Route does not exist"}
+var DeleteRouterGroupError = DBError{Type: KeyNotFound, Message: "Delete Fails: Router Group does not exist"}
 
 func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 	if cfg == nil {
@@ -265,6 +267,25 @@ func (s *SqlDB) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	return err
 }
 
+func (s *SqlDB) DeleteRouterGroup(guid string) error {
+	if s.locker.isWriteLocked() {
+		return errors.New(backupError)
+	}
+	routerGroup, err := s.ReadRouterGroup(guid)
+	if err != nil {
+		return err
+	}
+	if routerGroup == (models.RouterGroup{}) {
+		return DeleteRouterGroupError
+	}
+
+	_, err = s.Client.Delete(&routerGroup)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *SqlDB) LockRouterGroupReads() {
 	s.locker.lockReads()
 }
@@ -392,7 +413,7 @@ func (s *SqlDB) DeleteRoute(route models.Route) error {
 		return err
 	}
 	if route == (models.Route{}) {
-		return DeleteError
+		return DeleteRouteError
 	}
 
 	_, err = s.Client.Delete(&route)
@@ -499,7 +520,7 @@ func (s *SqlDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
 		return err
 	}
 	if tcpMapping == (models.TcpRouteMapping{}) {
-		return DeleteError
+		return DeleteRouteError
 	}
 
 	_, err = s.Client.Delete(&tcpMapping)

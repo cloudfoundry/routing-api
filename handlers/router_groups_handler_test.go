@@ -13,6 +13,7 @@ import (
 
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/routing-api"
+	"code.cloudfoundry.org/routing-api/db"
 	fake_db "code.cloudfoundry.org/routing-api/db/fakes"
 	"code.cloudfoundry.org/routing-api/handlers"
 	"code.cloudfoundry.org/routing-api/metrics"
@@ -700,6 +701,117 @@ var _ = Describe("RouterGroupsHandler", func() {
 				Expect(err).NotTo(HaveOccurred())
 				handler.ServeHTTP(responseRecorder, request)
 				Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
+				Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
+				Expect(metrics.GetTokenErrors()).To(Equal(currentCount + 1))
+			})
+		})
+	})
+
+	Describe("DeleteRouterGroup", func() {
+		var (
+			handler http.Handler
+		)
+
+		BeforeEach(func() {
+			var err error
+			routes := rata.Routes{
+				routing_api.RoutesMap[routing_api.DeleteRouterGroup],
+			}
+			handler, err = rata.NewRouter(routes, rata.Handlers{
+				routing_api.DeleteRouterGroup: http.HandlerFunc(routerGroupHandler.DeleteRouterGroup),
+			})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("deletes the router group", func() {
+			var err error
+			request, err = http.NewRequest(
+				"DELETE",
+				fmt.Sprintf("/routing/v1/router_groups/%s", DefaultRouterGroupGuid),
+				nil,
+			)
+			Expect(err).NotTo(HaveOccurred())
+
+			handler.ServeHTTP(responseRecorder, request)
+
+			Expect(fakeDb.DeleteRouterGroupCallCount()).To(Equal(1))
+			guid := fakeDb.DeleteRouterGroupArgsForCall(0)
+			Expect(guid).To(Equal(DefaultRouterGroupGuid))
+
+			Expect(responseRecorder.Code).To(Equal(http.StatusNoContent))
+			payload := responseRecorder.Body.String()
+			Expect(payload).To(BeEmpty())
+
+			Expect(responseRecorder.Header().Get("Content-Length")).To(Equal("0"))
+		})
+
+		Context("when the router group does not exist", func() {
+			BeforeEach(func() {
+				fakeDb.DeleteRouterGroupReturns(db.DeleteRouterGroupError)
+			})
+
+			It("returns a not found status", func() {
+				var err error
+
+				request, err = http.NewRequest(
+					"DELETE",
+					"/routing/v1/router_groups/not-exist",
+					nil,
+				)
+				Expect(err).NotTo(HaveOccurred())
+				handler.ServeHTTP(responseRecorder, request)
+				Expect(fakeDb.DeleteRouterGroupCallCount()).To(Equal(1))
+				Expect(responseRecorder.Code).To(Equal(http.StatusNotFound))
+				payload := responseRecorder.Body.String()
+				Expect(payload).To(BeEmpty())
+			})
+		})
+
+		Context("when the db fails to delete router group", func() {
+			BeforeEach(func() {
+				fakeDb.DeleteRouterGroupReturns(errors.New("db communication failed"))
+			})
+
+			It("returns a DB communication error", func() {
+				var err error
+
+				request, err = http.NewRequest(
+					"DELETE",
+					fmt.Sprintf("/routing/v1/router_groups/%s", DefaultRouterGroupGuid),
+					nil,
+				)
+				Expect(err).NotTo(HaveOccurred())
+				handler.ServeHTTP(responseRecorder, request)
+				Expect(fakeDb.DeleteRouterGroupCallCount()).To(Equal(1))
+				Expect(responseRecorder.Code).To(Equal(http.StatusServiceUnavailable))
+				payload := responseRecorder.Body.String()
+				Expect(payload).To(MatchJSON(`{
+					"name": "DBCommunicationError",
+					"message": "db communication failed"
+				}`))
+			})
+		})
+
+		Context("when authorization token is invalid", func() {
+			var (
+				currentCount int64
+			)
+			BeforeEach(func() {
+				currentCount = metrics.GetTokenErrors()
+				fakeClient.DecodeTokenReturns(errors.New("kaboom"))
+			})
+
+			It("returns Unauthorized error", func() {
+				var err error
+
+				request, err = http.NewRequest(
+					"DELETE",
+					fmt.Sprintf("/routing/v1/router_groups/%s", DefaultRouterGroupGuid),
+					nil,
+				)
+				Expect(err).NotTo(HaveOccurred())
+				handler.ServeHTTP(responseRecorder, request)
+				Expect(fakeDb.DeleteRouterGroupCallCount()).To(Equal(0))
 				Expect(responseRecorder.Code).To(Equal(http.StatusUnauthorized))
 				Expect(metrics.GetTokenErrors()).To(Equal(currentCount + 1))
 			})

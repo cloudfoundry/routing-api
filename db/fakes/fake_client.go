@@ -2,10 +2,10 @@
 package fakes
 
 import (
-	sql "database/sql"
-	sync "sync"
+	"database/sql"
+	"sync"
 
-	db "code.cloudfoundry.org/routing-api/db"
+	"code.cloudfoundry.org/routing-api/db"
 )
 
 type FakeClient struct {

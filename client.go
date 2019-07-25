@@ -33,6 +33,7 @@ type Client interface {
 	RouterGroupWithName(string) (models.RouterGroup, error)
 	UpdateRouterGroup(models.RouterGroup) error
 	CreateRouterGroup(models.RouterGroup) error
+	DeleteRouterGroup(models.RouterGroup) error
 	UpsertTcpRouteMappings([]models.TcpRouteMapping) error
 	DeleteTcpRouteMappings([]models.TcpRouteMapping) error
 	TcpRouteMappings() ([]models.TcpRouteMapping, error)
@@ -103,6 +104,10 @@ func (c *client) UpdateRouterGroup(group models.RouterGroup) error {
 
 func (c *client) CreateRouterGroup(group models.RouterGroup) error {
 	return c.doRequest(CreateRouterGroup, nil, nil, group, nil)
+}
+
+func (c *client) DeleteRouterGroup(group models.RouterGroup) error {
+	return c.doRequest(DeleteRouterGroup, rata.Params{"guid": group.Guid}, nil, nil, nil)
 }
 
 func (c *client) RouterGroups() ([]models.RouterGroup, error) {

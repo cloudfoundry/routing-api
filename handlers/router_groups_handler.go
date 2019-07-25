@@ -149,6 +149,31 @@ func (h *RouterGroupsHandler) UpdateRouterGroup(w http.ResponseWriter, req *http
 	w.Header().Set("Content-Length", strconv.Itoa(len(jsonBytes)))
 }
 
+func (h *RouterGroupsHandler) DeleteRouterGroup(w http.ResponseWriter, req *http.Request) {
+	log := h.logger.Session("delete-router-group")
+	log.Debug("started")
+	defer log.Debug("completed")
+
+	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
+	if err != nil {
+		handleUnauthorizedError(w, err, log)
+		return
+	}
+
+	guid := rata.Param(req, "guid")
+	err = h.db.DeleteRouterGroup(guid)
+	if err != nil {
+		if dberr, ok := err.(db.DBError); !ok || dberr.Type != db.KeyNotFound {
+			handleDBCommunicationError(w, err, log)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	} else {
+		w.WriteHeader(http.StatusNoContent)
+	}
+	w.Header().Set("Content-Length", "0")
+}
+
 func (h *RouterGroupsHandler) CreateRouterGroup(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("create-router-group")
 	log.Debug("started")

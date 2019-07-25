@@ -359,6 +359,7 @@ func apiHandler(cfg config.Config, uaaClient uaaclient.Client, database db.DB, s
 		routing_api.ListRouterGroups:      route(routerGroupsHandler.ListRouterGroups),
 		routing_api.CreateRouterGroup:     route(routerGroupsHandler.CreateRouterGroup),
 		routing_api.UpdateRouterGroup:     route(routerGroupsHandler.UpdateRouterGroup),
+		routing_api.DeleteRouterGroup:     route(routerGroupsHandler.DeleteRouterGroup),
 		routing_api.UpsertTcpRouteMapping: route(tcpMappingsHandler.Upsert),
 		routing_api.DeleteTcpRouteMapping: route(tcpMappingsHandler.Delete),
 		routing_api.ListTcpRouteMapping:   route(tcpMappingsHandler.List),

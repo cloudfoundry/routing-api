@@ -2,8 +2,8 @@
 package fakes
 
 import (
-	tls "crypto/tls"
-	sync "sync"
+	"crypto/tls"
+	"sync"
 )
 
 type MySQLAdapter struct {

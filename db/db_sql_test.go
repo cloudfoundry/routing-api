@@ -270,6 +270,10 @@ var _ = Describe("SqlDB", func() {
 						err = sqlDB.SaveRouterGroup(models.RouterGroup{})
 						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
 					})
+					It("DeleteRouterGroup returns an error", func() {
+						err = sqlDB.DeleteRouterGroup("")
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+					})
 				})
 
 				Context("When reads are unlocked", func() {
@@ -293,6 +297,10 @@ var _ = Describe("SqlDB", func() {
 						err = sqlDB.SaveRouterGroup(models.RouterGroup{Guid: "foo"})
 						Expect(err).ToNot(HaveOccurred())
 					})
+					It("DeleteRouterGroup does not return a backup/restore error", func() {
+						err = sqlDB.DeleteRouterGroup("")
+						Expect(err.Error()).NotTo(ContainSubstring("Database unavailable due to backup or restore"))
+					})
 				})
 
 				Context("When writes are locked", func() {
@@ -307,6 +315,11 @@ var _ = Describe("SqlDB", func() {
 
 					It("SaveRouterGroup returns an error", func() {
 						err = sqlDB.SaveRouterGroup(models.RouterGroup{})
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+					})
+
+					It("DeleteRouterGroup returns an error", func() {
+						err = sqlDB.DeleteRouterGroup("")
 						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
 					})
 				})
@@ -325,6 +338,11 @@ var _ = Describe("SqlDB", func() {
 					It("SaveRouterGroup does not return an error", func() {
 						err = sqlDB.SaveRouterGroup(models.RouterGroup{Guid: "foo"})
 						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("DeleteRouterGroup does not return a backup/restore error", func() {
+						err = sqlDB.DeleteRouterGroup("")
+						Expect(err.Error()).NotTo(ContainSubstring("Database unavailable due to backup or restore"))
 					})
 				})
 			})
@@ -486,6 +504,7 @@ var _ = Describe("SqlDB", func() {
 			})
 		})
 	}
+
 	ReadRouterGroup := func() {
 		Describe("ReadRouterGroup", func() {
 			var (
@@ -625,6 +644,95 @@ var _ = Describe("SqlDB", func() {
 			})
 		})
 
+	}
+
+	DeleteRouterGroup := func() {
+		Describe("DeleteRouterGroup", func() {
+			var (
+				err           error
+				routerGroup   models.RouterGroup
+				routerGroupDB models.RouterGroupDB
+			)
+			BeforeEach(func() {
+				routerGroup = models.RouterGroup{
+					Guid:            "abc123foo",
+					Name:            "rg-123",
+					Type:            models.RouterGroup_TCP,
+					ReservablePorts: "2000-3000",
+				}
+				routerGroupDB = models.NewRouterGroupDB(routerGroup)
+			})
+			JustBeforeEach(func() {
+				err = sqlDB.DeleteRouterGroup(routerGroup.Guid)
+			})
+
+			Context("when at least one router group exists", func() {
+				BeforeEach(func() {
+					_, err = sqlDB.Client.Create(&routerGroupDB)
+					Expect(err).ToNot(HaveOccurred())
+					routerGroups, err := sqlDB.ReadRouterGroups()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(routerGroups).To(HaveLen(1))
+					Expect(routerGroups[0].Guid).To(Equal(routerGroup.Guid))
+					Expect(routerGroups[0].Name).To(Equal(routerGroup.Name))
+					Expect(routerGroups[0].Type).To(Equal(routerGroup.Type))
+					Expect(routerGroups[0].ReservablePorts).To(Equal(routerGroup.ReservablePorts))
+				})
+
+				It("deletes the router group and it no longer exists in the database", func() {
+					Expect(err).ToNot(HaveOccurred())
+
+					routerGroups, err := sqlDB.ReadRouterGroups()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(routerGroups).To(BeEmpty())
+				})
+
+				Context("when multiple router groups exist", func() {
+					var (
+						routerGroup2   models.RouterGroup
+						routerGroupDB2 models.RouterGroupDB
+					)
+					BeforeEach(func() {
+						routerGroup2 = models.RouterGroup{
+							Guid:            "abc234foo",
+							Name:            "rg-234",
+							Type:            models.RouterGroup_TCP,
+							ReservablePorts: "3000-4000",
+						}
+						routerGroupDB2 = models.NewRouterGroupDB(routerGroup2)
+						_, err = sqlDB.Client.Create(&routerGroupDB2)
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					AfterEach(func() {
+						_, err = sqlDB.Client.Delete(&routerGroupDB2)
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					It("deletes the specified router group", func() {
+						Expect(err).ToNot(HaveOccurred())
+
+						routerGroups, err := sqlDB.ReadRouterGroups()
+						Expect(err).ToNot(HaveOccurred())
+						Expect(routerGroups).To(HaveLen(1))
+						Expect(routerGroups[0].Guid).To(Equal(routerGroup2.Guid))
+						Expect(routerGroups[0].Name).To(Equal(routerGroup2.Name))
+						Expect(routerGroups[0].Type).To(Equal(routerGroup2.Type))
+						Expect(routerGroups[0].ReservablePorts).To(Equal(routerGroup2.ReservablePorts))
+					})
+				})
+			})
+
+			Context("when the router group doesn't exist", func() {
+				It("returns a DB error", func() {
+					Expect(err).To(HaveOccurred())
+					Expect(err).Should(MatchError(db.DeleteRouterGroupError))
+					dberr, ok := err.(db.DBError)
+					Expect(ok).To(BeTrue())
+					Expect(dberr.Type).To(Equal(db.KeyNotFound))
+				})
+			})
+		})
 	}
 
 	SaveTcpRouteMapping := func() {
@@ -989,7 +1097,7 @@ var _ = Describe("SqlDB", func() {
 			Context("when the tcp route doesn't exist", func() {
 				It("returns a DB error", func() {
 					Expect(err).To(HaveOccurred())
-					Expect(err).Should(MatchError(db.DeleteError))
+					Expect(err).Should(MatchError(db.DeleteRouteError))
 					dberr, ok := err.(db.DBError)
 					Expect(ok).To(BeTrue())
 					Expect(dberr.Type).To(Equal(db.KeyNotFound))
@@ -997,6 +1105,7 @@ var _ = Describe("SqlDB", func() {
 			})
 		})
 	}
+
 	SaveRoute := func() {
 		Describe("SaveRoute", func() {
 			var (
@@ -1244,7 +1353,7 @@ var _ = Describe("SqlDB", func() {
 			Context("when the route doesn't exist", func() {
 				It("returns a DB error", func() {
 					Expect(err).To(HaveOccurred())
-					Expect(err).Should(MatchError(db.DeleteError))
+					Expect(err).Should(MatchError(db.DeleteRouteError))
 					dberr, ok := err.(db.DBError)
 					Expect(ok).To(BeTrue())
 					Expect(dberr.Type).To(Equal(db.KeyNotFound))
@@ -1708,6 +1817,7 @@ var _ = Describe("SqlDB", func() {
 		ReadRouterGroupByName()
 		ReadRouterGroups()
 		SaveRouterGroup()
+		DeleteRouterGroup()
 		Connection()
 	})
 
@@ -1738,6 +1848,7 @@ var _ = Describe("SqlDB", func() {
 		ReadRouterGroupByName()
 		ReadRouterGroups()
 		SaveRouterGroup()
+		DeleteRouterGroup()
 		Connection()
 	})
 
