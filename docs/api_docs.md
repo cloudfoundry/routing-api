@@ -34,6 +34,7 @@ To obtain an token from UAA, use the `uaac` CLI for UAA.
 Routing API Endpoints
 ---------------------
 - [Create Router Groups](#create-router-groups)
+- [Delete Router Groups](#delete-router-groups)
 - [List Router Groups](#list-router-groups)
 - [Update Router Group](#update-router-group)
 - [List TCP Routes](#list-tcp-routes)
@@ -88,6 +89,21 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
   "reservable_ports": ""
 }
 ```
+
+Delete Router Groups
+---------------------
+### Request
+  `DELETE /routing/v1/router_groups/:guid`
+
+#### Request Headers
+  A bearer token for an OAuth client with `routing.router_groups.write` scope is required.
+
+#### Example Request
+```sh
+curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/router_groups/:guid -X DELETE'
+```
+### Response
+  Expected Status `204 No Content`
 
 List Router Groups
 -------------------
