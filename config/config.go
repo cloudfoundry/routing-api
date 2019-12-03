@@ -36,6 +36,9 @@ type SqlDB struct {
 	CACert                 string `yaml:"ca_cert"`
 	SkipSSLValidation      bool   `yaml:"-"`
 	SkipHostnameValidation bool   `yaml:"skip_hostname_validation"`
+	MaxIdleConns           int    `yaml:"max_idle_connections"`
+	MaxOpenConns           int    `yaml:"max_open_connections"`
+	ConnMaxLifetime        int    `yaml:"connections_max_lifetime_seconds"`
 }
 
 type APIConfig struct {

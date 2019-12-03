@@ -118,6 +118,11 @@ func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 		return nil, err
 	}
 
+	db.DB().SetMaxIdleConns(cfg.MaxIdleConns)
+	db.DB().SetMaxOpenConns(cfg.MaxOpenConns)
+	connMaxLifetime := time.Duration(cfg.ConnMaxLifetime) * time.Second
+	db.DB().SetConnMaxLifetime(connMaxLifetime)
+
 	tcpEventHub := eventhub.NewNonBlocking(1024)
 	httpEventHub := eventhub.NewNonBlocking(1024)
 

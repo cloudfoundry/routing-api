@@ -32,6 +32,9 @@ sqldb:
   host: "localhost"
   ca_cert: "some CA cert"
   skip_hostname_validation: true
+  max_idle_connections: 2
+  max_open_connections: 5
+  connections_max_lifetime_seconds: 1200
 lock_ttl: 10s
 retry_interval: 5s
 locket:
