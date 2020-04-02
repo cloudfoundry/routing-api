@@ -9,13 +9,13 @@ To obtain an token from UAA, use the `uaac` CLI for UAA.
 
 1. Install the `uaac` CLI:
 
-   ```
+   ```bash
    gem install cf-uaac
    ```
 
 1. Set the UAA target:
 
-   ```
+   ```bash
    uaac target uaa.example.com
    ```
 
@@ -25,9 +25,10 @@ To obtain an token from UAA, use the `uaac` CLI for UAA.
    uaac token client get routing_api_client
    ```
 
-1. Display the `access_token`, which can be used as the Authorization header to `curl` the Routing API:
+1. Display the `access_token`, which can be used as the Authorization header to
+   `curl` the Routing API:
 
-   ```
+   ```bash
    uaac context
    ```
 
@@ -52,10 +53,13 @@ Create Router Groups
   `POST /routing/v1/router_groups`
 
 #### Request Headers
-  A bearer token for an OAuth client with `routing.router_groups.write` scope is required.
+  A bearer token for an OAuth client with `routing.router_groups.write` scope is
+  required.
 
 #### Request Body
-  A JSON-encoded object for the modified router group. The `name` and `type` fields must be included, and `reservable_ports` must be included if `type` is tcp.
+  A JSON-encoded object for the modified router group. The `name` and `type`
+  fields must be included, and `reservable_ports` must be included if `type` is
+  tcp.
 
 | Object Field       | Type   | Required? | Description |
 |--------------------|--------|-----------|-------------|
@@ -64,7 +68,7 @@ Create Router Groups
 | `reservable_ports` | string | yes       | Comma delimited list of reservable port or port ranges. These ports must fall between 1024 and 65535 (inclusive).
 
 #### Example Request
-```sh
+```bash
 curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/router_groups -X POST -d '{"name": "my-router-group", "type": "http"}'
 ```
 ### Response
@@ -81,7 +85,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 | `reservable_ports` | string | Comma delimited list of reservable port or port ranges. (For `type` of `TCP`)
 
 #### Example Response:
-```
+```json
 {
   "guid": "568c0232-e7c0-47ff-4c8a-bc89b49ade5b",
   "name": "my-router-group",
@@ -99,7 +103,7 @@ Delete Router Groups
   A bearer token for an OAuth client with `routing.router_groups.write` scope is required.
 
 #### Example Request
-```sh
+```bash
 curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/router_groups/:guid -X DELETE'
 ```
 ### Response
@@ -120,7 +124,7 @@ List Router Groups
 | `name`          | string | Name of the router group |
 
 #### Example request
-```sh
+```bash
 curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/router_groups?name=default-tcp
 ```
 
@@ -138,7 +142,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 | `reservable_ports` | string | Comma delimited list of reservable port or port ranges.
 
 #### Example Response
-```
+```json
 [{
   "guid": "abc123",
   "name": "default-tcp",
@@ -170,8 +174,8 @@ To update a Router Group's `reservable_ports` field with a new port range.
   > modifying your load balancer to remove these ports will result in backends for
   > those routes becoming inaccessible.
 
-#### Example Request   
-```sh
+#### Example Request
+```bash
 curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/router_groups/abc123 -X PUT -d '{"reservable_ports":"9000-10000"}'
 ```
 ### Response
@@ -188,7 +192,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 | `reservable_ports` | string | Comma delimited list of reservable port or port ranges.
 
 #### Example Response:
-```
+```json
 {
   "guid": "abc123",
   "name": "default-tcp",
@@ -211,7 +215,7 @@ List TCP Routes
 | `isolation_segment` | string | Name of the isolation segment. If this parameter is included but a value is not given, then  tcp routes registered without a specified isolation segment will be returned. |
 
 #### Example Requests
-```sh
+```bash
 # returns all tcp routes
 curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/tcp_routes
 
@@ -242,7 +246,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 | `isolation_segment` | string | Isolation segment for the route. |
 
 #### Example Response:
-```
+```json
 [{
   "router_group_guid": "xyz789",
   "backend_port": 60000,
@@ -281,7 +285,7 @@ As routes have a TTL, clients must register routes periodically to keep them act
 | `isolation_segment` | string          | no        | Name of the isolation segment for the route.
 
 #### Example Request
-```sh
+```bash
 curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://api.system-domain.com/routing/v1/tcp_routes/create -d '
 [{
   "router_group_guid": "xyz789",
@@ -318,7 +322,7 @@ Delete TCP Routes
 | `backend_port`      | integer         | yes       | Backend port. Must be greater than 0.
 
 #### Example Request
-```sh
+```bash
 curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://api.system-domain.com/routing/v1/tcp_routes/delete -d '
 [{
   "router_group_guid": "xyz789",
@@ -342,7 +346,7 @@ Subscribe to Events for TCP Routes
   A bearer token for an OAuth client with `routing.routes.read` scope is required.
 
 #### Example Request
-```sh
+```bash
 curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/tcp_routes/events
 ```
 ### Response
@@ -374,7 +378,7 @@ Experimental -  subject to backward incompatible change
   A bearer token for an OAuth client with `routing.routes.read` scope is required.
 
 #### Example Request
-```sh
+```bash
 curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/routes
 ```
 
@@ -395,7 +399,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 | `modification_tag`  | object          | See [Modification Tags](modification_tags.md).
 
 #### Example Response
-```
+```json
 [{
   "route": "myapp.com/somepath",
   "port": 3000,
@@ -409,8 +413,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 }]
 ```
 
-Create HTTP Routes (Experimental)
--------------------
+#### Create HTTP Routes (Experimental)
 Experimental -  subject to backward incompatible change
 
 As routes have a TTL, clients must register routes periodically to keep them active.
@@ -425,14 +428,14 @@ As routes have a TTL, clients must register routes periodically to keep them act
 | Object Field        | Type            | Required? | Description |
 |---------------------|-----------------|-----------|-------------|
 | `route`             | string          | yes       | Address, including optional path, associated with one or more backends
-| `ip`                | string          | yes       | IP address of backend                                                   
+| `ip`                | string          | yes       | IP address of backend
 | `port`              | integer         | yes       | Backend port. Must be greater than 0.
 | `ttl`               | integer         | yes       | Time to live, in seconds. The mapping of backend to route will be pruned after this time. It must be greater than 0 seconds and less than the configured value for max_ttl (default 120 seconds).
 | `log_guid`          | string          | no        | A string used to annotate routing logs for requests forwarded to this backend.
 | `route_service_url` | string          | no        | When present, requests for the route will be forwarded to this url before being forwarded to a backend. If provided, this url must use HTTPS.
 
 #### Example Request
-```sh
+```bash
 curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://api.system-domain.com/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":120}]'
 ```
 
@@ -459,7 +462,7 @@ Experimental -  subject to backward incompatible change
 | `route_service_url` | string          | no        | When present, requests for the route will be forwarded to this url before being forwarded to a backend. If provided, this url must use HTTPS.
 
 #### Example Request
-```sh
+```bash
 curl -vvv -H "Authorization: bearer [uaa token]" -X DELETE http://api.system-domain.com/routing/v1/routes -d '[{"route":"myapp.com/somepath", "ip":"1.2.3.4", "port":8089, "ttl":120}]'
 ```
 
@@ -477,7 +480,7 @@ Experimental -  subject to backward incompatible change
   A bearer token for an OAuth client with `routing.routes.read` scope is required.
 
 #### Example Request
-```sh
+```bash
 curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/routing/v1/events
 ```
 ### Response
