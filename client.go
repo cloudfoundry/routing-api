@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	errors "golang.org/x/xerrors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -202,10 +202,9 @@ func getNextAvailablePort(groups models.RouterGroups, portRange models.Range) (m
 			return models.ReservablePorts(strconv.Itoa(int(i))), nil
 		}
 	}
-	return "", errors.New("port range is exhausted")
+
+	return "", Error{Type: PortRangeExhaustedError, Message: fmt.Sprintf("There are no free ports in range: %s", portRange)}
 }
-
-
 
 func (c *client) DeleteRoutes(routes []models.Route) error {
 	return c.doRequest(DeleteRoute, nil, nil, routes, nil)
