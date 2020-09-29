@@ -66,6 +66,20 @@ type FakeClient struct {
 		result1 []models.TcpRouteMapping
 		result2 error
 	}
+	ReservePortStub        func(string, string) (int, error)
+	reservePortMutex       sync.RWMutex
+	reservePortArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	reservePortReturns struct {
+		result1 int
+		result2 error
+	}
+	reservePortReturnsOnCall map[int]struct {
+		result1 int
+		result2 error
+	}
 	RouterGroupWithNameStub        func(string) (models.RouterGroup, error)
 	routerGroupWithNameMutex       sync.RWMutex
 	routerGroupWithNameArgsForCall []struct {
@@ -521,6 +535,70 @@ func (fake *FakeClient) FilteredTcpRouteMappingsReturnsOnCall(i int, result1 []m
 	}
 	fake.filteredTcpRouteMappingsReturnsOnCall[i] = struct {
 		result1 []models.TcpRouteMapping
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ReservePort(arg1 string, arg2 string) (int, error) {
+	fake.reservePortMutex.Lock()
+	ret, specificReturn := fake.reservePortReturnsOnCall[len(fake.reservePortArgsForCall)]
+	fake.reservePortArgsForCall = append(fake.reservePortArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	fake.recordInvocation("ReservePort", []interface{}{arg1, arg2})
+	fake.reservePortMutex.Unlock()
+	if fake.ReservePortStub != nil {
+		return fake.ReservePortStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.reservePortReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) ReservePortCallCount() int {
+	fake.reservePortMutex.RLock()
+	defer fake.reservePortMutex.RUnlock()
+	return len(fake.reservePortArgsForCall)
+}
+
+func (fake *FakeClient) ReservePortCalls(stub func(string, string) (int, error)) {
+	fake.reservePortMutex.Lock()
+	defer fake.reservePortMutex.Unlock()
+	fake.ReservePortStub = stub
+}
+
+func (fake *FakeClient) ReservePortArgsForCall(i int) (string, string) {
+	fake.reservePortMutex.RLock()
+	defer fake.reservePortMutex.RUnlock()
+	argsForCall := fake.reservePortArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeClient) ReservePortReturns(result1 int, result2 error) {
+	fake.reservePortMutex.Lock()
+	defer fake.reservePortMutex.Unlock()
+	fake.ReservePortStub = nil
+	fake.reservePortReturns = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ReservePortReturnsOnCall(i int, result1 int, result2 error) {
+	fake.reservePortMutex.Lock()
+	defer fake.reservePortMutex.Unlock()
+	fake.ReservePortStub = nil
+	if fake.reservePortReturnsOnCall == nil {
+		fake.reservePortReturnsOnCall = make(map[int]struct {
+			result1 int
+			result2 error
+		})
+	}
+	fake.reservePortReturnsOnCall[i] = struct {
+		result1 int
 		result2 error
 	}{result1, result2}
 }
@@ -1223,6 +1301,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.deleteTcpRouteMappingsMutex.RUnlock()
 	fake.filteredTcpRouteMappingsMutex.RLock()
 	defer fake.filteredTcpRouteMappingsMutex.RUnlock()
+	fake.reservePortMutex.RLock()
+	defer fake.reservePortMutex.RUnlock()
 	fake.routerGroupWithNameMutex.RLock()
 	defer fake.routerGroupWithNameMutex.RUnlock()
 	fake.routerGroupsMutex.RLock()
