@@ -1491,7 +1491,7 @@ var _ = Describe("Client", func() {
 			It("returns a port range exhausted error", func() {
 				_, err := client.ReservePort("new-router-group", "2000-3000")
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(`port range is exhausted`))
+				Expect(err).To(MatchError("There are no free ports in range: [2000-3000]"))
 			})
 		})
 
