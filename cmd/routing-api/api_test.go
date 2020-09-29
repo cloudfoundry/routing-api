@@ -554,6 +554,63 @@ var _ = Describe("Routes API", func() {
 					Expect(len(routerGroups)).To(Equal(0))
 				})
 			})
+
+			Context("ReservePort", func() {
+				It("creates new router group with an available TCP port", func() {
+					var routerGroups models.RouterGroups
+					Eventually(func() error {
+						var err error
+						routerGroups, err = client.RouterGroups()
+						return err
+					}, "30s", "1s").ShouldNot(HaveOccurred(), "Failed to connect to Routing API server after 30s.")
+					Expect(len(routerGroups)).To(Equal(1))
+					routerGroup := routerGroups[0]
+
+					routerGroup.ReservablePorts = "1024-2000"
+					err := client.UpdateRouterGroup(routerGroup)
+					Expect(err).ToNot(HaveOccurred())
+
+					port, err := client.ReservePort("my-router-group", "1150-3000")
+					Expect(err).ToNot(HaveOccurred())
+					Expect(port).To(Equal(2001))
+
+					group, err := client.RouterGroupWithName("my-router-group")
+					Expect(err).ToNot(HaveOccurred())
+					Expect(group.ReservablePorts).To(Equal(models.ReservablePorts("2001")))
+				})
+
+				Context("when there is an existing router group", func() {
+					It("updates the router group with an available TCP port", func() {
+						var routerGroups models.RouterGroups
+						Eventually(func() error {
+							var err error
+							routerGroups, err = client.RouterGroups()
+							return err
+						}, "30s", "1s").ShouldNot(HaveOccurred(), "Failed to connect to Routing API server after 30s.")
+						Expect(len(routerGroups)).To(Equal(1))
+						routerGroup := routerGroups[0]
+
+						routerGroup.ReservablePorts = "1024-2000"
+						err := client.UpdateRouterGroup(routerGroup)
+						Expect(err).ToNot(HaveOccurred())
+
+						err = client.CreateRouterGroup(models.RouterGroup{
+							Name:            "my-router-group",
+							Type:            "tcp",
+							ReservablePorts: "2001",
+						})
+						Expect(err).ToNot(HaveOccurred())
+
+						port, err := client.ReservePort("my-router-group", "3000-4000")
+						Expect(err).ToNot(HaveOccurred())
+						Expect(port).To(Equal(3000))
+
+						group, err := client.RouterGroupWithName("my-router-group")
+						Expect(err).ToNot(HaveOccurred())
+						Expect(group.ReservablePorts).To(Equal(models.ReservablePorts("3000")))
+					})
+				})
+			})
 		})
 	}
 
