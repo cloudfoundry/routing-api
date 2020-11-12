@@ -39,9 +39,8 @@ import (
 )
 
 const (
-	routingApiLockPath = "routing_api_lock"
-	sessionName        = "routing_api"
-	pruningInterval    = 10 * time.Second
+	sessionName     = "routing_api"
+	pruningInterval = 10 * time.Second
 )
 
 var configPath = flag.String("config", "", "Configuration for routing-api")
@@ -135,7 +134,7 @@ func main() {
 	}
 
 	lockIdentifier := &locketmodels.Resource{
-		Key:      routingApiLockPath,
+		Key:      cfg.LockResouceKey,
 		Owner:    cfg.UUID,
 		TypeCode: locketmodels.LOCK,
 	}
