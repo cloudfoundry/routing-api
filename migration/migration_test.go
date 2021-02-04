@@ -14,8 +14,7 @@ import (
 var _ = Describe("Migration", func() {
 	var (
 		sqlDB                 *db.SqlDB
-		mysqlAllocator        testrunner.DbAllocator
-		postgresAllocator     testrunner.DbAllocator
+		allocator             testrunner.DbAllocator
 		fakeMigration         *fakes.FakeMigration
 		fakeLastMigration     *fakes.FakeMigration
 		migrations            []migration.Migration
@@ -42,13 +41,19 @@ var _ = Describe("Migration", func() {
 				done := make(chan struct{})
 				defer close(done)
 				migrations := migration.InitializeMigrations()
-				Expect(migrations).To(HaveLen(4))
+				Expect(migrations).To(HaveLen(5))
 
 				Expect(migrations[0]).To(BeAssignableToTypeOf(new(migration.V0InitMigration)))
 				Expect(migrations[1]).To(BeAssignableToTypeOf(new(migration.V2UpdateRgMigration)))
 				Expect(migrations[2]).To(BeAssignableToTypeOf(new(migration.V3UpdateTcpRouteMigration)))
 				Expect(migrations[3]).To(BeAssignableToTypeOf(new(migration.V4AddRgUniqIdxTCPRoute)))
+				Expect(migrations[4]).To(BeAssignableToTypeOf(new(migration.V5SniHostnameMigration)))
 			})
+		})
+
+		It("runs all migrations", func() {
+			err := migration.RunAllMigration(sqlDB, logger)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		Describe("RunMigrations", func() {
@@ -209,8 +214,8 @@ var _ = Describe("Migration", func() {
 
 	Describe("Test with Mysql", func() {
 		BeforeEach(func() {
-			mysqlAllocator = testrunner.NewMySQLAllocator()
-			sqlCfg, err := mysqlAllocator.Create()
+			allocator = testrunner.NewMySQLAllocator()
+			sqlCfg, err := allocator.Create()
 			Expect(err).ToNot(HaveOccurred())
 
 			sqlDB, err = db.NewSqlDB(sqlCfg)
@@ -220,7 +225,7 @@ var _ = Describe("Migration", func() {
 		})
 
 		AfterEach(func() {
-			err := mysqlAllocator.Delete()
+			err := allocator.Delete()
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -229,8 +234,8 @@ var _ = Describe("Migration", func() {
 
 	Describe("Test with Postgres", func() {
 		BeforeEach(func() {
-			postgresAllocator = testrunner.NewPostgresAllocator()
-			sqlCfg, err := postgresAllocator.Create()
+			allocator = testrunner.NewPostgresAllocator()
+			sqlCfg, err := allocator.Create()
 			Expect(err).ToNot(HaveOccurred())
 
 			sqlDB, err = db.NewSqlDB(sqlCfg)
@@ -240,7 +245,7 @@ var _ = Describe("Migration", func() {
 		})
 
 		AfterEach(func() {
-			err := postgresAllocator.Delete()
+			err := allocator.Delete()
 			Expect(err).ToNot(HaveOccurred())
 		})
 

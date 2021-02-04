@@ -43,6 +43,7 @@ var _ = Describe("Config", func() {
 					Expect(cfg.SqlDB.MaxOpenConns).To(Equal(5))
 					Expect(cfg.SqlDB.ConnMaxLifetime).To(Equal(1200))
 					Expect(cfg.MaxTTL).To(Equal(2 * time.Minute))
+					Expect(cfg.LockResouceKey).To(Equal("my-key"))
 					Expect(cfg.LockTTL).To(Equal(10 * time.Second))
 					Expect(cfg.RetryInterval).To(Equal(5 * time.Second))
 					Expect(cfg.Locket.LocketAddress).To(Equal("http://localhost:5678"))
@@ -247,6 +248,12 @@ var _ = Describe("Config", func() {
 		})
 
 		Context("when lock properties are not set", func() {
+			It("populates the default value for LockResourceKey", func() {
+				cfg, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.LockResouceKey).To(Equal(config.DefaultLockResourceKey))
+			})
+
 			It("populates the default value for LockTTL from locket library", func() {
 				cfg, err := config.NewConfigFromBytes(testConfig, true)
 				Expect(err).NotTo(HaveOccurred())

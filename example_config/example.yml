@@ -35,6 +35,7 @@ sqldb:
   max_idle_connections: 2
   max_open_connections: 5
   connections_max_lifetime_seconds: 1200
+lock_resource_key: my-key
 lock_ttl: 10s
 retry_interval: 5s
 locket:
