@@ -275,14 +275,15 @@ As routes have a TTL, clients must register routes periodically to keep them act
   A JSON-encoded array of `TCP Route` objects for each route to register.
 
 | Object Field        | Type            | Required? | Description |
-|---------------------|-----------------|-----------|-------------|
-| `router_group_guid` | string          | yes       | GUID of the router group associated with this route.
-| `port`              | integer         | yes       | External facing port for the TCP route.
-| `backend_ip`        | string          | yes       | IP address of backend
-| `backend_port`      | integer         | yes       | Backend port. Must be greater than 0.
-| `ttl`               | integer         | yes       | Time to live, in seconds. The mapping of backend to route will be pruned after this time. Must be greater than 0 seconds and less than the configured value for max_ttl (default 120 seconds).
-| `modification_tag`  | object          | no        | See [Modification Tags](modification_tags.md).
-| `isolation_segment` | string          | no        | Name of the isolation segment for the route.
+|------------------------|-----------------|-----------|-------------|
+| `router_group_guid`    | string          | yes       | GUID of the router group associated with this route.
+| `port`                 | integer         | yes       | External facing port for the TCP route.
+| `backend_ip`           | string          | yes       | IP address of backend
+| `backend_port`         | integer         | yes       | Backend port. Must be greater than 0.
+| `ttl`                  | integer         | yes       | Time to live, in seconds. The mapping of backend to route will be pruned after this time. Must be greater than 0 seconds and less than the configured value for max_ttl (default 120 seconds).
+| `modification_tag`     | object          | no        | See [Modification Tags](modification_tags.md).
+| `isolation_segment`    | string          | no        | Name of the isolation segment for the route.
+| `backend_sni_hostname` | string          | no        | Sni backend hostname used for SNI routing. 
 
 #### Example Request
 ```bash
@@ -297,6 +298,18 @@ curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://api.system-domai
     "guid": "cbdhb4e3-141d-4259-b0ac-99140e8998l0",
     "index": 1
   }
+}]'
+```
+#### Example Request with SNI
+```bash
+curl -k -vvv -H "Authorization: bearer $uaa_token" -X POST https://api.system-domain.com/routing/v1/tcp_routes/create -d '
+[{
+  "router_group_guid": "ab1481be-d7f0-4390-6666-3e752e9f92ac",
+  "port": 1121,
+  "backend_ip": "10.0.8.5",
+  "backend_port": 8888,
+  "backend_sni_hostname":"teststst.asd.com",
+  "ttl": 120
 }]'
 ```
 

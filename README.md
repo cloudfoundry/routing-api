@@ -45,6 +45,15 @@ for routing-api:
 ./scripts/run-unit-tests-in-docker routing-api
 ```
 
+### Local Database Instances in Docker
+A Docker Compose is provided to start the database locally for testing.
+```console
+$ docker-compose up
+...
+postgress_1  | 2020-11-12 18:00:21.618 UTC [1] LOG:  database system is ready to accept connections
+mysql_1      | [Entrypoint] Starting MySQL 5.7.32-1.1.18
+```
+
 ## Running the API Server
 
 ### Server Configuration

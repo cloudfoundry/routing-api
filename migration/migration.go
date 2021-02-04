@@ -31,15 +31,10 @@ func NewRunner(
 	}
 }
 func (r *Runner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	migrations := InitializeMigrations()
-
-	r.logger.Info("starting-migration")
-	err := RunMigrations(r.sqlDB, migrations, r.logger)
-	if err != nil {
-		r.logger.Error("migrations-failed", err)
-		return err
+	err2 := RunAllMigration(r.sqlDB, r.logger)
+	if err2 != nil {
+		return err2
 	}
-	r.logger.Info("finished-migration")
 
 	close(ready)
 
@@ -48,6 +43,19 @@ func (r *Runner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		r.logger.Info("received signal", lager.Data{"signal": sig})
 	}
 
+	return nil
+}
+
+func RunAllMigration(sqlDB *db.SqlDB, logger lager.Logger) error {
+	migrations := InitializeMigrations()
+
+	logger.Info("starting-migration")
+	err := RunMigrations(sqlDB, migrations, logger)
+	if err != nil {
+		logger.Error("migrations-failed", err)
+		return err
+	}
+	logger.Info("finished-migration")
 	return nil
 }
 
@@ -71,6 +79,9 @@ func InitializeMigrations() []Migration {
 	migrations = append(migrations, migration)
 
 	migration = NewV4AddRgUniqIdxTCPRouteMigration()
+	migrations = append(migrations, migration)
+
+	migration = NewV5SniHostnameMigration()
 	migrations = append(migrations, migration)
 
 	return migrations

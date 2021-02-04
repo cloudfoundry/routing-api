@@ -12,6 +12,10 @@ import (
 	"code.cloudfoundry.org/routing-api/models"
 )
 
+const (
+	DefaultLockResourceKey = "routing_api_lock"
+)
+
 type MetronConfig struct {
 	Address string
 	Port    string
@@ -72,6 +76,7 @@ type Config struct {
 	SkipSSLValidation               bool                      `yaml:"skip_ssl_validation"`
 	LockTTL                         time.Duration             `yaml:"lock_ttl"`
 	RetryInterval                   time.Duration             `yaml:"retry_interval"`
+	LockResouceKey                  string                    `yaml:"lock_resource_key"`
 }
 
 func NewConfigFromFile(configFile string, authDisabled bool) (Config, error) {
@@ -161,6 +166,10 @@ func (cfg *Config) process() error {
 
 	if cfg.RetryInterval == 0 {
 		cfg.RetryInterval = locket.RetryInterval
+	}
+
+	if cfg.LockResouceKey == "" {
+		cfg.LockResouceKey = DefaultLockResourceKey
 	}
 
 	cfg.SqlDB.SkipSSLValidation = cfg.SkipSSLValidation
