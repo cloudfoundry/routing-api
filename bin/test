@@ -2,24 +2,15 @@
 
 set -e -u -x
 
-go get -u github.com/kisielk/errcheck
+if ! [ -x "$(command -v errcheck)" ]; then
+    go get -u github.com/kisielk/errcheck
+fi
+
+if ! [ -x "$(command -v ginkgo)" ]; then
+    go get -u github.com/onsi/ginkgo/ginkgo
+fi
 
 errcheck ./...
 go vet ./...
 
-set +e
-ginkgo version
-ginkgo_status=$?
-set -e
-if [ ${ginkgo_status} -ne 0 ]; then
-	go install github.com/onsi/ginkgo/ginkgo
-fi
-
-# if db ca cert is not set or set to ""
-set +xu
-if [ -z "$SQL_SERVER_CA_CERT" ] ; then
-	ginkgo -r  -p -failOnPending -randomizeAllSpecs -race "$@"
-else
-	SQL_SERVER_CA_CERT="$SQL_SERVER_CA_CERT"  ginkgo -r  -p -failOnPending -randomizeAllSpecs -race "$@"
-fi
-
+ginkgo -r  -p -failOnPending -randomizeAllSpecs -race "$@"
