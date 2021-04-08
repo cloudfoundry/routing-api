@@ -55,6 +55,7 @@ var _ = Describe("Config", func() {
 					Expect(cfg.API.MTLSClientCAPath).To(Equal("client ca file path"))
 					Expect(cfg.API.MTLSServerCertPath).To(Equal("server cert file path"))
 					Expect(cfg.API.MTLSServerKeyPath).To(Equal("server key file path"))
+					Expect(cfg.ReservedSystemComponentPorts).To(Equal([]int{5555, 6666}))
 				})
 
 				Context("when there is no token endpoint specified", func() {
@@ -500,6 +501,32 @@ var _ = Describe("Config", func() {
 					cfg, err := config.NewConfigFromBytes(testConfig, true)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(cfg.RouterGroups).To(BeNil())
+				})
+			})
+		})
+
+		Context("when reserved_system_component_ports are provided", func() {
+			Context("when a port is too high", func() {
+				BeforeEach(func() {
+					validHash["reserved_system_component_ports"] = []int{1234, 70000, 5555}
+				})
+
+				It("returns an error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Invalid reserved system component port '70000'. Ports must be between 0 and 65535."))
+				})
+			})
+
+			Context("when a port is too low", func() {
+				BeforeEach(func() {
+					validHash["reserved_system_component_ports"] = []int{1234, -10, 5555}
+				})
+
+				It("returns an error", func() {
+					_, err := config.NewConfigFromBytes(testConfig, true)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Invalid reserved system component port '-10'. Ports must be between 0 and 65535."))
 				})
 			})
 		})
