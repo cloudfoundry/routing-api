@@ -70,6 +70,7 @@ type Config struct {
 	StatsdClientFlushInterval       time.Duration             `yaml:"-"`
 	OAuth                           OAuthConfig               `yaml:"oauth"`
 	RouterGroups                    models.RouterGroups       `yaml:"router_groups"`
+	ReservedSystemComponentPorts    []int                     `yaml:"reserved_system_component_ports"`
 	SqlDB                           SqlDB                     `yaml:"sqldb"`
 	Locket                          locket.ClientLocketConfig `yaml:"locket"`
 	UUID                            string                    `yaml:"uuid"`
@@ -140,6 +141,11 @@ func (cfg *Config) validate(authDisabled bool) error {
 		return fmt.Errorf("invalid API mTLS listen port: %s", err)
 	}
 
+	if err := validateReservedPorts(cfg.ReservedSystemComponentPorts); err != nil {
+		return err
+	}
+	models.ReservedSystemComponentPorts = cfg.ReservedSystemComponentPorts
+
 	if cfg.Locket.LocketAddress == "" {
 		return errors.New("locket address is required")
 	}
@@ -156,6 +162,15 @@ func validatePort(port int) error {
 		return fmt.Errorf("port number is invalid: %d (1-65535)", port)
 	}
 
+	return nil
+}
+
+func validateReservedPorts(ports []int) error {
+	for _, port := range ports {
+		if port < 0 || port > 65535 {
+			return fmt.Errorf("Invalid reserved system component port '%d'. Ports must be between 0 and 65535.", port)
+		}
+	}
 	return nil
 }
 

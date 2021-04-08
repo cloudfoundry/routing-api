@@ -43,3 +43,6 @@ locket:
   locket_ca_cert_file: "some-locket-ca-cert"
   locket_client_cert_file: "some-locket-client-cert"
   locket_client_key_file: "some-locket-client-key"
+reserved_system_component_ports:
+  - 5555
+  - 6666
