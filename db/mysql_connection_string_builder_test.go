@@ -99,7 +99,7 @@ var _ = Describe("MySQLConnectionStringBuilder", func() {
 
 				err = db.VerifyCertificatesIgnoreHostname(dbOtherServerCert.Certificate, caCertPool)
 
-				Expect(err).To(MatchError("x509: certificate has expired or is not yet valid"))
+				Expect(err.Error()).To(ContainSubstring("x509: certificate has expired or is not yet valid"))
 			})
 		})
 	})
