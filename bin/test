@@ -2,13 +2,22 @@
 
 set -e -u -x
 
-if ! [ -x "$(command -v errcheck)" ]; then
-    go get -u github.com/kisielk/errcheck
+if [ "${RELEASE_DIR:-}" = "" ]; then
+  echo "RELEASE_DIR empty or not set."
+  exit 1
 fi
 
-if ! [ -x "$(command -v ginkgo)" ]; then
-    go get -u github.com/onsi/ginkgo/ginkgo
-fi
+echo "RELEASE_DIR=$RELEASE_DIR"
+
+export BIN_DIR="$RELEASE_DIR/bin"
+
+
+# install nats-server
+pushd $RELEASE_DIR/src/code.cloudfoundry.org
+go build -o "$BIN_DIR/errcheck" github.com/kisielk/errcheck
+go build -o "$BIN_DIR/ginkgo" github.com/onsi/ginkgo/ginkgo
+popd
+
 
 errcheck ./...
 go vet ./...
