@@ -18,12 +18,11 @@ Please report all issues and feature requests in [cloudfoundry/routing-release](
 - Go should be installed and in the PATH
 - This repo is part of
   [routing-release](https://github.com/cloudfoundry/routing-release) bosh
-  release repo, which also acts as cannonical GOPATH. So to work on routing-api
+  release repo. So to work on routing-api
   you will need to checkout
   [routing-release](https://github.com/cloudfoundry/routing-release) and follow
   instructions in its
-  [README](https://github.com/cloudfoundry/routing-release/blob/develop/README.md#developer-workflow)
-  to setup GOPATH.
+  [README](https://github.com/cloudfoundry/routing-release/blob/develop/README.md#developer-workflow).
 
 
 ### Development Setup
