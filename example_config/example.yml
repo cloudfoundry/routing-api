@@ -46,3 +46,4 @@ locket:
 reserved_system_component_ports:
   - 5555
   - 6666
+fail_on_router_port_conflicts: true

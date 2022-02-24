@@ -71,6 +71,7 @@ type Config struct {
 	OAuth                           OAuthConfig               `yaml:"oauth"`
 	RouterGroups                    models.RouterGroups       `yaml:"router_groups"`
 	ReservedSystemComponentPorts    []int                     `yaml:"reserved_system_component_ports"`
+	FailOnRouterPortConflicts       bool                      `yaml:"fail_on_router_port_conflicts"`
 	SqlDB                           SqlDB                     `yaml:"sqldb"`
 	Locket                          locket.ClientLocketConfig `yaml:"locket"`
 	UUID                            string                    `yaml:"uuid"`
@@ -145,6 +146,7 @@ func (cfg *Config) validate(authDisabled bool) error {
 		return err
 	}
 	models.ReservedSystemComponentPorts = cfg.ReservedSystemComponentPorts
+	models.FailOnRouterPortConflicts = cfg.FailOnRouterPortConflicts
 
 	if cfg.Locket.LocketAddress == "" {
 		return errors.New("locket address is required")

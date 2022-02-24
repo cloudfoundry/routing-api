@@ -158,30 +158,63 @@ var _ = Describe("Models", func() {
 				Expect(err.Error()).To(Equal("Missing reservable_ports in router group: router-group-1"))
 			})
 
-			Context("when there are reserved system component ports", func(){
-				BeforeEach(func(){
+			Context("when there are reserved system component ports", func() {
+				BeforeEach(func() {
 					ReservedSystemComponentPorts = []int{5555, 6666, 7777}
 				})
 
-				It("succeeds when the ports don't overlap", func(){
-					rg = RouterGroup{
-						Name:            "router-group-1",
-						Type:            "tcp",
-						ReservablePorts: "1025-2025",
-					}
-					err := rg.Validate()
-					Expect(err).ToNot(HaveOccurred())
-				})
+				Context("when failOnRouterPortConflicts is true", func() {
+					BeforeEach(func() {
+						FailOnRouterPortConflicts = true
+					})
 
-				It("fails when the ports overlap", func(){
-					rg = RouterGroup{
-						Name:            "router-group-1",
-						Type:            "tcp",
-						ReservablePorts: "5000-6000",
-					}
-					err := rg.Validate()
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(Equal("Invalid ports. Reservable ports must not include the following reserved system component ports: [5555 6666 7777]."))
+					It("succeeds when the ports don't overlap", func() {
+						rg = RouterGroup{
+							Name:            "router-group-1",
+							Type:            "tcp",
+							ReservablePorts: "1025-2025",
+						}
+						err := rg.Validate()
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					It("fails when the ports overlap", func() {
+						rg = RouterGroup{
+							Name:            "router-group-1",
+							Type:            "tcp",
+							ReservablePorts: "5000-6000",
+						}
+						err := rg.Validate()
+						Expect(err).To(HaveOccurred())
+						Expect(err).To(MatchError("Invalid ports. Reservable ports must not include the following reserved system component ports: [5555 6666 7777]."))
+					})
+
+					Context("when failOnRouterPortConflicts is false", func() {
+
+						BeforeEach(func() {
+							FailOnRouterPortConflicts = false
+						})
+
+						It("succeeds when the ports don't overlap", func() {
+							rg = RouterGroup{
+								Name:            "router-group-1",
+								Type:            "tcp",
+								ReservablePorts: "1025-2025",
+							}
+							err := rg.Validate()
+							Expect(err).ToNot(HaveOccurred())
+						})
+
+						It("succeeds when the ports overlap", func() {
+							rg = RouterGroup{
+								Name:            "router-group-1",
+								Type:            "tcp",
+								ReservablePorts: "5000-6000",
+							}
+							err := rg.Validate()
+							Expect(err).ToNot(HaveOccurred())
+						})
+					})
 				})
 			})
 		})

@@ -56,6 +56,7 @@ var _ = Describe("Config", func() {
 					Expect(cfg.API.MTLSServerCertPath).To(Equal("server cert file path"))
 					Expect(cfg.API.MTLSServerKeyPath).To(Equal("server key file path"))
 					Expect(cfg.ReservedSystemComponentPorts).To(Equal([]int{5555, 6666}))
+					Expect(cfg.FailOnRouterPortConflicts).To(BeTrue())
 				})
 
 				Context("when there is no token endpoint specified", func() {
@@ -505,7 +506,31 @@ var _ = Describe("Config", func() {
 			})
 		})
 
+		Context("when fail_on_router_port_conflicts is provided", func() {
+			BeforeEach(func() {
+				validHash["fail_on_router_port_conflicts"] = true
+			})
+
+			It("sets the models.FailOnRouterPortConflicts variable", func() {
+				_, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(models.FailOnRouterPortConflicts).To(Equal(true))
+
+			})
+		})
+
 		Context("when reserved_system_component_ports are provided", func() {
+			BeforeEach(func() {
+				validHash["reserved_system_component_ports"] = []int{1234, 5555}
+			})
+
+			It("sets the models.ReservedSystemComponentPorts variable", func() {
+				_, err := config.NewConfigFromBytes(testConfig, true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(models.ReservedSystemComponentPorts).To(Equal([]int{1234, 5555}))
+
+			})
+
 			Context("when a port is too high", func() {
 				BeforeEach(func() {
 					validHash["reserved_system_component_ports"] = []int{1234, 70000, 5555}
