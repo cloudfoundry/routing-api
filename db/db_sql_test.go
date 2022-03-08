@@ -825,7 +825,7 @@ var _ = Describe("SqlDB", func() {
 					})
 				})
 
-				FContext("and the update is a no-op", func() {
+				Context("and the update is a no-op", func() {
 					It("does not emit an update event", func() {
 						eventChan, errChan, _ := sqlDB.WatchChanges(db.TCP_WATCH)
 
