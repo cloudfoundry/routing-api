@@ -741,13 +741,11 @@ var _ = Describe("SqlDB", func() {
 				routerGroupId string
 				err           error
 				tcpRoute      models.TcpRouteMapping
-				ttl           int
 			)
 
 			BeforeEach(func() {
 				routerGroupId = newUuid()
-				ttl = 5
-				tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, ttl)
+				tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 5)
 			})
 
 			AfterEach(func() {
@@ -1436,7 +1434,15 @@ var _ = Describe("SqlDB", func() {
 				It("should return an update watch event", func() {
 					results, _, _ := sqlDB.WatchChanges(db.TCP_WATCH)
 
-					err = sqlDB.SaveTcpRouteMapping(tcpRoute)
+					updatedTcpRoute := models.NewTcpRouteMapping(
+						tcpRoute.RouterGroupGuid,
+						tcpRoute.ExternalPort,
+						tcpRoute.HostIP,
+						tcpRoute.HostPort,
+						*tcpRoute.TTL+1,
+					)
+
+					err = sqlDB.SaveTcpRouteMapping(updatedTcpRoute)
 					Expect(err).NotTo(HaveOccurred())
 
 					var event db.Event
