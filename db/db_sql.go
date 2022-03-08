@@ -497,6 +497,11 @@ func (s *SqlDB) SaveTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) erro
 		if err != nil {
 			return err
 		}
+
+		if newTcpRouteMapping.Matches(existingTcpRouteMapping) {
+			return nil
+		}
+
 		return s.emitEvent(UpdateEvent, newTcpRouteMapping)
 	}
 

@@ -741,11 +741,13 @@ var _ = Describe("SqlDB", func() {
 				routerGroupId string
 				err           error
 				tcpRoute      models.TcpRouteMapping
+				ttl           int
 			)
 
 			BeforeEach(func() {
 				routerGroupId = newUuid()
-				tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 5)
+				ttl = 5
+				tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, ttl)
 			})
 
 			AfterEach(func() {
@@ -820,6 +822,35 @@ var _ = Describe("SqlDB", func() {
 							matchers.MatchTcpRoute(tcpRoute),
 							matchers.MatchTcpRoute(tcpRoute2),
 						))
+					})
+				})
+
+				FContext("and the update is a no-op", func() {
+					It("does not emit an update event", func() {
+						eventChan, errChan, _ := sqlDB.WatchChanges(db.TCP_WATCH)
+
+						err := sqlDB.SaveTcpRouteMapping(tcpRoute)
+						Expect(err).ToNot(HaveOccurred())
+
+						Consistently(errChan, 5).Should(Not(Receive()))
+						Consistently(eventChan, 5).Should(Not(Receive()))
+					})
+
+					It("updates the expiry using the previous TTL", func() {
+						var dbTcpRoute models.TcpRouteMapping
+						err = sqlDB.Client.Where("host_ip = ?", "127.0.0.1").First(&dbTcpRoute)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(dbTcpRoute).ToNot(BeNil())
+						initialExpiration := dbTcpRoute.ExpiresAt
+						time.Sleep(1 * time.Second)
+
+						err := sqlDB.SaveTcpRouteMapping(tcpRoute)
+						Expect(err).ToNot(HaveOccurred())
+
+						err = sqlDB.Client.Where("host_ip = ?", "127.0.0.1").First(&dbTcpRoute)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(dbTcpRoute).ToNot(BeNil())
+						Expect(initialExpiration).To(BeTemporally("<", dbTcpRoute.ExpiresAt))
 					})
 				})
 			})
