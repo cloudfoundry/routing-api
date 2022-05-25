@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"code.cloudfoundry.org/clock/fakeclock"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/routing-api/config"
@@ -1827,6 +1828,67 @@ var _ = Describe("SqlDB", func() {
 		})
 	}
 
+	FindExpiredRoutes := func() {
+		Context("when routes expire in the first half of the second", func() {
+			var queryTime, expiryTime time.Time
+			var fc *fakeclock.FakeClock
+
+			BeforeEach(func() {
+				expiryTime = time.UnixMilli(1652378100300)
+				queryTime = time.UnixMilli(1652378100200)
+				fc = fakeclock.NewFakeClock(queryTime)
+
+			})
+			Context("tcpRoutes", func() {
+				BeforeEach(func() {
+					initialRoute := models.TcpRouteMapping{
+						ExpiresAt: expiryTime,
+						Model:     models.Model{Guid: "my-guid"},
+						TcpMappingEntity: models.TcpMappingEntity{
+							RouterGroupGuid: "rg-guid",
+							HostPort:        1234,
+							HostIP:          "10.10.10.10",
+							ExternalPort:    4321,
+						},
+					}
+					_, err := sqlDB.Client.Create(&initialRoute)
+					Expect(err).ToNot(HaveOccurred())
+				})
+				It("isn't susceptible to db-induced race conditions from rounding seconds", func() {
+					var tcpRoutes []models.TcpRouteMapping
+					err := sqlDB.FindExpiredRoutes(&tcpRoutes, fc)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(len(tcpRoutes)).To(Equal(0))
+				})
+			})
+			Context("httpRoutes", func() {
+				BeforeEach(func() {
+					initialRoute := models.Route{
+						Model: models.Model{
+							Guid: "my-guid",
+						},
+						RouteEntity: models.RouteEntity{
+							Route:           "my-route",
+							Port:            1234,
+							IP:              "10.10.10.10",
+							RouteServiceUrl: "",
+						},
+						ExpiresAt: expiryTime,
+					}
+					_, err := sqlDB.Client.Create(&initialRoute)
+					Expect(err).ToNot(HaveOccurred())
+				})
+				It("isn't susceptible to db-induced race conditions from rounding seconds", func() {
+					var httpRoutes []models.Route
+					err := sqlDB.FindExpiredRoutes(&httpRoutes, fc)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(len(httpRoutes)).To(Equal(0))
+				})
+			})
+
+		})
+	}
+
 	Describe("Test with Mysql", func() {
 		var (
 			err error
@@ -1856,6 +1918,7 @@ var _ = Describe("SqlDB", func() {
 		SaveRouterGroup()
 		DeleteRouterGroup()
 		Connection()
+		FindExpiredRoutes()
 	})
 
 	Describe("Test with Postgres", func() {
@@ -1887,6 +1950,7 @@ var _ = Describe("SqlDB", func() {
 		SaveRouterGroup()
 		DeleteRouterGroup()
 		Connection()
+		FindExpiredRoutes()
 	})
 
 })

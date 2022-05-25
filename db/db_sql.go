@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/eventhub"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api/config"
@@ -134,16 +135,26 @@ func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 	}, nil
 }
 
+func (s *SqlDB) FindExpiredRoutes(routes interface{}, c clock.Clock) error {
+	// mysql stores time at second level precision, but lets us query with sub-second precision.
+	// postgres stores at microsecond precision. we subtract a second from expiry time to give
+	// us an extra second of buffer to account for rounding issues:
+	// if we tell the db to save an expiry of 5.3s, and we query at 5.2s, mysql will think it expired,
+	// as the db will compare 5s against 5.2s.  Oops.
+	return s.Client.Find(routes, "expires_at < ?", c.Now().Add(-1*time.Second))
+}
+
 func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration, signals <-chan os.Signal) {
 	var tcpInFlight, httpInFlight int32
 	pruningTicker := time.NewTicker(pruningInterval)
+	clock := clock.NewClock()
 	for {
 		select {
 		case <-pruningTicker.C:
 			if atomic.CompareAndSwapInt32(&tcpInFlight, 0, 1) {
 				go func() {
 					var tcpRoutes []models.TcpRouteMapping
-					err := s.Client.Find(&tcpRoutes, "expires_at < ?", time.Now())
+					err := s.FindExpiredRoutes(&tcpRoutes, clock)
 					if err != nil {
 						logger.Error("failed-to-prune-tcp-routes", err)
 						return
@@ -172,7 +183,7 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 			if atomic.CompareAndSwapInt32(&httpInFlight, 0, 1) {
 				go func() {
 					var httpRoutes []models.Route
-					err := s.Client.Find(&httpRoutes, "expires_at < ?", time.Now())
+					err := s.FindExpiredRoutes(&httpRoutes, clock)
 					if err != nil {
 						logger.Error("failed-to-prune-http-routes", err)
 						return
