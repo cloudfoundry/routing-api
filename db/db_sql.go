@@ -318,7 +318,6 @@ func updateRouterGroup(existingRouterGroup, currentRouterGroup *models.RouterGro
 }
 
 func updateTcpRouteMapping(existingTcpRouteMapping models.TcpRouteMapping, currentTcpRouteMapping models.TcpRouteMapping) models.TcpRouteMapping {
-	existingTcpRouteMapping.ModificationTag.Increment()
 	if currentTcpRouteMapping.TTL != nil {
 		existingTcpRouteMapping.TTL = currentTcpRouteMapping.TTL
 	}
@@ -330,7 +329,6 @@ func updateTcpRouteMapping(existingTcpRouteMapping models.TcpRouteMapping, curre
 }
 
 func updateRoute(existingRoute, currentRoute models.Route) models.Route {
-	existingRoute.ModificationTag.Increment()
 	if currentRoute.TTL != nil {
 		existingRoute.TTL = currentRoute.TTL
 	}
@@ -387,10 +385,20 @@ func (s *SqlDB) SaveRoute(route models.Route) error {
 
 	if existingRoute != (models.Route{}) {
 		newRoute := updateRoute(existingRoute, route)
+		routeChanged := !newRoute.Matches(existingRoute)
+		if routeChanged {
+			newRoute.ModificationTag.Increment()
+		}
+
 		_, err = s.Client.Save(&newRoute)
 		if err != nil {
 			return err
 		}
+
+		if !routeChanged {
+			return nil
+		}
+
 		return s.emitEvent(UpdateEvent, newRoute)
 	}
 
@@ -493,12 +501,18 @@ func (s *SqlDB) SaveTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) erro
 
 	if existingTcpRouteMapping != (models.TcpRouteMapping{}) {
 		newTcpRouteMapping := updateTcpRouteMapping(existingTcpRouteMapping, tcpRouteMapping)
+		routeChanged := !newTcpRouteMapping.Matches(existingTcpRouteMapping)
+
+		if routeChanged {
+			newTcpRouteMapping.ModificationTag.Increment()
+
+		}
 		_, err = s.Client.Save(&newTcpRouteMapping)
 		if err != nil {
 			return err
 		}
 
-		if newTcpRouteMapping.Matches(existingTcpRouteMapping) {
+		if !routeChanged {
 			return nil
 		}
 

@@ -395,6 +395,63 @@ var _ = Describe("Models", func() {
 			route.ModificationTag = tag
 		})
 
+		Describe("Match", func() {
+			url := "https://example.com"
+			logGuid := "log-guid"
+			routeSvcUrl := "svcUrl"
+			ip := "10.10.10.10"
+			port := uint16(1234)
+			ttl := 5
+
+			It("Matches if values are the same", func() {
+				tcpRouteMapping1 := NewRoute(url, port, ip, logGuid, routeSvcUrl, ttl)
+				tcpRouteMapping2 := NewRoute(url, port, ip, logGuid, routeSvcUrl, ttl)
+				Expect(tcpRouteMapping1.Matches(tcpRouteMapping2)).To(BeTrue())
+			})
+			Context("When url is different", func() {
+				It("doesn't match", func() {
+					tcpRouteMapping1 := NewRoute(url, port, ip, logGuid, routeSvcUrl, ttl)
+					tcpRouteMapping2 := NewRoute("blarg", port, ip, logGuid, routeSvcUrl, ttl)
+					Expect(tcpRouteMapping1.Matches(tcpRouteMapping2)).To(BeFalse())
+				})
+			})
+			Context("When port is different", func() {
+				It("doesn't match", func() {
+					tcpRouteMapping1 := NewRoute(url, port, ip, logGuid, routeSvcUrl, ttl)
+					tcpRouteMapping2 := NewRoute(url, uint16(4321), ip, logGuid, routeSvcUrl, ttl)
+					Expect(tcpRouteMapping1.Matches(tcpRouteMapping2)).To(BeFalse())
+				})
+			})
+			Context("When ip is different", func() {
+				It("doesn't match", func() {
+					tcpRouteMapping1 := NewRoute(url, port, ip, logGuid, routeSvcUrl, ttl)
+					tcpRouteMapping2 := NewRoute(url, port, "20.20.20.20", logGuid, routeSvcUrl, ttl)
+					Expect(tcpRouteMapping1.Matches(tcpRouteMapping2)).To(BeFalse())
+				})
+			})
+			Context("When logGuid is different", func() {
+				It("doesn't match", func() {
+					tcpRouteMapping1 := NewRoute(url, port, ip, logGuid, routeSvcUrl, ttl)
+					tcpRouteMapping2 := NewRoute(url, port, ip, "new-guid", routeSvcUrl, ttl)
+					Expect(tcpRouteMapping1.Matches(tcpRouteMapping2)).To(BeFalse())
+				})
+			})
+			Context("When routeSvcUrl is different", func() {
+				It("doesn't match", func() {
+					tcpRouteMapping1 := NewRoute(url, port, ip, logGuid, routeSvcUrl, ttl)
+					tcpRouteMapping2 := NewRoute(url, port, ip, logGuid, "newRtSvc", ttl)
+					Expect(tcpRouteMapping1.Matches(tcpRouteMapping2)).To(BeFalse())
+				})
+			})
+			Context("When ttl is different", func() {
+				It("doesn't match", func() {
+					tcpRouteMapping1 := NewRoute(url, port, ip, logGuid, routeSvcUrl, ttl)
+					tcpRouteMapping2 := NewRoute(url, port, ip, logGuid, routeSvcUrl, 10)
+					Expect(tcpRouteMapping1.Matches(tcpRouteMapping2)).To(BeFalse())
+				})
+			})
+		})
+
 		Describe("SetDefaults", func() {
 			JustBeforeEach(func() {
 				route.SetDefaults(120)

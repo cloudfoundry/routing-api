@@ -850,6 +850,16 @@ var _ = Describe("SqlDB", func() {
 						Expect(dbTcpRoute).ToNot(BeNil())
 						Expect(initialExpiration).To(BeTemporally("<", dbTcpRoute.ExpiresAt))
 					})
+
+					It("doesn't update the modification tag/index", func() {
+						var dbTcpRoute models.TcpRouteMapping
+
+						err := sqlDB.SaveTcpRouteMapping(tcpRoute)
+						Expect(err).ToNot(HaveOccurred())
+
+						err = sqlDB.Client.Where("ip = ?", "127.0.0.1").First(&tcpRoute)
+						Expect(dbTcpRoute.ModificationTag.Index).To(BeNumerically("==", 0))
+					})
 				})
 			})
 
@@ -1158,6 +1168,9 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				It("updates the existing route and increments its modification tag", func() {
+					myTTL := 77
+					httpRoute.TTL = &myTTL
+
 					err := sqlDB.SaveRoute(httpRoute)
 					Expect(err).ToNot(HaveOccurred())
 
@@ -1184,6 +1197,44 @@ var _ = Describe("SqlDB", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(dbRoute).ToNot(BeNil())
 					Expect(initialExpiration).To(BeTemporally("<", dbRoute.ExpiresAt))
+				})
+
+				Context("and the update is a no-op", func() {
+					It("does not emit an update event", func() {
+						eventChan, errChan, _ := sqlDB.WatchChanges(db.TCP_WATCH)
+
+						err := sqlDB.SaveRoute(httpRoute)
+						Expect(err).ToNot(HaveOccurred())
+
+						Consistently(errChan, 5).Should(Not(Receive()))
+						Consistently(eventChan, 5).Should(Not(Receive()))
+					})
+
+					It("updates the expiry using the previous TTL", func() {
+						var dbRoute models.Route
+						err = sqlDB.Client.Where("ip = ?", "127.0.0.1").First(&dbRoute)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(dbRoute).ToNot(BeNil())
+						initialExpiration := dbRoute.ExpiresAt
+						time.Sleep(1 * time.Second)
+
+						err := sqlDB.SaveRoute(httpRoute)
+						Expect(err).ToNot(HaveOccurred())
+
+						err = sqlDB.Client.Where("ip = ?", "127.0.0.1").First(&dbRoute)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(dbRoute).ToNot(BeNil())
+						Expect(initialExpiration).To(BeTemporally("<", dbRoute.ExpiresAt))
+					})
+					It("Doesn't update the modification tag's index", func() {
+						var dbRoute models.Route
+
+						err := sqlDB.SaveRoute(httpRoute)
+						Expect(err).ToNot(HaveOccurred())
+
+						err = sqlDB.Client.Where("ip = ?", "127.0.0.1").First(&dbRoute)
+						Expect(dbRoute.ModificationTag.Index).To(BeNumerically("==", 0))
+					})
 				})
 			})
 
@@ -1546,6 +1597,8 @@ var _ = Describe("SqlDB", func() {
 				It("should return an update watch event", func() {
 					results, _, _ := sqlDB.WatchChanges(db.HTTP_WATCH)
 
+					newTTL := 60
+					httpRoute.TTL = &newTTL
 					err = sqlDB.SaveRoute(httpRoute)
 					Expect(err).NotTo(HaveOccurred())
 

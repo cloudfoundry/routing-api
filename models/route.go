@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/nu7hatch/gouuid"
+	uuid "github.com/nu7hatch/gouuid"
 )
 
 type Route struct {
@@ -77,6 +77,15 @@ func (r Route) GetTTL() int {
 		return 0
 	}
 	return *r.TTL
+}
+
+func (r Route) Matches(other Route) bool {
+	return r.Port == other.Port &&
+		r.IP == other.IP &&
+		r.Route == other.Route &&
+		r.LogGuid == other.LogGuid &&
+		r.RouteServiceUrl == other.RouteServiceUrl &&
+		*r.TTL == *other.TTL
 }
 
 func (r *Route) SetDefaults(defaultTTL int) {
