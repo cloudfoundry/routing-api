@@ -825,16 +825,6 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				Context("and the update is a no-op", func() {
-					It("does not emit an update event", func() {
-						eventChan, errChan, _ := sqlDB.WatchChanges(db.TCP_WATCH)
-
-						err := sqlDB.SaveTcpRouteMapping(tcpRoute)
-						Expect(err).ToNot(HaveOccurred())
-
-						Consistently(errChan, 5).Should(Not(Receive()))
-						Consistently(eventChan, 5).Should(Not(Receive()))
-					})
-
 					It("updates the expiry using the previous TTL", func() {
 						var dbTcpRoute models.TcpRouteMapping
 						err = sqlDB.Client.Where("host_ip = ?", "127.0.0.1").First(&dbTcpRoute)
