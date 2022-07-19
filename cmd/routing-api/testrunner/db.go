@@ -33,7 +33,7 @@ type postgresAllocator struct {
 }
 
 func randSchemaName() string {
-	return fmt.Sprintf("test%d%d", time.Now().UnixNano(), GinkgoParallelNode())
+	return fmt.Sprintf("test%d%d", time.Now().UnixNano(), GinkgoParallelProcess())
 }
 
 func NewPostgresAllocator() DbAllocator {

@@ -154,7 +154,7 @@ var _ = BeforeEach(func() {
 	defaultConfig = customConfig{
 		APIServerHTTPEnabled: true,
 		Port:                 int(routingAPIPort),
-		StatsdPort:           8125 + GinkgoParallelNode(),
+		StatsdPort:           8125 + GinkgoParallelProcess(),
 		AdminPort:            routingAPIAdminPort,
 		UAAPort:              int(oauthSrvPort),
 		CACertsPath:          uaaCACertsPath,
