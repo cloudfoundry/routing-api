@@ -16,7 +16,7 @@ import (
 	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/locket/lock"
 	locketmodels "code.cloudfoundry.org/locket/models"
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/admin"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
@@ -25,12 +25,11 @@ import (
 	"code.cloudfoundry.org/routing-api/metrics"
 	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/models"
+	"code.cloudfoundry.org/routing-api/uaaclient"
 	"code.cloudfoundry.org/tlsconfig"
-	uaaclient "code.cloudfoundry.org/uaa-go-client"
-	uaaconfig "code.cloudfoundry.org/uaa-go-client/config"
 	"github.com/cactus/go-statsd-client/statsd"
 	"github.com/cloudfoundry/dropsonde"
-	"github.com/nu7hatch/gouuid"
+	uuid "github.com/nu7hatch/gouuid"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
@@ -156,7 +155,11 @@ func main() {
 	lockAcquirer := initializeLockAcquirer(lockGroup, releaseLock, lockErrChan)
 	lockReleaser := initializeLockReleaser(releaseLock, lockErrChan, cfg.RetryInterval)
 
-	uaaClient := initializeUAAClient(cfg, logger)
+	uaaClient, err := uaaclient.NewClient(*devMode, cfg, logger)
+	if err != nil {
+		logger.Error("creating-uaa-client", err)
+		os.Exit(1)
+	}
 
 	members := grouper.Members{
 		grouper.Member{Name: "migration", Runner: migrationProcess},
@@ -299,48 +302,6 @@ func constructRouteRegister(
 	ticker := time.NewTicker(time.Duration(registerInterval) * time.Second)
 
 	return helpers.NewRouteRegister(database, route, ticker, logger)
-}
-
-func initializeUAAClient(cfg config.Config, logger lager.Logger) uaaclient.Client {
-	if *devMode {
-		return uaaclient.NewNoOpUaaClient()
-	}
-
-	if cfg.OAuth.Port == -1 {
-		err := errors.New("GoRouter requires TLS enabled to get OAuth token")
-		logger.Fatal("tls-not-enabled", err, lager.Data{
-			"token-endpoint": cfg.OAuth.TokenEndpoint,
-			"port":           cfg.OAuth.Port,
-		})
-	}
-
-	scheme := "https"
-	tokenURL := fmt.Sprintf("%s://%s:%d", scheme, cfg.OAuth.TokenEndpoint, cfg.OAuth.Port)
-
-	uaaCfg := &uaaconfig.Config{
-		UaaEndpoint:      tokenURL,
-		SkipVerification: cfg.OAuth.SkipSSLValidation,
-		CACerts:          cfg.OAuth.CACerts,
-	}
-	uaaClient, err := uaaclient.NewClient(logger, uaaCfg, clock.NewClock())
-	if err != nil {
-		logger.Error("Failed to create uaa client", err)
-		os.Exit(1)
-	}
-
-	issuer, err := uaaClient.FetchIssuer()
-	if err != nil {
-		logger.Error("Failed to get issuer configuration from UAA", err)
-		os.Exit(1)
-	}
-	logger.Info("received-issuer", lager.Data{"issuer": issuer})
-
-	_, err = uaaClient.FetchKey()
-	if err != nil {
-		logger.Error("Failed to get verification key from UAA", err)
-		os.Exit(1)
-	}
-	return uaaClient
 }
 
 func apiHandler(cfg config.Config, uaaClient uaaclient.Client, database db.DB, statsdClient statsd.Statter, logger lager.Logger) http.Handler {
