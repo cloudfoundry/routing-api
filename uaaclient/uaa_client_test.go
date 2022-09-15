@@ -10,11 +10,14 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/routing-api/config"
@@ -35,18 +38,21 @@ var tokenEncoding = base64.RawURLEncoding
 
 var _ = Describe("UaaClient", func() {
 	var (
-		publicKeyPEM []byte
-		privateKey   *rsa.PrivateKey
-		cfg          config.Config
-		server       *ghttp.Server
-		logger       *lagertest.TestLogger
+		publicKeyPEM   []byte
+		privateKey     *rsa.PrivateKey
+		cfg            config.Config
+		server         *ghttp.Server
+		serverCertFile *os.File
+		logger         *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
 		var err error
 		var publicKey *rsa.PublicKey
+
 		privateKey, publicKey, err = generateRSAKeyPair()
 		Expect(err).NotTo(HaveOccurred())
+
 		publicKeyPEM, err = publicKeyToPEM(publicKey)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -55,6 +61,15 @@ var _ = Describe("UaaClient", func() {
 			Value string `json:"value"`
 		}{"alg", string(publicKeyPEM)}
 		server = ghttp.NewTLSServer()
+		serverCertFile, err = ioutil.TempFile("", "routing-api-uaa-client-test")
+		Expect(err).NotTo(HaveOccurred())
+
+		certPem := pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: server.HTTPTestServer.Certificate().Raw,
+		})
+		_, err = serverCertFile.Write(certPem)
+		Expect(err).NotTo(HaveOccurred())
 
 		url, err := url.Parse(server.URL())
 		Expect(err).ToNot(HaveOccurred())
@@ -90,7 +105,21 @@ var _ = Describe("UaaClient", func() {
 		logger = lagertest.NewTestLogger("test")
 	})
 
+	AfterEach(func() {
+		err := os.Remove(serverCertFile.Name())
+		Expect(err).NotTo(HaveOccurred())
+		server.Close()
+	})
+
 	Describe("NewClient", func() {
+		It("returns a uaa client", func() {
+			client, err := uaaclient.NewClient(false, cfg, logger)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(client).NotTo(BeNil())
+			Expect(reflect.TypeOf(client).String()).To(Equal("*uaaclient.uaaClient"))
+		})
+
 		Context("in dev mode", func() {
 			It("returns a noOpUaaClient", func() {
 				client, err := uaaclient.NewClient(true, cfg, nil)
@@ -108,9 +137,126 @@ var _ = Describe("UaaClient", func() {
 
 			It("logs a fatal message that TLS is required in order to get an OAuth token", func() {
 				Expect(func() {
-					uaaclient.NewClient(false, cfg, logger)
+					_, err := uaaclient.NewClient(false, cfg, logger)
+					Expect(err).NotTo(HaveOccurred())
 				}).Should(Panic())
 				Expect(logger).To(gbytes.Say("tls-not-enabled"))
+				Expect(logger).To(gbytes.Say("\"port\".*-1"))
+				Expect(logger).To(gbytes.Say(fmt.Sprintf("\"token-endpoint\".*%s", cfg.OAuth.TokenEndpoint)))
+			})
+		})
+
+		Context("when the OAuth config includes CA certs", func() {
+			BeforeEach(func() {
+				cfg.OAuth.CACerts = serverCertFile.Name()
+				cfg.OAuth.SkipSSLValidation = false
+			})
+
+			It("uses certificates to validate the server", func() {
+				client, err := uaaclient.NewClient(false, cfg, logger)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(client).NotTo(BeNil())
+				Expect(server.ReceivedRequests()).To(HaveLen(2))
+			})
+
+			Context("when there is an error reading the cert file", func() {
+				BeforeEach(func() {
+					cfg.OAuth.CACerts = "non-existing-cert-file"
+				})
+
+				It("returns an error", func() {
+					client, err := uaaclient.NewClient(false, cfg, logger)
+					Expect(client).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Failed to read ca cert file"))
+				})
+			})
+
+			Context("when there is an error parsing the PEM file", func() {
+				var corruptedCertFile *os.File
+
+				BeforeEach(func() {
+					var err error
+					corruptedCertFile, err = ioutil.TempFile("", "routing-api-uaa-client-test")
+					Expect(err).NotTo(HaveOccurred())
+
+					_, err = corruptedCertFile.Write([]byte("definitely-not-a-pem"))
+					Expect(err).NotTo(HaveOccurred())
+
+					cfg.OAuth.CACerts = corruptedCertFile.Name()
+				})
+
+				AfterEach(func() {
+					err := os.Remove(corruptedCertFile.Name())
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("returns an error", func() {
+					client, err := uaaclient.NewClient(false, cfg, logger)
+					Expect(client).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Unable to load caCert"))
+				})
+			})
+		})
+
+		Context("when it fails to get the issuer", func() {
+			BeforeEach(func() {
+				server.SetHandler(0,
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", OpenIDConfigEndpoint),
+						ghttp.RespondWith(http.StatusInternalServerError, ""),
+					),
+				)
+			})
+
+			It("returns an error", func() {
+				client, err := uaaclient.NewClient(false, cfg, logger)
+				Expect(client).To(BeNil())
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(MatchRegexp(`An error occurred while calling https://.*/\.well-known/openid-configuration`)))
+				Expect(logger).To(gbytes.Say("Failed to get issuer"))
+			})
+		})
+
+		Context("when it fails to get the token", func() {
+			BeforeEach(func() {
+				server.SetHandler(1,
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", TokenKeyEndpoint),
+						ghttp.RespondWith(http.StatusInternalServerError, ""),
+					),
+				)
+			})
+
+			It("returns an error", func() {
+				client, err := uaaclient.NewClient(false, cfg, logger)
+				Expect(client).To(BeNil())
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(MatchRegexp(`An error occurred while calling https://.*/token_key`)))
+				Expect(logger).To(gbytes.Say("Failed to get verification key"))
+			})
+		})
+
+		Context("when received token is not valid", func() {
+			BeforeEach(func() {
+				var uaaResponseStruct = struct {
+					Alg   string `json:"alg"`
+					Value string `json:"value"`
+				}{"alg", "invalid"}
+				server.SetHandler(1,
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", TokenKeyEndpoint),
+						ghttp.RespondWithJSONEncoded(http.StatusOK, uaaResponseStruct),
+					),
+				)
+			})
+
+			It("returns an error", func() {
+				client, err := uaaclient.NewClient(false, cfg, logger)
+				Expect(client).To(BeNil())
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("Public uaa token must be PEM encoded"))
 			})
 		})
 	})
@@ -127,16 +273,44 @@ var _ = Describe("UaaClient", func() {
 			Expect(uaaClient).NotTo(BeNil())
 		})
 
-		AfterEach(func() {
-			server.Close()
+		It("returns nil, indicating that the token is valid and includes one of the desired permissions", func() {
+			validToken, err := makeValidToken(privateKey)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = uaaClient.DecodeToken(validToken, "some.scope")
+			Expect(err).ToNot(HaveOccurred())
+
+			err = uaaClient.DecodeToken(validToken, "another.scope", "some.scope")
+			Expect(err).ToNot(HaveOccurred())
+
+			validMultiscopeToken, err := makeValidMultiscopeToken(privateKey)
+			Expect(err).NotTo(HaveOccurred())
+			err = uaaClient.DecodeToken(validMultiscopeToken, "some.scope")
+			Expect(err).ToNot(HaveOccurred())
 		})
 
-		Context("when the token has been signed with the correct private key", func() {
-			It("succeeds", func() {
+		Context("when the token does not contain desired permissions", func() {
+			It("fails", func() {
 				validToken, err := makeValidToken(privateKey)
 				Expect(err).NotTo(HaveOccurred())
-				err = uaaClient.DecodeToken(validToken, "some.scope")
-				Expect(err).ToNot(HaveOccurred())
+
+				err = uaaClient.DecodeToken(validToken, "another.scope")
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("Token does not have 'another.scope' scope"))
+			})
+		})
+
+		Context("when passed token has invalid format", func() {
+			It("fails", func() {
+				err := uaaClient.DecodeToken("invalid", "some.scope")
+				Expect(err).To(MatchError("Invalid token format"))
+			})
+		})
+
+		Context("when passed token type is not bearer", func() {
+			It("fails", func() {
+				err := uaaClient.DecodeToken("invalid token", "some.scope")
+				Expect(err).To(MatchError("Invalid token type: invalid"))
 			})
 		})
 
@@ -144,8 +318,101 @@ var _ = Describe("UaaClient", func() {
 			It("fails", func() {
 				spoofedToken, err := makeSpoofedToken(publicKeyPEM)
 				Expect(err).NotTo(HaveOccurred())
+
 				err = uaaClient.DecodeToken(spoofedToken, "some.scope")
 				Expect(err).To(MatchError("invalid signing method"))
+			})
+		})
+
+		Context("when the token's issuer does not match the issuer saved on the UAA client", func() {
+			It("fails", func() {
+				otherIssuerToken, err := makeInvalidIssuerToken(privateKey)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = uaaClient.DecodeToken(otherIssuerToken, "some.scope")
+				Expect(err).To(MatchError("invalid issuer"))
+			})
+		})
+
+		Context("when the token has an invalid Issued At date", func() {
+			It("ignores the error and continues verifying the token", func() {
+				invalidIssuedAtToken, err := makeInvalidIssuedAtToken(privateKey)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = uaaClient.DecodeToken(invalidIssuedAtToken, "some.scope")
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("when the token has been signed by a newer UAA token key than the one stored on the client", func() {
+			var (
+				newPrivateKey *rsa.PrivateKey
+				newPublicKey  *rsa.PublicKey
+			)
+
+			BeforeEach(func() {
+				var err error
+				newPrivateKey, newPublicKey, err = generateRSAKeyPair()
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			Context("on the first try", func() {
+				BeforeEach(func() {
+					newPublicKeyPEM, err := publicKeyToPEM(newPublicKey)
+					Expect(err).NotTo(HaveOccurred())
+
+					var uaaResponseStruct = struct {
+						Alg   string `json:"alg"`
+						Value string `json:"value"`
+					}{"RS256", string(newPublicKeyPEM)}
+
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", TokenKeyEndpoint),
+							ghttp.RespondWithJSONEncoded(
+								http.StatusOK,
+								uaaResponseStruct,
+							),
+						),
+					)
+				})
+
+				It("refetches the UAA token key and makes another attempt to parse the token", func() {
+					validToken, err := makeValidToken(newPrivateKey)
+					Expect(err).NotTo(HaveOccurred())
+
+					err = uaaClient.DecodeToken(validToken, "some.scope")
+					Expect(err).NotTo(HaveOccurred())
+					Expect(server.ReceivedRequests()).To(HaveLen(3))
+				})
+			})
+
+			Context("when it keeps getting invalid token key", func() {
+				BeforeEach(func() {
+					var uaaResponseStruct = struct {
+						Alg   string `json:"alg"`
+						Value string `json:"value"`
+					}{"RS256", string(publicKeyPEM)}
+
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", TokenKeyEndpoint),
+							ghttp.RespondWithJSONEncoded(
+								http.StatusOK,
+								uaaResponseStruct,
+							),
+						),
+					)
+				})
+
+				It("fails", func() {
+					validToken, err := makeValidToken(newPrivateKey)
+					Expect(err).NotTo(HaveOccurred())
+
+					err = uaaClient.DecodeToken(validToken, "some.scope")
+					Expect(err).To(HaveOccurred())
+					Expect(server.ReceivedRequests()).To(HaveLen(3))
+				})
 			})
 		})
 	})
@@ -197,6 +464,88 @@ func makeValidToken(privateKey *rsa.PrivateKey) (string, error) {
 	return fullToken, nil
 }
 
+func makeInvalidIssuerToken(privateKey *rsa.PrivateKey) (string, error) {
+	tokenPayload := `{
+	  "scope": [
+		"some.scope"
+	  ],
+	  "iat": 1481253086,
+	  "exp": 2491253686,
+	  "iss": "https://other.issuer"
+	}`
+	header := jwtHeader("RS256", "some-key-id")
+	signingString := fmt.Sprintf("%s.%s",
+		tokenEncoding.EncodeToString([]byte(header)),
+		tokenEncoding.EncodeToString([]byte(tokenPayload)),
+	)
+	signature, err := signWithRS256(signingString, privateKey)
+	if err != nil {
+		return "", err
+	}
+	fullToken := fmt.Sprintf("bearer %s.%s", signingString, signature)
+	return fullToken, nil
+}
+
+func makeValidMultiscopeToken(privateKey *rsa.PrivateKey) (string, error) {
+	tokenPayload := `{
+	  "scope": [
+		"another.scope",
+		"some.scope"
+	  ],
+	  "iat": 1481253086,
+	  "exp": 2491253686,
+	  "iss": "https://uaa.domain.com"
+	}`
+	header := jwtHeader("RS256", "some-key-id")
+	signingString := fmt.Sprintf("%s.%s",
+		tokenEncoding.EncodeToString([]byte(header)),
+		tokenEncoding.EncodeToString([]byte(tokenPayload)),
+	)
+	signature, err := signWithRS256(signingString, privateKey)
+	if err != nil {
+		return "", err
+	}
+	fullToken := fmt.Sprintf("bearer %s.%s", signingString, signature)
+	return fullToken, nil
+}
+
+func makeInvalidSignatureToken(privateKey *rsa.PrivateKey) (string, error) {
+	header := jwtHeader("RS512", "some-key-id")
+	signingString := fmt.Sprintf("%s.%s",
+		tokenEncoding.EncodeToString([]byte(header)),
+		tokenEncoding.EncodeToString([]byte(TokenPayload)),
+	)
+	signature, err := signWithRS256(signingString, privateKey)
+	if err != nil {
+		return "", err
+	}
+	fullToken := fmt.Sprintf("bearer %s.%s", signingString, signature)
+	return fullToken, nil
+}
+
+func makeInvalidIssuedAtToken(privateKey *rsa.PrivateKey) (string, error) {
+	invalidIssuedAtTime := time.Now().Add(24 * time.Hour)
+	tokenPayload := fmt.Sprintf(`{
+	  "scope": [
+		"some.scope"
+	  ],
+	  "iat": %d,
+	  "exp": 2491253686,
+	  "iss": "https://uaa.domain.com"
+	}`, invalidIssuedAtTime.Unix())
+	header := jwtHeader("RS256", "some-key-id")
+	signingString := fmt.Sprintf("%s.%s",
+		tokenEncoding.EncodeToString([]byte(header)),
+		tokenEncoding.EncodeToString([]byte(tokenPayload)),
+	)
+	signature, err := signWithRS256(signingString, privateKey)
+	if err != nil {
+		return "", err
+	}
+	fullToken := fmt.Sprintf("bearer %s.%s", signingString, signature)
+	return fullToken, nil
+}
+
 func makeSpoofedToken(publicKeyPEM []byte) (string, error) {
 	header := jwtHeader("HS256", "some-key-id")
 	signingString := fmt.Sprintf("%s.%s",
@@ -219,6 +568,17 @@ func signWithRS256(signingString string, privateKey *rsa.PrivateKey) (string, er
 	hasher.Write([]byte(signingString))
 
 	sigBytes, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hasher.Sum(nil))
+	if err != nil {
+		return "", err
+	}
+	return tokenEncoding.EncodeToString(sigBytes), nil
+}
+
+func signWithRS512(signingString string, privateKey *rsa.PrivateKey) (string, error) {
+	hasher := crypto.SHA512.New()
+	hasher.Write([]byte(signingString))
+
+	sigBytes, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA512, hasher.Sum(nil))
 	if err != nil {
 		return "", err
 	}

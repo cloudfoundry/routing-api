@@ -21,7 +21,7 @@ const (
 	  ],
 	  "iat": 1481253086,
 	  "exp": 2491253686,
-		"iss": "https://uaa.domain.com"
+	  "iss": "https://uaa.domain.com"
 	}`
 )
 
