@@ -34,9 +34,6 @@ func NewClient(devMode bool, cfg config.Config, logger lager.Logger) (Client, er
 		})
 	}
 
-	scheme := "https"
-	tokenURL := fmt.Sprintf("%s://%s:%d", scheme, cfg.OAuth.TokenEndpoint, cfg.OAuth.Port)
-
 	tlsConfig := &tls.Config{InsecureSkipVerify: cfg.OAuth.SkipSSLValidation}
 	if cfg.OAuth.CACerts != "" {
 		certBytes, err := ioutil.ReadFile(cfg.OAuth.CACerts)
@@ -60,16 +57,19 @@ func NewClient(devMode bool, cfg config.Config, logger lager.Logger) (Client, er
 		return http.ErrUseLastResponse
 	}
 
+	tokenURL := fmt.Sprintf("https://%s:%d", cfg.OAuth.TokenEndpoint, cfg.OAuth.Port)
 	api, err := uaa.New(tokenURL, uaa.WithNoAuthentication(), uaa.WithClient(httpClient), uaa.WithSkipSSLValidation(cfg.OAuth.SkipSSLValidation))
 	if err != nil {
 		logger.Error("Failed to create UAA client", err)
 		return nil, err
 	}
+
 	issuer, err := api.Issuer()
 	if err != nil {
 		logger.Error("Failed to get issuer configuration from UAA", err)
 		return nil, err
 	}
+
 	logger.Info("received-issuer", lager.Data{"issuer": issuer})
 
 	jwk, err := api.TokenKey()
@@ -126,35 +126,37 @@ func (c *uaaClient) DecodeToken(uaaToken string, desiredPermissions ...string) e
 
 	for i := 0; i < 2; i++ {
 		uaaKey, err = c.getUaaTokenKey(logger, forceUaaKeyFetch)
+		if err != nil {
+			return err
+		}
 
-		if err == nil {
-			token, err = jwt.Parse(jwtToken, func(t *jwt.Token) (interface{}, error) {
-				if !c.isValidSigningMethod(t) {
-					return nil, errors.New("invalid signing method")
-				}
-				if !c.isValidIssuer(t) {
-					return nil, errors.New("invalid issuer")
-				}
+		token, err = jwt.Parse(jwtToken, func(t *jwt.Token) (interface{}, error) {
+			if !c.isValidSigningMethod(t) {
+				return nil, errors.New("invalid signing method")
+			}
+			if !c.isValidIssuer(t) {
+				return nil, errors.New("invalid issuer")
+			}
 
-				pubKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(uaaKey))
-				if err != nil {
-					return nil, err
-				}
-
-				return pubKey, nil
-			})
-
+			pubKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(uaaKey))
 			if err != nil {
-				logger.Error("decode-token-failed", err)
-				if matchesError(err, jwt.ValidationErrorSignatureInvalid) {
-					forceUaaKeyFetch = true
-					continue
-				}
-				if matchesError(err, jwt.ValidationErrorIssuedAt) {
-					logger.Info("decode-token-ignoring-issued-at-validation")
-					err = nil
-					break
-				}
+				return nil, err
+			}
+
+			return pubKey, nil
+		})
+
+		if err != nil {
+			logger.Error("decode-token-failed", err)
+			if matchesError(err, jwt.ValidationErrorSignatureInvalid) {
+				forceUaaKeyFetch = true
+				continue
+			}
+
+			if matchesError(err, jwt.ValidationErrorIssuedAt) {
+				logger.Info("decode-token-ignoring-issued-at-validation")
+				err = nil
+				break
 			}
 		}
 
@@ -165,28 +167,28 @@ func (c *uaaClient) DecodeToken(uaaToken string, desiredPermissions ...string) e
 		return err
 	}
 
-	hasPermission := false
-	var permissions interface{}
-	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		permissions = claims["scope"]
-	}
-	a := permissions.([]interface{})
-
-	for _, permission := range a {
+	permissions := extractPermissionsFromToken(token)
+	for _, permission := range permissions {
 		for _, desiredPermission := range desiredPermissions {
-			if permission.(string) == desiredPermission {
-				hasPermission = true
-				break
+			if permission == desiredPermission {
+				return nil
 			}
 		}
 	}
 
-	if !hasPermission {
-		err = errors.New("Token does not have '" + strings.Join(desiredPermissions, "', '") + "' scope")
-		return err
+	return errors.New("Token does not have '" + strings.Join(desiredPermissions, "', '") + "' scope")
+}
+
+func extractPermissionsFromToken(token *jwt.Token) []string {
+	claims := token.Claims.(jwt.MapClaims)
+	scopes := claims["scope"].([]interface{})
+
+	var permissions []string
+	for _, scope := range scopes {
+		permissions = append(permissions, scope.(string))
 	}
 
-	return nil
+	return permissions
 }
 
 func checkTokenFormat(token string) (string, error) {
