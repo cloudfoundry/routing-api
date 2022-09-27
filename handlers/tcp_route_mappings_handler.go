@@ -31,7 +31,7 @@ func NewTcpRouteMappingsHandler(uaaClient uaaclient.Client, validator RouteValid
 func (h *TcpRouteMappingsHandler) List(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("list-tcp-route-mappings")
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -57,7 +57,7 @@ func (h *TcpRouteMappingsHandler) List(w http.ResponseWriter, req *http.Request)
 func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("create-tcp-route-mappings")
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -105,7 +105,7 @@ func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Reques
 func (h *TcpRouteMappingsHandler) Delete(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("delete-tcp-route-mappings")
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return

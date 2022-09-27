@@ -38,7 +38,7 @@ func (h *RouterGroupsHandler) ListRouterGroups(w http.ResponseWriter, req *http.
 	log.Debug("started")
 	defer log.Debug("completed")
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RouterGroupsReadScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RouterGroupsReadScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -88,7 +88,7 @@ func (h *RouterGroupsHandler) UpdateRouterGroup(w http.ResponseWriter, req *http
 		}
 	}()
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -154,7 +154,7 @@ func (h *RouterGroupsHandler) DeleteRouterGroup(w http.ResponseWriter, req *http
 	log.Debug("started")
 	defer log.Debug("completed")
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -186,7 +186,7 @@ func (h *RouterGroupsHandler) CreateRouterGroup(w http.ResponseWriter, req *http
 		}
 	}()
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return

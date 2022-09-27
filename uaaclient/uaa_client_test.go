@@ -261,7 +261,7 @@ var _ = Describe("UaaClient", func() {
 		})
 	})
 
-	Describe("DecodeToken", func() {
+	Describe("ValidateToken", func() {
 		var (
 			uaaClient uaaclient.Client
 		)
@@ -277,15 +277,15 @@ var _ = Describe("UaaClient", func() {
 			validToken, err := makeValidToken(privateKey)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = uaaClient.DecodeToken(validToken, "some.scope")
+			err = uaaClient.ValidateToken(validToken, "some.scope")
 			Expect(err).ToNot(HaveOccurred())
 
-			err = uaaClient.DecodeToken(validToken, "another.scope", "some.scope")
+			err = uaaClient.ValidateToken(validToken, "another.scope", "some.scope")
 			Expect(err).ToNot(HaveOccurred())
 
 			validMultiscopeToken, err := makeValidMultiscopeToken(privateKey)
 			Expect(err).NotTo(HaveOccurred())
-			err = uaaClient.DecodeToken(validMultiscopeToken, "some.scope")
+			err = uaaClient.ValidateToken(validMultiscopeToken, "some.scope")
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -294,7 +294,7 @@ var _ = Describe("UaaClient", func() {
 				validToken, err := makeValidToken(privateKey)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = uaaClient.DecodeToken(validToken, "another.scope")
+				err = uaaClient.ValidateToken(validToken, "another.scope")
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("Token does not have 'another.scope' scope"))
 			})
@@ -302,14 +302,14 @@ var _ = Describe("UaaClient", func() {
 
 		Context("when passed token has invalid format", func() {
 			It("fails", func() {
-				err := uaaClient.DecodeToken("invalid", "some.scope")
+				err := uaaClient.ValidateToken("invalid", "some.scope")
 				Expect(err).To(MatchError("Invalid token format"))
 			})
 		})
 
 		Context("when passed token type is not bearer", func() {
 			It("fails", func() {
-				err := uaaClient.DecodeToken("invalid token", "some.scope")
+				err := uaaClient.ValidateToken("invalid token", "some.scope")
 				Expect(err).To(MatchError("Invalid token type: invalid"))
 			})
 		})
@@ -319,7 +319,7 @@ var _ = Describe("UaaClient", func() {
 				spoofedToken, err := makeSpoofedToken(publicKeyPEM)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = uaaClient.DecodeToken(spoofedToken, "some.scope")
+				err = uaaClient.ValidateToken(spoofedToken, "some.scope")
 				Expect(err).To(MatchError("invalid signing method"))
 			})
 		})
@@ -329,7 +329,7 @@ var _ = Describe("UaaClient", func() {
 				otherIssuerToken, err := makeInvalidIssuerToken(privateKey)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = uaaClient.DecodeToken(otherIssuerToken, "some.scope")
+				err = uaaClient.ValidateToken(otherIssuerToken, "some.scope")
 				Expect(err).To(MatchError("invalid issuer"))
 			})
 		})
@@ -339,7 +339,7 @@ var _ = Describe("UaaClient", func() {
 				invalidIssuedAtToken, err := makeInvalidIssuedAtToken(privateKey)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = uaaClient.DecodeToken(invalidIssuedAtToken, "some.scope")
+				err = uaaClient.ValidateToken(invalidIssuedAtToken, "some.scope")
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -381,7 +381,7 @@ var _ = Describe("UaaClient", func() {
 					validToken, err := makeValidToken(newPrivateKey)
 					Expect(err).NotTo(HaveOccurred())
 
-					err = uaaClient.DecodeToken(validToken, "some.scope")
+					err = uaaClient.ValidateToken(validToken, "some.scope")
 					Expect(err).NotTo(HaveOccurred())
 					Expect(server.ReceivedRequests()).To(HaveLen(3))
 				})
@@ -409,7 +409,7 @@ var _ = Describe("UaaClient", func() {
 					validToken, err := makeValidToken(newPrivateKey)
 					Expect(err).NotTo(HaveOccurred())
 
-					err = uaaClient.DecodeToken(validToken, "some.scope")
+					err = uaaClient.ValidateToken(validToken, "some.scope")
 					Expect(err).To(HaveOccurred())
 					Expect(server.ReceivedRequests()).To(HaveLen(3))
 				})

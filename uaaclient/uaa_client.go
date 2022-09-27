@@ -18,7 +18,7 @@ import (
 )
 
 type Client interface {
-	DecodeToken(uaaToken string, desiredPermissions ...string) error
+	ValidateToken(uaaToken string, desiredPermissions ...string) error
 }
 
 func NewClient(devMode bool, cfg config.Config, logger lager.Logger) (Client, error) {
@@ -96,7 +96,7 @@ func checkPublicKey(key string) error {
 type noOpUaaClient struct {
 }
 
-func (c *noOpUaaClient) DecodeToken(uaaToken string, desiredPermissions ...string) error {
+func (c *noOpUaaClient) ValidateToken(uaaToken string, desiredPermissions ...string) error {
 	return nil
 }
 
@@ -108,7 +108,7 @@ type uaaClient struct {
 	rwlock       sync.RWMutex
 }
 
-func (c *uaaClient) DecodeToken(uaaToken string, desiredPermissions ...string) error {
+func (c *uaaClient) ValidateToken(uaaToken string, desiredPermissions ...string) error {
 	logger := c.logger.Session("uaa-client")
 	logger.Debug("decode-token-started")
 	defer logger.Debug("decode-token-completed")

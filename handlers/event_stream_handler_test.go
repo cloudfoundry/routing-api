@@ -77,7 +77,7 @@ var _ = Describe("EventsHandler", func() {
 			})
 
 			It("checks for routing.routes.read scope", func() {
-				_, permission := fakeClient.DecodeTokenArgsForCall(0)
+				_, permission := fakeClient.ValidateTokenArgsForCall(0)
 				Expect(permission).To(ConsistOf(handlers.RoutingRoutesReadScope))
 			})
 
@@ -87,7 +87,7 @@ var _ = Describe("EventsHandler", func() {
 				)
 				BeforeEach(func() {
 					currentCount = metrics.GetTokenErrors()
-					fakeClient.DecodeTokenReturns(errors.New("Not valid"))
+					fakeClient.ValidateTokenReturns(errors.New("Not valid"))
 				})
 
 				It("returns an Unauthorized status code", func() {

@@ -61,7 +61,7 @@ func (h *EventStreamHandler) TcpEventStream(w http.ResponseWriter, req *http.Req
 func (h *EventStreamHandler) handleEventStream(log lager.Logger, filterKey string,
 	w http.ResponseWriter, req *http.Request) {
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
