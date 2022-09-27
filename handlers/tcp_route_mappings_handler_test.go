@@ -6,13 +6,13 @@ import (
 	"net/http/httptest"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/db"
 	fake_db "code.cloudfoundry.org/routing-api/db/fakes"
 	fake_validator "code.cloudfoundry.org/routing-api/handlers/fakes"
 	"code.cloudfoundry.org/routing-api/metrics"
 	"code.cloudfoundry.org/routing-api/models"
-	fake_client "code.cloudfoundry.org/uaa-go-client/fakes"
+	fake_client "code.cloudfoundry.org/routing-api/uaaclient/fakes"
 
 	"code.cloudfoundry.org/routing-api/handlers"
 

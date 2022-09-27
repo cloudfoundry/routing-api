@@ -3,7 +3,7 @@ package handlers_test
 import (
 	"errors"
 
-	fake_client "code.cloudfoundry.org/uaa-go-client/fakes"
+	fake_client "code.cloudfoundry.org/routing-api/uaaclient/fakes"
 
 	"io"
 	"net/http"

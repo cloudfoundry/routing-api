@@ -17,6 +17,7 @@ import (
 	jwt "github.com/golang-jwt/jwt/v4"
 )
 
+//go:generate counterfeiter -o fakes/uaa_client.go . Client
 type Client interface {
 	ValidateToken(uaaToken string, desiredPermissions ...string) error
 }
