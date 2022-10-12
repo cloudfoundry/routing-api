@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/uaaclient"
 
 	. "github.com/onsi/ginkgo"
@@ -40,7 +39,7 @@ var _ = Describe("UaaClient", func() {
 	var (
 		publicKeyPEM   []byte
 		privateKey     *rsa.PrivateKey
-		cfg            config.Config
+		cfg            uaaclient.Config
 		server         *ghttp.Server
 		serverCertFile *os.File
 		logger         *lagertest.TestLogger
@@ -79,14 +78,12 @@ var _ = Describe("UaaClient", func() {
 		port, err := strconv.Atoi(hostParts[1])
 		Expect(err).NotTo(HaveOccurred())
 
-		cfg = config.Config{
-			OAuth: config.OAuthConfig{
-				SkipSSLValidation: true,
-				TokenEndpoint:     hostParts[0],
-				Port:              port,
-				ClientName:        "client-name",
-				ClientSecret:      "client-secret",
-			},
+		cfg = uaaclient.Config{
+			SkipSSLValidation: true,
+			TokenEndpoint:     hostParts[0],
+			Port:              port,
+			ClientName:        "client-name",
+			ClientSecret:      "client-secret",
 		}
 
 		server.AppendHandlers(
@@ -111,49 +108,45 @@ var _ = Describe("UaaClient", func() {
 		server.Close()
 	})
 
-	Describe("NewClient", func() {
+	Describe("NewTokenValidator", func() {
 		It("returns a uaa client", func() {
-			client, err := uaaclient.NewClient(false, cfg, logger)
+			client, err := uaaclient.NewTokenValidator(false, cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(client).NotTo(BeNil())
-			Expect(reflect.TypeOf(client).String()).To(Equal("*uaaclient.uaaClient"))
+			Expect(reflect.TypeOf(client).String()).To(Equal("*uaaclient.tokenValidator"))
 		})
 
 		Context("in dev mode", func() {
 			It("returns a noOpUaaClient", func() {
-				client, err := uaaclient.NewClient(true, cfg, nil)
+				client, err := uaaclient.NewTokenValidator(true, cfg, nil)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(client).NotTo(BeNil())
-				Expect(reflect.TypeOf(client).String()).To(Equal("*uaaclient.noOpUaaClient"))
+				Expect(reflect.TypeOf(client).String()).To(Equal("*uaaclient.noOpTokenValidator"))
 			})
 		})
 
 		Context("when OAuth port is -1", func() {
 			BeforeEach(func() {
-				cfg.OAuth.Port = -1
+				cfg.Port = -1
 			})
 
-			It("logs a fatal message that TLS is required in order to get an OAuth token", func() {
-				Expect(func() {
-					_, err := uaaclient.NewClient(false, cfg, logger)
-					Expect(err).NotTo(HaveOccurred())
-				}).Should(Panic())
-				Expect(logger).To(gbytes.Say("tls-not-enabled"))
-				Expect(logger).To(gbytes.Say("\"port\".*-1"))
-				Expect(logger).To(gbytes.Say(fmt.Sprintf("\"token-endpoint\".*%s", cfg.OAuth.TokenEndpoint)))
+			It("returns an error that UAA client requires TLS", func() {
+				_, err := uaaclient.NewTokenValidator(false, cfg, logger)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("tls-not-enabled: UAA client requires TLS enabled"))
 			})
 		})
 
 		Context("when the OAuth config includes CA certs", func() {
 			BeforeEach(func() {
-				cfg.OAuth.CACerts = serverCertFile.Name()
-				cfg.OAuth.SkipSSLValidation = false
+				cfg.CACerts = serverCertFile.Name()
+				cfg.SkipSSLValidation = false
 			})
 
 			It("uses certificates to validate the server", func() {
-				client, err := uaaclient.NewClient(false, cfg, logger)
+				client, err := uaaclient.NewTokenValidator(false, cfg, logger)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(client).NotTo(BeNil())
 				Expect(server.ReceivedRequests()).To(HaveLen(2))
@@ -161,11 +154,11 @@ var _ = Describe("UaaClient", func() {
 
 			Context("when there is an error reading the cert file", func() {
 				BeforeEach(func() {
-					cfg.OAuth.CACerts = "non-existing-cert-file"
+					cfg.CACerts = "non-existing-cert-file"
 				})
 
 				It("returns an error", func() {
-					client, err := uaaclient.NewClient(false, cfg, logger)
+					client, err := uaaclient.NewTokenValidator(false, cfg, logger)
 					Expect(client).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("Failed to read ca cert file"))
@@ -183,7 +176,7 @@ var _ = Describe("UaaClient", func() {
 					_, err = corruptedCertFile.Write([]byte("definitely-not-a-pem"))
 					Expect(err).NotTo(HaveOccurred())
 
-					cfg.OAuth.CACerts = corruptedCertFile.Name()
+					cfg.CACerts = corruptedCertFile.Name()
 				})
 
 				AfterEach(func() {
@@ -192,7 +185,7 @@ var _ = Describe("UaaClient", func() {
 				})
 
 				It("returns an error", func() {
-					client, err := uaaclient.NewClient(false, cfg, logger)
+					client, err := uaaclient.NewTokenValidator(false, cfg, logger)
 					Expect(client).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("Unable to load caCert"))
@@ -211,7 +204,7 @@ var _ = Describe("UaaClient", func() {
 			})
 
 			It("returns an error", func() {
-				client, err := uaaclient.NewClient(false, cfg, logger)
+				client, err := uaaclient.NewTokenValidator(false, cfg, logger)
 				Expect(client).To(BeNil())
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(MatchRegexp(`An error occurred while calling https://.*/\.well-known/openid-configuration`)))
@@ -230,7 +223,7 @@ var _ = Describe("UaaClient", func() {
 			})
 
 			It("returns an error", func() {
-				client, err := uaaclient.NewClient(false, cfg, logger)
+				client, err := uaaclient.NewTokenValidator(false, cfg, logger)
 				Expect(client).To(BeNil())
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(MatchRegexp(`An error occurred while calling https://.*/token_key`)))
@@ -253,7 +246,7 @@ var _ = Describe("UaaClient", func() {
 			})
 
 			It("returns an error", func() {
-				client, err := uaaclient.NewClient(false, cfg, logger)
+				client, err := uaaclient.NewTokenValidator(false, cfg, logger)
 				Expect(client).To(BeNil())
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("Public uaa token must be PEM encoded"))
@@ -263,12 +256,12 @@ var _ = Describe("UaaClient", func() {
 
 	Describe("ValidateToken", func() {
 		var (
-			uaaClient uaaclient.Client
+			uaaClient uaaclient.TokenValidator
 		)
 
 		BeforeEach(func() {
 			var err error
-			uaaClient, err = uaaclient.NewClient(false, cfg, logger)
+			uaaClient, err = uaaclient.NewTokenValidator(false, cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(uaaClient).NotTo(BeNil())
 		})

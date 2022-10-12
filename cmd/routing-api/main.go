@@ -155,7 +155,16 @@ func main() {
 	lockAcquirer := initializeLockAcquirer(lockGroup, releaseLock, lockErrChan)
 	lockReleaser := initializeLockReleaser(releaseLock, lockErrChan, cfg.RetryInterval)
 
-	uaaClient, err := uaaclient.NewClient(*devMode, cfg, logger)
+	uaaConfig := uaaclient.Config{
+		Port:              cfg.OAuth.Port,
+		SkipSSLValidation: cfg.OAuth.SkipSSLValidation,
+		ClientName:        cfg.OAuth.ClientName,
+		ClientSecret:      cfg.OAuth.ClientSecret,
+		CACerts:           cfg.OAuth.CACerts,
+		TokenEndpoint:     cfg.OAuth.TokenEndpoint,
+	}
+
+	uaaClient, err := uaaclient.NewTokenValidator(*devMode, uaaConfig, logger)
 	if err != nil {
 		logger.Error("creating-uaa-client", err)
 		os.Exit(1)
@@ -304,7 +313,7 @@ func constructRouteRegister(
 	return helpers.NewRouteRegister(database, route, ticker, logger)
 }
 
-func apiHandler(cfg config.Config, uaaClient uaaclient.Client, database db.DB, statsdClient statsd.Statter, logger lager.Logger) http.Handler {
+func apiHandler(cfg config.Config, uaaClient uaaclient.TokenValidator, database db.DB, statsdClient statsd.Statter, logger lager.Logger) http.Handler {
 	validator := handlers.NewValidator()
 	routesHandler := handlers.NewRoutesHandler(uaaClient, int(cfg.MaxTTL.Seconds()), validator, database, logger)
 	eventStreamHandler := handlers.NewEventStreamHandler(uaaClient, database, logger, statsdClient)

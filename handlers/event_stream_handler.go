@@ -12,14 +12,14 @@ import (
 )
 
 type EventStreamHandler struct {
-	uaaClient uaaclient.Client
+	uaaClient uaaclient.TokenValidator
 	db        db.DB
 	logger    lager.Logger
 	stats     metrics.PartialStatsdClient
 	stopChan  <-chan struct{}
 }
 
-func NewEventStreamHandler(uaaClient uaaclient.Client, database db.DB, logger lager.Logger, stats metrics.PartialStatsdClient) *EventStreamHandler {
+func NewEventStreamHandler(uaaClient uaaclient.TokenValidator, database db.DB, logger lager.Logger, stats metrics.PartialStatsdClient) *EventStreamHandler {
 	return &EventStreamHandler{
 		uaaClient: uaaClient,
 		db:        database,

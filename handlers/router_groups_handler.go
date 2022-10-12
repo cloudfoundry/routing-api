@@ -20,12 +20,12 @@ const portWarning = "Warning: if routes are registered for ports that are not " 
 	"result in backends for those routes becoming inaccessible."
 
 type RouterGroupsHandler struct {
-	uaaClient uaaclient.Client
+	uaaClient uaaclient.TokenValidator
 	logger    lager.Logger
 	db        db.DB
 }
 
-func NewRouteGroupsHandler(uaaClient uaaclient.Client, logger lager.Logger, db db.DB) *RouterGroupsHandler {
+func NewRouteGroupsHandler(uaaClient uaaclient.TokenValidator, logger lager.Logger, db db.DB) *RouterGroupsHandler {
 	return &RouterGroupsHandler{
 		uaaClient: uaaClient,
 		logger:    logger,

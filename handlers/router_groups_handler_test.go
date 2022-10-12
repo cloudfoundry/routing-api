@@ -38,14 +38,14 @@ var _ = Describe("RouterGroupsHandler", func() {
 		routerGroupHandler *handlers.RouterGroupsHandler
 		request            *http.Request
 		responseRecorder   *httptest.ResponseRecorder
-		fakeClient         *fake_client.FakeClient
+		fakeClient         *fake_client.FakeTokenValidator
 		fakeDb             *fake_db.FakeDB
 		logger             *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test-router-group")
-		fakeClient = &fake_client.FakeClient{}
+		fakeClient = &fake_client.FakeTokenValidator{}
 		fakeDb = &fake_db.FakeDB{}
 		routerGroupHandler = handlers.NewRouteGroupsHandler(fakeClient, logger, fakeDb)
 		responseRecorder = httptest.NewRecorder()

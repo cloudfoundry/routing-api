@@ -25,7 +25,7 @@ var _ = Describe("EventsHandler", func() {
 		handler    handlers.EventStreamHandler
 		database   *fake_db.FakeDB
 		logger     *lagertest.TestLogger
-		fakeClient *fake_client.FakeClient
+		fakeClient *fake_client.FakeTokenValidator
 		server     *httptest.Server
 		stats      *fake_statsd.FakePartialStatsdClient
 	)
@@ -33,7 +33,7 @@ var _ = Describe("EventsHandler", func() {
 	var emptyCancelFunc = func() {}
 
 	BeforeEach(func() {
-		fakeClient = &fake_client.FakeClient{}
+		fakeClient = &fake_client.FakeTokenValidator{}
 
 		database = &fake_db.FakeDB{}
 		database.WatchChangesReturns(nil, nil, emptyCancelFunc)

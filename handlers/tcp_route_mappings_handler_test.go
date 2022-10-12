@@ -35,13 +35,13 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 		validator               *fake_validator.FakeRouteValidator
 		database                *fake_db.FakeDB
 		logger                  *lagertest.TestLogger
-		fakeClient              *fake_client.FakeClient
+		fakeClient              *fake_client.FakeTokenValidator
 		maxTTL                  int
 	)
 
 	BeforeEach(func() {
 		database = &fake_db.FakeDB{}
-		fakeClient = &fake_client.FakeClient{}
+		fakeClient = &fake_client.FakeTokenValidator{}
 		validator = &fake_validator.FakeRouteValidator{}
 		logger = lagertest.NewTestLogger("routing-api-test")
 		maxTTL = 120

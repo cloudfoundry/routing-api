@@ -7,7 +7,7 @@ import (
 	"code.cloudfoundry.org/routing-api/uaaclient"
 )
 
-type FakeClient struct {
+type FakeTokenValidator struct {
 	ValidateTokenStub        func(string, ...string) error
 	validateTokenMutex       sync.RWMutex
 	validateTokenArgsForCall []struct {
@@ -24,7 +24,7 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) ValidateToken(arg1 string, arg2 ...string) error {
+func (fake *FakeTokenValidator) ValidateToken(arg1 string, arg2 ...string) error {
 	fake.validateTokenMutex.Lock()
 	ret, specificReturn := fake.validateTokenReturnsOnCall[len(fake.validateTokenArgsForCall)]
 	fake.validateTokenArgsForCall = append(fake.validateTokenArgsForCall, struct {
@@ -44,26 +44,26 @@ func (fake *FakeClient) ValidateToken(arg1 string, arg2 ...string) error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeClient) ValidateTokenCallCount() int {
+func (fake *FakeTokenValidator) ValidateTokenCallCount() int {
 	fake.validateTokenMutex.RLock()
 	defer fake.validateTokenMutex.RUnlock()
 	return len(fake.validateTokenArgsForCall)
 }
 
-func (fake *FakeClient) ValidateTokenCalls(stub func(string, ...string) error) {
+func (fake *FakeTokenValidator) ValidateTokenCalls(stub func(string, ...string) error) {
 	fake.validateTokenMutex.Lock()
 	defer fake.validateTokenMutex.Unlock()
 	fake.ValidateTokenStub = stub
 }
 
-func (fake *FakeClient) ValidateTokenArgsForCall(i int) (string, []string) {
+func (fake *FakeTokenValidator) ValidateTokenArgsForCall(i int) (string, []string) {
 	fake.validateTokenMutex.RLock()
 	defer fake.validateTokenMutex.RUnlock()
 	argsForCall := fake.validateTokenArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeClient) ValidateTokenReturns(result1 error) {
+func (fake *FakeTokenValidator) ValidateTokenReturns(result1 error) {
 	fake.validateTokenMutex.Lock()
 	defer fake.validateTokenMutex.Unlock()
 	fake.ValidateTokenStub = nil
@@ -72,7 +72,7 @@ func (fake *FakeClient) ValidateTokenReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeClient) ValidateTokenReturnsOnCall(i int, result1 error) {
+func (fake *FakeTokenValidator) ValidateTokenReturnsOnCall(i int, result1 error) {
 	fake.validateTokenMutex.Lock()
 	defer fake.validateTokenMutex.Unlock()
 	fake.ValidateTokenStub = nil
@@ -86,7 +86,7 @@ func (fake *FakeClient) ValidateTokenReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeClient) Invocations() map[string][][]interface{} {
+func (fake *FakeTokenValidator) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.validateTokenMutex.RLock()
@@ -98,7 +98,7 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeClient) recordInvocation(key string, args []interface{}) {
+func (fake *FakeTokenValidator) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -110,4 +110,4 @@ func (fake *FakeClient) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ uaaclient.Client = new(FakeClient)
+var _ uaaclient.TokenValidator = new(FakeTokenValidator)

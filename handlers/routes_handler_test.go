@@ -29,14 +29,14 @@ var _ = Describe("RoutesHandler", func() {
 		database         *fake_db.FakeDB
 		logger           *lagertest.TestLogger
 		validator        *fake_validator.FakeRouteValidator
-		fakeClient       *fake_client.FakeClient
+		fakeClient       *fake_client.FakeTokenValidator
 		defaultTTL       int
 	)
 
 	BeforeEach(func() {
 		database = &fake_db.FakeDB{}
 		validator = &fake_validator.FakeRouteValidator{}
-		fakeClient = &fake_client.FakeClient{}
+		fakeClient = &fake_client.FakeTokenValidator{}
 		logger = lagertest.NewTestLogger("routing-api-test")
 		defaultTTL = 50
 		routesHandler = handlers.NewRoutesHandler(fakeClient, defaultTTL, validator, database, logger)

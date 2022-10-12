@@ -11,14 +11,14 @@ import (
 )
 
 type TcpRouteMappingsHandler struct {
-	uaaClient uaaclient.Client
+	uaaClient uaaclient.TokenValidator
 	validator RouteValidator
 	db        db.DB
 	logger    lager.Logger
 	maxTTL    int
 }
 
-func NewTcpRouteMappingsHandler(uaaClient uaaclient.Client, validator RouteValidator, database db.DB, ttl int, logger lager.Logger) *TcpRouteMappingsHandler {
+func NewTcpRouteMappingsHandler(uaaClient uaaclient.TokenValidator, validator RouteValidator, database db.DB, ttl int, logger lager.Logger) *TcpRouteMappingsHandler {
 	return &TcpRouteMappingsHandler{
 		uaaClient: uaaClient,
 		validator: validator,

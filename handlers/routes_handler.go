@@ -11,14 +11,14 @@ import (
 )
 
 type RoutesHandler struct {
-	uaaClient uaaclient.Client
+	uaaClient uaaclient.TokenValidator
 	maxTTL    int
 	validator RouteValidator
 	db        db.DB
 	logger    lager.Logger
 }
 
-func NewRoutesHandler(uaaClient uaaclient.Client, maxTTL int, validator RouteValidator, database db.DB, logger lager.Logger) *RoutesHandler {
+func NewRoutesHandler(uaaClient uaaclient.TokenValidator, maxTTL int, validator RouteValidator, database db.DB, logger lager.Logger) *RoutesHandler {
 	return &RoutesHandler{
 		uaaClient: uaaClient,
 		maxTTL:    maxTTL,

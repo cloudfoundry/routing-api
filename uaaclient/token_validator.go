@@ -1,65 +1,36 @@
 package uaaclient
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strings"
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/routing-api/config"
 	uaa "github.com/cloudfoundry-community/go-uaa"
 	jwt "github.com/golang-jwt/jwt/v4"
 )
 
-//go:generate counterfeiter -o fakes/uaa_client.go . Client
-type Client interface {
+//go:generate counterfeiter -o fakes/token_validator.go . TokenValidator
+type TokenValidator interface {
 	ValidateToken(uaaToken string, desiredPermissions ...string) error
 }
 
-func NewClient(devMode bool, cfg config.Config, logger lager.Logger) (Client, error) {
+type Config struct {
+	Port              int
+	SkipSSLValidation bool
+	ClientName        string
+	ClientSecret      string
+	CACerts           string
+	TokenEndpoint     string
+}
+
+func NewTokenValidator(devMode bool, cfg Config, logger lager.Logger) (TokenValidator, error) {
 	if devMode {
-		return &noOpUaaClient{}, nil
+		return &noOpTokenValidator{}, nil
 	}
 
-	if cfg.OAuth.Port == -1 {
-		err := errors.New("GoRouter requires TLS enabled to get OAuth token")
-		logger.Fatal("tls-not-enabled", err, lager.Data{
-			"token-endpoint": cfg.OAuth.TokenEndpoint,
-			"port":           cfg.OAuth.Port,
-		})
-	}
-
-	tlsConfig := &tls.Config{InsecureSkipVerify: cfg.OAuth.SkipSSLValidation}
-	if cfg.OAuth.CACerts != "" {
-		certBytes, err := ioutil.ReadFile(cfg.OAuth.CACerts)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to read ca cert file: %s", err.Error())
-		}
-
-		caCertPool := x509.NewCertPool()
-		if ok := caCertPool.AppendCertsFromPEM(certBytes); !ok {
-			return nil, errors.New("Unable to load caCert")
-		}
-		tlsConfig.RootCAs = caCertPool
-	}
-
-	tr := &http.Transport{
-		TLSClientConfig: tlsConfig,
-	}
-
-	httpClient := &http.Client{Transport: tr}
-	httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		return http.ErrUseLastResponse
-	}
-
-	tokenURL := fmt.Sprintf("https://%s:%d", cfg.OAuth.TokenEndpoint, cfg.OAuth.Port)
-	api, err := uaa.New(tokenURL, uaa.WithNoAuthentication(), uaa.WithClient(httpClient), uaa.WithSkipSSLValidation(cfg.OAuth.SkipSSLValidation))
+	api, err := newAPI(cfg, logger)
 	if err != nil {
 		logger.Error("Failed to create UAA client", err)
 		return nil, err
@@ -83,7 +54,12 @@ func NewClient(devMode bool, cfg config.Config, logger lager.Logger) (Client, er
 		return nil, err
 	}
 
-	return &uaaClient{api: api, issuer: issuer, logger: logger, uaaPublicKey: jwk.Value}, nil
+	return &tokenValidator{
+		api:          api,
+		issuer:       issuer,
+		logger:       logger,
+		uaaPublicKey: jwk.Value,
+	}, nil
 }
 
 func checkPublicKey(key string) error {
@@ -94,14 +70,14 @@ func checkPublicKey(key string) error {
 	return nil
 }
 
-type noOpUaaClient struct {
+type noOpTokenValidator struct {
 }
 
-func (c *noOpUaaClient) ValidateToken(uaaToken string, desiredPermissions ...string) error {
+func (v *noOpTokenValidator) ValidateToken(uaaToken string, desiredPermissions ...string) error {
 	return nil
 }
 
-type uaaClient struct {
+type tokenValidator struct {
 	api          *uaa.API
 	issuer       string
 	logger       lager.Logger
@@ -109,7 +85,7 @@ type uaaClient struct {
 	rwlock       sync.RWMutex
 }
 
-func (c *uaaClient) ValidateToken(uaaToken string, desiredPermissions ...string) error {
+func (c *tokenValidator) ValidateToken(uaaToken string, desiredPermissions ...string) error {
 	logger := c.logger.Session("uaa-client")
 	logger.Debug("decode-token-started")
 	defer logger.Debug("decode-token-completed")
@@ -213,7 +189,7 @@ func matchesError(err error, errorType uint32) bool {
 	return false
 }
 
-func (c *uaaClient) getUaaTokenKey(logger lager.Logger, forceFetch bool) (string, error) {
+func (c *tokenValidator) getUaaTokenKey(logger lager.Logger, forceFetch bool) (string, error) {
 	if c.getUaaPublicKey() == "" || forceFetch {
 		logger.Debug("fetching-new-uaa-key")
 		key, err := c.api.TokenKey()
@@ -241,20 +217,20 @@ func (c *uaaClient) getUaaTokenKey(logger lager.Logger, forceFetch bool) (string
 	return c.getUaaPublicKey(), nil
 }
 
-func (c *uaaClient) getUaaPublicKey() string {
+func (c *tokenValidator) getUaaPublicKey() string {
 	c.rwlock.RLock()
 	defer c.rwlock.RUnlock()
 	return c.uaaPublicKey
 }
 
-func (c *uaaClient) isValidIssuer(token *jwt.Token) bool {
+func (c *tokenValidator) isValidIssuer(token *jwt.Token) bool {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
 		return claims.VerifyIssuer(c.issuer, true)
 	}
 	return false
 }
 
-func (u *uaaClient) isValidSigningMethod(token *jwt.Token) bool {
+func (u *tokenValidator) isValidSigningMethod(token *jwt.Token) bool {
 	switch token.Method {
 	case jwt.SigningMethodRS256, jwt.SigningMethodRS384, jwt.SigningMethodRS512:
 		return true
