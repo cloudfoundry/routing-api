@@ -7,18 +7,18 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
-	uaaclient "code.cloudfoundry.org/uaa-go-client"
+	"code.cloudfoundry.org/routing-api/uaaclient"
 )
 
 type TcpRouteMappingsHandler struct {
-	uaaClient uaaclient.Client
+	uaaClient uaaclient.TokenValidator
 	validator RouteValidator
 	db        db.DB
 	logger    lager.Logger
 	maxTTL    int
 }
 
-func NewTcpRouteMappingsHandler(uaaClient uaaclient.Client, validator RouteValidator, database db.DB, ttl int, logger lager.Logger) *TcpRouteMappingsHandler {
+func NewTcpRouteMappingsHandler(uaaClient uaaclient.TokenValidator, validator RouteValidator, database db.DB, ttl int, logger lager.Logger) *TcpRouteMappingsHandler {
 	return &TcpRouteMappingsHandler{
 		uaaClient: uaaClient,
 		validator: validator,
@@ -31,7 +31,7 @@ func NewTcpRouteMappingsHandler(uaaClient uaaclient.Client, validator RouteValid
 func (h *TcpRouteMappingsHandler) List(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("list-tcp-route-mappings")
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -57,7 +57,7 @@ func (h *TcpRouteMappingsHandler) List(w http.ResponseWriter, req *http.Request)
 func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("create-tcp-route-mappings")
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -105,7 +105,7 @@ func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Reques
 func (h *TcpRouteMappingsHandler) Delete(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("delete-tcp-route-mappings")
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return

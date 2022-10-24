@@ -12,13 +12,13 @@ import (
 	"net/url"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/db"
 	fake_db "code.cloudfoundry.org/routing-api/db/fakes"
 	"code.cloudfoundry.org/routing-api/handlers"
 	"code.cloudfoundry.org/routing-api/metrics"
 	"code.cloudfoundry.org/routing-api/models"
-	fake_client "code.cloudfoundry.org/uaa-go-client/fakes"
+	fake_client "code.cloudfoundry.org/routing-api/uaaclient/fakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/tedsuo/rata"
@@ -38,14 +38,14 @@ var _ = Describe("RouterGroupsHandler", func() {
 		routerGroupHandler *handlers.RouterGroupsHandler
 		request            *http.Request
 		responseRecorder   *httptest.ResponseRecorder
-		fakeClient         *fake_client.FakeClient
+		fakeClient         *fake_client.FakeTokenValidator
 		fakeDb             *fake_db.FakeDB
 		logger             *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test-router-group")
-		fakeClient = &fake_client.FakeClient{}
+		fakeClient = &fake_client.FakeTokenValidator{}
 		fakeDb = &fake_db.FakeDB{}
 		routerGroupHandler = handlers.NewRouteGroupsHandler(fakeClient, logger, fakeDb)
 		responseRecorder = httptest.NewRecorder()
@@ -138,7 +138,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 			request, err = http.NewRequest("GET", routing_api.ListRouterGroups, nil)
 			Expect(err).NotTo(HaveOccurred())
 			routerGroupHandler.ListRouterGroups(responseRecorder, request)
-			_, permission := fakeClient.DecodeTokenArgsForCall(0)
+			_, permission := fakeClient.ValidateTokenArgsForCall(0)
 			Expect(permission).To(ConsistOf(handlers.RouterGroupsReadScope))
 		})
 
@@ -168,7 +168,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 			)
 			BeforeEach(func() {
 				currentCount = metrics.GetTokenErrors()
-				fakeClient.DecodeTokenReturns(errors.New("kaboom"))
+				fakeClient.ValidateTokenReturns(errors.New("kaboom"))
 			})
 
 			It("returns Unauthorized error", func() {
@@ -561,7 +561,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 			handler.ServeHTTP(responseRecorder, request)
-			_, permission := fakeClient.DecodeTokenArgsForCall(0)
+			_, permission := fakeClient.ValidateTokenArgsForCall(0)
 			Expect(permission).To(ConsistOf(handlers.RouterGroupsWriteScope))
 		})
 
@@ -681,7 +681,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 			)
 			BeforeEach(func() {
 				currentCount = metrics.GetTokenErrors()
-				fakeClient.DecodeTokenReturns(errors.New("kaboom"))
+				fakeClient.ValidateTokenReturns(errors.New("kaboom"))
 			})
 
 			It("returns Unauthorized error", func() {
@@ -798,7 +798,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 			)
 			BeforeEach(func() {
 				currentCount = metrics.GetTokenErrors()
-				fakeClient.DecodeTokenReturns(errors.New("kaboom"))
+				fakeClient.ValidateTokenReturns(errors.New("kaboom"))
 			})
 
 			It("returns Unauthorized error", func() {
@@ -878,7 +878,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 					)
 					Expect(err).NotTo(HaveOccurred())
 					routerGroupHandler.CreateRouterGroup(responseRecorder, request)
-					_, permission := fakeClient.DecodeTokenArgsForCall(0)
+					_, permission := fakeClient.ValidateTokenArgsForCall(0)
 					Expect(permission).To(ConsistOf(handlers.RouterGroupsWriteScope))
 				})
 				Context("when the scope is routing.router_groups.write", func() {
@@ -929,7 +929,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 							return err, responseRecorder.Code
 						}
 
-						fakeClient.DecodeTokenReturns(errors.New("non admin token"))
+						fakeClient.ValidateTokenReturns(errors.New("non admin token"))
 
 						err, statusCode := createRouterGroup()
 						Expect(err).ToNot(HaveOccurred())
@@ -1022,7 +1022,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				)
 				Expect(err).NotTo(HaveOccurred())
 				routerGroupHandler.CreateRouterGroup(responseRecorder, request)
-				_, permission := fakeClient.DecodeTokenArgsForCall(0)
+				_, permission := fakeClient.ValidateTokenArgsForCall(0)
 				Expect(permission).To(ConsistOf(handlers.RouterGroupsWriteScope))
 			})
 
@@ -1032,7 +1032,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				)
 				BeforeEach(func() {
 					currentCount = metrics.GetTokenErrors()
-					fakeClient.DecodeTokenReturns(errors.New("kaboom"))
+					fakeClient.ValidateTokenReturns(errors.New("kaboom"))
 				})
 				It("returns Unauthorized error", func() {
 					var err error

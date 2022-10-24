@@ -7,18 +7,18 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
-	uaaclient "code.cloudfoundry.org/uaa-go-client"
+	"code.cloudfoundry.org/routing-api/uaaclient"
 )
 
 type RoutesHandler struct {
-	uaaClient uaaclient.Client
+	uaaClient uaaclient.TokenValidator
 	maxTTL    int
 	validator RouteValidator
 	db        db.DB
 	logger    lager.Logger
 }
 
-func NewRoutesHandler(uaaClient uaaclient.Client, maxTTL int, validator RouteValidator, database db.DB, logger lager.Logger) *RoutesHandler {
+func NewRoutesHandler(uaaClient uaaclient.TokenValidator, maxTTL int, validator RouteValidator, database db.DB, logger lager.Logger) *RoutesHandler {
 	return &RoutesHandler{
 		uaaClient: uaaClient,
 		maxTTL:    maxTTL,
@@ -31,7 +31,7 @@ func NewRoutesHandler(uaaClient uaaclient.Client, maxTTL int, validator RouteVal
 func (h *RoutesHandler) List(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("list-routes")
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -52,7 +52,7 @@ func (h *RoutesHandler) List(w http.ResponseWriter, req *http.Request) {
 func (h *RoutesHandler) Upsert(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("create-route")
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -94,7 +94,7 @@ func (h *RoutesHandler) Upsert(w http.ResponseWriter, req *http.Request) {
 func (h *RoutesHandler) Delete(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("delete-route")
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RoutingRoutesWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return

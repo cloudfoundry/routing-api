@@ -10,7 +10,7 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
-	uaaclient "code.cloudfoundry.org/uaa-go-client"
+	"code.cloudfoundry.org/routing-api/uaaclient"
 	uuid "github.com/nu7hatch/gouuid"
 	"github.com/tedsuo/rata"
 )
@@ -20,12 +20,12 @@ const portWarning = "Warning: if routes are registered for ports that are not " 
 	"result in backends for those routes becoming inaccessible."
 
 type RouterGroupsHandler struct {
-	uaaClient uaaclient.Client
+	uaaClient uaaclient.TokenValidator
 	logger    lager.Logger
 	db        db.DB
 }
 
-func NewRouteGroupsHandler(uaaClient uaaclient.Client, logger lager.Logger, db db.DB) *RouterGroupsHandler {
+func NewRouteGroupsHandler(uaaClient uaaclient.TokenValidator, logger lager.Logger, db db.DB) *RouterGroupsHandler {
 	return &RouterGroupsHandler{
 		uaaClient: uaaClient,
 		logger:    logger,
@@ -38,7 +38,7 @@ func (h *RouterGroupsHandler) ListRouterGroups(w http.ResponseWriter, req *http.
 	log.Debug("started")
 	defer log.Debug("completed")
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RouterGroupsReadScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RouterGroupsReadScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -88,7 +88,7 @@ func (h *RouterGroupsHandler) UpdateRouterGroup(w http.ResponseWriter, req *http
 		}
 	}()
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -154,7 +154,7 @@ func (h *RouterGroupsHandler) DeleteRouterGroup(w http.ResponseWriter, req *http
 	log.Debug("started")
 	defer log.Debug("completed")
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
@@ -186,7 +186,7 @@ func (h *RouterGroupsHandler) CreateRouterGroup(w http.ResponseWriter, req *http
 		}
 	}()
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RouterGroupsWriteScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return

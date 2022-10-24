@@ -3,7 +3,7 @@ package handlers_test
 import (
 	"errors"
 
-	fake_client "code.cloudfoundry.org/uaa-go-client/fakes"
+	fake_client "code.cloudfoundry.org/routing-api/uaaclient/fakes"
 
 	"io"
 	"net/http"
@@ -25,7 +25,7 @@ var _ = Describe("EventsHandler", func() {
 		handler    handlers.EventStreamHandler
 		database   *fake_db.FakeDB
 		logger     *lagertest.TestLogger
-		fakeClient *fake_client.FakeClient
+		fakeClient *fake_client.FakeTokenValidator
 		server     *httptest.Server
 		stats      *fake_statsd.FakePartialStatsdClient
 	)
@@ -33,7 +33,7 @@ var _ = Describe("EventsHandler", func() {
 	var emptyCancelFunc = func() {}
 
 	BeforeEach(func() {
-		fakeClient = &fake_client.FakeClient{}
+		fakeClient = &fake_client.FakeTokenValidator{}
 
 		database = &fake_db.FakeDB{}
 		database.WatchChangesReturns(nil, nil, emptyCancelFunc)
@@ -77,7 +77,7 @@ var _ = Describe("EventsHandler", func() {
 			})
 
 			It("checks for routing.routes.read scope", func() {
-				_, permission := fakeClient.DecodeTokenArgsForCall(0)
+				_, permission := fakeClient.ValidateTokenArgsForCall(0)
 				Expect(permission).To(ConsistOf(handlers.RoutingRoutesReadScope))
 			})
 
@@ -87,7 +87,7 @@ var _ = Describe("EventsHandler", func() {
 				)
 				BeforeEach(func() {
 					currentCount = metrics.GetTokenErrors()
-					fakeClient.DecodeTokenReturns(errors.New("Not valid"))
+					fakeClient.ValidateTokenReturns(errors.New("Not valid"))
 				})
 
 				It("returns an Unauthorized status code", func() {

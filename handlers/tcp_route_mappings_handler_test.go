@@ -6,13 +6,13 @@ import (
 	"net/http/httptest"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/db"
 	fake_db "code.cloudfoundry.org/routing-api/db/fakes"
 	fake_validator "code.cloudfoundry.org/routing-api/handlers/fakes"
 	"code.cloudfoundry.org/routing-api/metrics"
 	"code.cloudfoundry.org/routing-api/models"
-	fake_client "code.cloudfoundry.org/uaa-go-client/fakes"
+	fake_client "code.cloudfoundry.org/routing-api/uaaclient/fakes"
 
 	"code.cloudfoundry.org/routing-api/handlers"
 
@@ -35,13 +35,13 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 		validator               *fake_validator.FakeRouteValidator
 		database                *fake_db.FakeDB
 		logger                  *lagertest.TestLogger
-		fakeClient              *fake_client.FakeClient
+		fakeClient              *fake_client.FakeTokenValidator
 		maxTTL                  int
 	)
 
 	BeforeEach(func() {
 		database = &fake_db.FakeDB{}
-		fakeClient = &fake_client.FakeClient{}
+		fakeClient = &fake_client.FakeTokenValidator{}
 		validator = &fake_validator.FakeRouteValidator{}
 		logger = lagertest.NewTestLogger("routing-api-test")
 		maxTTL = 120
@@ -189,7 +189,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
 
-					_, permission := fakeClient.DecodeTokenArgsForCall(0)
+					_, permission := fakeClient.ValidateTokenArgsForCall(0)
 					Expect(permission).To(ConsistOf(handlers.RoutingRoutesWriteScope))
 				})
 
@@ -319,7 +319,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
 					tcpMappings = []models.TcpRouteMapping{tcpMapping}
 					currentCount = metrics.GetTokenErrors()
-					fakeClient.DecodeTokenReturns(errors.New("Not valid"))
+					fakeClient.ValidateTokenReturns(errors.New("Not valid"))
 				})
 
 				It("returns an Unauthorized status code", func() {
@@ -341,7 +341,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			tcpRouteMappingsHandler.List(responseRecorder, request)
 			Expect(responseRecorder.Code).To(Equal(http.StatusOK))
 
-			_, permission := fakeClient.DecodeTokenArgsForCall(0)
+			_, permission := fakeClient.ValidateTokenArgsForCall(0)
 			Expect(permission).To(ConsistOf(handlers.RoutingRoutesReadScope))
 		})
 
@@ -571,7 +571,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			)
 			BeforeEach(func() {
 				currentCount = metrics.GetTokenErrors()
-				fakeClient.DecodeTokenReturns(errors.New("Not valid"))
+				fakeClient.ValidateTokenReturns(errors.New("Not valid"))
 			})
 
 			It("returns an Unauthorized status code", func() {
@@ -603,7 +603,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				tcpRouteMappingsHandler.Delete(responseRecorder, request)
 				Expect(responseRecorder.Code).To(Equal(http.StatusNoContent))
 
-				_, permission := fakeClient.DecodeTokenArgsForCall(0)
+				_, permission := fakeClient.ValidateTokenArgsForCall(0)
 				Expect(permission).To(ConsistOf(handlers.RoutingRoutesWriteScope))
 			})
 
@@ -742,7 +742,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				)
 				BeforeEach(func() {
 					currentCount = metrics.GetTokenErrors()
-					fakeClient.DecodeTokenReturns(errors.New("Not valid"))
+					fakeClient.ValidateTokenReturns(errors.New("Not valid"))
 				})
 
 				It("returns an Unauthorized status code", func() {

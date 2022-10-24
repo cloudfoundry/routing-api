@@ -7,19 +7,19 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/metrics"
-	uaaclient "code.cloudfoundry.org/uaa-go-client"
+	"code.cloudfoundry.org/routing-api/uaaclient"
 	"github.com/vito/go-sse/sse"
 )
 
 type EventStreamHandler struct {
-	uaaClient uaaclient.Client
+	uaaClient uaaclient.TokenValidator
 	db        db.DB
 	logger    lager.Logger
 	stats     metrics.PartialStatsdClient
 	stopChan  <-chan struct{}
 }
 
-func NewEventStreamHandler(uaaClient uaaclient.Client, database db.DB, logger lager.Logger, stats metrics.PartialStatsdClient) *EventStreamHandler {
+func NewEventStreamHandler(uaaClient uaaclient.TokenValidator, database db.DB, logger lager.Logger, stats metrics.PartialStatsdClient) *EventStreamHandler {
 	return &EventStreamHandler{
 		uaaClient: uaaClient,
 		db:        database,
@@ -61,7 +61,7 @@ func (h *EventStreamHandler) TcpEventStream(w http.ResponseWriter, req *http.Req
 func (h *EventStreamHandler) handleEventStream(log lager.Logger, filterKey string,
 	w http.ResponseWriter, req *http.Request) {
 
-	err := h.uaaClient.DecodeToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
+	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
 		return
