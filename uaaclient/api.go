@@ -7,10 +7,21 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"code.cloudfoundry.org/lager"
 	uaa "github.com/cloudfoundry-community/go-uaa"
 )
+
+type Config struct {
+	Port              int
+	SkipSSLValidation bool
+	ClientName        string
+	ClientSecret      string
+	CACerts           string
+	TokenEndpoint     string
+	RequestTimeout    time.Duration
+}
 
 func newAPI(cfg Config, logger lager.Logger) (*uaa.API, error) {
 	if cfg.Port == -1 {
@@ -38,6 +49,10 @@ func newAPI(cfg Config, logger lager.Logger) (*uaa.API, error) {
 	httpClient := &http.Client{Transport: tr}
 	httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
+	}
+
+	if cfg.RequestTimeout > 0 {
+		httpClient.Timeout = cfg.RequestTimeout
 	}
 
 	tokenURL := fmt.Sprintf("https://%s:%d", cfg.TokenEndpoint, cfg.Port)

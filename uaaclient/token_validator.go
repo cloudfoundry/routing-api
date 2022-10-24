@@ -16,15 +16,6 @@ type TokenValidator interface {
 	ValidateToken(uaaToken string, desiredPermissions ...string) error
 }
 
-type Config struct {
-	Port              int
-	SkipSSLValidation bool
-	ClientName        string
-	ClientSecret      string
-	CACerts           string
-	TokenEndpoint     string
-}
-
 func NewTokenValidator(devMode bool, cfg Config, logger lager.Logger) (TokenValidator, error) {
 	if devMode {
 		return &noOpTokenValidator{}, nil
