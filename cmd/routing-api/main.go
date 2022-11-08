@@ -107,14 +107,6 @@ func main() {
 
 	stopper := constructStopper(database)
 
-	routerRegister := constructRouteRegister(
-		cfg.API.ListenPort,
-		cfg.LogGuid,
-		cfg.SystemDomain,
-		cfg.MaxTTL,
-		database,
-		logger.Session("route-register"),
-	)
 	clock := clock.NewClock()
 
 	releaseLock := make(chan os.Signal)
@@ -203,7 +195,6 @@ func main() {
 	members = append(members,
 		grouper.Member{Name: "admin-server", Runner: adminServer},
 		grouper.Member{Name: "conn-stopper", Runner: stopper},
-		grouper.Member{Name: "route-register", Runner: routerRegister},
 		grouper.Member{Name: "metrics", Runner: metricsReporter},
 	)
 
