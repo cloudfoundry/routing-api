@@ -31,7 +31,7 @@ func NewTokenFetcher(
 		return &noOpTokenFetcher{}, nil
 	}
 
-	api, err := newAPI(cfg, logger)
+	api, err := NewAPI(cfg, logger)
 	if err != nil {
 		logger.Error("Failed to create UAA client", err)
 		return nil, err

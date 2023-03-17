@@ -15,6 +15,7 @@ import (
 
 type Config struct {
 	Port              int
+	Protocol          string
 	SkipSSLValidation bool
 	ClientName        string
 	ClientSecret      string
@@ -23,7 +24,7 @@ type Config struct {
 	RequestTimeout    time.Duration
 }
 
-func newAPI(cfg Config, logger lager.Logger) (*uaa.API, error) {
+func NewAPI(cfg Config, logger lager.Logger) (*uaa.API, error) {
 	if cfg.Port == -1 {
 		return nil, errors.New("tls-not-enabled: UAA client requires TLS enabled")
 	}
@@ -41,6 +42,9 @@ func newAPI(cfg Config, logger lager.Logger) (*uaa.API, error) {
 		}
 		tlsConfig.RootCAs = caCertPool
 	}
+	if cfg.Protocol == "" {
+		cfg.Protocol = "https"
+	}
 
 	tr := &http.Transport{
 		TLSClientConfig: tlsConfig,
@@ -55,7 +59,7 @@ func newAPI(cfg Config, logger lager.Logger) (*uaa.API, error) {
 		httpClient.Timeout = cfg.RequestTimeout
 	}
 
-	tokenURL := fmt.Sprintf("https://%s:%d", cfg.TokenEndpoint, cfg.Port)
+	tokenURL := fmt.Sprintf("%s://%s:%d", cfg.Protocol, cfg.TokenEndpoint, cfg.Port)
 	if cfg.ClientName != "" && cfg.ClientSecret != "" {
 		return uaa.New(tokenURL, uaa.WithClientCredentials(cfg.ClientName, cfg.ClientSecret, uaa.JSONWebToken), uaa.WithClient(httpClient), uaa.WithSkipSSLValidation(cfg.SkipSSLValidation))
 	}
