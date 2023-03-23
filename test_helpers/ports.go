@@ -16,15 +16,14 @@ func NextAvailPort() int {
 	portLock.Lock()
 	defer portLock.Unlock()
 
-	sc, _ := GinkgoConfiguration()
-
 	if lastPortUsed == 0 {
 		once.Do(func() {
 			const portRangeStart = 24000
-			lastPortUsed = portRangeStart + sc.ParallelProcess
+			lastPortUsed = portRangeStart + GinkgoParallelProcess()
 		})
 	}
 
-	lastPortUsed += sc.ParallelTotal
+	suiteCfg, _ := GinkgoConfiguration()
+	lastPortUsed += suiteCfg.ParallelTotal
 	return lastPortUsed
 }

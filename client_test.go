@@ -1552,7 +1552,7 @@ var _ = Describe("Client", func() {
 			})
 		})
 
-		When("multiple port ranges are requested", func(){
+		When("multiple port ranges are requested", func() {
 			It("returns an error", func() {
 				_, err := client.ReservePort("new-router-group", "2000-3000,4000-5000")
 				Expect(err).To(HaveOccurred())
