@@ -9,7 +9,7 @@ import (
 	"code.cloudfoundry.org/routing-api/db/fakes"
 	"code.cloudfoundry.org/routing-api/test_helpers"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

@@ -16,7 +16,7 @@ import (
 
 	"code.cloudfoundry.org/locket"
 	"github.com/tedsuo/ifrit"
-	"github.com/tedsuo/ifrit/ginkgomon"
+	ginkgomon "github.com/tedsuo/ifrit/ginkgomon_v2"
 
 	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
 	locketconfig "code.cloudfoundry.org/locket/cmd/locket/config"
@@ -28,7 +28,7 @@ import (
 	"code.cloudfoundry.org/routing-api/test_helpers"
 
 	"github.com/jinzhu/gorm"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"

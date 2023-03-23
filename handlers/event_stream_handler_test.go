@@ -15,7 +15,7 @@ import (
 	"code.cloudfoundry.org/routing-api/handlers"
 	"code.cloudfoundry.org/routing-api/metrics"
 	fake_statsd "code.cloudfoundry.org/routing-api/metrics/fakes"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/vito/go-sse/sse"
 )
