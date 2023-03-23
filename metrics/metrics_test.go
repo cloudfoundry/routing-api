@@ -12,7 +12,7 @@ import (
 	fake_statsd "code.cloudfoundry.org/routing-api/metrics/fakes"
 	"code.cloudfoundry.org/routing-api/models"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

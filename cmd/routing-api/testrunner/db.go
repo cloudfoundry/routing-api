@@ -12,7 +12,7 @@ import (
 	"code.cloudfoundry.org/routing-api/config"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 )
 
 type DbAllocator interface {

@@ -3,7 +3,7 @@ package test_helpers
 import (
 	"sync"
 
-	. "github.com/onsi/ginkgo/config"
+	. "github.com/onsi/ginkgo/v2"
 )
 
 var (
@@ -16,13 +16,15 @@ func NextAvailPort() int {
 	portLock.Lock()
 	defer portLock.Unlock()
 
+	sc, _ := GinkgoConfiguration()
+
 	if lastPortUsed == 0 {
 		once.Do(func() {
 			const portRangeStart = 24000
-			lastPortUsed = portRangeStart + GinkgoConfig.ParallelNode
+			lastPortUsed = portRangeStart + sc.ParallelProcess
 		})
 	}
 
-	lastPortUsed += GinkgoConfig.ParallelTotal
+	lastPortUsed += sc.ParallelTotal
 	return lastPortUsed
 }
