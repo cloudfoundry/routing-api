@@ -21,8 +21,8 @@ import (
 	"code.cloudfoundry.org/clock/fakeclock"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/routing-api/trace"
 	"code.cloudfoundry.org/routing-api/uaaclient"
-	"code.cloudfoundry.org/trace-logger"
 )
 
 var _ = Describe("TokenFetcher", func() {
@@ -136,36 +136,40 @@ var _ = Describe("TokenFetcher", func() {
 	})
 
 	Context("when OAuth server cannot be reached", func() {
-		It("retries number of times and finally returns an error", func(done Done) {
-			var err error
+		It("retries number of times and finally returns an error", func() {
+			done := make(chan interface{})
+			go func() {
+				var err error
 
-			defer close(done)
-			config.TokenEndpoint = "bogus.url"
-			tokenFetcher, err = uaaclient.NewTokenFetcher(
-				false,
-				config,
-				clock,
-				3,
-				5*time.Millisecond,
-				30,
-				logger,
-			)
-			Expect(err).ToNot(HaveOccurred())
-			wg := sync.WaitGroup{}
-			wg.Add(1)
-			go func(wg *sync.WaitGroup) {
-				defer GinkgoRecover()
-				defer wg.Done()
-				_, err := tokenFetcher.FetchToken(ctx, forceUpdate)
-				Expect(err).To(HaveOccurred())
-			}(&wg)
+				defer close(done)
+				config.TokenEndpoint = "bogus.url"
+				tokenFetcher, err = uaaclient.NewTokenFetcher(
+					false,
+					config,
+					clock,
+					3,
+					5*time.Millisecond,
+					30,
+					logger,
+				)
+				Expect(err).ToNot(HaveOccurred())
+				wg := sync.WaitGroup{}
+				wg.Add(1)
+				go func(wg *sync.WaitGroup) {
+					defer GinkgoRecover()
+					defer wg.Done()
+					_, err := tokenFetcher.FetchToken(ctx, forceUpdate)
+					Expect(err).To(HaveOccurred())
+				}(&wg)
 
-			for i := 0; i < 3; i++ {
-				Eventually(logger, 2*time.Second).Should(gbytes.Say("error-fetching-token.*bogus.url"))
-				clock.WaitForWatcherAndIncrement(DefaultRetryInterval + 10*time.Second)
-			}
-			wg.Wait()
-		}, 5)
+				for i := 0; i < 3; i++ {
+					Eventually(logger, 2*time.Second).Should(gbytes.Say("error-fetching-token.*bogus.url"))
+					clock.WaitForWatcherAndIncrement(DefaultRetryInterval + 10*time.Second)
+				}
+				wg.Wait()
+			}()
+			Eventually(done, 5*time.Second).Should(BeClosed())
+		})
 	})
 
 	Context("when OAuth server returns 200 OK", func() {

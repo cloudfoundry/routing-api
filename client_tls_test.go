@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/models"
-	"code.cloudfoundry.org/trace-logger"
+	"code.cloudfoundry.org/routing-api/trace"
 	"github.com/vito/go-sse/sse"
 
 	. "github.com/onsi/ginkgo/v2"

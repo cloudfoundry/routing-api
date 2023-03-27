@@ -11,9 +11,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/models"
-	trace "code.cloudfoundry.org/trace-logger"
+	"code.cloudfoundry.org/routing-api/trace"
 	"github.com/onsi/gomega/ghttp"
 	"github.com/vito/go-sse/sse"
 )
