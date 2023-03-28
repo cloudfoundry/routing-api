@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/lager/v3/lagertest"
 	"code.cloudfoundry.org/routing-api/uaaclient"
 
 	. "github.com/onsi/ginkgo/v2"

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/v3"
 	uaa "github.com/cloudfoundry-community/go-uaa"
 	jwt "github.com/golang-jwt/jwt/v4"
 )

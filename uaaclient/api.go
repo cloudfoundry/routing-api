@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/v3"
 	uaa "github.com/cloudfoundry-community/go-uaa"
 )
 
