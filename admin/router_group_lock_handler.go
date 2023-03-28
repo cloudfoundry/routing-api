@@ -3,7 +3,7 @@ package admin
 import (
 	"net/http"
 
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/routing-api/db"
 )
 

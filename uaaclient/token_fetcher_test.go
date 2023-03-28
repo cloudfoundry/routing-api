@@ -19,8 +19,8 @@ import (
 	"github.com/onsi/gomega/ghttp"
 
 	"code.cloudfoundry.org/clock/fakeclock"
-	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/lager/v3"
+	"code.cloudfoundry.org/lager/v3/lagertest"
 	"code.cloudfoundry.org/routing-api/trace"
 	"code.cloudfoundry.org/routing-api/uaaclient"
 )

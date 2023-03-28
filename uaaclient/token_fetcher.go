@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/clock"
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/v3"
 	uaa "github.com/cloudfoundry-community/go-uaa"
 	"golang.org/x/oauth2"
 )
