@@ -67,48 +67,56 @@ var _ = Describe("Routes API", func() {
 				Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(expectedEvent.TcpRouteMapping))
 			})
 
-			It("gets events for updated routes", func(done Done) {
-				defer close(done)
-				routeUpdated := models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 75)
+			It("gets events for updated routes", func() {
+				done := make(chan interface{})
+				go func() {
+					defer close(done)
+					routeUpdated := models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 75)
 
-				routesToInsert := []models.TcpRouteMapping{route1}
+					routesToInsert := []models.TcpRouteMapping{route1}
 
-				err := client.UpsertTcpRouteMappings(routesToInsert)
-				Expect(err).NotTo(HaveOccurred())
-				event, err := eventStream.Next()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(event.Action).To(Equal("Upsert"))
-				Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(route1))
+					err := client.UpsertTcpRouteMappings(routesToInsert)
+					Expect(err).NotTo(HaveOccurred())
+					event, err := eventStream.Next()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(event.Action).To(Equal("Upsert"))
+					Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(route1))
 
-				err = client.UpsertTcpRouteMappings([]models.TcpRouteMapping{routeUpdated})
-				Expect(err).NotTo(HaveOccurred())
-				event, err = eventStream.Next()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(event.Action).To(Equal("Upsert"))
-				Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(routeUpdated))
-			}, 5.0)
+					err = client.UpsertTcpRouteMappings([]models.TcpRouteMapping{routeUpdated})
+					Expect(err).NotTo(HaveOccurred())
+					event, err = eventStream.Next()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(event.Action).To(Equal("Upsert"))
+					Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(routeUpdated))
+				}()
+				Eventually(done, 5*time.Second).Should(BeClosed())
+			})
 
-			It("gets events for deleted routes", func(done Done) {
-				defer close(done)
-				routesToInsert := []models.TcpRouteMapping{route1}
+			It("gets events for deleted routes", func() {
+				done := make(chan interface{})
+				go func() {
+					defer close(done)
+					routesToInsert := []models.TcpRouteMapping{route1}
 
-				err := client.UpsertTcpRouteMappings(routesToInsert)
-				Expect(err).NotTo(HaveOccurred())
-				event, err := eventStream.Next()
-				Expect(err).NotTo(HaveOccurred())
+					err := client.UpsertTcpRouteMappings(routesToInsert)
+					Expect(err).NotTo(HaveOccurred())
+					event, err := eventStream.Next()
+					Expect(err).NotTo(HaveOccurred())
 
-				expectedEvent := routing_api.TcpEvent{
-					Action:          "Delete",
-					TcpRouteMapping: route1,
-				}
+					expectedEvent := routing_api.TcpEvent{
+						Action:          "Delete",
+						TcpRouteMapping: route1,
+					}
 
-				err = client.DeleteTcpRouteMappings(routesToInsert)
-				Expect(err).NotTo(HaveOccurred())
-				event, err = eventStream.Next()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(event.Action).To(Equal(expectedEvent.Action))
-				Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(expectedEvent.TcpRouteMapping))
-			}, 5.0)
+					err = client.DeleteTcpRouteMappings(routesToInsert)
+					Expect(err).NotTo(HaveOccurred())
+					event, err = eventStream.Next()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(event.Action).To(Equal(expectedEvent.Action))
+					Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(expectedEvent.TcpRouteMapping))
+				}()
+				Eventually(done, 5*time.Second).Should(BeClosed())
+			})
 
 			It("gets events for expired routes", func() {
 				routeExpire := models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 1)
