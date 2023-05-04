@@ -212,29 +212,9 @@ var _ = Describe("Migration", func() {
 		})
 	}
 
-	Describe("Test with Mysql", func() {
+	Describe("Test Migrations", func() {
 		BeforeEach(func() {
-			allocator = testrunner.NewMySQLAllocator()
-			sqlCfg, err := allocator.Create()
-			Expect(err).ToNot(HaveOccurred())
-
-			sqlDB, err = db.NewSqlDB(sqlCfg)
-			Expect(err).ToNot(HaveOccurred())
-			err = migration.NewV0InitMigration().Run(sqlDB)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		AfterEach(func() {
-			err := allocator.Delete()
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		TestMigrations()
-	})
-
-	Describe("Test with Postgres", func() {
-		BeforeEach(func() {
-			allocator = testrunner.NewPostgresAllocator()
+			allocator = testrunner.NewDbAllocator()
 			sqlCfg, err := allocator.Create()
 			Expect(err).ToNot(HaveOccurred())
 

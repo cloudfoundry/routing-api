@@ -1878,53 +1878,24 @@ var _ = Describe("SqlDB", func() {
 
 		})
 	}
-
-	Describe("Test with Mysql", func() {
-		var (
-			err error
-		)
-
-		BeforeEach(func() {
-			sqlCfg = mysqlCfg
-			sqlDB, err = db.NewSqlDB(sqlCfg)
-			Expect(err).ToNot(HaveOccurred())
-			err = migration.NewV0InitMigration().Run(sqlDB)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
+	Describe("DB Connection Configuration", func() {
 		MySQLConnectionString()
-		CleanupRoutes()
-		WatcherRouteChanges()
-		DeleteRoute()
-		ReadRoute()
-		SaveRoute()
-		DeleteTcpRouteMapping()
-		ReadTcpRouteMappings()
-		ReadFilteredTcpRouteMappings()
-		SaveTcpRouteMapping()
-		ReadRouterGroup()
-		ReadRouterGroupByName()
-		ReadRouterGroups()
-		SaveRouterGroup()
-		DeleteRouterGroup()
-		Connection()
-		FindExpiredRoutes()
+		PostgresConnectionString()
 	})
 
-	Describe("Test with Postgres", func() {
+	Describe("Test", func() {
 		var (
 			err error
 		)
 
 		BeforeEach(func() {
-			sqlCfg = postgresCfg
+			sqlCfg = databaseCfg
 			sqlDB, err = db.NewSqlDB(sqlCfg)
 			Expect(err).ToNot(HaveOccurred())
 			err = migration.NewV0InitMigration().Run(sqlDB)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		PostgresConnectionString()
 		CleanupRoutes()
 		WatcherRouteChanges()
 		DeleteRoute()
@@ -1942,7 +1913,6 @@ var _ = Describe("SqlDB", func() {
 		Connection()
 		FindExpiredRoutes()
 	})
-
 })
 
 func newUuid() string {
