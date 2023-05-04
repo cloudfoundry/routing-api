@@ -12,14 +12,14 @@ import (
 
 var _ = Describe("V0InitMigration", func() {
 	var (
-		mysqlAllocator testrunner.DbAllocator
-		dbClient       db.Client
-		sqlDB          *db.SqlDB
-		err            error
+		dbAllocator testrunner.DbAllocator
+		dbClient    db.Client
+		sqlDB       *db.SqlDB
+		err         error
 	)
 	BeforeEach(func() {
-		mysqlAllocator = testrunner.NewMySQLAllocator()
-		sqlCfg, err := mysqlAllocator.Create()
+		dbAllocator = testrunner.NewDbAllocator()
+		sqlCfg, err := dbAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
 
 		sqlDB, err = db.NewSqlDB(sqlCfg)
@@ -28,7 +28,7 @@ var _ = Describe("V0InitMigration", func() {
 	})
 
 	AfterEach(func() {
-		err := mysqlAllocator.Delete()
+		err := dbAllocator.Delete()
 		Expect(err).ToNot(HaveOccurred())
 	})
 

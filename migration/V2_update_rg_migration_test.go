@@ -1,6 +1,8 @@
 package migration_test
 
 import (
+	"strings"
+
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/migration"
@@ -12,13 +14,13 @@ import (
 
 var _ = Describe("V2UpdateRgMigration", func() {
 	var (
-		sqlDB          *db.SqlDB
-		mysqlAllocator testrunner.DbAllocator
+		sqlDB       *db.SqlDB
+		dbAllocator testrunner.DbAllocator
 	)
 
 	BeforeEach(func() {
-		mysqlAllocator = testrunner.NewMySQLAllocator()
-		sqlCfg, err := mysqlAllocator.Create()
+		dbAllocator = testrunner.NewDbAllocator()
+		sqlCfg, err := dbAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
 
 		sqlDB, err = db.NewSqlDB(sqlCfg)
@@ -29,7 +31,7 @@ var _ = Describe("V2UpdateRgMigration", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 	AfterEach(func() {
-		err := mysqlAllocator.Delete()
+		err := dbAllocator.Delete()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -72,7 +74,7 @@ var _ = Describe("V2UpdateRgMigration", func() {
 
 				_, err = sqlDB.Client.Create(&rg2)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Duplicate"))
+				Expect(strings.ToLower(err.Error())).To(ContainSubstring("duplicate"))
 			})
 		})
 

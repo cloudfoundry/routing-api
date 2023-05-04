@@ -56,8 +56,8 @@ var (
 	sqlDBName string
 	gormDB    *gorm.DB
 
-	mysqlAllocator testrunner.DbAllocator
-	mysqlConfig    *config.SqlDB
+	dbAllocator testrunner.DbAllocator
+	sqlDBConfig *config.SqlDB
 
 	uaaCACertsPath string
 
@@ -91,12 +91,12 @@ var _ = SynchronizedBeforeSuite(
 
 		SetDefaultEventuallyTimeout(15 * time.Second)
 
-		mysqlAllocator = testrunner.NewMySQLAllocator()
+		dbAllocator = testrunner.NewDbAllocator()
 
 		var err error
-		mysqlConfig, err = mysqlAllocator.Create()
-		Expect(err).NotTo(HaveOccurred(), "error occurred starting mySQL client, is mySQL running?")
-		sqlDBName = mysqlConfig.Schema
+		sqlDBConfig, err = dbAllocator.Create()
+		Expect(err).NotTo(HaveOccurred(), "error occurred starting database client, is the database running?")
+		sqlDBName = sqlDBConfig.Schema
 
 		caCert, caPrivKey, err := createCA()
 		Expect(err).ToNot(HaveOccurred())
@@ -122,7 +122,7 @@ var _ = SynchronizedBeforeSuite(
 )
 
 var _ = SynchronizedAfterSuite(func() {
-	err := mysqlAllocator.Delete()
+	err := dbAllocator.Delete()
 	Expect(err).NotTo(HaveOccurred())
 
 	oauthServer.Close()
@@ -138,7 +138,7 @@ var _ = BeforeEach(func() {
 	routingAPIMTLSPort = uint16(test_helpers.NextAvailPort())
 
 	client = routingApiClientWithPort(routingAPIPort)
-	err := mysqlAllocator.Reset()
+	err := dbAllocator.Reset()
 	Expect(err).NotTo(HaveOccurred())
 
 	startLocket()
@@ -231,15 +231,29 @@ func getRoutingAPIConfig(c customConfig) *config.Config {
 		UUID:          "fake-uuid",
 		Locket:        c.LocketConfig,
 	}
-	rapiConfig.SqlDB = config.SqlDB{
-		Host:              "localhost",
-		Port:              3306,
-		Schema:            c.Schema,
-		Type:              "mysql",
-		Username:          "root",
-		Password:          "password",
-		CACert:            os.Getenv("SQL_SERVER_CA_CERT"),
-		SkipSSLValidation: os.Getenv("DB_SKIP_SSL_VALIDATION") == "true",
+	switch os.Getenv("DB") {
+	case "postgres":
+		rapiConfig.SqlDB = config.SqlDB{
+			Host:              "localhost",
+			Port:              5432,
+			Schema:            c.Schema,
+			Type:              "postgres",
+			Username:          "postgres",
+			Password:          "",
+			CACert:            os.Getenv("SQL_SERVER_CA_CERT"),
+			SkipSSLValidation: os.Getenv("DB_SKIP_SSL_VALIDATION") == "true",
+		}
+	default:
+		rapiConfig.SqlDB = config.SqlDB{
+			Host:              "localhost",
+			Port:              3306,
+			Schema:            c.Schema,
+			Type:              "mysql",
+			Username:          "root",
+			Password:          "password",
+			CACert:            os.Getenv("SQL_SERVER_CA_CERT"),
+			SkipSSLValidation: os.Getenv("DB_SKIP_SSL_VALIDATION") == "true",
+		}
 	}
 	return rapiConfig
 }
@@ -290,14 +304,21 @@ func setupOauthServer(uaaServerCert tls.Certificate) {
 func startLocket() {
 	locketPort = uint16(test_helpers.NextAvailPort())
 	locketAddress := fmt.Sprintf("localhost:%d", locketPort)
+
 	locketRunner := locketrunner.NewLocketRunner(locketBinPath, func(cfg *locketconfig.LocketConfig) {
-		mysqlConnStr := "root:password@/"
-		cfg.DatabaseConnectionString = mysqlConnStr + sqlDBName
-		cfg.DatabaseDriver = "mysql"
-		if mysqlConfig.CACert != "" {
+		switch os.Getenv("DB") {
+		case "postgres":
+			cfg.DatabaseConnectionString = "user=postgres password= host=localhost dbname=" + sqlDBName
+			cfg.DatabaseDriver = "postgres"
+		default:
+			connStr := "root:password@/"
+			cfg.DatabaseConnectionString = connStr + sqlDBName
+			cfg.DatabaseDriver = "mysql"
+		}
+		if sqlDBConfig.CACert != "" {
 			caFile, err := ioutil.TempFile("", "")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(ioutil.WriteFile(caFile.Name(), []byte(mysqlConfig.CACert), 0400)).To(Succeed())
+			Expect(ioutil.WriteFile(caFile.Name(), []byte(sqlDBConfig.CACert), 0400)).To(Succeed())
 			cfg.SQLCACertFile = caFile.Name()
 		}
 		cfg.ListenAddress = locketAddress

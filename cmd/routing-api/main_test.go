@@ -162,7 +162,7 @@ var _ = Describe("Main", func() {
 			rapiConfig := getRoutingAPIConfig(defaultConfig)
 			connectionString, err := db.ConnectionString(&rapiConfig.SqlDB)
 			Expect(err).NotTo(HaveOccurred())
-			gormDB, err := gorm.Open("mysql", connectionString)
+			gormDB, err := gorm.Open(rapiConfig.SqlDB.Type, connectionString)
 			Expect(err).NotTo(HaveOccurred())
 
 			getRoutes := func() string {
@@ -239,7 +239,7 @@ var _ = Describe("Main", func() {
 			}
 			connectionString, err := db.ConnectionString(&rapiConfig.SqlDB)
 			Expect(err).NotTo(HaveOccurred())
-			gormDB, err = gorm.Open("mysql", connectionString)
+			gormDB, err = gorm.Open(rapiConfig.SqlDB.Type, connectionString)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		AfterEach(func() {

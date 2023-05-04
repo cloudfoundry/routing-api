@@ -6,7 +6,7 @@ import (
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/migration"
-	"code.cloudfoundry.org/routing-api/migration/v0"
+	v0 "code.cloudfoundry.org/routing-api/migration/v0"
 	"code.cloudfoundry.org/routing-api/models"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -15,13 +15,13 @@ import (
 
 var _ = Describe("V5SniHostnameMigration", func() {
 	var (
-		sqlDB          *db.SqlDB
-		mysqlAllocator testrunner.DbAllocator
+		sqlDB       *db.SqlDB
+		dbAllocator testrunner.DbAllocator
 	)
 
 	BeforeEach(func() {
-		mysqlAllocator = testrunner.NewMySQLAllocator()
-		sqlCfg, err := mysqlAllocator.Create()
+		dbAllocator = testrunner.NewDbAllocator()
+		sqlCfg, err := dbAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
 
 		sqlDB, err = db.NewSqlDB(sqlCfg)
@@ -29,7 +29,7 @@ var _ = Describe("V5SniHostnameMigration", func() {
 	})
 
 	AfterEach(func() {
-		err := mysqlAllocator.Delete()
+		err := dbAllocator.Delete()
 		Expect(err).ToNot(HaveOccurred())
 	})
 

@@ -16,12 +16,12 @@ import (
 var _ = Describe("V4AddRgUniqIdxTCPRouteMigration", func() {
 	var (
 		sqlDB          *db.SqlDB
-		mysqlAllocator testrunner.DbAllocator
+		dbAllocator testrunner.DbAllocator
 	)
 
 	BeforeEach(func() {
-		mysqlAllocator = testrunner.NewMySQLAllocator()
-		sqlCfg, err := mysqlAllocator.Create()
+		dbAllocator = testrunner.NewDbAllocator()
+		sqlCfg, err := dbAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
 
 		sqlDB, err = db.NewSqlDB(sqlCfg)
@@ -29,7 +29,7 @@ var _ = Describe("V4AddRgUniqIdxTCPRouteMigration", func() {
 	})
 
 	AfterEach(func() {
-		err := mysqlAllocator.Delete()
+		err := dbAllocator.Delete()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
