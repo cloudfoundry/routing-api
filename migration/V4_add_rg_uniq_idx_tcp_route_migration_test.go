@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("V4AddRgUniqIdxTCPRouteMigration", func() {
 	var (
-		sqlDB          *db.SqlDB
+		sqlDB       *db.SqlDB
 		dbAllocator testrunner.DbAllocator
 	)
 
