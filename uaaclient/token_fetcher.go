@@ -122,5 +122,5 @@ func (c *tokenFetcher) canReturnCachedToken() bool {
 func (c *tokenFetcher) updateCachedToken(token *oauth2.Token) {
 	c.logger.Debug("caching-token")
 	c.cachedToken = token
-	c.refetchTokenTime = token.Expiry.Add(time.Duration(c.expirationBufferInSec) * time.Second)
+	c.refetchTokenTime = token.Expiry.Add(-1 * time.Duration(c.expirationBufferInSec) * time.Second)
 }

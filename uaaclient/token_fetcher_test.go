@@ -17,6 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/ghttp"
+	"golang.org/x/oauth2"
 
 	"code.cloudfoundry.org/clock/fakeclock"
 	"code.cloudfoundry.org/lager/v3"
@@ -214,29 +215,50 @@ var _ = Describe("TokenFetcher", func() {
 
 	Context("when multiple goroutines fetch a token", func() {
 		It("contacts oauth server only once and returns cached token", func() {
-			responseBody := &tokenJSON{
-				AccessToken: "the token",
-				ExpiresIn:   10,
-			}
-
 			server.AppendHandlers(
-				getOauthHandlerFunc(http.StatusOK, responseBody),
-			)
+				getOauthHandlerFunc(http.StatusOK, &tokenJSON{
+					AccessToken: "the token",
+					ExpiresIn:   60,
+				}),
+				getOauthHandlerFunc(http.StatusOK, &tokenJSON{
+					AccessToken: "the new token",
+					ExpiresIn:   60,
+				}))
 
-			wg := sync.WaitGroup{}
+			var token *oauth2.Token
+			var err error
 			forceUpdate = false
 			for i := 0; i < 2; i++ {
-				wg.Add(1)
-				go func(wg *sync.WaitGroup) {
-					defer GinkgoRecover()
-					defer wg.Done()
-					token, err := tokenFetcher.FetchToken(ctx, forceUpdate)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(server.ReceivedRequests()).Should(HaveLen(1))
-					Expect(token.AccessToken).To(Equal("the token"))
-				}(&wg)
+				token, err = tokenFetcher.FetchToken(ctx, forceUpdate)
+				Expect(err).NotTo(HaveOccurred())
 			}
-			wg.Wait()
+			Expect(server.ReceivedRequests()).Should(HaveLen(1))
+			Expect(token.AccessToken).To(Equal("the token"))
+		})
+		Context("and the token is about to expire", func() {
+			It("contacts the oauth server again, and returns a new token", func() {
+				server.AppendHandlers(
+					getOauthHandlerFunc(http.StatusOK, &tokenJSON{
+						AccessToken: "the token",
+						ExpiresIn:   60,
+					}),
+					getOauthHandlerFunc(http.StatusOK, &tokenJSON{
+						AccessToken: "the new token",
+						ExpiresIn:   60,
+					}))
+
+				var token *oauth2.Token
+				var err error
+				forceUpdate = false
+				for i := 0; i < 2; i++ {
+					token, err = tokenFetcher.FetchToken(ctx, forceUpdate)
+					Expect(err).NotTo(HaveOccurred())
+					clock.IncrementBySeconds(35) // push us into the expiry buffer window
+				}
+				Expect(server.ReceivedRequests()).Should(HaveLen(2))
+				Expect(token.AccessToken).To(Equal("the new token"))
+
+			})
 		})
 	})
 
