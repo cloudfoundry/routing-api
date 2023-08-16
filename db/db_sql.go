@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -16,9 +19,9 @@ import (
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/models"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
+	_ "gorm.io/driver/mysql"
+	_ "gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 //go:generate counterfeiter -o fakes/fake_db.go . DB
@@ -104,24 +107,36 @@ func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 		return nil, errors.New("SQL configuration cannot be nil")
 	}
 
-	if cfg.Type != "mysql" && cfg.Type != "postgres" {
-		return &SqlDB{}, fmt.Errorf("Unknown type %s", cfg.Type)
-	}
-
 	connStr, err := ConnectionString(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := gorm.Open(cfg.Type, connStr)
+	var dialect gorm.Dialector
+	switch cfg.Type {
+	case "postgres":
+		dialect = postgres.Open(connStr)
+	case "mysql":
+		dialect = mysql.Open(connStr)
+	default:
+		return &SqlDB{}, errors.New(fmt.Sprintf("Unknown type %s", cfg.Type))
+	}
+
+	db, err := gorm.Open(dialect, &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
 
-	db.DB().SetMaxIdleConns(cfg.MaxIdleConns)
-	db.DB().SetMaxOpenConns(cfg.MaxOpenConns)
+	// Use the connection pool and setup it
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	sqlDB.SetMaxIdleConns(cfg.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
 	connMaxLifetime := time.Duration(cfg.ConnMaxLifetime) * time.Second
-	db.DB().SetConnMaxLifetime(connMaxLifetime)
+	sqlDB.SetConnMaxLifetime(connMaxLifetime)
 
 	tcpEventHub := eventhub.NewNonBlocking(1024)
 	httpEventHub := eventhub.NewNonBlocking(1024)

@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 //go:generate counterfeiter -o fakes/fake_client.go . Client
@@ -37,14 +37,18 @@ func NewGormClient(db *gorm.DB) Client {
 	return &gormClient{db: db}
 }
 func (c *gormClient) DropColumn(name string) error {
-	return c.db.DropColumn(name).Error
+	return c.DropColumn(name).Error()
 }
 func (c *gormClient) Close() error {
 	return c.db.Close()
 }
 func (c *gormClient) AddUniqueIndex(indexName string, columns ...string) (Client, error) {
 	var newClient gormClient
-	newClient.db = c.db.AddUniqueIndex(indexName, columns...)
+	newClient.db, err := c.AddUniqueIndex(indexName, columns...)
+	if err != nil {
+
+	}
+
 	return &newClient, newClient.db.Error
 }
 

@@ -32,6 +32,7 @@ import (
 	"github.com/onsi/gomega/ghttp"
 	"google.golang.org/grpc/grpclog"
 	yaml "gopkg.in/yaml.v2"
+	"gorm.io/gorm"
 )
 
 var (
@@ -63,9 +64,10 @@ var (
 	mtlsAPIClientCert     tls.Certificate
 )
 
-func TestMain(t *testing.T) {
+func TestMain(m *testing.M) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Main Suite")
+	os.Exit(m.Run())
+	RunSpecs(m, "Main Suite")
 }
 
 var _ = SynchronizedBeforeSuite(
