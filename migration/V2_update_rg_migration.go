@@ -18,6 +18,5 @@ func (v *V2UpdateRgMigration) Version() int {
 }
 
 func (v *V2UpdateRgMigration) Run(sqlDB *db.SqlDB) error {
-	_, err := sqlDB.Client.Model(&models.RouterGroup{}).AddUniqueIndex("idx_rg_name", "name")
-	return err
+	return sqlDB.Client.Model(&models.RouterGroup{}).AddUniqueIndex("idx_rg_name", "name")
 }

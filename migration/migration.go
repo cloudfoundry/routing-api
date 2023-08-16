@@ -5,7 +5,7 @@ import (
 
 	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/routing-api/db"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 const MigrationKey = "routing-api-migration"
