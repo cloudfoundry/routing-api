@@ -18,10 +18,11 @@ func (v *V4AddRgUniqIdxTCPRoute) Version() int {
 }
 
 func (v *V4AddRgUniqIdxTCPRoute) Run(sqlDB *db.SqlDB) error {
-	err := sqlDB.Client.Model(&models.TcpRouteMapping{}).RemoveIndex("idx_tcp_route")
+	err := sqlDB.Client.RemoveIndex("idx_tcp_route", &models.TcpRouteMapping{})
 	if err != nil {
 		return err
 	}
-	err = sqlDB.Client.Model(&models.TcpRouteMapping{}).AddUniqueIndex("idx_tcp_route", "router_group_guid", "host_port", "host_ip", "external_port")
+
+	err = sqlDB.Client.AddUniqueIndex("idx_tcp_route", &models.TcpRouteMapping{})
 	return err
 }

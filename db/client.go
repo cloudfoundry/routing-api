@@ -13,7 +13,7 @@ type Client interface {
 	Create(value interface{}) (int64, error)
 	Delete(value interface{}, where ...interface{}) (int64, error)
 	Save(value interface{}) (int64, error)
-	Update(attrs ...interface{}) (int64, error)
+	Update(column string, value interface{}) (int64, error)
 	First(out interface{}, where ...interface{}) error
 	Find(out interface{}, where ...interface{}) error
 	AutoMigrate(values ...interface{}) error
@@ -21,8 +21,8 @@ type Client interface {
 	Rollback() error
 	Commit() error
 	HasTable(value interface{}) bool
-	AddUniqueIndex(indexName string, columns ...string) error
-	RemoveIndex(indexName string) error
+	AddUniqueIndex(indexName string, columns interface{}) error
+	RemoveIndex(indexName string, columns interface{}) error
 	Model(value interface{}) Client
 	Exec(query string, args ...interface{}) int64
 	Rows(tableName string) (*sql.Rows, error)
@@ -42,16 +42,12 @@ func (c *gormClient) DropColumn(name string) error {
 func (c *gormClient) Close() error {
 	return c.Close()
 }
-func (c *gormClient) AddUniqueIndex(indexName string, columns ...string) error {
-	//TODO Add the interface abstraction layer
-	var value interface{}
-	return c.db.Migrator().CreateIndex(value, indexName)
+func (c *gormClient) AddUniqueIndex(indexName string, columns interface{}) error {
+	return c.db.Migrator().CreateIndex(columns, indexName)
 }
 
-func (c *gormClient) RemoveIndex(indexName string) error {
-	//TODO Add the interface abstraction layer
-	var value interface{}
-	return c.db.Migrator().DropIndex(value, indexName)
+func (c *gormClient) RemoveIndex(indexName string, columns interface{}) error {
+	return c.db.Migrator().DropIndex(columns, indexName)
 }
 
 func (c *gormClient) Model(value interface{}) Client {
@@ -80,9 +76,8 @@ func (c *gormClient) Save(value interface{}) (int64, error) {
 	return newDb.RowsAffected, newDb.Error
 }
 
-func (c *gormClient) Update(attrs ...interface{}) (int64, error) {
-	//TODO Adapt the functionality
-	newDb := c.db.Update(attrs...)
+func (c *gormClient) Update(column string, value interface{}) (int64, error) {
+	newDb := c.db.Update(column, value)
 	return newDb.RowsAffected, newDb.Error
 }
 

@@ -18,5 +18,9 @@ func (v *V2UpdateRgMigration) Version() int {
 }
 
 func (v *V2UpdateRgMigration) Run(sqlDB *db.SqlDB) error {
-	return sqlDB.Client.Model(&models.RouterGroup{}).AddUniqueIndex("idx_rg_name", "name")
+	type routerGroup struct {
+		models.Model
+		Name string `gorm:"index:idx_rg_name,unique" json:"name"`
+	}
+	return sqlDB.Client.AddUniqueIndex("idx_rg_name", &routerGroup{})
 }
