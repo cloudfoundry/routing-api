@@ -9,19 +9,17 @@ import (
 )
 
 type FakeClient struct {
-	AddUniqueIndexStub        func(string, ...string) (db.Client, error)
+	AddUniqueIndexStub        func(string, ...string) error
 	addUniqueIndexMutex       sync.RWMutex
 	addUniqueIndexArgsForCall []struct {
 		arg1 string
 		arg2 []string
 	}
 	addUniqueIndexReturns struct {
-		result1 db.Client
-		result2 error
+		result1 error
 	}
 	addUniqueIndexReturnsOnCall map[int]struct {
-		result1 db.Client
-		result2 error
+		result1 error
 	}
 	AutoMigrateStub        func(...interface{}) error
 	autoMigrateMutex       sync.RWMutex
@@ -160,18 +158,16 @@ type FakeClient struct {
 	modelReturnsOnCall map[int]struct {
 		result1 db.Client
 	}
-	RemoveIndexStub        func(string) (db.Client, error)
+	RemoveIndexStub        func(string) error
 	removeIndexMutex       sync.RWMutex
 	removeIndexArgsForCall []struct {
 		arg1 string
 	}
 	removeIndexReturns struct {
-		result1 db.Client
-		result2 error
+		result1 error
 	}
 	removeIndexReturnsOnCall map[int]struct {
-		result1 db.Client
-		result2 error
+		result1 error
 	}
 	RollbackStub        func() error
 	rollbackMutex       sync.RWMutex
@@ -238,7 +234,7 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) AddUniqueIndex(arg1 string, arg2 ...string) (db.Client, error) {
+func (fake *FakeClient) AddUniqueIndex(arg1 string, arg2 ...string) error {
 	fake.addUniqueIndexMutex.Lock()
 	ret, specificReturn := fake.addUniqueIndexReturnsOnCall[len(fake.addUniqueIndexArgsForCall)]
 	fake.addUniqueIndexArgsForCall = append(fake.addUniqueIndexArgsForCall, struct {
@@ -251,10 +247,10 @@ func (fake *FakeClient) AddUniqueIndex(arg1 string, arg2 ...string) (db.Client, 
 		return fake.AddUniqueIndexStub(arg1, arg2...)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
 	fakeReturns := fake.addUniqueIndexReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fakeReturns.result1
 }
 
 func (fake *FakeClient) AddUniqueIndexCallCount() int {
@@ -263,7 +259,7 @@ func (fake *FakeClient) AddUniqueIndexCallCount() int {
 	return len(fake.addUniqueIndexArgsForCall)
 }
 
-func (fake *FakeClient) AddUniqueIndexCalls(stub func(string, ...string) (db.Client, error)) {
+func (fake *FakeClient) AddUniqueIndexCalls(stub func(string, ...string) error) {
 	fake.addUniqueIndexMutex.Lock()
 	defer fake.addUniqueIndexMutex.Unlock()
 	fake.AddUniqueIndexStub = stub
@@ -276,30 +272,27 @@ func (fake *FakeClient) AddUniqueIndexArgsForCall(i int) (string, []string) {
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeClient) AddUniqueIndexReturns(result1 db.Client, result2 error) {
+func (fake *FakeClient) AddUniqueIndexReturns(result1 error) {
 	fake.addUniqueIndexMutex.Lock()
 	defer fake.addUniqueIndexMutex.Unlock()
 	fake.AddUniqueIndexStub = nil
 	fake.addUniqueIndexReturns = struct {
-		result1 db.Client
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
-func (fake *FakeClient) AddUniqueIndexReturnsOnCall(i int, result1 db.Client, result2 error) {
+func (fake *FakeClient) AddUniqueIndexReturnsOnCall(i int, result1 error) {
 	fake.addUniqueIndexMutex.Lock()
 	defer fake.addUniqueIndexMutex.Unlock()
 	fake.AddUniqueIndexStub = nil
 	if fake.addUniqueIndexReturnsOnCall == nil {
 		fake.addUniqueIndexReturnsOnCall = make(map[int]struct {
-			result1 db.Client
-			result2 error
+			result1 error
 		})
 	}
 	fake.addUniqueIndexReturnsOnCall[i] = struct {
-		result1 db.Client
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeClient) AutoMigrate(arg1 ...interface{}) error {
@@ -1008,7 +1001,7 @@ func (fake *FakeClient) ModelReturnsOnCall(i int, result1 db.Client) {
 	}{result1}
 }
 
-func (fake *FakeClient) RemoveIndex(arg1 string) (db.Client, error) {
+func (fake *FakeClient) RemoveIndex(arg1 string) error {
 	fake.removeIndexMutex.Lock()
 	ret, specificReturn := fake.removeIndexReturnsOnCall[len(fake.removeIndexArgsForCall)]
 	fake.removeIndexArgsForCall = append(fake.removeIndexArgsForCall, struct {
@@ -1020,10 +1013,10 @@ func (fake *FakeClient) RemoveIndex(arg1 string) (db.Client, error) {
 		return fake.RemoveIndexStub(arg1)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
 	fakeReturns := fake.removeIndexReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fakeReturns.result1
 }
 
 func (fake *FakeClient) RemoveIndexCallCount() int {
@@ -1032,7 +1025,7 @@ func (fake *FakeClient) RemoveIndexCallCount() int {
 	return len(fake.removeIndexArgsForCall)
 }
 
-func (fake *FakeClient) RemoveIndexCalls(stub func(string) (db.Client, error)) {
+func (fake *FakeClient) RemoveIndexCalls(stub func(string) error) {
 	fake.removeIndexMutex.Lock()
 	defer fake.removeIndexMutex.Unlock()
 	fake.RemoveIndexStub = stub
@@ -1045,30 +1038,27 @@ func (fake *FakeClient) RemoveIndexArgsForCall(i int) string {
 	return argsForCall.arg1
 }
 
-func (fake *FakeClient) RemoveIndexReturns(result1 db.Client, result2 error) {
+func (fake *FakeClient) RemoveIndexReturns(result1 error) {
 	fake.removeIndexMutex.Lock()
 	defer fake.removeIndexMutex.Unlock()
 	fake.RemoveIndexStub = nil
 	fake.removeIndexReturns = struct {
-		result1 db.Client
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
-func (fake *FakeClient) RemoveIndexReturnsOnCall(i int, result1 db.Client, result2 error) {
+func (fake *FakeClient) RemoveIndexReturnsOnCall(i int, result1 error) {
 	fake.removeIndexMutex.Lock()
 	defer fake.removeIndexMutex.Unlock()
 	fake.RemoveIndexStub = nil
 	if fake.removeIndexReturnsOnCall == nil {
 		fake.removeIndexReturnsOnCall = make(map[int]struct {
-			result1 db.Client
-			result2 error
+			result1 error
 		})
 	}
 	fake.removeIndexReturnsOnCall[i] = struct {
-		result1 db.Client
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeClient) Rollback() error {

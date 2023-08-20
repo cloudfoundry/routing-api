@@ -2,6 +2,8 @@ package main_test
 
 import (
 	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"net/http"
 	"os"
 	"os/exec"
@@ -162,7 +164,8 @@ var _ = Describe("Main", func() {
 			rapiConfig := getRoutingAPIConfig(defaultConfig)
 			connectionString, err := db.ConnectionString(&rapiConfig.SqlDB)
 			Expect(err).NotTo(HaveOccurred())
-			gormDB, err := gorm.Open(rapiConfig.SqlDB.Type, connectionString)
+
+			gormDB, err := gorm.Open(getGormDialect(rapiConfig.SqlDB.Type, connectionString), &gorm.Config{})
 			Expect(err).NotTo(HaveOccurred())
 
 			getRoutes := func() string {
@@ -239,7 +242,7 @@ var _ = Describe("Main", func() {
 			}
 			connectionString, err := db.ConnectionString(&rapiConfig.SqlDB)
 			Expect(err).NotTo(HaveOccurred())
-			gormDB, err = gorm.Open(rapiConfig.SqlDB.Type, connectionString)
+			gormDB, err = gorm.Open(getGormDialect(rapiConfig.SqlDB.Type, connectionString), &gorm.Config{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -264,4 +267,17 @@ func RoutingApi(args ...string) *Session {
 	Expect(err).ToNot(HaveOccurred())
 
 	return session
+}
+
+func getGormDialect(databaseType string, connectionString string) gorm.Dialector {
+	var dialect gorm.Dialector
+
+	switch databaseType {
+	case "postgres":
+		dialect = postgres.Open(connectionString)
+	case "mysql":
+		dialect = mysql.Open(connectionString)
+	}
+
+	return dialect
 }
