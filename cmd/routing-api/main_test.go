@@ -244,10 +244,10 @@ var _ = Describe("Main", func() {
 			gormDB, err = gorm.Open(routingAPIConfig.SqlDB.Type, connectionString)
 			Expect(err).NotTo(HaveOccurred())
 		})
-		AfterEach(func() {
-			gormDB.AutoMigrate(&models.RouterGroupDB{})
-			Expect(os.Remove(configPath)).To(Succeed())
-		})
+		/*		AfterEach(func() {
+				gormDB.AutoMigrate(&models.RouterGroupDB{})
+				Expect(os.Remove(configPath)).To(Succeed())
+			})*/
 		It("should fail with an error", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
