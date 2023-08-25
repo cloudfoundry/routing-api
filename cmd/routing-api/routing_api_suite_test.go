@@ -64,11 +64,10 @@ var (
 	mtlsAPIClientCert     tls.Certificate
 )
 
-func TestMain(m *testing.M) {
+func TestMainSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	os.Exit(m.Run())
-	//TODO Adapt the test execution
-	RunSpecs(m, "Main Suite")
+	suiteConfig, reporterConfig := GinkgoConfiguration()
+	RunSpecs(t, "Main Suite", suiteConfig, reporterConfig)
 }
 
 var _ = SynchronizedBeforeSuite(
@@ -82,7 +81,6 @@ var _ = SynchronizedBeforeSuite(
 		return []byte(strings.Join([]string{routingAPIBin, locketPath}, ","))
 	},
 	func(binPaths []byte) {
-		//TODO Adapt the logger
 		grpclog.SetLoggerV2(grpclog.NewLoggerV2(io.Discard, io.Discard, io.Discard))
 
 		path := string(binPaths)
