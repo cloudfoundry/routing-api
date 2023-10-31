@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"flag"
-	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -21,10 +20,8 @@ import (
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/handlers"
-	"code.cloudfoundry.org/routing-api/helpers"
 	"code.cloudfoundry.org/routing-api/metrics"
 	"code.cloudfoundry.org/routing-api/migration"
-	"code.cloudfoundry.org/routing-api/models"
 	"code.cloudfoundry.org/routing-api/uaaclient"
 	"code.cloudfoundry.org/tlsconfig"
 	"github.com/cactus/go-statsd-client/statsd"
@@ -107,14 +104,6 @@ func main() {
 
 	stopper := constructStopper(database)
 
-	routerRegister := constructRouteRegister(
-		cfg.API.ListenPort,
-		cfg.LogGuid,
-		cfg.SystemDomain,
-		cfg.MaxTTL,
-		database,
-		logger.Session("route-register"),
-	)
 	clock := clock.NewClock()
 
 	releaseLock := make(chan os.Signal)
@@ -203,7 +192,6 @@ func main() {
 	members = append(members,
 		grouper.Member{Name: "admin-server", Runner: adminServer},
 		grouper.Member{Name: "conn-stopper", Runner: stopper},
-		grouper.Member{Name: "route-register", Runner: routerRegister},
 		grouper.Member{Name: "metrics", Runner: metricsReporter},
 	)
 
@@ -294,23 +282,6 @@ func runMigration(database db.DB, logger lager.Logger) ifrit.Runner {
 		return migration.NewRunner(sqlDB, logger)
 	}
 	return migration.NewRunner(nil, logger)
-}
-
-func constructRouteRegister(
-	port int,
-	logGuid string,
-	systemDomain string,
-	maxTTL time.Duration,
-	database db.DB,
-	logger lager.Logger,
-) ifrit.Runner {
-	host := fmt.Sprintf("api.%s/routing", systemDomain)
-	route := models.NewRoute(host, uint16(port), *ip, logGuid, "", int(maxTTL.Seconds()))
-
-	registerInterval := int(maxTTL.Seconds()) / 2
-	ticker := time.NewTicker(time.Duration(registerInterval) * time.Second)
-
-	return helpers.NewRouteRegister(database, route, ticker, logger)
 }
 
 func apiHandler(cfg config.Config, uaaClient uaaclient.TokenValidator, database db.DB, statsdClient statsd.Statter, logger lager.Logger) http.Handler {

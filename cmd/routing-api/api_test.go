@@ -262,16 +262,14 @@ var _ = Describe("Routes API", func() {
 			})
 
 			It("fetches all of the routes", func() {
-				routingAPIRoute := models.NewRoute(fmt.Sprintf("api.%s/routing", routingAPISystemDomain), routingAPIPort, routingAPIIP, "my_logs", "", 120)
 				Eventually(func() int {
 					routes, getErr = client.Routes()
 					Expect(getErr).ToNot(HaveOccurred())
 					return len(routes)
-				}, 2*time.Second).Should(BeNumerically("==", 3))
+				}, 2*time.Second).Should(BeNumerically("==", 2))
 				Expect(routes).To(ConsistOf(
 					matchers.MatchHttpRoute(route1),
 					matchers.MatchHttpRoute(route2),
-					matchers.MatchHttpRoute(routingAPIRoute),
 				))
 			})
 

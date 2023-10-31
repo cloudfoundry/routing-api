@@ -155,35 +155,6 @@ var _ = Describe("Main", func() {
 			)
 		})
 
-		It("unregisters from the db when the process exits", func() {
-			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
-			proc := ifrit.Invoke(routingAPIRunner)
-
-			rapiConfig := getRoutingAPIConfig(defaultConfig)
-			connectionString, err := db.ConnectionString(&rapiConfig.SqlDB)
-			Expect(err).NotTo(HaveOccurred())
-			gormDB, err := gorm.Open(rapiConfig.SqlDB.Type, connectionString)
-			Expect(err).NotTo(HaveOccurred())
-
-			getRoutes := func() string {
-				var routes []models.Route
-				err := gormDB.Find(&routes).Error
-				Expect(err).ToNot(HaveOccurred())
-
-				var routeUrl string
-				if len(routes) > 0 {
-					routeUrl = routes[0].Route
-				}
-				return routeUrl
-			}
-			Eventually(getRoutes).Should(ContainSubstring("api.example.com/routing"))
-
-			ginkgomon.Interrupt(proc)
-
-			Eventually(getRoutes).ShouldNot(ContainSubstring("api.example.com/routing"))
-			Eventually(routingAPIRunner.ExitCode()).Should(Equal(0))
-		})
-
 		It("closes open event streams when the process exits", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
