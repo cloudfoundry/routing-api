@@ -122,9 +122,14 @@ var _ = Describe("Routes API", func() {
 	})
 
 	Describe("Stats for total routes", func() {
-
 		BeforeEach(func() {
 			route1 = models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 55)
+			err := client.UpsertRoutes([]models.Route{route1})
+			Expect(err).ToNot(HaveOccurred())
+		})
+		AfterEach(func() {
+			err := client.DeleteRoutes([]models.Route{route1})
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		Context("periodically receives total routes", func() {

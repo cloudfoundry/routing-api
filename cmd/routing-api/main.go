@@ -107,14 +107,6 @@ func main() {
 
 	stopper := constructStopper(database)
 
-	routerRegister := constructRouteRegister(
-		cfg.API.ListenPort,
-		cfg.LogGuid,
-		cfg.SystemDomain,
-		cfg.MaxTTL,
-		database,
-		logger.Session("route-register"),
-	)
 	clock := clock.NewClock()
 
 	releaseLock := make(chan os.Signal)
@@ -179,8 +171,24 @@ func main() {
 	if cfg.API.HTTPEnabled {
 		httpAPIHandler := apiHandler(cfg, uaaClient, database, statsdClient, logger.Session("api-http-server"))
 		httpAPIServer := http_server.New(":"+strconv.Itoa(cfg.API.ListenPort), httpAPIHandler)
+
+		// As of Dec 2022, the tls route to routing-api is added to
+		// gorouter via route_registrar. This routerRegister is not needed
+		// unless customers need to keep routing-api as http, for example
+		// because tiles connect via http. It can be removed once we
+		// sunset http for routing-api.
+		// See https://github.com/cloudfoundry/cf-deployment/commit/0796dc168ed032b845be81bebc9c311a0317eadc
+		routerRegister := constructRouteRegister(
+			cfg.API.ListenPort,
+			cfg.LogGuid,
+			cfg.SystemDomain,
+			cfg.MaxTTL,
+			database,
+			logger.Session("route-register"),
+		)
 		members = append(members,
 			grouper.Member{Name: "api-server", Runner: httpAPIServer},
+			grouper.Member{Name: "route-register", Runner: routerRegister},
 		)
 	}
 
@@ -203,7 +211,6 @@ func main() {
 	members = append(members,
 		grouper.Member{Name: "admin-server", Runner: adminServer},
 		grouper.Member{Name: "conn-stopper", Runner: stopper},
-		grouper.Member{Name: "route-register", Runner: routerRegister},
 		grouper.Member{Name: "metrics", Runner: metricsReporter},
 	)
 
