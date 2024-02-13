@@ -4,8 +4,8 @@ import (
 	"crypto/tls"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -27,13 +27,13 @@ import (
 	"code.cloudfoundry.org/routing-api/models"
 	"code.cloudfoundry.org/routing-api/test_helpers"
 
-	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
 	"google.golang.org/grpc/grpclog"
 	yaml "gopkg.in/yaml.v2"
+	"gorm.io/gorm"
 )
 
 var (
@@ -67,9 +67,10 @@ var (
 	mtlsAPIClientCert     tls.Certificate
 )
 
-func TestMain(t *testing.T) {
+func TestMainSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Main Suite")
+	suiteConfig, reporterConfig := GinkgoConfiguration()
+	RunSpecs(t, "Main Suite", suiteConfig, reporterConfig)
 }
 
 var _ = SynchronizedBeforeSuite(
@@ -83,7 +84,7 @@ var _ = SynchronizedBeforeSuite(
 		return []byte(strings.Join([]string{routingAPIBin, locketPath}, ","))
 	},
 	func(binPaths []byte) {
-		grpclog.SetLogger(log.New(ioutil.Discard, "", 0))
+		grpclog.SetLoggerV2(grpclog.NewLoggerV2(io.Discard, io.Discard, io.Discard))
 
 		path := string(binPaths)
 		routingAPIBinPath = strings.Split(path, ",")[0]

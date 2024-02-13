@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 //go:generate counterfeiter -o fakes/fake_client.go . Client
@@ -13,7 +13,7 @@ type Client interface {
 	Create(value interface{}) (int64, error)
 	Delete(value interface{}, where ...interface{}) (int64, error)
 	Save(value interface{}) (int64, error)
-	Update(attrs ...interface{}) (int64, error)
+	Update(column string, value interface{}) (int64, error)
 	First(out interface{}, where ...interface{}) error
 	Find(out interface{}, where ...interface{}) error
 	AutoMigrate(values ...interface{}) error
@@ -21,8 +21,8 @@ type Client interface {
 	Rollback() error
 	Commit() error
 	HasTable(value interface{}) bool
-	AddUniqueIndex(indexName string, columns ...string) (Client, error)
-	RemoveIndex(indexName string) (Client, error)
+	AddUniqueIndex(indexName string, columns interface{}) error
+	RemoveIndex(indexName string, columns interface{}) error
 	Model(value interface{}) Client
 	Exec(query string, args ...interface{}) int64
 	Rows(tableName string) (*sql.Rows, error)
@@ -37,21 +37,17 @@ func NewGormClient(db *gorm.DB) Client {
 	return &gormClient{db: db}
 }
 func (c *gormClient) DropColumn(name string) error {
-	return c.db.DropColumn(name).Error
+	return c.DropColumn(name)
 }
 func (c *gormClient) Close() error {
-	return c.db.Close()
+	return c.Close()
 }
-func (c *gormClient) AddUniqueIndex(indexName string, columns ...string) (Client, error) {
-	var newClient gormClient
-	newClient.db = c.db.AddUniqueIndex(indexName, columns...)
-	return &newClient, newClient.db.Error
+func (c *gormClient) AddUniqueIndex(indexName string, columns interface{}) error {
+	return c.db.Migrator().CreateIndex(columns, indexName)
 }
 
-func (c *gormClient) RemoveIndex(indexName string) (Client, error) {
-	var newClient gormClient
-	newClient.db = c.db.RemoveIndex(indexName)
-	return &newClient, newClient.db.Error
+func (c *gormClient) RemoveIndex(indexName string, columns interface{}) error {
+	return c.db.Migrator().DropIndex(columns, indexName)
 }
 
 func (c *gormClient) Model(value interface{}) Client {
@@ -80,8 +76,8 @@ func (c *gormClient) Save(value interface{}) (int64, error) {
 	return newDb.RowsAffected, newDb.Error
 }
 
-func (c *gormClient) Update(attrs ...interface{}) (int64, error) {
-	newDb := c.db.Update(attrs...)
+func (c *gormClient) Update(column string, value interface{}) (int64, error) {
+	newDb := c.db.Update(column, value)
 	return newDb.RowsAffected, newDb.Error
 }
 
@@ -94,7 +90,7 @@ func (c *gormClient) Find(out interface{}, where ...interface{}) error {
 }
 
 func (c *gormClient) AutoMigrate(values ...interface{}) error {
-	return c.db.AutoMigrate(values...).Error
+	return c.db.AutoMigrate(values...)
 }
 
 func (c *gormClient) Begin() Client {
@@ -112,7 +108,7 @@ func (c *gormClient) Commit() error {
 }
 
 func (c *gormClient) HasTable(value interface{}) bool {
-	return c.db.HasTable(value)
+	return c.db.Migrator().HasTable(value)
 }
 
 func (c *gormClient) Exec(query string, args ...interface{}) int64 {

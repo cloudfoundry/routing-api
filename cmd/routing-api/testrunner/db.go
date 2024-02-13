@@ -10,9 +10,9 @@ import (
 	"code.cloudfoundry.org/routing-api/db"
 
 	"code.cloudfoundry.org/routing-api/config"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	. "github.com/onsi/ginkgo/v2"
+	_ "gorm.io/driver/mysql"
+	_ "gorm.io/driver/postgres"
 )
 
 type DbAllocator interface {
