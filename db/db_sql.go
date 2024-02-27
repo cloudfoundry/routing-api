@@ -621,10 +621,7 @@ func dispatchWatchEvents(sub eventhub.Source, events chan<- Event, errors chan<-
 }
 
 func recordNotFound(err error) bool {
-	if err == gorm.ErrRecordNotFound {
-		return true
-	}
-	return false
+	return err == gorm.ErrRecordNotFound
 }
 
 func ConnectionString(cfg *config.SqlDB) (string, error) {
