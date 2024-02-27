@@ -89,7 +89,7 @@ var _ = Describe("UaaClient", func() {
 		server.AppendHandlers(
 			ghttp.CombineHandlers(
 				ghttp.VerifyRequest("GET", OpenIDConfigEndpoint),
-				ghttp.RespondWith(http.StatusOK, fmt.Sprintf("{\"issuer\":\"https://uaa.domain.com\"}")),
+				ghttp.RespondWith(http.StatusOK, "{\"issuer\":\"https://uaa.domain.com\"}"),
 			),
 			ghttp.CombineHandlers(
 				ghttp.VerifyRequest("GET", TokenKeyEndpoint),
