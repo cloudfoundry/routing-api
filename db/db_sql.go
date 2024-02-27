@@ -106,7 +106,7 @@ func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 	}
 
 	if cfg.Type != "mysql" && cfg.Type != "postgres" {
-		return &SqlDB{}, errors.New(fmt.Sprintf("Unknown type %s", cfg.Type))
+		return &SqlDB{}, fmt.Errorf("Unknown type %s", cfg.Type)
 	}
 
 	connStr, err := ConnectionString(cfg)
@@ -359,7 +359,7 @@ func updateRoute(existingRoute, currentRoute models.Route) models.Route {
 func notImplementedError() error {
 	pc, _, _, _ := runtime.Caller(1)
 	fnName := runtime.FuncForPC(pc).Name()
-	return errors.New(fmt.Sprintf("function not implemented: %s", fnName))
+	return fmt.Errorf("function not implemented: %s", fnName)
 }
 
 func (s *SqlDB) ReadRoutes() ([]models.Route, error) {
