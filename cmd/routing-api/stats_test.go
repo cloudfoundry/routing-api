@@ -61,9 +61,7 @@ var _ = Describe("Routes API", func() {
 				}
 				scanner := bufio.NewScanner(bytes.NewBuffer(buffer))
 				for scanner.Scan() {
-					select {
-					case statsChan <- scanner.Text():
-					}
+					statsChan <- scanner.Text()
 				}
 			}
 		}(fakeStatsdChan)

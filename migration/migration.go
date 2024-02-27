@@ -38,10 +38,8 @@ func (r *Runner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 	close(ready)
 
-	select {
-	case sig := <-signals:
-		r.logger.Info("received signal", lager.Data{"signal": sig})
-	}
+	sig := <-signals
+	r.logger.Info("received signal", lager.Data{"signal": sig})
 
 	return nil
 }

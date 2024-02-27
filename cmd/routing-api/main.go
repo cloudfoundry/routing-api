@@ -242,10 +242,8 @@ func isSql(sqlDB config.SqlDB) bool {
 func constructStopper(database db.DB) ifrit.Runner {
 	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
 		close(ready)
-		select {
-		case <-signals:
-			database.CancelWatches()
-		}
+		<-signals
+		database.CancelWatches()
 
 		return nil
 	})
@@ -274,10 +272,8 @@ func seedRouterGroups(cfg config.Config, database db.DB, logger lager.Logger) if
 			}
 		}
 		close(ready)
-		select {
-		case sig := <-signals:
-			logger.Info("received-signal", lager.Data{"signal": sig})
-		}
+		sig := <-signals
+		logger.Info("received-signal", lager.Data{"signal": sig})
 		return nil
 	})
 }
