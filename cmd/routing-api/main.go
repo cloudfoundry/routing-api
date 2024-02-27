@@ -366,8 +366,7 @@ func initializeLockAcquirer(lockRunner ifrit.Runner, releaseLock chan os.Signal,
 	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 		go func() {
-			var err error
-			err = lockRunner.Run(releaseLock, ready)
+			err := lockRunner.Run(releaseLock, ready)
 			lockErrChan <- err
 		}()
 
