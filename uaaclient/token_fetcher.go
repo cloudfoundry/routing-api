@@ -90,7 +90,7 @@ func (c *tokenFetcher) FetchToken(ctx context.Context, forceUpdate bool) (*oauth
 	var retryCount uint = 0
 	var token *oauth2.Token
 	var err error
-	for retry == true {
+	for retry {
 		token, err = c.api.Token(ctx)
 		if token != nil {
 			break
