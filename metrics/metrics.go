@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"errors"
 	"os"
 	"time"
 
@@ -71,14 +72,21 @@ func (r *MetricsReporter) Run(signals <-chan os.Signal, ready chan<- struct{}) e
 				r.logger.Info("error-streaming-totaltcpsubscriptions-metrics", lager.Data{"error": err})
 			}
 		case <-r.ticker.C:
+			var errs []error
 			err = r.stats.Gauge(TotalHttpRoutes, r.getTotalRoutes(), 1.0)
+			errs = append(errs, err)
 			err = r.stats.GaugeDelta(TotalHttpSubscriptions, 0, 1.0)
+			errs = append(errs, err)
 			err = r.stats.Gauge(TotalTcpRoutes, r.getTotalTcpRoutes(), 1.0)
+			errs = append(errs, err)
 			err = r.stats.GaugeDelta(TotalTcpSubscriptions, 0, 1.0)
+			errs = append(errs, err)
 			err = r.stats.Gauge(TotalTokenErrors, GetTokenErrors(), 1.0)
+			errs = append(errs, err)
 			err = r.stats.Gauge(KeyRefreshEvents, GetKeyVerificationRefreshCount(), 1.0)
-			if err != nil {
-				r.logger.Info("error-emitting-metrics", lager.Data{"error": err})
+			errs = append(errs, err)
+			if len(errs) > 0 {
+				r.logger.Info("error-emitting-metrics", lager.Data{"error": errors.Join(errs...)})
 			}
 		case <-signals:
 			return nil

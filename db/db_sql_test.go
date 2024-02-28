@@ -1678,6 +1678,7 @@ var _ = Describe("SqlDB", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					routes, err := sqlDB.ReadTcpRouteMappings()
+					Expect(err).ToNot(HaveOccurred())
 					Expect(routes).To(HaveLen(1))
 				})
 

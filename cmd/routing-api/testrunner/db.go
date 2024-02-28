@@ -74,6 +74,9 @@ func (a *postgresAllocator) Create() (*config.SqlDB, error) {
 
 	for i := 0; i < 5; i++ {
 		dbExists, err := a.sqlDB.Exec(fmt.Sprintf("SELECT * FROM pg_database WHERE datname='%s'", a.schemaName))
+		if err != nil {
+			return nil, err
+		}
 		rowsAffected, err := dbExists.RowsAffected()
 		if err != nil {
 			return nil, err
@@ -95,6 +98,9 @@ func (a *postgresAllocator) Create() (*config.SqlDB, error) {
 func (a *postgresAllocator) Reset() error {
 	_, err := a.sqlDB.Exec(fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity
 	WHERE datname = '%s'`, a.schemaName))
+	if err != nil {
+		return nil, err
+	}
 	_, err = a.sqlDB.Exec(fmt.Sprintf("DROP DATABASE %s", a.schemaName))
 	if err != nil {
 		return err
@@ -155,6 +161,9 @@ func (a *mysqlAllocator) Create() (*config.SqlDB, error) {
 
 	for i := 0; i < 5; i++ {
 		dbExists, err := a.sqlDB.Exec(fmt.Sprintf("SHOW DATABASES LIKE '%s'", a.schemaName))
+		if err != nil {
+			return nil, err
+		}
 		rowsAffected, err := dbExists.RowsAffected()
 		if err != nil {
 			return nil, err
