@@ -18,8 +18,8 @@ var _ = Describe("Migration", func() {
 		fakeMigration         *fakes.FakeMigration
 		fakeLastMigration     *fakes.FakeMigration
 		migrations            []migration.Migration
-		lastMigrationVersion  int = 10
-		firstMigrationVersion int = 1
+		lastMigrationVersion  = 10
+		firstMigrationVersion = 1
 		logger                lager.Logger
 	)
 
