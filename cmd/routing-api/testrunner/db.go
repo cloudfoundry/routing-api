@@ -99,7 +99,7 @@ func (a *postgresAllocator) Reset() error {
 	_, err := a.sqlDB.Exec(fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity
 	WHERE datname = '%s'`, a.schemaName))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	_, err = a.sqlDB.Exec(fmt.Sprintf("DROP DATABASE %s", a.schemaName))
 	if err != nil {
