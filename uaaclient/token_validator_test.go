@@ -502,20 +502,6 @@ func makeValidMultiscopeToken(privateKey *rsa.PrivateKey) (string, error) {
 	return fullToken, nil
 }
 
-func makeInvalidSignatureToken(privateKey *rsa.PrivateKey) (string, error) {
-	header := jwtHeader("RS512", "some-key-id")
-	signingString := fmt.Sprintf("%s.%s",
-		tokenEncoding.EncodeToString([]byte(header)),
-		tokenEncoding.EncodeToString([]byte(TokenPayload)),
-	)
-	signature, err := signWithRS256(signingString, privateKey)
-	if err != nil {
-		return "", err
-	}
-	fullToken := fmt.Sprintf("bearer %s.%s", signingString, signature)
-	return fullToken, nil
-}
-
 func makeInvalidIssuedAtToken(privateKey *rsa.PrivateKey) (string, error) {
 	invalidIssuedAtTime := time.Now().Add(24 * time.Hour)
 	tokenPayload := fmt.Sprintf(`{
@@ -561,17 +547,6 @@ func signWithRS256(signingString string, privateKey *rsa.PrivateKey) (string, er
 	hasher.Write([]byte(signingString))
 
 	sigBytes, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hasher.Sum(nil))
-	if err != nil {
-		return "", err
-	}
-	return tokenEncoding.EncodeToString(sigBytes), nil
-}
-
-func signWithRS512(signingString string, privateKey *rsa.PrivateKey) (string, error) {
-	hasher := crypto.SHA512.New()
-	hasher.Write([]byte(signingString))
-
-	sigBytes, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA512, hasher.Sum(nil))
 	if err != nil {
 		return "", err
 	}

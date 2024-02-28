@@ -26,11 +26,10 @@ type PartialStatsdClient interface {
 }
 
 type MetricsReporter struct {
-	db       db.DB
-	stats    PartialStatsdClient
-	ticker   *time.Ticker
-	doneChan chan bool
-	logger   lager.Logger
+	db     db.DB
+	stats  PartialStatsdClient
+	ticker *time.Ticker
+	logger lager.Logger
 }
 
 var (

@@ -16,7 +16,6 @@ type EventStreamHandler struct {
 	db        db.DB
 	logger    lager.Logger
 	stats     metrics.PartialStatsdClient
-	stopChan  <-chan struct{}
 }
 
 func NewEventStreamHandler(uaaClient uaaclient.TokenValidator, database db.DB, logger lager.Logger, stats metrics.PartialStatsdClient) *EventStreamHandler {
