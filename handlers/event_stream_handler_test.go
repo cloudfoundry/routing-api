@@ -85,6 +85,13 @@ var _ = Describe("EventsHandler", func() {
 				Expect(permission).To(ConsistOf(handlers.RoutingRoutesReadScope))
 			})
 
+			It("emits a delta metric for TotalHttpSubscriptions", func() {
+				statName, value, rate, _ := stats.GaugeDeltaArgsForCall(0)
+				Expect(statName).To(Equal(metrics.TotalHttpSubscriptions))
+				Expect(value).To(BeEquivalentTo(1))
+				Expect(rate).To(BeNumerically("~", 1.0, 0.1))
+			})
+
 			Context("when the user has incorrect scopes", func() {
 				var (
 					currentCount int64
