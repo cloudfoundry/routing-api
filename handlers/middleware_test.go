@@ -51,6 +51,7 @@ var _ = Describe("Middleware", func() {
 
 	It("doesn't output the authorization information", func() {
 		req, err := http.NewRequest("GET", ts.URL, nil)
+		Expect(err).NotTo(HaveOccurred())
 		req.Header.Add("Authorization", "this-is-a-secret")
 		req.Header.Add("authorization", "this-is-a-secret2")
 		req.Header.Add("AUTHORIZATION", "this-is-a-secret3")
