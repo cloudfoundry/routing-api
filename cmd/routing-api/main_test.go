@@ -249,9 +249,6 @@ var _ = Describe("Main", func() {
 		It("should fail with an error", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
-			type resultCount struct {
-				results string
-			}
 
 			db := gormDB.Raw("SHOW TABLES LIKE 'router_groups';")
 			Expect(db.Error).ToNot(HaveOccurred())

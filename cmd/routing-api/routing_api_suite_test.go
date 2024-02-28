@@ -27,7 +27,6 @@ import (
 	"code.cloudfoundry.org/routing-api/models"
 	"code.cloudfoundry.org/routing-api/test_helpers"
 
-	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -50,11 +49,9 @@ var (
 	oauthServer            *ghttp.Server
 	oauthServerPort        string
 	locketPort             uint16
-	locketRunner           ifrit.Runner
 	locketProcess          ifrit.Process
 
 	sqlDBName string
-	gormDB    *gorm.DB
 
 	dbAllocator testrunner.DbAllocator
 	sqlDBConfig *config.SqlDB

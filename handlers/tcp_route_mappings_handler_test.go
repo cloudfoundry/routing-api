@@ -20,13 +20,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func expectInvalidInput(responseRecorder *httptest.ResponseRecorder, database *fake_db.FakeDB, logger *lagertest.TestLogger) {
-	Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-	Expect(responseRecorder.Body.String()).To(ContainSubstring("Each tcp mapping requires a positive host port"))
-	Expect(database.SaveRouteCallCount()).To(Equal(0))
-	Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
-}
-
 var _ = Describe("TcpRouteMappingsHandler", func() {
 	var (
 		tcpRouteMappingsHandler *handlers.TcpRouteMappingsHandler
