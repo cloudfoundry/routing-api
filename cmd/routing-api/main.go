@@ -27,7 +27,7 @@ import (
 	"code.cloudfoundry.org/routing-api/models"
 	"code.cloudfoundry.org/routing-api/uaaclient"
 	"code.cloudfoundry.org/tlsconfig"
-	"github.com/cactus/go-statsd-client/statsd"
+	"github.com/cactus/go-statsd-client/v5/statsd"
 	"github.com/cloudfoundry/dropsonde"
 	uuid "github.com/nu7hatch/gouuid"
 	"github.com/tedsuo/ifrit"

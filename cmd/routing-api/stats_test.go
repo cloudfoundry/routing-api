@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
@@ -61,8 +62,9 @@ var _ = Describe("Routes API", func() {
 				}
 				scanner := bufio.NewScanner(bytes.NewBuffer(buffer))
 				for scanner.Scan() {
+					e := strings.Trim(scanner.Text(), "\x00")
 					select {
-					case statsChan <- scanner.Text():
+					case statsChan <- e:
 					}
 				}
 			}
@@ -84,7 +86,6 @@ var _ = Describe("Routes API", func() {
 	Describe("Stats for event subscribers", func() {
 		Context("Subscribe", func() {
 			It("should increase subscriptions by 4", func() {
-
 				eventStream1, err := client.SubscribeToEvents()
 				Expect(err).NotTo(HaveOccurred())
 				defer func() {

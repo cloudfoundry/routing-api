@@ -8,6 +8,7 @@ import (
 
 	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/routing-api/db"
+	"github.com/cactus/go-statsd-client/v5/statsd"
 )
 
 const (
@@ -19,9 +20,10 @@ const (
 	KeyRefreshEvents       = "key_refresh_events"
 )
 
+//go:generate counterfeiter -o fakes/fake_partial_statsd_client.go . PartialStatsdClient
 type PartialStatsdClient interface {
-	GaugeDelta(stat string, value int64, rate float32) error
-	Gauge(stat string, value int64, rate float32) error
+	GaugeDelta(stat string, value int64, rate float32, tags ...statsd.Tag) error
+	Gauge(stat string, value int64, rate float32, tags ...statsd.Tag) error
 }
 
 type MetricsReporter struct {
