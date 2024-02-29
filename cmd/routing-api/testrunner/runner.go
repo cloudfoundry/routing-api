@@ -1,7 +1,6 @@
 package testrunner
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -172,7 +171,7 @@ func createConfig(
 		return "", err
 	}
 
-	configFile, err := ioutil.TempFile("", "routing-api-config")
+	configFile, err := os.CreateTemp("", "routing-api-config")
 	if err != nil {
 		return "", err
 	}

@@ -10,7 +10,6 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -60,7 +59,7 @@ var _ = Describe("UaaClient", func() {
 			Value string `json:"value"`
 		}{"alg", string(publicKeyPEM)}
 		server = ghttp.NewTLSServer()
-		serverCertFile, err = ioutil.TempFile("", "routing-api-uaa-client-test")
+		serverCertFile, err = os.CreateTemp("", "routing-api-uaa-client-test")
 		Expect(err).NotTo(HaveOccurred())
 
 		certPem := pem.EncodeToMemory(&pem.Block{
@@ -170,7 +169,7 @@ var _ = Describe("UaaClient", func() {
 
 				BeforeEach(func() {
 					var err error
-					corruptedCertFile, err = ioutil.TempFile("", "routing-api-uaa-client-test")
+					corruptedCertFile, err = os.CreateTemp("", "routing-api-uaa-client-test")
 					Expect(err).NotTo(HaveOccurred())
 
 					_, err = corruptedCertFile.Write([]byte("definitely-not-a-pem"))

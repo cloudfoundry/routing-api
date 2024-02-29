@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -639,12 +638,12 @@ func ConnectionString(cfg *config.SqlDB) (string, error) {
 			if cfg.SkipSSLValidation {
 				queryString = "?sslmode=require"
 			} else {
-				tempDir, err := ioutil.TempDir("", "")
+				tempDir, err := os.MkdirTemp("", "")
 				if err != nil {
 					return "", err
 				}
 				certPath := filepath.Join(tempDir, "postgres_cert.pem")
-				err = ioutil.WriteFile(certPath, []byte(cfg.CACert), 0400)
+				err = os.WriteFile(certPath, []byte(cfg.CACert), 0400)
 				if err != nil {
 					return "", err
 				}

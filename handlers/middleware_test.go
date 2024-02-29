@@ -2,7 +2,7 @@ package handlers_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 
@@ -61,7 +61,7 @@ var _ = Describe("Middleware", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 
-		output, err := ioutil.ReadAll(resp.Body)
+		output, err := io.ReadAll(resp.Body)
 		defer func() {
 			err := resp.Body.Close()
 			Expect(err).ToNot(HaveOccurred())

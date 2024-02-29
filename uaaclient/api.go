@@ -5,8 +5,8 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 
 	"code.cloudfoundry.org/lager/v3"
@@ -31,7 +31,7 @@ func NewAPI(cfg Config, logger lager.Logger) (*uaa.API, error) {
 
 	tlsConfig := &tls.Config{InsecureSkipVerify: cfg.SkipSSLValidation}
 	if cfg.CACerts != "" {
-		certBytes, err := ioutil.ReadFile(cfg.CACerts)
+		certBytes, err := os.ReadFile(cfg.CACerts)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read ca cert file: %s", err.Error())
 		}

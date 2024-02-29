@@ -2,7 +2,7 @@ package trace_test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 
 	"net/http"
 	"strings"
@@ -26,7 +26,7 @@ var _ = Describe("trace logger", func() {
 		logger := NewLogger("true")
 		logger.Print("hello whirled")
 
-		result, err := ioutil.ReadAll(stdout)
+		result, err := io.ReadAll(stdout)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(result).To(ContainSubstring("hello whirled"))
 	})
@@ -35,7 +35,7 @@ var _ = Describe("trace logger", func() {
 		logger := NewLogger("false")
 		logger.Print("hello whirled")
 
-		result, err := ioutil.ReadAll(stdout)
+		result, err := io.ReadAll(stdout)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(result).To(BeEmpty())
 	})
@@ -44,7 +44,7 @@ var _ = Describe("trace logger", func() {
 		logger := NewLogger("")
 		logger.Print("hello whirled")
 
-		result, err := ioutil.ReadAll(stdout)
+		result, err := io.ReadAll(stdout)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(result).To(BeEmpty())
 	})
@@ -53,7 +53,7 @@ var _ = Describe("trace logger", func() {
 		logger := NewLogger("asdf")
 		logger.Print("hello whirled")
 
-		result, err := ioutil.ReadAll(stdout)
+		result, err := io.ReadAll(stdout)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(result).To(BeEmpty())
 	})
@@ -66,7 +66,7 @@ var _ = Describe("trace logger", func() {
 		})
 
 		It("dumps the request out to the Printer", func() {
-			result, err := ioutil.ReadAll(stdout)
+			result, err := io.ReadAll(stdout)
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result).To(ContainSubstring("REQUEST:"))
@@ -81,13 +81,13 @@ var _ = Describe("trace logger", func() {
 			NewLogger("true")
 
 			resp := &http.Response{StatusCode: http.StatusBadRequest,
-				Body: ioutil.NopCloser(strings.NewReader(`test response`))}
+				Body: io.NopCloser(strings.NewReader(`test response`))}
 
 			DumpResponse(resp)
 		})
 
 		It("dumps the response out to the Printer", func() {
-			result, err := ioutil.ReadAll(stdout)
+			result, err := io.ReadAll(stdout)
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result).To(ContainSubstring("RESPONSE:"))
@@ -112,7 +112,7 @@ var _ = Describe("trace logger", func() {
 			})
 
 			It("dumps the response out to the Printer", func() {
-				result, err := ioutil.ReadAll(stdout)
+				result, err := io.ReadAll(stdout)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(result).To(ContainSubstring("JSON: "))
@@ -127,7 +127,7 @@ var _ = Describe("trace logger", func() {
 			})
 
 			It("displays an error", func() {
-				result, err := ioutil.ReadAll(stdout)
+				result, err := io.ReadAll(stdout)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(result).To(ContainSubstring("Error dumping json object"))
