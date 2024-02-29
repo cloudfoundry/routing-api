@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -80,7 +80,7 @@ var _ = SynchronizedBeforeSuite(
 		return []byte(strings.Join([]string{routingAPIBin, locketPath}, ","))
 	},
 	func(binPaths []byte) {
-		grpclog.SetLogger(log.New(ioutil.Discard, "", 0))
+		grpclog.SetLogger(log.New(io.Discard, "", 0))
 
 		path := string(binPaths)
 		routingAPIBinPath = strings.Split(path, ",")[0]
@@ -98,7 +98,7 @@ var _ = SynchronizedBeforeSuite(
 		caCert, caPrivKey, err := createCA()
 		Expect(err).ToNot(HaveOccurred())
 
-		f, err := ioutil.TempFile("", "routing-api-uaa-ca")
+		f, err := os.CreateTemp("", "routing-api-uaa-ca")
 		Expect(err).ToNot(HaveOccurred())
 
 		uaaCACertsPath = f.Name()
@@ -259,7 +259,7 @@ func writeConfigToTempFile(c *config.Config) string {
 	d, err := yaml.Marshal(c)
 	Expect(err).ToNot(HaveOccurred())
 
-	tmpfile, err := ioutil.TempFile("", "routing_api_config.yml")
+	tmpfile, err := os.CreateTemp("", "routing_api_config.yml")
 	Expect(err).ToNot(HaveOccurred())
 	defer func() {
 		Expect(tmpfile.Close()).To(Succeed())
@@ -313,9 +313,9 @@ func startLocket() {
 			cfg.DatabaseDriver = "mysql"
 		}
 		if sqlDBConfig.CACert != "" {
-			caFile, err := ioutil.TempFile("", "")
+			caFile, err := os.CreateTemp("", "")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(ioutil.WriteFile(caFile.Name(), []byte(sqlDBConfig.CACert), 0400)).To(Succeed())
+			Expect(os.WriteFile(caFile.Name(), []byte(sqlDBConfig.CACert), 0400)).To(Succeed())
 			cfg.SQLCACertFile = caFile.Name()
 		}
 		cfg.ListenAddress = locketAddress

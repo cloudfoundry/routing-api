@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -1071,7 +1070,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 						routerGroupHandler.CreateRouterGroup(responseRecorder, request)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
-						responseBody, err := ioutil.ReadAll(responseRecorder.Body)
+						responseBody, err := io.ReadAll(responseRecorder.Body)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(responseBody).To(ContainSubstring("Missing reservable_ports in router group: test-group"))
 						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))

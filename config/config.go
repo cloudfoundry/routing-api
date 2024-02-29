@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
@@ -82,7 +82,7 @@ type Config struct {
 }
 
 func NewConfigFromFile(configFile string, authDisabled bool) (Config, error) {
-	c, err := ioutil.ReadFile(configFile)
+	c, err := os.ReadFile(configFile)
 	if err != nil {
 		return Config{}, err
 	}

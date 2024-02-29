@@ -7,7 +7,7 @@ import (
 	"regexp"
 
 	"code.cloudfoundry.org/lager/v3"
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/metrics"
 )
 

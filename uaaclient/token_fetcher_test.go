@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/pem"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -68,7 +68,7 @@ var _ = Describe("TokenFetcher", func() {
 
 		config.Port = port
 
-		serverCertFile, err = ioutil.TempFile("", "routing-api-uaa-client-test")
+		serverCertFile, err = os.CreateTemp("", "routing-api-uaa-client-test")
 		Expect(err).NotTo(HaveOccurred())
 
 		certPem := pem.EncodeToMemory(&pem.Block{
@@ -100,7 +100,7 @@ var _ = Describe("TokenFetcher", func() {
 
 	var verifyBody = func(expectedBody string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			body, err := ioutil.ReadAll(r.Body)
+			body, err := io.ReadAll(r.Body)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(string(body)).To(Equal(expectedBody))

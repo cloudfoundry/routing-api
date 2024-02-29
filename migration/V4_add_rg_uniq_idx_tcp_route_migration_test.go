@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/migration/v0"
+	v0 "code.cloudfoundry.org/routing-api/migration/v0"
 	"code.cloudfoundry.org/routing-api/models"
 
 	. "github.com/onsi/ginkgo/v2"

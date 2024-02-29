@@ -2,13 +2,13 @@ package routing_api_test
 
 import (
 	"fmt"
+	"io"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 
 	routing_api "code.cloudfoundry.org/routing-api"
@@ -82,7 +82,7 @@ var _ = Describe("Client", func() {
 			It("logs the request and response", func() {
 				expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -112,7 +112,7 @@ var _ = Describe("Client", func() {
 			It("logs the request and response", func() {
 				expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -175,7 +175,7 @@ var _ = Describe("Client", func() {
 			It("logs the request and response", func() {
 				expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -205,7 +205,7 @@ var _ = Describe("Client", func() {
 				It("logs the request and response", func() {
 					expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
-					r, err := ioutil.ReadAll(stdout)
+					r, err := io.ReadAll(stdout)
 					log := string(r)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(log).To(ContainSubstring("REQUEST: "))
@@ -235,7 +235,7 @@ var _ = Describe("Client", func() {
 				It("logs the request and response", func() {
 					expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
-					r, err := ioutil.ReadAll(stdout)
+					r, err := io.ReadAll(stdout)
 					log := string(r)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(log).To(ContainSubstring("REQUEST: "))
@@ -276,7 +276,7 @@ var _ = Describe("Client", func() {
 			It("logs the request and response", func() {
 				expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -306,7 +306,7 @@ var _ = Describe("Client", func() {
 				It("logs the request and response", func() {
 					expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
-					r, err := ioutil.ReadAll(stdout)
+					r, err := io.ReadAll(stdout)
 					log := string(r)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(log).To(ContainSubstring("REQUEST: "))
@@ -336,7 +336,7 @@ var _ = Describe("Client", func() {
 				It("logs the request and response", func() {
 					expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
-					r, err := ioutil.ReadAll(stdout)
+					r, err := io.ReadAll(stdout)
 					log := string(r)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(log).To(ContainSubstring("REQUEST: "))
@@ -387,7 +387,7 @@ var _ = Describe("Client", func() {
 			It("logs the request and response", func() {
 				expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -416,7 +416,7 @@ var _ = Describe("Client", func() {
 			It("logs the request and response", func() {
 				expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -475,7 +475,7 @@ var _ = Describe("Client", func() {
 				Expect(err).NotTo(HaveOccurred())
 				expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -508,7 +508,7 @@ var _ = Describe("Client", func() {
 				Expect(err).To(HaveOccurred())
 				expectedBody, _ := json.Marshal([]models.Route{route1, route2})
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -587,7 +587,7 @@ var _ = Describe("Client", func() {
 				Expect(err).NotTo(HaveOccurred())
 				expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -620,7 +620,7 @@ var _ = Describe("Client", func() {
 				Expect(err).To(HaveOccurred())
 				expectedBody, _ := json.Marshal([]models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2})
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -691,7 +691,7 @@ var _ = Describe("Client", func() {
 				Expect(err).NotTo(HaveOccurred())
 				expectedBody, _ := json.Marshal([]models.RouterGroup{routerGroup1})
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -724,7 +724,7 @@ var _ = Describe("Client", func() {
 				Expect(err).To(HaveOccurred())
 				expectedBody, _ := json.Marshal([]models.RouterGroup{routerGroup1})
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -781,7 +781,7 @@ var _ = Describe("Client", func() {
 				Expect(err).NotTo(HaveOccurred())
 				expectedBody, _ := json.Marshal(routerGroup1)
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -814,7 +814,7 @@ var _ = Describe("Client", func() {
 				Expect(err).To(HaveOccurred())
 				expectedBody, _ := json.Marshal(routerGroup1)
 
-				r, err := ioutil.ReadAll(stdout)
+				r, err := io.ReadAll(stdout)
 				log := string(r)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(log).To(ContainSubstring("REQUEST: "))
@@ -1033,7 +1033,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("logs the request", func() {
-			r, err := ioutil.ReadAll(stdout)
+			r, err := io.ReadAll(stdout)
 			log := string(r)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(log).To(ContainSubstring("REQUEST: "))
@@ -1162,7 +1162,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("logs the request", func() {
-			r, err := ioutil.ReadAll(stdout)
+			r, err := io.ReadAll(stdout)
 			log := string(r)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(log).To(ContainSubstring("REQUEST: "))

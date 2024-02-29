@@ -2,10 +2,10 @@ package routing_api_test
 
 import (
 	"errors"
+	"io"
 
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 
 	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/fake_routing_api"
@@ -57,7 +57,7 @@ var _ = Describe("EventSource", func() {
 					_, err := eventSource.Next()
 					Expect(err).ToNot(HaveOccurred())
 
-					log, err := ioutil.ReadAll(stdout)
+					log, err := io.ReadAll(stdout)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(log).To(ContainSubstring("EVENT: "))
 					Expect(log).To(ContainSubstring(string(expectedJSON)))
@@ -156,7 +156,7 @@ var _ = Describe("EventSource", func() {
 					_, err := tcpEventSource.Next()
 					Expect(err).ToNot(HaveOccurred())
 
-					log, err := ioutil.ReadAll(stdout)
+					log, err := io.ReadAll(stdout)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(log).To(ContainSubstring("EVENT: "))
 					Expect(log).To(ContainSubstring(string(expectedJSON)))
