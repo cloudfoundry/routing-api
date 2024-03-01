@@ -285,7 +285,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			handler.ServeHTTP(responseRecorder, request)
-			warning := responseRecorder.HeaderMap.Get("X-Cf-Warnings")
+			warning := responseRecorder.Result().Header.Get("X-Cf-Warnings")
 			Expect(url.QueryUnescape(warning)).To(ContainSubstring("routes becoming inaccessible"))
 		})
 
