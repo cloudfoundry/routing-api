@@ -5,7 +5,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -80,7 +79,7 @@ var _ = SynchronizedBeforeSuite(
 		return []byte(strings.Join([]string{routingAPIBin, locketPath}, ","))
 	},
 	func(binPaths []byte) {
-		grpclog.SetLogger(log.New(io.Discard, "", 0))
+		grpclog.SetLoggerV2(grpclog.NewLoggerV2(io.Discard, io.Discard, io.Discard))
 
 		path := string(binPaths)
 		routingAPIBinPath = strings.Split(path, ",")[0]
