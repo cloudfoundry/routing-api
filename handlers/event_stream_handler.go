@@ -66,8 +66,8 @@ func (h *EventStreamHandler) handleEventStream(log lager.Logger, filterKey strin
 		return
 	}
 	flusher := w.(http.Flusher)
-	closeNotifier := w.(http.CloseNotifier).CloseNotify()
-
+	reqCtx := req.Context()
+	closeNotifier := reqCtx.Done()
 	resultChan, errChan, cancelFunc := h.db.WatchChanges(filterKey)
 
 	w.Header().Add("Content-Type", "text/event-stream; charset=utf-8")
