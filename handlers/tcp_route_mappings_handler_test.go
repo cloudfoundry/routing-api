@@ -79,6 +79,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 							"router_group_guid": "router-group-guid-001",
 							"backend_ip":        "1.2.3.4",
 							"backend_port":      float64(60000),
+							"backend_tls_port":  nil,
+							"instance_id":       "",
 							"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
 							"ttl":               float64(120),
 							"isolation_segment": "some-iso-seg",
@@ -112,6 +114,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						"router_group_guid": "router-group-guid-001",
 						"backend_ip":        "1.2.3.4",
 						"backend_port":      float64(60000),
+						"backend_tls_port":  nil,
+						"instance_id":       "",
 						"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
 						"ttl":               float64(120),
 						"isolation_segment": "some-iso-seg",
@@ -155,6 +159,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						"router_group_guid": "router-group-guid-001",
 						"backend_ip":        "1.2.3.4",
 						"backend_port":      float64(60000),
+						"backend_tls_port":  nil,
+						"instance_id":       "",
 						"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
 						"ttl":               float64(maxTTL),
 						"isolation_segment": "",
@@ -172,7 +178,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				var tcpMappings []models.TcpRouteMapping
 
 				BeforeEach(func() {
-					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
+					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60001, "instanceId", nil, 60, models.ModificationTag{})
 					tcpMappings = []models.TcpRouteMapping{tcpMapping}
 				})
 
@@ -216,6 +222,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 							"router_group_guid": "router-group-guid-001",
 							"backend_ip":        "1.2.3.4",
 							"backend_port":      float64(60000),
+							"backend_tls_port":  float64(60001),
+							"instance_id":       "instanceId",
 							"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
 							"ttl":               float64(60),
 							"isolation_segment": "",
@@ -309,7 +317,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					tcpMappings  []models.TcpRouteMapping
 				)
 				BeforeEach(func() {
-					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
+					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60001, "instanceId", nil, 60, models.ModificationTag{})
 					tcpMappings = []models.TcpRouteMapping{tcpMapping}
 					currentCount = metrics.GetTokenErrors()
 					fakeClient.ValidateTokenReturns(errors.New("Not valid"))
@@ -344,8 +352,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			)
 
 			BeforeEach(func() {
-				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 55)
-				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 55)
+				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60002, "instanceId", nil, 55, models.ModificationTag{})
+				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60003, "instanceId", nil, 55, models.ModificationTag{})
 				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
 				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
 			})
@@ -362,6 +370,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52000,
 								"backend_ip": "1.2.3.4",
 								"backend_port": 60000,
+								"backend_tls_port": 60002,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -374,6 +384,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52001,
 								"backend_ip": "1.2.3.5",
 								"backend_port": 60001,
+								"backend_tls_port": 60003,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -391,8 +403,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			)
 
 			BeforeEach(func() {
-				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 55)
-				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 55)
+				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60002, "instanceId", nil, 55, models.ModificationTag{})
+				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60003, "instanceId", nil, 55, models.ModificationTag{})
 				mapping2.IsolationSegment = "is1"
 				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
 				database.ReadFilteredTcpRouteMappingsReturns(tcpRoutes, nil)
@@ -418,6 +430,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52000,
 								"backend_ip": "1.2.3.4",
 								"backend_port": 60000,
+								"backend_tls_port": 60002,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -430,6 +444,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52001,
 								"backend_ip": "1.2.3.5",
 								"backend_port": 60001,
+								"backend_tls_port": 60003,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -458,6 +474,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52000,
 								"backend_ip": "1.2.3.4",
 								"backend_port": 60000,
+								"backend_tls_port": 60002,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -470,6 +488,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52001,
 								"backend_ip": "1.2.3.5",
 								"backend_port": 60001,
+								"backend_tls_port": 60003,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -487,8 +507,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			)
 
 			BeforeEach(func() {
-				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 55)
-				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 55)
+				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60002, "instanceId", nil, 55, models.ModificationTag{})
+				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60003, "instanceId", nil, 55, models.ModificationTag{})
 				mapping2.IsolationSegment = "is1"
 				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
 				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
@@ -509,6 +529,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52000,
 								"backend_ip": "1.2.3.4",
 								"backend_port": 60000,
+								"backend_tls_port": 60002,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -521,6 +543,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52001,
 								"backend_ip": "1.2.3.5",
 								"backend_port": 60001,
+								"backend_tls_port": 60003,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -586,7 +610,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			)
 
 			BeforeEach(func() {
-				tcpMapping = models.NewTcpRouteMapping("router-group-guid-002", 52001, "1.2.3.4", 60000, 60)
+				tcpMapping = models.NewTcpRouteMapping("router-group-guid-002", 52001, "1.2.3.4", 60000, 60002, "instanceId", nil, 60, models.ModificationTag{})
 				tcpMappings = []models.TcpRouteMapping{tcpMapping}
 			})
 
@@ -630,6 +654,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						"router_group_guid": "router-group-guid-002",
 						"backend_ip":        "1.2.3.4",
 						"backend_port":      float64(60000),
+						"backend_tls_port":  float64(60002),
+						"instance_id":       "instanceId",
 						"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
 						"ttl":               float64(60),
 						"isolation_segment": "",

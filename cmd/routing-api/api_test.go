@@ -42,7 +42,7 @@ var _ = Describe("Routes API", func() {
 			BeforeEach(func() {
 				routerGroupGuid = getRouterGroupGuid()
 
-				route1 = models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 60)
+				route1 = models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 1235, "", nil, 60, models.ModificationTag{})
 				eventStream, err = client.SubscribeToTcpEvents()
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -71,7 +71,7 @@ var _ = Describe("Routes API", func() {
 				done := make(chan interface{})
 				go func() {
 					defer close(done)
-					routeUpdated := models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 75)
+					routeUpdated := models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 1235, "", nil, 75, models.ModificationTag{})
 
 					routesToInsert := []models.TcpRouteMapping{route1}
 
@@ -119,7 +119,7 @@ var _ = Describe("Routes API", func() {
 			})
 
 			It("gets events for expired routes", func() {
-				routeExpire := models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 1)
+				routeExpire := models.NewTcpRouteMapping(routerGroupGuid, 3000, "1.1.1.1", 1234, 1235, "", nil, 1, models.ModificationTag{})
 
 				err := client.UpsertTcpRouteMappings([]models.TcpRouteMapping{routeExpire})
 				Expect(err).NotTo(HaveOccurred())
@@ -334,8 +334,8 @@ var _ = Describe("Routes API", func() {
 			Context("POST", func() {
 				It("allows to create given tcp route mappings", func() {
 					var err error
-					tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
-					tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 3)
+					tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60002, "", nil, 60, models.ModificationTag{})
+					tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 60003, "", nil, 3, models.ModificationTag{})
 
 					tcpRouteMappings := []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 					err = client.UpsertTcpRouteMappings(tcpRouteMappings)
@@ -351,7 +351,7 @@ var _ = Describe("Routes API", func() {
 				Context("when tcp route mappings already exist", func() {
 					BeforeEach(func() {
 						var err error
-						tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
+						tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60001, "", nil, 60, models.ModificationTag{})
 
 						tcpRouteMappings := []models.TcpRouteMapping{tcpRouteMapping1}
 						err = client.UpsertTcpRouteMappings(tcpRouteMappings)
@@ -399,8 +399,8 @@ var _ = Describe("Routes API", func() {
 				})
 
 				JustBeforeEach(func() {
-					tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
-					tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 60)
+					tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60002, "", nil, 60, models.ModificationTag{})
+					tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 60003, "", nil, 3, models.ModificationTag{})
 					tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 					err = client.UpsertTcpRouteMappings(tcpRouteMappings)
 
@@ -425,8 +425,8 @@ var _ = Describe("Routes API", func() {
 				)
 
 				JustBeforeEach(func() {
-					tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60)
-					tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 60)
+					tcpRouteMapping1 = models.NewTcpRouteMapping(routerGroupGuid, 52000, "1.2.3.4", 60000, 60002, "", nil, 60, models.ModificationTag{})
+					tcpRouteMapping2 = models.NewTcpRouteMapping(routerGroupGuid, 52001, "1.2.3.5", 60001, 60003, "", nil, 3, models.ModificationTag{})
 					tcpRouteMappings = []models.TcpRouteMapping{tcpRouteMapping1, tcpRouteMapping2}
 					err := client.UpsertTcpRouteMappings(tcpRouteMappings)
 
