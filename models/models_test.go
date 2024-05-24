@@ -426,7 +426,8 @@ var _ = Describe("Models", func() {
 		BeforeEach(func() {
 			tag, err := NewModificationTag()
 			Expect(err).ToNot(HaveOccurred())
-			route = NewTcpRouteMapping("router-group-1", 60000, "2.2.2.2", 64000, 64001, "instance-id", pointertoString("sni-hostname"), 66, tag)
+			route = NewTcpRouteMapping("router-group-1", 60000, "2.2.2.2", 64000, 66)
+			route.ModificationTag = tag
 		})
 
 		Describe("SetDefaults", func() {
