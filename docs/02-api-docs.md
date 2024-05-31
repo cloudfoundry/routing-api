@@ -1,5 +1,97 @@
-Routing API Documentation
-=========================
+---
+title: Routing API Documentation
+expires_at: never
+tags: [routing-release,routing-api]
+---
+
+<!-- vim-markdown-toc GFM -->
+
+* [Routing API Documentation](#routing-api-documentation)
+    * [Authorization Token](#authorization-token)
+  * [Create Router Groups](#create-router-groups)
+    * [Request](#request)
+      * [Request Headers](#request-headers)
+      * [Request Body](#request-body)
+      * [Example Request](#example-request)
+    * [Response](#response)
+      * [Response Body](#response-body)
+      * [Example Response:](#example-response)
+  * [Delete Router Groups](#delete-router-groups)
+    * [Request](#request-1)
+      * [Request Headers](#request-headers-1)
+      * [Example Request](#example-request-1)
+    * [Response](#response-1)
+  * [List Router Groups](#list-router-groups)
+    * [Request](#request-2)
+      * [Request Headers](#request-headers-2)
+      * [Request Parameters (Optional)](#request-parameters-optional)
+      * [Example request](#example-request-2)
+    * [Response](#response-2)
+      * [Response Body](#response-body-1)
+      * [Example Response](#example-response-1)
+  * [Update Router Group](#update-router-group)
+    * [Request](#request-3)
+      * [Request Headers](#request-headers-3)
+      * [Request Body](#request-body-1)
+      * [Example Request](#example-request-3)
+    * [Response](#response-3)
+      * [Response Body](#response-body-2)
+      * [Example Response:](#example-response-2)
+  * [List TCP Routes](#list-tcp-routes)
+    * [Request](#request-4)
+      * [Request Headers](#request-headers-4)
+      * [Request Parameters (Optional)](#request-parameters-optional-1)
+      * [Example Requests](#example-requests)
+    * [Response](#response-4)
+      * [Response Body](#response-body-3)
+      * [Example Response:](#example-response-3)
+  * [Create TCP Routes](#create-tcp-routes)
+    * [Request](#request-5)
+      * [Request Headers](#request-headers-5)
+      * [Request Body](#request-body-2)
+      * [Example Request](#example-request-4)
+      * [Example Request with SNI](#example-request-with-sni)
+    * [Response](#response-5)
+  * [Delete TCP Routes](#delete-tcp-routes)
+    * [Request](#request-6)
+      * [Request Headers](#request-headers-6)
+      * [Request Body](#request-body-3)
+      * [Example Request](#example-request-5)
+    * [Response](#response-6)
+  * [Subscribe to Events for TCP Routes](#subscribe-to-events-for-tcp-routes)
+    * [Request](#request-7)
+      * [Request Headers](#request-headers-7)
+      * [Example Request](#example-request-6)
+    * [Response](#response-7)
+      * [Example Response](#example-response-4)
+  * [List HTTP Routes (Experimental)](#list-http-routes-experimental)
+    * [Request](#request-8)
+      * [Request Headers](#request-headers-8)
+      * [Example Request](#example-request-7)
+    * [Response](#response-8)
+      * [Response Body](#response-body-4)
+      * [Example Response](#example-response-5)
+      * [Create HTTP Routes (Experimental)](#create-http-routes-experimental)
+    * [Request](#request-9)
+      * [Request Headers](#request-headers-9)
+      * [Request Body](#request-body-4)
+      * [Example Request](#example-request-8)
+    * [Response](#response-9)
+  * [Delete HTTP Routes (Experimental)](#delete-http-routes-experimental)
+    * [Request](#request-10)
+      * [Request Headers](#request-headers-10)
+      * [Request Body](#request-body-5)
+      * [Example Request](#example-request-9)
+    * [Response](#response-10)
+  * [Subscribe to Events for HTTP Routes (Experimental)](#subscribe-to-events-for-http-routes-experimental)
+    * [Request](#request-11)
+      * [Request Headers](#request-headers-11)
+      * [Example Request](#example-request-10)
+    * [Response](#response-11)
+      * [Example Response:](#example-response-6)
+
+<!-- vim-markdown-toc -->
+# Routing API Documentation
 
 Reference documentation for client authors using the Routing API manually.
 
@@ -31,21 +123,6 @@ To obtain an token from UAA, use the `uaac` CLI for UAA.
    ```bash
    uaac context
    ```
-
-Routing API Endpoints
----------------------
-- [Create Router Groups](#create-router-groups)
-- [Delete Router Groups](#delete-router-groups)
-- [List Router Groups](#list-router-groups)
-- [Update Router Group](#update-router-group)
-- [List TCP Routes](#list-tcp-routes)
-- [Create TCP Routes](#create-tcp-routes)
-- [Delete TCP Routes](#delete-tcp-routes)
-- [Subscribe to Events for TCP Routes](#subscribe-to-events-for-tcp-routes)
-- [List HTTP Routes (Experimental)](#list-http-routes-experimental)
-- [Create HTTP Routes (Experimental)](#create-http-routes-experimentalcreate)
-- [Delete HTTP Routes (Experimental)](#delete-http-routes-experimental)
-- [Subscribe to Events for HTTP Routes (Experimental)](#subscribe-to-events-for-http-routes-experimental)
 
 Create Router Groups
 ---------------------
@@ -241,7 +318,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 | `backend_port`      | integer         | Backend port. Must be greater than 0.
 | `backend_ip`        | string          | IP address of backend.
 | `port`              | integer         | External facing port for the TCP route.
-| `modification_tag`  | object     | See [Modification Tags](modification_tags.md).
+| `modification_tag`  | object     | See [Modification Tags](./03-modification-tags.md).
 | `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
 | `isolation_segment` | string | Isolation segment for the route. |
 
@@ -281,7 +358,7 @@ As routes have a TTL, clients must register routes periodically to keep them act
 | `backend_ip`           | string          | yes       | IP address of backend
 | `backend_port`         | integer         | yes       | Backend port. Must be greater than 0.
 | `ttl`                  | integer         | yes       | Time to live, in seconds. The mapping of backend to route will be pruned after this time. Must be greater than 0 seconds and less than the configured value for max_ttl (default 120 seconds).
-| `modification_tag`     | object          | no        | See [Modification Tags](modification_tags.md).
+| `modification_tag`     | object          | no        | See [Modification Tags](03-modification-tags.md).
 | `isolation_segment`    | string          | no        | Name of the isolation segment for the route.
 | `backend_sni_hostname` | string          | no        | Sni backend hostname used for SNI routing. 
 
@@ -409,7 +486,7 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 | `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
 | `log_guid`          | string          | A string used to annotate routing logs for requests forwarded to this backend.
 | `route_service_url` | string          | When present, requests for the route will be forwarded to this url before being forwarded to a backend. If provided, this url must use HTTPS.
-| `modification_tag`  | object          | See [Modification Tags](modification_tags.md).
+| `modification_tag`  | object          | See [Modification Tags](./03-modification-tags.md).
 
 #### Example Response
 ```json
