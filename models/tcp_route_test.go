@@ -3,69 +3,107 @@ package models_test
 import (
 	"encoding/json"
 
-	. "code.cloudfoundry.org/routing-api/models"
+	"code.cloudfoundry.org/routing-api/models"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
+func pointertoString(s string) *string { return &s }
+
 var _ = Describe("TCP Route", func() {
 	Describe("TcpMappingEntity", func() {
+		var tcpRouteMapping models.TcpRouteMapping
+		var sniHostNamePtr *string
+
+		JustBeforeEach(func() {
+			tcpRouteMapping = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr, 5, models.ModificationTag{})
+		})
 		Describe("SNI Hostname", func() {
-			It("Is nillable", func() {
-				tcpRouteMapping := NewSniTcpRouteMapping("a-guid", 1234, nil, "hostIp", 5678, 5)
-				Expect(tcpRouteMapping.SniHostname).To(BeNil())
+			Context("when the SNI hostname is nil", func() {
+				BeforeEach(func() {
+					sniHostNamePtr = nil
+				})
+				It("comes through as nil", func() {
+					Expect(tcpRouteMapping.SniHostname).To(BeNil())
+				})
+				It("is omitted from JSON  marshaling", func() {
+					j, err := json.Marshal(tcpRouteMapping)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(string(j)).NotTo(ContainSubstring("backend_sni_hostname"))
+				})
 			})
-			It("Accepts a value", func() {
-				sniHostname := "sniHostname"
-				tcpRouteMapping := NewSniTcpRouteMapping("a-guid", 1234, &sniHostname, "hostIp", 5678, 5)
-				Expect(*tcpRouteMapping.SniHostname).To(Equal("sniHostname"))
+
+			Context("when a valid SNI hostname is provided", func() {
+				BeforeEach(func() {
+					sniHostNamePtr = pointertoString("sniHostname")
+				})
+
+				It("Accepts the value", func() {
+					Expect(*tcpRouteMapping.SniHostname).To(Equal("sniHostname"))
+				})
+				It("is provided in the marshaled JSON", func() {
+					j, err := json.Marshal(tcpRouteMapping)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(string(j)).To(ContainSubstring("backend_sni_hostname"))
+				})
 			})
-			It("Matches if values are the same", func() {
-				sniHostname := "sniHostname"
-				tcpRouteMapping1 := NewSniTcpRouteMapping("a-guid", 1234, &sniHostname, "hostIp", 5678, 5)
-				tcpRouteMapping2 := NewSniTcpRouteMapping("a-guid", 1234, &sniHostname, "hostIp", 5678, 5)
-				Expect(tcpRouteMapping1.Matches(tcpRouteMapping2)).To(BeTrue())
+			Context("when the SNI hostname is empty", func() {
+				BeforeEach(func() {
+					sniHostNamePtr = pointertoString("")
+				})
+				It("is provided in the marshaled JSON", func() {
+					j, err := json.Marshal(tcpRouteMapping)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(string(j)).To(ContainSubstring("backend_sni_hostname"))
+				})
 			})
-			It("Matches if values are equal", func() {
-				sniHostname1 := "sniHostname"
-				tcpRouteMapping1 := NewSniTcpRouteMapping("a-guid", 1234, &sniHostname1, "hostIp", 5678, 5)
-				sniHostname2 := "sniHostname"
-				tcpRouteMapping2 := NewSniTcpRouteMapping("a-guid", 1234, &sniHostname2, "hostIp", 5678, 5)
-				Expect(tcpRouteMapping1.Matches(tcpRouteMapping2)).To(BeTrue())
+		})
+		Describe("Matches()", func() {
+			var tcpRouteMapping2 models.TcpRouteMapping
+			var sniHostNamePtr2 *string
+
+			BeforeEach(func() {
+				sniHostNamePtr = pointertoString("sniHostName")
 			})
-			It("Doesn't match if value is different", func() {
-				sniHostname1 := "sniHostname1"
-				tcpRouteMapping1 := NewSniTcpRouteMapping("a-guid", 1234, &sniHostname1, "hostIp", 5678, 5)
-				sniHostname2 := "sniHostname2"
-				tcpRouteMapping2 := NewSniTcpRouteMapping("a-guid", 1234, &sniHostname2, "hostIp", 5678, 5)
-				Expect(tcpRouteMapping1.Matches(tcpRouteMapping2)).To(BeFalse())
+
+			JustBeforeEach(func() {
+				tcpRouteMapping2 = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr2, 5, models.ModificationTag{})
 			})
-			It("Matches if one is nil", func() {
-				tcpRouteMapping1 := NewSniTcpRouteMapping("a-guid", 1234, nil, "hostIp", 5678, 5)
-				sniHostname2 := "sniHostname2"
-				tcpRouteMapping2 := NewSniTcpRouteMapping("a-guid", 1234, &sniHostname2, "hostIp", 5678, 5)
-				Expect(tcpRouteMapping1.Matches(tcpRouteMapping2)).To(BeFalse())
+
+			Context("when two routes have the same SNIHostName value", func() {
+				BeforeEach(func() {
+					sniHostNamePtr2 = sniHostNamePtr
+				})
+				It("matches", func() {
+					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeTrue())
+				})
 			})
-			It("JSON omits when nil", func() {
-				tcpRouteMapping := NewSniTcpRouteMapping("a-guid", 1234, nil, "hostIp", 5678, 5)
-				j, err := json.Marshal(tcpRouteMapping)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(string(j)).NotTo(ContainSubstring("backend_sni_hostname"))
+			Context("when two routes have equal values", func() {
+				BeforeEach(func() {
+					sniHostNamePtr2 = pointertoString("sniHostName")
+				})
+				It("matches", func() {
+					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeTrue())
+				})
 			})
-			It("JSON contains when empty", func() {
-				sniHostname := ""
-				tcpRouteMapping := NewSniTcpRouteMapping("a-guid", 1234, &sniHostname, "hostIp", 5678, 5)
-				j, err := json.Marshal(tcpRouteMapping)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(string(j)).To(ContainSubstring("backend_sni_hostname"))
+
+			Context("when two routes have values that are not equal", func() {
+				BeforeEach(func() {
+					sniHostNamePtr2 = pointertoString("sniHostName2")
+				})
+				It("doesn't match", func() {
+					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeFalse())
+				})
 			})
-			It("JSON contains when not nil", func() {
-				sniHostname := "sniHostname"
-				tcpRouteMapping := NewSniTcpRouteMapping("a-guid", 1234, &sniHostname, "hostIp", 5678, 5)
-				j, err := json.Marshal(tcpRouteMapping)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(string(j)).To(ContainSubstring("backend_sni_hostname"))
+			Context("when one of the routes has a nil SNIHostName", func() {
+				BeforeEach(func() {
+					sniHostNamePtr2 = nil
+				})
+				It("doesn't match", func() {
+					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeFalse())
+					Expect(tcpRouteMapping2.Matches(tcpRouteMapping)).To(BeFalse())
+				})
 			})
 		})
 	})
