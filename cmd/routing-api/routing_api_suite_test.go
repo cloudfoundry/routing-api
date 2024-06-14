@@ -32,6 +32,7 @@ import (
 	"github.com/onsi/gomega/ghttp"
 	"google.golang.org/grpc/grpclog"
 	yaml "gopkg.in/yaml.v2"
+	"gorm.io/gorm"
 )
 
 var (
@@ -63,9 +64,10 @@ var (
 	mtlsAPIClientCert     tls.Certificate
 )
 
-func TestMain(t *testing.T) {
+func TestMainSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Main Suite")
+	suiteConfig, reporterConfig := GinkgoConfiguration()
+	RunSpecs(t, "Main Suite", suiteConfig, reporterConfig)
 }
 
 var _ = SynchronizedBeforeSuite(

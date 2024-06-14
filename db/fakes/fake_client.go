@@ -9,19 +9,17 @@ import (
 )
 
 type FakeClient struct {
-	AddUniqueIndexStub        func(string, ...string) (db.Client, error)
+	AddUniqueIndexStub        func(string, interface{}) error
 	addUniqueIndexMutex       sync.RWMutex
 	addUniqueIndexArgsForCall []struct {
 		arg1 string
-		arg2 []string
+		arg2 interface{}
 	}
 	addUniqueIndexReturns struct {
-		result1 db.Client
-		result2 error
+		result1 error
 	}
 	addUniqueIndexReturnsOnCall map[int]struct {
-		result1 db.Client
-		result2 error
+		result1 error
 	}
 	AutoMigrateStub        func(...interface{}) error
 	autoMigrateMutex       sync.RWMutex
@@ -160,18 +158,17 @@ type FakeClient struct {
 	modelReturnsOnCall map[int]struct {
 		result1 db.Client
 	}
-	RemoveIndexStub        func(string) (db.Client, error)
+	RemoveIndexStub        func(string, interface{}) error
 	removeIndexMutex       sync.RWMutex
 	removeIndexArgsForCall []struct {
 		arg1 string
+		arg2 interface{}
 	}
 	removeIndexReturns struct {
-		result1 db.Client
-		result2 error
+		result1 error
 	}
 	removeIndexReturnsOnCall map[int]struct {
-		result1 db.Client
-		result2 error
+		result1 error
 	}
 	RollbackStub        func() error
 	rollbackMutex       sync.RWMutex
@@ -209,10 +206,11 @@ type FakeClient struct {
 		result1 int64
 		result2 error
 	}
-	UpdateStub        func(...interface{}) (int64, error)
+	UpdateStub        func(string, interface{}) (int64, error)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
-		arg1 []interface{}
+		arg1 string
+		arg2 interface{}
 	}
 	updateReturns struct {
 		result1 int64
@@ -238,23 +236,23 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) AddUniqueIndex(arg1 string, arg2 ...string) (db.Client, error) {
+func (fake *FakeClient) AddUniqueIndex(arg1 string, arg2 interface{}) error {
 	fake.addUniqueIndexMutex.Lock()
 	ret, specificReturn := fake.addUniqueIndexReturnsOnCall[len(fake.addUniqueIndexArgsForCall)]
 	fake.addUniqueIndexArgsForCall = append(fake.addUniqueIndexArgsForCall, struct {
 		arg1 string
-		arg2 []string
+		arg2 interface{}
 	}{arg1, arg2})
 	fake.recordInvocation("AddUniqueIndex", []interface{}{arg1, arg2})
 	fake.addUniqueIndexMutex.Unlock()
 	if fake.AddUniqueIndexStub != nil {
-		return fake.AddUniqueIndexStub(arg1, arg2...)
+		return fake.AddUniqueIndexStub(arg1, arg2)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
 	fakeReturns := fake.addUniqueIndexReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fakeReturns.result1
 }
 
 func (fake *FakeClient) AddUniqueIndexCallCount() int {
@@ -263,43 +261,40 @@ func (fake *FakeClient) AddUniqueIndexCallCount() int {
 	return len(fake.addUniqueIndexArgsForCall)
 }
 
-func (fake *FakeClient) AddUniqueIndexCalls(stub func(string, ...string) (db.Client, error)) {
+func (fake *FakeClient) AddUniqueIndexCalls(stub func(string, interface{}) error) {
 	fake.addUniqueIndexMutex.Lock()
 	defer fake.addUniqueIndexMutex.Unlock()
 	fake.AddUniqueIndexStub = stub
 }
 
-func (fake *FakeClient) AddUniqueIndexArgsForCall(i int) (string, []string) {
+func (fake *FakeClient) AddUniqueIndexArgsForCall(i int) (string, interface{}) {
 	fake.addUniqueIndexMutex.RLock()
 	defer fake.addUniqueIndexMutex.RUnlock()
 	argsForCall := fake.addUniqueIndexArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeClient) AddUniqueIndexReturns(result1 db.Client, result2 error) {
+func (fake *FakeClient) AddUniqueIndexReturns(result1 error) {
 	fake.addUniqueIndexMutex.Lock()
 	defer fake.addUniqueIndexMutex.Unlock()
 	fake.AddUniqueIndexStub = nil
 	fake.addUniqueIndexReturns = struct {
-		result1 db.Client
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
-func (fake *FakeClient) AddUniqueIndexReturnsOnCall(i int, result1 db.Client, result2 error) {
+func (fake *FakeClient) AddUniqueIndexReturnsOnCall(i int, result1 error) {
 	fake.addUniqueIndexMutex.Lock()
 	defer fake.addUniqueIndexMutex.Unlock()
 	fake.AddUniqueIndexStub = nil
 	if fake.addUniqueIndexReturnsOnCall == nil {
 		fake.addUniqueIndexReturnsOnCall = make(map[int]struct {
-			result1 db.Client
-			result2 error
+			result1 error
 		})
 	}
 	fake.addUniqueIndexReturnsOnCall[i] = struct {
-		result1 db.Client
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeClient) AutoMigrate(arg1 ...interface{}) error {
@@ -1008,22 +1003,23 @@ func (fake *FakeClient) ModelReturnsOnCall(i int, result1 db.Client) {
 	}{result1}
 }
 
-func (fake *FakeClient) RemoveIndex(arg1 string) (db.Client, error) {
+func (fake *FakeClient) RemoveIndex(arg1 string, arg2 interface{}) error {
 	fake.removeIndexMutex.Lock()
 	ret, specificReturn := fake.removeIndexReturnsOnCall[len(fake.removeIndexArgsForCall)]
 	fake.removeIndexArgsForCall = append(fake.removeIndexArgsForCall, struct {
 		arg1 string
-	}{arg1})
+		arg2 interface{}
+	}{arg1, arg2})
 	fake.recordInvocation("RemoveIndex", []interface{}{arg1})
 	fake.removeIndexMutex.Unlock()
 	if fake.RemoveIndexStub != nil {
-		return fake.RemoveIndexStub(arg1)
+		return fake.RemoveIndexStub(arg1, arg2)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
 	fakeReturns := fake.removeIndexReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fakeReturns.result1
 }
 
 func (fake *FakeClient) RemoveIndexCallCount() int {
@@ -1032,7 +1028,7 @@ func (fake *FakeClient) RemoveIndexCallCount() int {
 	return len(fake.removeIndexArgsForCall)
 }
 
-func (fake *FakeClient) RemoveIndexCalls(stub func(string) (db.Client, error)) {
+func (fake *FakeClient) RemoveIndexCalls(stub func(string, interface{}) error) {
 	fake.removeIndexMutex.Lock()
 	defer fake.removeIndexMutex.Unlock()
 	fake.RemoveIndexStub = stub
@@ -1045,30 +1041,27 @@ func (fake *FakeClient) RemoveIndexArgsForCall(i int) string {
 	return argsForCall.arg1
 }
 
-func (fake *FakeClient) RemoveIndexReturns(result1 db.Client, result2 error) {
+func (fake *FakeClient) RemoveIndexReturns(result1 error) {
 	fake.removeIndexMutex.Lock()
 	defer fake.removeIndexMutex.Unlock()
 	fake.RemoveIndexStub = nil
 	fake.removeIndexReturns = struct {
-		result1 db.Client
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
-func (fake *FakeClient) RemoveIndexReturnsOnCall(i int, result1 db.Client, result2 error) {
+func (fake *FakeClient) RemoveIndexReturnsOnCall(i int, result1 error) {
 	fake.removeIndexMutex.Lock()
 	defer fake.removeIndexMutex.Unlock()
 	fake.RemoveIndexStub = nil
 	if fake.removeIndexReturnsOnCall == nil {
 		fake.removeIndexReturnsOnCall = make(map[int]struct {
-			result1 db.Client
-			result2 error
+			result1 error
 		})
 	}
 	fake.removeIndexReturnsOnCall[i] = struct {
-		result1 db.Client
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeClient) Rollback() error {
@@ -1249,16 +1242,17 @@ func (fake *FakeClient) SaveReturnsOnCall(i int, result1 int64, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeClient) Update(arg1 ...interface{}) (int64, error) {
+func (fake *FakeClient) Update(arg1 string, arg2 interface{}) (int64, error) {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
-		arg1 []interface{}
-	}{arg1})
-	fake.recordInvocation("Update", []interface{}{arg1})
+		arg1 string
+		arg2 interface{}
+	}{arg1, arg2})
+	fake.recordInvocation("Update", []interface{}{arg1, arg2})
 	fake.updateMutex.Unlock()
 	if fake.UpdateStub != nil {
-		return fake.UpdateStub(arg1...)
+		return fake.UpdateStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -1273,17 +1267,17 @@ func (fake *FakeClient) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeClient) UpdateCalls(stub func(...interface{}) (int64, error)) {
+func (fake *FakeClient) UpdateCalls(stub func(string, interface{}) (int64, error)) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakeClient) UpdateArgsForCall(i int) []interface{} {
+func (fake *FakeClient) UpdateArgsForCall(i int) (string, interface{}) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeClient) UpdateReturns(result1 int64, result2 error) {

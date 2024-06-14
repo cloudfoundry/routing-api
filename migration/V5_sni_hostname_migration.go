@@ -18,7 +18,7 @@ func (v *V5SniHostnameMigration) Version() int {
 }
 
 func (v *V5SniHostnameMigration) Run(sqlDB *db.SqlDB) error {
-	_, err := sqlDB.Client.Model(&models.TcpRouteMapping{}).RemoveIndex("idx_tcp_route")
+	err := sqlDB.Client.RemoveIndex("idx_tcp_route", &models.TcpRouteMapping{})
 	if err != nil {
 		return err
 	}
