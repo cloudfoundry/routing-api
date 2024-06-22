@@ -13,10 +13,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func ptrOfInt(i uint16) *uint16 {
-	return &i
-}
-
 var _ = Describe("V6TCPTLSRoutes", func() {
 	var (
 		sqlDB       *db.SqlDB
@@ -51,7 +47,7 @@ var _ = Describe("V6TCPTLSRoutes", func() {
 					TcpMappingEntity: models.TcpMappingEntity{
 						RouterGroupGuid: "test1",
 						HostPort:        80,
-						HostTLSPort:     ptrOfInt(443),
+						HostTLSPort:     443,
 						HostIP:          "1.2.3.4",
 						InstanceId:      "instanceId1",
 						ExternalPort:    80,
@@ -70,7 +66,7 @@ var _ = Describe("V6TCPTLSRoutes", func() {
 					TcpMappingEntity: models.TcpMappingEntity{
 						RouterGroupGuid: "test1",
 						HostPort:        80,
-						HostTLSPort:     ptrOfInt(444),
+						HostTLSPort:     444,
 						HostIP:          "1.2.3.4",
 						InstanceId:      "instanceId2",
 						ExternalPort:    80,
@@ -93,7 +89,7 @@ var _ = Describe("V6TCPTLSRoutes", func() {
 					TcpMappingEntity: models.TcpMappingEntity{
 						RouterGroupGuid: "test1",
 						HostPort:        80,
-						HostTLSPort:     ptrOfInt(443),
+						HostTLSPort:     443,
 						InstanceId:      "instanceId2",
 						HostIP:          "1.2.3.4",
 						ExternalPort:    80,
@@ -116,7 +112,7 @@ var _ = Describe("V6TCPTLSRoutes", func() {
 					TcpMappingEntity: models.TcpMappingEntity{
 						RouterGroupGuid: "test1",
 						HostPort:        80,
-						HostTLSPort:     ptrOfInt(443),
+						HostTLSPort:     443,
 						HostIP:          "1.2.3.4",
 						InstanceId:      "instanceId2",
 						ExternalPort:    80,
