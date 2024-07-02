@@ -18,7 +18,6 @@ import (
 
 var _ = Describe("Metrics", func() {
 	Describe("Watch", func() {
-
 		var (
 			database       *fake_db.FakeDB
 			reporter       *MetricsReporter
@@ -50,17 +49,17 @@ var _ = Describe("Metrics", func() {
 				}
 			}
 			database.ReadRoutesReturns([]models.Route{
-				models.Route{},
-				models.Route{},
-				models.Route{},
-				models.Route{},
-				models.Route{},
+				{},
+				{},
+				{},
+				{},
+				{},
 			}, nil)
 
 			database.ReadTcpRouteMappingsReturns([]models.TcpRouteMapping{
-				models.TcpRouteMapping{},
-				models.TcpRouteMapping{},
-				models.TcpRouteMapping{},
+				{},
+				{},
+				{},
 			}, nil)
 		})
 
@@ -77,7 +76,7 @@ var _ = Describe("Metrics", func() {
 		})
 
 		verifyGaugeCall := func(statKey string, expectedCount int64, expectedRate float32, index int) {
-			totalStat, count, rate := stats.GaugeArgsForCall(index)
+			totalStat, count, rate, _ := stats.GaugeArgsForCall(index)
 			Expect(totalStat).To(Equal(statKey))
 			Expect(count).To(BeNumerically("==", expectedCount))
 			Expect(rate).To(BeNumerically("==", expectedRate))
@@ -201,9 +200,7 @@ var _ = Describe("Metrics", func() {
 		})
 
 		Context("When the token error counter is incremented", func() {
-			var (
-				currentTokenErrors int64
-			)
+			var currentTokenErrors int64
 
 			BeforeEach(func() {
 				currentTokenErrors = GetTokenErrors()
@@ -218,9 +215,7 @@ var _ = Describe("Metrics", func() {
 		})
 
 		Context("When the key verification refreshed counter is incremented", func() {
-			var (
-				currentKeyRefreshEventCount int64
-			)
+			var currentKeyRefreshEventCount int64
 
 			BeforeEach(func() {
 				currentKeyRefreshEventCount = GetKeyVerificationRefreshCount()
@@ -233,6 +228,5 @@ var _ = Describe("Metrics", func() {
 				verifyGaugeCall("key_refresh_events", currentKeyRefreshEventCount+1, 1.0, 5)
 			})
 		})
-
 	})
 })

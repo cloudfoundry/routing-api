@@ -245,15 +245,16 @@ func (fake *FakeClient) AddUniqueIndex(arg1 string, arg2 ...string) (db.Client, 
 		arg1 string
 		arg2 []string
 	}{arg1, arg2})
+	stub := fake.AddUniqueIndexStub
+	fakeReturns := fake.addUniqueIndexReturns
 	fake.recordInvocation("AddUniqueIndex", []interface{}{arg1, arg2})
 	fake.addUniqueIndexMutex.Unlock()
-	if fake.AddUniqueIndexStub != nil {
-		return fake.AddUniqueIndexStub(arg1, arg2...)
+	if stub != nil {
+		return stub(arg1, arg2...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.addUniqueIndexReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -308,15 +309,16 @@ func (fake *FakeClient) AutoMigrate(arg1 ...interface{}) error {
 	fake.autoMigrateArgsForCall = append(fake.autoMigrateArgsForCall, struct {
 		arg1 []interface{}
 	}{arg1})
+	stub := fake.AutoMigrateStub
+	fakeReturns := fake.autoMigrateReturns
 	fake.recordInvocation("AutoMigrate", []interface{}{arg1})
 	fake.autoMigrateMutex.Unlock()
-	if fake.AutoMigrateStub != nil {
-		return fake.AutoMigrateStub(arg1...)
+	if stub != nil {
+		return stub(arg1...)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.autoMigrateReturns
 	return fakeReturns.result1
 }
 
@@ -367,15 +369,16 @@ func (fake *FakeClient) Begin() db.Client {
 	ret, specificReturn := fake.beginReturnsOnCall[len(fake.beginArgsForCall)]
 	fake.beginArgsForCall = append(fake.beginArgsForCall, struct {
 	}{})
+	stub := fake.BeginStub
+	fakeReturns := fake.beginReturns
 	fake.recordInvocation("Begin", []interface{}{})
 	fake.beginMutex.Unlock()
-	if fake.BeginStub != nil {
-		return fake.BeginStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.beginReturns
 	return fakeReturns.result1
 }
 
@@ -419,15 +422,16 @@ func (fake *FakeClient) Close() error {
 	ret, specificReturn := fake.closeReturnsOnCall[len(fake.closeArgsForCall)]
 	fake.closeArgsForCall = append(fake.closeArgsForCall, struct {
 	}{})
+	stub := fake.CloseStub
+	fakeReturns := fake.closeReturns
 	fake.recordInvocation("Close", []interface{}{})
 	fake.closeMutex.Unlock()
-	if fake.CloseStub != nil {
-		return fake.CloseStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.closeReturns
 	return fakeReturns.result1
 }
 
@@ -471,15 +475,16 @@ func (fake *FakeClient) Commit() error {
 	ret, specificReturn := fake.commitReturnsOnCall[len(fake.commitArgsForCall)]
 	fake.commitArgsForCall = append(fake.commitArgsForCall, struct {
 	}{})
+	stub := fake.CommitStub
+	fakeReturns := fake.commitReturns
 	fake.recordInvocation("Commit", []interface{}{})
 	fake.commitMutex.Unlock()
-	if fake.CommitStub != nil {
-		return fake.CommitStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.commitReturns
 	return fakeReturns.result1
 }
 
@@ -524,15 +529,16 @@ func (fake *FakeClient) Create(arg1 interface{}) (int64, error) {
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
 		arg1 interface{}
 	}{arg1})
+	stub := fake.CreateStub
+	fakeReturns := fake.createReturns
 	fake.recordInvocation("Create", []interface{}{arg1})
 	fake.createMutex.Unlock()
-	if fake.CreateStub != nil {
-		return fake.CreateStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.createReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -588,15 +594,16 @@ func (fake *FakeClient) Delete(arg1 interface{}, arg2 ...interface{}) (int64, er
 		arg1 interface{}
 		arg2 []interface{}
 	}{arg1, arg2})
+	stub := fake.DeleteStub
+	fakeReturns := fake.deleteReturns
 	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
 	fake.deleteMutex.Unlock()
-	if fake.DeleteStub != nil {
-		return fake.DeleteStub(arg1, arg2...)
+	if stub != nil {
+		return stub(arg1, arg2...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.deleteReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -651,15 +658,16 @@ func (fake *FakeClient) DropColumn(arg1 string) error {
 	fake.dropColumnArgsForCall = append(fake.dropColumnArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.DropColumnStub
+	fakeReturns := fake.dropColumnReturns
 	fake.recordInvocation("DropColumn", []interface{}{arg1})
 	fake.dropColumnMutex.Unlock()
-	if fake.DropColumnStub != nil {
-		return fake.DropColumnStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.dropColumnReturns
 	return fakeReturns.result1
 }
 
@@ -712,15 +720,16 @@ func (fake *FakeClient) Exec(arg1 string, arg2 ...interface{}) int64 {
 		arg1 string
 		arg2 []interface{}
 	}{arg1, arg2})
+	stub := fake.ExecStub
+	fakeReturns := fake.execReturns
 	fake.recordInvocation("Exec", []interface{}{arg1, arg2})
 	fake.execMutex.Unlock()
-	if fake.ExecStub != nil {
-		return fake.ExecStub(arg1, arg2...)
+	if stub != nil {
+		return stub(arg1, arg2...)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.execReturns
 	return fakeReturns.result1
 }
 
@@ -773,15 +782,16 @@ func (fake *FakeClient) Find(arg1 interface{}, arg2 ...interface{}) error {
 		arg1 interface{}
 		arg2 []interface{}
 	}{arg1, arg2})
+	stub := fake.FindStub
+	fakeReturns := fake.findReturns
 	fake.recordInvocation("Find", []interface{}{arg1, arg2})
 	fake.findMutex.Unlock()
-	if fake.FindStub != nil {
-		return fake.FindStub(arg1, arg2...)
+	if stub != nil {
+		return stub(arg1, arg2...)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.findReturns
 	return fakeReturns.result1
 }
 
@@ -834,15 +844,16 @@ func (fake *FakeClient) First(arg1 interface{}, arg2 ...interface{}) error {
 		arg1 interface{}
 		arg2 []interface{}
 	}{arg1, arg2})
+	stub := fake.FirstStub
+	fakeReturns := fake.firstReturns
 	fake.recordInvocation("First", []interface{}{arg1, arg2})
 	fake.firstMutex.Unlock()
-	if fake.FirstStub != nil {
-		return fake.FirstStub(arg1, arg2...)
+	if stub != nil {
+		return stub(arg1, arg2...)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.firstReturns
 	return fakeReturns.result1
 }
 
@@ -894,15 +905,16 @@ func (fake *FakeClient) HasTable(arg1 interface{}) bool {
 	fake.hasTableArgsForCall = append(fake.hasTableArgsForCall, struct {
 		arg1 interface{}
 	}{arg1})
+	stub := fake.HasTableStub
+	fakeReturns := fake.hasTableReturns
 	fake.recordInvocation("HasTable", []interface{}{arg1})
 	fake.hasTableMutex.Unlock()
-	if fake.HasTableStub != nil {
-		return fake.HasTableStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.hasTableReturns
 	return fakeReturns.result1
 }
 
@@ -954,15 +966,16 @@ func (fake *FakeClient) Model(arg1 interface{}) db.Client {
 	fake.modelArgsForCall = append(fake.modelArgsForCall, struct {
 		arg1 interface{}
 	}{arg1})
+	stub := fake.ModelStub
+	fakeReturns := fake.modelReturns
 	fake.recordInvocation("Model", []interface{}{arg1})
 	fake.modelMutex.Unlock()
-	if fake.ModelStub != nil {
-		return fake.ModelStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.modelReturns
 	return fakeReturns.result1
 }
 
@@ -1014,15 +1027,16 @@ func (fake *FakeClient) RemoveIndex(arg1 string) (db.Client, error) {
 	fake.removeIndexArgsForCall = append(fake.removeIndexArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.RemoveIndexStub
+	fakeReturns := fake.removeIndexReturns
 	fake.recordInvocation("RemoveIndex", []interface{}{arg1})
 	fake.removeIndexMutex.Unlock()
-	if fake.RemoveIndexStub != nil {
-		return fake.RemoveIndexStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.removeIndexReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -1076,15 +1090,16 @@ func (fake *FakeClient) Rollback() error {
 	ret, specificReturn := fake.rollbackReturnsOnCall[len(fake.rollbackArgsForCall)]
 	fake.rollbackArgsForCall = append(fake.rollbackArgsForCall, struct {
 	}{})
+	stub := fake.RollbackStub
+	fakeReturns := fake.rollbackReturns
 	fake.recordInvocation("Rollback", []interface{}{})
 	fake.rollbackMutex.Unlock()
-	if fake.RollbackStub != nil {
-		return fake.RollbackStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.rollbackReturns
 	return fakeReturns.result1
 }
 
@@ -1129,15 +1144,16 @@ func (fake *FakeClient) Rows(arg1 string) (*sql.Rows, error) {
 	fake.rowsArgsForCall = append(fake.rowsArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.RowsStub
+	fakeReturns := fake.rowsReturns
 	fake.recordInvocation("Rows", []interface{}{arg1})
 	fake.rowsMutex.Unlock()
-	if fake.RowsStub != nil {
-		return fake.RowsStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.rowsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -1192,15 +1208,16 @@ func (fake *FakeClient) Save(arg1 interface{}) (int64, error) {
 	fake.saveArgsForCall = append(fake.saveArgsForCall, struct {
 		arg1 interface{}
 	}{arg1})
+	stub := fake.SaveStub
+	fakeReturns := fake.saveReturns
 	fake.recordInvocation("Save", []interface{}{arg1})
 	fake.saveMutex.Unlock()
-	if fake.SaveStub != nil {
-		return fake.SaveStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.saveReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -1255,15 +1272,16 @@ func (fake *FakeClient) Update(arg1 ...interface{}) (int64, error) {
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
 		arg1 []interface{}
 	}{arg1})
+	stub := fake.UpdateStub
+	fakeReturns := fake.updateReturns
 	fake.recordInvocation("Update", []interface{}{arg1})
 	fake.updateMutex.Unlock()
-	if fake.UpdateStub != nil {
-		return fake.UpdateStub(arg1...)
+	if stub != nil {
+		return stub(arg1...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.updateReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -1319,15 +1337,16 @@ func (fake *FakeClient) Where(arg1 interface{}, arg2 ...interface{}) db.Client {
 		arg1 interface{}
 		arg2 []interface{}
 	}{arg1, arg2})
+	stub := fake.WhereStub
+	fakeReturns := fake.whereReturns
 	fake.recordInvocation("Where", []interface{}{arg1, arg2})
 	fake.whereMutex.Unlock()
-	if fake.WhereStub != nil {
-		return fake.WhereStub(arg1, arg2...)
+	if stub != nil {
+		return stub(arg1, arg2...)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.whereReturns
 	return fakeReturns.result1
 }
 

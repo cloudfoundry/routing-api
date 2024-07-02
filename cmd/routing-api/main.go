@@ -42,9 +42,11 @@ const (
 	pruningInterval = 10 * time.Second
 )
 
-var configPath = flag.String("config", "", "Configuration for routing-api")
-var devMode = flag.Bool("devMode", false, "Disable authentication for easier development iteration")
-var ip = flag.String("ip", "", "The public ip of the routing api")
+var (
+	configPath = flag.String("config", "", "Configuration for routing-api")
+	devMode    = flag.Bool("devMode", false, "Disable authentication for easier development iteration")
+	ip         = flag.String("ip", "", "The public ip of the routing api")
+)
 
 func route(f func(w http.ResponseWriter, r *http.Request)) http.Handler {
 	return http.HandlerFunc(f)
@@ -87,6 +89,7 @@ func main() {
 	}
 
 	prefix := "routing_api"
+	// lint :ignore SA1019
 	statsdClient, err := statsd.NewBufferedClient(cfg.StatsdEndpoint, prefix, cfg.StatsdClientFlushInterval, 512)
 	if err != nil {
 		logger.Error("failed-to-create-statsd-client", err)
@@ -205,7 +208,8 @@ func main() {
 	mtlsAPIHandler := apiHandler(cfg, uaaClient, database, statsdClient, logger.Session("api-mtls-server"))
 	mtlsAPIServer := http_server.NewTLSServer(":"+strconv.Itoa(cfg.API.MTLSListenPort), mtlsAPIHandler, config)
 	members = append(members, grouper.Member{
-		Name: "api-mtls-server", Runner: mtlsAPIServer},
+		Name: "api-mtls-server", Runner: mtlsAPIServer,
+	},
 	)
 
 	members = append(members,
@@ -360,7 +364,6 @@ func checkFlags() error {
 
 func initializeLockAcquirer(lockRunner ifrit.Runner, releaseLock chan os.Signal, lockErrChan chan error) ifrit.Runner {
 	return ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
-
 		go func() {
 			err := lockRunner.Run(releaseLock, ready)
 			lockErrChan <- err
@@ -382,7 +385,7 @@ func initializeLockReleaser(releaseLock chan os.Signal, lockErrChan chan error, 
 
 			case err = <-lockErrChan:
 				lockRetryInterval := 5 * time.Second
-				//Give other routing-api enough time to grab the lock
+				// Give other routing-api enough time to grab the lock
 				time.Sleep(retryInterval + lockRetryInterval)
 
 				return err
