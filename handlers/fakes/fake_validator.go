@@ -73,15 +73,16 @@ func (fake *FakeRouteValidator) ValidateCreate(arg1 []models.Route, arg2 int) *r
 		arg1 []models.Route
 		arg2 int
 	}{arg1Copy, arg2})
+	stub := fake.ValidateCreateStub
+	fakeReturns := fake.validateCreateReturns
 	fake.recordInvocation("ValidateCreate", []interface{}{arg1Copy, arg2})
 	fake.validateCreateMutex.Unlock()
-	if fake.ValidateCreateStub != nil {
-		return fake.ValidateCreateStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.validateCreateReturns
 	return fakeReturns.result1
 }
 
@@ -140,15 +141,16 @@ func (fake *FakeRouteValidator) ValidateCreateTcpRouteMapping(arg1 []models.TcpR
 		arg2 models.RouterGroups
 		arg3 int
 	}{arg1Copy, arg2, arg3})
+	stub := fake.ValidateCreateTcpRouteMappingStub
+	fakeReturns := fake.validateCreateTcpRouteMappingReturns
 	fake.recordInvocation("ValidateCreateTcpRouteMapping", []interface{}{arg1Copy, arg2, arg3})
 	fake.validateCreateTcpRouteMappingMutex.Unlock()
-	if fake.ValidateCreateTcpRouteMappingStub != nil {
-		return fake.ValidateCreateTcpRouteMappingStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.validateCreateTcpRouteMappingReturns
 	return fakeReturns.result1
 }
 
@@ -205,15 +207,16 @@ func (fake *FakeRouteValidator) ValidateDelete(arg1 []models.Route) *routing_api
 	fake.validateDeleteArgsForCall = append(fake.validateDeleteArgsForCall, struct {
 		arg1 []models.Route
 	}{arg1Copy})
+	stub := fake.ValidateDeleteStub
+	fakeReturns := fake.validateDeleteReturns
 	fake.recordInvocation("ValidateDelete", []interface{}{arg1Copy})
 	fake.validateDeleteMutex.Unlock()
-	if fake.ValidateDeleteStub != nil {
-		return fake.ValidateDeleteStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.validateDeleteReturns
 	return fakeReturns.result1
 }
 
@@ -270,15 +273,16 @@ func (fake *FakeRouteValidator) ValidateDeleteTcpRouteMapping(arg1 []models.TcpR
 	fake.validateDeleteTcpRouteMappingArgsForCall = append(fake.validateDeleteTcpRouteMappingArgsForCall, struct {
 		arg1 []models.TcpRouteMapping
 	}{arg1Copy})
+	stub := fake.ValidateDeleteTcpRouteMappingStub
+	fakeReturns := fake.validateDeleteTcpRouteMappingReturns
 	fake.recordInvocation("ValidateDeleteTcpRouteMapping", []interface{}{arg1Copy})
 	fake.validateDeleteTcpRouteMappingMutex.Unlock()
-	if fake.ValidateDeleteTcpRouteMappingStub != nil {
-		return fake.ValidateDeleteTcpRouteMappingStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.validateDeleteTcpRouteMappingReturns
 	return fakeReturns.result1
 }
 
