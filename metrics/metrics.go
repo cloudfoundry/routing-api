@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"errors"
+	"github.com/cactus/go-statsd-client/v5/statsd"
 	"os"
 	"time"
 
@@ -27,7 +28,7 @@ type PartialStatsdClient interface {
 
 type MetricsReporter struct {
 	db     db.DB
-	stats  PartialStatsdClient
+	stats  statsd.Statter
 	ticker *time.Ticker
 	logger lager.Logger
 }
@@ -37,7 +38,7 @@ var (
 	totalKeyRefreshEventCount int64
 )
 
-func NewMetricsReporter(database db.DB, stats PartialStatsdClient, ticker *time.Ticker, logger lager.Logger) *MetricsReporter {
+func NewMetricsReporter(database db.DB, stats statsd.Statter, ticker *time.Ticker, logger lager.Logger) *MetricsReporter {
 	return &MetricsReporter{db: database, stats: stats, ticker: ticker, logger: logger}
 }
 
