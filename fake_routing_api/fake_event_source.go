@@ -39,16 +39,15 @@ func (fake *FakeEventSource) Close() error {
 	ret, specificReturn := fake.closeReturnsOnCall[len(fake.closeArgsForCall)]
 	fake.closeArgsForCall = append(fake.closeArgsForCall, struct {
 	}{})
-	stub := fake.CloseStub
-	fakeReturns := fake.closeReturns
 	fake.recordInvocation("Close", []interface{}{})
 	fake.closeMutex.Unlock()
-	if stub != nil {
-		return stub()
+	if fake.CloseStub != nil {
+		return fake.CloseStub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.closeReturns
 	return fakeReturns.result1
 }
 
@@ -92,16 +91,15 @@ func (fake *FakeEventSource) Next() (routing_api.Event, error) {
 	ret, specificReturn := fake.nextReturnsOnCall[len(fake.nextArgsForCall)]
 	fake.nextArgsForCall = append(fake.nextArgsForCall, struct {
 	}{})
-	stub := fake.NextStub
-	fakeReturns := fake.nextReturns
 	fake.recordInvocation("Next", []interface{}{})
 	fake.nextMutex.Unlock()
-	if stub != nil {
-		return stub()
+	if fake.NextStub != nil {
+		return fake.NextStub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
+	fakeReturns := fake.nextReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
