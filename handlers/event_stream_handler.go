@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/cactus/go-statsd-client/v5/statsd"
 	"net/http"
 	"strconv"
 
@@ -16,10 +15,10 @@ type EventStreamHandler struct {
 	uaaClient uaaclient.TokenValidator
 	db        db.DB
 	logger    lager.Logger
-	stats     statsd.Statter
+	stats     metrics.PartialStatsdClient
 }
 
-func NewEventStreamHandler(uaaClient uaaclient.TokenValidator, database db.DB, logger lager.Logger, stats statsd.Statter) *EventStreamHandler {
+func NewEventStreamHandler(uaaClient uaaclient.TokenValidator, database db.DB, logger lager.Logger, stats metrics.PartialStatsdClient) *EventStreamHandler {
 	return &EventStreamHandler{
 		uaaClient: uaaClient,
 		db:        database,
