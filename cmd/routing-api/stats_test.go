@@ -82,6 +82,7 @@ var _ = Describe("Routes API", func() {
 	Describe("Stats for event subscribers", func() {
 		Context("Subscribe", func() {
 			It("should increase subscriptions by 4", func() {
+
 				eventStream1, err := client.SubscribeToEvents()
 				Expect(err).NotTo(HaveOccurred())
 				defer func() {
@@ -131,9 +132,9 @@ var _ = Describe("Routes API", func() {
 
 		Context("periodically receives total routes", func() {
 			It("Gets statsd messages for existing routes", func() {
-				// The first time is because we get the event of adding the self route
+				//The first time is because we get the event of adding the self route
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:1|g")))
-				// Do it again to make sure it's not because of events
+				//Do it again to make sure it's not because of events
 				Eventually(fakeStatsdChan).Should(Receive(Equal("routing_api.total_http_routes:1|g")))
 			})
 		})

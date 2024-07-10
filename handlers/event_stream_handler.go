@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/cactus/go-statsd-client/v5/statsd"
 	"net/http"
 	"strconv"
 
@@ -15,10 +16,10 @@ type EventStreamHandler struct {
 	uaaClient uaaclient.TokenValidator
 	db        db.DB
 	logger    lager.Logger
-	stats     metrics.PartialStatsdClient
+	stats     statsd.Statter
 }
 
-func NewEventStreamHandler(uaaClient uaaclient.TokenValidator, database db.DB, logger lager.Logger, stats metrics.PartialStatsdClient) *EventStreamHandler {
+func NewEventStreamHandler(uaaClient uaaclient.TokenValidator, database db.DB, logger lager.Logger, stats statsd.Statter) *EventStreamHandler {
 	return &EventStreamHandler{
 		uaaClient: uaaClient,
 		db:        database,
@@ -58,8 +59,8 @@ func (h *EventStreamHandler) TcpEventStream(w http.ResponseWriter, req *http.Req
 }
 
 func (h *EventStreamHandler) handleEventStream(log lager.Logger, filterKey string,
-	w http.ResponseWriter, req *http.Request,
-) {
+	w http.ResponseWriter, req *http.Request) {
+
 	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
 	if err != nil {
 		handleUnauthorizedError(w, err, log)
@@ -93,6 +94,7 @@ func (h *EventStreamHandler) handleEventStream(log lager.Logger, filterKey strin
 				Name: eventType.String(),
 				Data: []byte(event.Value),
 			}.Write(w)
+
 			if err != nil {
 				break
 			}

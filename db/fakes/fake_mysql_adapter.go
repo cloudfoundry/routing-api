@@ -30,16 +30,15 @@ func (fake *MySQLAdapter) RegisterTLSConfig(arg1 string, arg2 *tls.Config) error
 		arg1 string
 		arg2 *tls.Config
 	}{arg1, arg2})
-	stub := fake.RegisterTLSConfigStub
-	fakeReturns := fake.registerTLSConfigReturns
 	fake.recordInvocation("RegisterTLSConfig", []interface{}{arg1, arg2})
 	fake.registerTLSConfigMutex.Unlock()
-	if stub != nil {
-		return stub(arg1, arg2)
+	if fake.RegisterTLSConfigStub != nil {
+		return fake.RegisterTLSConfigStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.registerTLSConfigReturns
 	return fakeReturns.result1
 }
 

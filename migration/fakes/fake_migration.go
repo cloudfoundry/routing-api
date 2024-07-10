@@ -40,16 +40,15 @@ func (fake *FakeMigration) Run(arg1 *db.SqlDB) error {
 	fake.runArgsForCall = append(fake.runArgsForCall, struct {
 		arg1 *db.SqlDB
 	}{arg1})
-	stub := fake.RunStub
-	fakeReturns := fake.runReturns
 	fake.recordInvocation("Run", []interface{}{arg1})
 	fake.runMutex.Unlock()
-	if stub != nil {
-		return stub(arg1)
+	if fake.RunStub != nil {
+		return fake.RunStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.runReturns
 	return fakeReturns.result1
 }
 
@@ -100,16 +99,15 @@ func (fake *FakeMigration) Version() int {
 	ret, specificReturn := fake.versionReturnsOnCall[len(fake.versionArgsForCall)]
 	fake.versionArgsForCall = append(fake.versionArgsForCall, struct {
 	}{})
-	stub := fake.VersionStub
-	fakeReturns := fake.versionReturns
 	fake.recordInvocation("Version", []interface{}{})
 	fake.versionMutex.Unlock()
-	if stub != nil {
-		return stub()
+	if fake.VersionStub != nil {
+		return fake.VersionStub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.versionReturns
 	return fakeReturns.result1
 }
 

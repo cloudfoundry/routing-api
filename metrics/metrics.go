@@ -2,13 +2,14 @@ package metrics
 
 import (
 	"errors"
+	"github.com/cactus/go-statsd-client/v5/statsd"
 	"os"
-	"sync/atomic"
 	"time"
+
+	"sync/atomic"
 
 	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/routing-api/db"
-	"github.com/cactus/go-statsd-client/v5/statsd"
 )
 
 const (
@@ -21,13 +22,13 @@ const (
 )
 
 type PartialStatsdClient interface {
-	GaugeDelta(stat string, value int64, rate float32, tags ...statsd.Tag) error
-	Gauge(stat string, value int64, rate float32, tags ...statsd.Tag) error
+	GaugeDelta(stat string, value int64, rate float32) error
+	Gauge(stat string, value int64, rate float32) error
 }
 
 type MetricsReporter struct {
 	db     db.DB
-	stats  PartialStatsdClient
+	stats  statsd.Statter
 	ticker *time.Ticker
 	logger lager.Logger
 }
@@ -37,7 +38,7 @@ var (
 	totalKeyRefreshEventCount int64
 )
 
-func NewMetricsReporter(database db.DB, stats PartialStatsdClient, ticker *time.Ticker, logger lager.Logger) *MetricsReporter {
+func NewMetricsReporter(database db.DB, stats statsd.Statter, ticker *time.Ticker, logger lager.Logger) *MetricsReporter {
 	return &MetricsReporter{db: database, stats: stats, ticker: ticker, logger: logger}
 }
 
