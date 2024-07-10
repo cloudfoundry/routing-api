@@ -89,7 +89,7 @@ func main() {
 	}
 
 	prefix := "routing_api"
-	// lint :ignore SA1019
+	//lint:ignore SA1019 - we will fix in the future
 	statsdClient, err := statsd.NewBufferedClient(cfg.StatsdEndpoint, prefix, cfg.StatsdClientFlushInterval, 512)
 	if err != nil {
 		logger.Error("failed-to-create-statsd-client", err)
