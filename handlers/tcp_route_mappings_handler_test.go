@@ -161,7 +161,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						"router_group_guid": "router-group-guid-001",
 						"backend_ip":        "1.2.3.4",
 						"backend_port":      float64(60000),
-						"backend_tls_port":  float64(0),
+						"backend_tls_port":  0,
 						"instance_id":       "",
 						"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
 						"ttl":               float64(maxTTL),
