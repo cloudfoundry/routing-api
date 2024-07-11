@@ -22,7 +22,7 @@ func (v *V5SniHostnameMigration) Run(sqlDB *db.SqlDB) error {
 	if err != nil {
 		return err
 	}
-	_, err = sqlDB.Client.Model(&models.TcpRouteMapping{}).AddUniqueIndex("idx_tcp_route", "router_group_guid", "host_port", "host_ip", "external_port", "sni_hostname")
+	err = sqlDB.Client.AutoMigrate(&models.TcpRouteMapping{})
 	if err != nil {
 		return err
 	}
