@@ -16,7 +16,7 @@ type TcpRouteMapping struct {
 type TcpMappingEntity struct {
 	RouterGroupGuid string  `gorm:"not null; unique_index:idx_tcp_route" json:"router_group_guid"`
 	HostPort        uint16  `gorm:"not null; unique_index:idx_tcp_route; type:int" json:"backend_port"`
-	HostTLSPort     int     `gorm:"default:null; unique_index:idx_tcp_route; type:int" json:"backend_tls_port"`
+	HostTLSPort     *uint16 `gorm:"default:null; unique_index:idx_tcp_route; type:int" json:"backend_tls_port"`
 	HostIP          string  `gorm:"not null; unique_index:idx_tcp_route" json:"backend_ip"`
 	SniHostname     *string `gorm:"default:null; unique_index:idx_tcp_route" json:"backend_sni_hostname,omitempty"`
 	// We don't add uniqueness on InstanceId so that if a route is attempted to be created with the same detals but
@@ -52,7 +52,7 @@ func NewTcpRouteMapping(
 	externalPort uint16,
 	hostIP string,
 	hostPort uint16,
-	hostTlsPort int,
+	hostTlsPort uint16,
 	instanceId string,
 	sniHostname *string,
 	ttl int,
@@ -64,7 +64,7 @@ func NewTcpRouteMapping(
 			SniHostname:     sniHostname,
 			InstanceId:      instanceId,
 			HostPort:        hostPort,
-			HostTLSPort:     hostTlsPort,
+			HostTLSPort:     &hostTlsPort,
 			HostIP:          hostIP,
 			TTL:             &ttl,
 			ModificationTag: modTag,
@@ -83,7 +83,7 @@ func (m TcpRouteMapping) Matches(other TcpRouteMapping) bool {
 		m.HostIP == other.HostIP &&
 		m.HostPort == other.HostPort &&
 		((m.HostTLSPort == other.HostTLSPort) ||
-			m.HostTLSPort != 0 && other.HostTLSPort != 0) &&
+			m.HostTLSPort != nil && other.HostTLSPort != nil && *m.HostTLSPort == *other.HostTLSPort) &&
 		m.InstanceId == other.InstanceId &&
 		*m.TTL == *other.TTL &&
 		((m.SniHostname == other.SniHostname) ||
