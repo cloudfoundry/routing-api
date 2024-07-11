@@ -317,21 +317,17 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 | `router_group_guid` | string          | GUID of the router group associated with this route.
 | `backend_port`      | integer         | Backend port. Must be greater than 0.
 | `backend_ip`        | string          | IP address of backend.
-| `backend_tls_port`  | integer         | Backend TLS port. If 0, backend TLS is disabled. If nil, backend TLS is not something the client knows about.
-| `instance_id`       | string          | Instance ID of the backend, used for TLS validation when backend TLS is enabled.
 | `port`              | integer         | External facing port for the TCP route.
 | `modification_tag`  | object     | See [Modification Tags](./03-modification-tags.md).
 | `ttl`               | integer         | Time to live, in seconds. The mapping of backend to route will be pruned after this time.
-| `isolation_segment` | string          | Isolation segment for the route. |
+| `isolation_segment` | string | Isolation segment for the route. |
 
 #### Example Response:
 ```json
 [{
   "router_group_guid": "xyz789",
-  "backend_ip": "10.1.1.12",
   "backend_port": 60000,
-  "backend_tls_port": 60001,
-  "instance_id", "91860bfe-ecff-480d-8df4-0d1eb0295b04",
+  "backend_ip": "10.1.1.12",
   "port": 5200,
   "modification_tag":  {
     "guid": "cbdhb4e3-141d-4259-b0ac-99140e8998l0",
@@ -361,8 +357,6 @@ As routes have a TTL, clients must register routes periodically to keep them act
 | `port`                 | integer         | yes       | External facing port for the TCP route.
 | `backend_ip`           | string          | yes       | IP address of backend
 | `backend_port`         | integer         | yes       | Backend port. Must be greater than 0.
-| `backend_tls_port`     | integer         | no        | Backend TLS port. If 0, indicates no TLS. If not provided, indicates a client that doesn't know about backend TLS port support. Otherwise must be greater than 0.
-| `instance_id`          | string          | no        | Instance ID of the backend container. Used to validate the TLS cert of a backend.
 | `ttl`                  | integer         | yes       | Time to live, in seconds. The mapping of backend to route will be pruned after this time. Must be greater than 0 seconds and less than the configured value for max_ttl (default 120 seconds).
 | `modification_tag`     | object          | no        | See [Modification Tags](03-modification-tags.md).
 | `isolation_segment`    | string          | no        | Name of the isolation segment for the route.
@@ -376,8 +370,6 @@ curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://api.system-domai
   "port": 5200,
   "backend_ip": "10.1.1.12",
   "backend_port": 60000,
-  "backend_tls_port": 60001,
-  "instance_id": "91860bfe-ecff-480d-8df4-0d1eb0295b04",
   "ttl": 120,
   "modification_tag":  {
     "guid": "cbdhb4e3-141d-4259-b0ac-99140e8998l0",
@@ -393,8 +385,6 @@ curl -k -vvv -H "Authorization: bearer $uaa_token" -X POST https://api.system-do
   "port": 1121,
   "backend_ip": "10.0.8.5",
   "backend_port": 8888,
-  "backend_tls_port": 60001,
-  "instance_id": "91860bfe-ecff-480d-8df4-0d1eb0295b04",
   "backend_sni_hostname":"teststst.asd.com",
   "ttl": 120
 }]'
@@ -420,8 +410,6 @@ Delete TCP Routes
 | `port`              | integer         | yes       | External facing port for the TCP route.
 | `backend_ip`        | string          | yes       | IP address of backend
 | `backend_port`      | integer         | yes       | Backend port. Must be greater than 0.
-| `backend_tls_port`  | integer         | no        | Backend TLS port. If 0, indicates no TLS. If not provided, indicates a client that doesn't know about backend TLS port support. Otherwise must be greater than 0.
-| `instance_id`       | string          | no        | Instance ID of the backend container. Used to validate the TLS cert of a backend.
 
 #### Example Request
 ```bash
@@ -431,8 +419,6 @@ curl -vvv -H "Authorization: bearer [uaa token]" -X POST http://api.system-domai
   "port": 5200,
   "backend_ip": "10.1.1.12",
   "backend_port": 60000
-  "backend_tls_port": 60001,
-  "instance_id": "91860bfe-ecff-480d-8df4-0d1eb0295b04",
 }]'
 ```
 
@@ -465,11 +451,11 @@ curl -vvv -H "Authorization: bearer [uaa token]" http://api.system-domain.com/ro
 ```
 id: 0
 event: Upsert
-data: {"router_group_guid":"xyz789","port":5200,"backend_port":60000,"backend_tls_port":60001,"instance_id":"91860bfe-ecff-480d-8df4-0d1eb0295b04","backend_ip":"10.1.1.12","modification_tag":{"guid":"abc123","index":1},"ttl":120}
+data: {"router_group_guid":"xyz789","port":5200,"backend_port":60000,"backend_ip":"10.1.1.12","modification_tag":{"guid":"abc123","index":1},"ttl":120}
 
 id: 1
 event: Upsert
-data: {"router_group_guid":"xyz789","port":5200,"backend_port":60000,"backend_tls_port":60001,"instance_id":"91860bfe-ecff-480d-8df4-0d1eb0295b04","backend_ip":"10.1.1.12","modification_tag":{"guid":"abc123","index":2},"ttl":120}
+data: {"router_group_guid":"xyz789","port":5200,"backend_port":60000,"backend_ip":"10.1.1.12","modification_tag":{"guid":"abc123","index":2},"ttl":120}
 ```
 
 List HTTP Routes (Experimental)

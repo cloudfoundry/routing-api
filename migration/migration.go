@@ -82,9 +82,6 @@ func InitializeMigrations() []Migration {
 	migration = NewV5SniHostnameMigration()
 	migrations = append(migrations, migration)
 
-	migration = NewV6TCPTLSRoutes()
-	migrations = append(migrations, migration)
-
 	return migrations
 }
 
