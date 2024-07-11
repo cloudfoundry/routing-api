@@ -1427,7 +1427,7 @@ var _ = Describe("SqlDB", func() {
 						tcpRoute.ExternalPort,
 						tcpRoute.HostIP,
 						tcpRoute.HostPort,
-						tcpRoute.HostTLSPort,
+						*tcpRoute.HostTLSPort,
 						tcpRoute.InstanceId,
 						tcpRoute.SniHostname,
 						*tcpRoute.TTL+1,
