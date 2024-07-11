@@ -23,6 +23,7 @@ import (
 )
 
 var _ = Describe("SqlDB", func() {
+
 	var (
 		sqlCfg *config.SqlDB
 		sqlDB  *db.SqlDB
@@ -604,6 +605,7 @@ var _ = Describe("SqlDB", func() {
 					Expect(rg.ReservablePorts).To(Equal(routerGroup.ReservablePorts))
 					Expect(rg.Type).To(Equal(routerGroup.Type))
 				})
+
 			})
 
 			It("Can remove ReservablePorts", func() {
@@ -642,6 +644,7 @@ var _ = Describe("SqlDB", func() {
 				})
 			})
 		})
+
 	}
 
 	DeleteRouterGroup := func() {
@@ -776,7 +779,7 @@ var _ = Describe("SqlDB", func() {
 
 				It("refreshes the expiration time of the mapping", func() {
 					var dbTcpRoute models.TcpRouteMapping
-					ttl := 9
+					var ttl = 9
 					err = sqlDB.Client.Where("host_ip = ?", "127.0.0.1").First(&dbTcpRoute)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(dbTcpRoute).ToNot(BeNil())
@@ -1155,7 +1158,7 @@ var _ = Describe("SqlDB", func() {
 
 				It("refreshes the expiration time of the route", func() {
 					var dbRoute models.Route
-					ttl := 9
+					var ttl = 9
 					err = sqlDB.Client.Where("ip = ?", "127.0.0.1").First(&dbRoute)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(dbRoute).ToNot(BeNil())
@@ -1335,7 +1338,9 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				Context("when multiple routes exist", func() {
-					var routeWithModel2 models.Route
+					var (
+						routeWithModel2 models.Route
+					)
 					BeforeEach(func() {
 						modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
 						route := models.NewRoute("post_here", 7001, "127.0.0.1", "my-guid", "https://rs.com", 5)
@@ -1404,7 +1409,9 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			Context("when a tcp route is updated", func() {
-				var tcpRoute models.TcpRouteMapping
+				var (
+					tcpRoute models.TcpRouteMapping
+				)
 
 				BeforeEach(func() {
 					tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, 2991, "instanceId", nil, 50, models.ModificationTag{})
@@ -1500,12 +1507,15 @@ var _ = Describe("SqlDB", func() {
 
 					Consistently(event).ShouldNot(Receive())
 					Eventually(event).Should(BeClosed())
+
 				})
 			})
 		})
 
 		Describe("WatchChanges with http events", func() {
-			var err error
+			var (
+				err error
+			)
 
 			It("does not return an error when canceled", func() {
 				_, errors, cancel := sqlDB.WatchChanges(db.HTTP_WATCH)
@@ -1515,7 +1525,9 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			Context("when a http route is updated", func() {
-				var httpRoute models.Route
+				var (
+					httpRoute models.Route
+				)
 
 				BeforeEach(func() {
 					httpRoute = models.NewRoute("post_here", 7001, "127.0.0.1", "my-guid", "https://rs.com", 5)
@@ -1594,6 +1606,7 @@ var _ = Describe("SqlDB", func() {
 
 					Consistently(event).ShouldNot(Receive())
 					Eventually(event).Should(BeClosed())
+
 				})
 			})
 		})
@@ -1651,6 +1664,7 @@ var _ = Describe("SqlDB", func() {
 
 					Eventually(fakeClient.DeleteCallCount).Should(Equal(4))
 				})
+
 			})
 
 			Context("tcp routes", func() {
@@ -1671,6 +1685,7 @@ var _ = Describe("SqlDB", func() {
 
 				Context("when db connection is successful", func() {
 					Context("when all routes have expired", func() {
+
 						It("should prune the expired routes and log the number of pruned routes", func() {
 							Eventually(func() []models.TcpRouteMapping {
 								var tcpRoutes []models.TcpRouteMapping
@@ -1786,6 +1801,7 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			Context("when db throws an error", func() {
+
 				BeforeEach(func() {
 					err := sqlDB.Client.Close()
 					Expect(err).ToNot(HaveOccurred())
@@ -1813,6 +1829,7 @@ var _ = Describe("SqlDB", func() {
 				expiryTime = time.UnixMilli(1652378100300)
 				queryTime = time.UnixMilli(1652378100200)
 				fc = fakeclock.NewFakeClock(queryTime)
+
 			})
 			Context("tcpRoutes", func() {
 				BeforeEach(func() {
@@ -1860,6 +1877,7 @@ var _ = Describe("SqlDB", func() {
 					Expect(len(httpRoutes)).To(Equal(0))
 				})
 			})
+
 		})
 	}
 	Describe("DB Connection Configuration", func() {
@@ -1868,7 +1886,9 @@ var _ = Describe("SqlDB", func() {
 	})
 
 	Describe("Test", func() {
-		var err error
+		var (
+			err error
+		)
 
 		BeforeEach(func() {
 			sqlCfg = databaseCfg

@@ -56,8 +56,7 @@ func NewTcpRouteMapping(
 	instanceId string,
 	sniHostname *string,
 	ttl int,
-	modTag ModificationTag,
-) TcpRouteMapping {
+	modTag ModificationTag) TcpRouteMapping {
 	mapping := TcpRouteMapping{
 		TcpMappingEntity: TcpMappingEntity{
 			RouterGroupGuid: routerGroupGuid,
@@ -79,31 +78,16 @@ func (m TcpRouteMapping) String() string {
 }
 
 func (m TcpRouteMapping) Matches(other TcpRouteMapping) bool {
-	sameRouterGroupGuid := m.RouterGroupGuid == other.RouterGroupGuid
-	sameExternalPort := m.ExternalPort == other.ExternalPort
-	sameHostIP := m.HostIP == other.HostIP
-	sameHostPort := m.HostPort == other.HostPort
-	sameInstanceId := m.InstanceId == other.InstanceId
-	sameHostTLSPort := m.HostTLSPort == other.HostTLSPort
-
-	nilTTL := m.TTL == nil && other.TTL == nil
-	sameTTLPointer := m.TTL == other.TTL
-	sameTTLValue := m.TTL != nil && other.TTL != nil && *m.TTL == *other.TTL
-	sameTTL := nilTTL || sameTTLPointer || sameTTLValue
-
-	nilSniHostname := m.SniHostname == nil && other.SniHostname == nil
-	sameSniHostnamePointer := m.SniHostname == other.SniHostname
-	sameSniHostnameValue := m.SniHostname != nil && other.SniHostname != nil && *m.SniHostname == *other.SniHostname
-	sameSniHostname := nilSniHostname || sameSniHostnamePointer || sameSniHostnameValue
-
-	return sameRouterGroupGuid &&
-		sameExternalPort &&
-		sameHostIP &&
-		sameHostPort &&
-		sameInstanceId &&
-		sameTTL &&
-		sameHostTLSPort &&
-		sameSniHostname
+	return m.RouterGroupGuid == other.RouterGroupGuid &&
+		m.ExternalPort == other.ExternalPort &&
+		m.HostIP == other.HostIP &&
+		m.HostPort == other.HostPort &&
+		((m.HostTLSPort == other.HostTLSPort) ||
+			m.HostTLSPort != 0 && other.HostTLSPort != 0) &&
+		m.InstanceId == other.InstanceId &&
+		*m.TTL == *other.TTL &&
+		((m.SniHostname == other.SniHostname) ||
+			m.SniHostname != nil && other.SniHostname != nil && *m.SniHostname == *other.SniHostname)
 }
 
 func (t *TcpRouteMapping) SetDefaults(maxTTL int) {
