@@ -185,15 +185,9 @@ func validateTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping, checkTTL bo
 		return &err
 	}
 
-	if tcpRouteMapping.HostPort <= 0 && tcpRouteMapping.HostTLSPort <= 0 {
+	if tcpRouteMapping.HostPort <= 0 {
 		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
 			"Each tcp mapping requires a positive backend port. RouteMapping=["+tcpRouteMapping.String()+"]")
-		return &err
-	}
-
-	if tcpRouteMapping.HostTLSPort > 65535 {
-		err := routing_api.NewError(routing_api.TcpRouteMappingInvalidError,
-			"Each tcp mapping with a backend TLS port requires that port to be less than or equal to 65535. RouteMapping=["+tcpRouteMapping.String()+"]")
 		return &err
 	}
 
