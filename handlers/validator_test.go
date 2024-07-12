@@ -221,7 +221,7 @@ var _ = Describe("Validator", func() {
 					ReservablePorts: "1024-65535",
 				},
 			}
-			tcpMapping = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000, 60)
+			tcpMapping = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000, 0, "instanceId", nil, 60, models.ModificationTag{})
 		})
 
 		Context("when valid tcp mapping is passed", func() {
@@ -232,13 +232,39 @@ var _ = Describe("Validator", func() {
 		})
 
 		Context("when invalid tcp route mappings are passed", func() {
-
-			It("blows up when a backend port is zero", func() {
-				tcpMapping.HostPort = 0
-				err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
-				Expect(err).ToNot(BeNil())
-				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
-				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a positive backend port"))
+			Context("when there is no TLSPort provided", func() {
+				It("blows up when a backend port is zero", func() {
+					tcpMapping.HostPort = 0
+					err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
+					Expect(err).ToNot(BeNil())
+					Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
+					Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a positive backend port"))
+				})
+			})
+			Context("When there is a TLSPort provided", func() {
+				BeforeEach(func() {
+					tcpMapping.HostTLSPort = 6
+				})
+				Context("when host TLS port is > 65535", func() {
+					BeforeEach(func() {
+						tcpMapping.HostTLSPort = 65546
+					})
+					It("throws an error", func() {
+						err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
+						Expect(err).ToNot(BeNil())
+						Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
+						Expect(err.Error()).To(ContainSubstring("Each tcp mapping with a backend TLS port requires that port to be less than or equal to 65535"))
+					})
+				})
+				Context("when host port is zero", func() {
+					BeforeEach(func() {
+						tcpMapping.HostPort = 0
+					})
+					It("does not error", func() {
+						err := validator.ValidateCreateTcpRouteMapping([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
+						Expect(err).ToNot(HaveOccurred())
+					})
+				})
 			})
 
 			It("blows up when a external port is zero", func() {
@@ -297,7 +323,7 @@ var _ = Describe("Validator", func() {
 		)
 
 		BeforeEach(func() {
-			tcpMapping = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000, 60)
+			tcpMapping = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000, 0, "instanceId", nil, 60, models.ModificationTag{})
 		})
 
 		Context("when valid tcp mapping is passed", func() {
@@ -308,13 +334,39 @@ var _ = Describe("Validator", func() {
 		})
 
 		Context("when invalid tcp route mappings are passed", func() {
-
-			It("blows up when a backend port is zero", func() {
-				tcpMapping.HostPort = 0
-				err := validator.ValidateDeleteTcpRouteMapping([]models.TcpRouteMapping{tcpMapping})
-				Expect(err).ToNot(BeNil())
-				Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
-				Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a positive backend port"))
+			Context("when there is no TLSPort provided", func() {
+				It("blows up when a backend port is zero", func() {
+					tcpMapping.HostPort = 0
+					err := validator.ValidateDeleteTcpRouteMapping([]models.TcpRouteMapping{tcpMapping})
+					Expect(err).ToNot(BeNil())
+					Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
+					Expect(err.Error()).To(ContainSubstring("Each tcp mapping requires a positive backend port"))
+				})
+			})
+			Context("When there is a TLSPort provided", func() {
+				BeforeEach(func() {
+					tcpMapping.HostTLSPort = 6
+				})
+				Context("when host TLS port is > 65535", func() {
+					BeforeEach(func() {
+						tcpMapping.HostTLSPort = 65546
+					})
+					It("throws an error", func() {
+						err := validator.ValidateDeleteTcpRouteMapping([]models.TcpRouteMapping{tcpMapping})
+						Expect(err).ToNot(BeNil())
+						Expect(err.Type).To(Equal(routing_api.TcpRouteMappingInvalidError))
+						Expect(err.Error()).To(ContainSubstring("Each tcp mapping with a backend TLS port requires that port to be less than or equal to 65535"))
+					})
+				})
+				Context("when host port is zero", func() {
+					BeforeEach(func() {
+						tcpMapping.HostPort = 0
+					})
+					It("does not error", func() {
+						err := validator.ValidateDeleteTcpRouteMapping([]models.TcpRouteMapping{tcpMapping})
+						Expect(err).ToNot(HaveOccurred())
+					})
+				})
 			})
 
 			It("blows up when a external port is zero", func() {

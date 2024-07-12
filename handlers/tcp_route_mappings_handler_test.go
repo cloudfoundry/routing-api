@@ -57,13 +57,13 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 							HostIP:          "1.2.3.4",
 							HostPort:        60000,
 							TTL:             &maxTTL,
-						}}
+						},
+					}
 					tcpMappings = []models.TcpRouteMapping{*tcpMapping}
 					request = handlers.NewTestRequest(tcpMappings)
 
 					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
 					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
-
 				})
 				Context("when that TCP route is upserted with an isolation segment", func() {
 					It("Updates the existing route", func() {
@@ -79,11 +79,13 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 							"router_group_guid": "router-group-guid-001",
 							"backend_ip":        "1.2.3.4",
 							"backend_port":      float64(60000),
+							"backend_tls_port":  float64(0),
+							"instance_id":       "",
 							"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
 							"ttl":               float64(120),
 							"isolation_segment": "some-iso-seg",
 						}
-						logData := map[string][]interface{}{"tcp_mapping_creation": []interface{}{data}}
+						logData := map[string][]interface{}{"tcp_mapping_creation": {data}}
 						Expect(len(logger.Logs())).To(BeNumerically(">", 0))
 						Expect(logger.Logs()[1].Message).To(ContainSubstring("request"))
 						Expect(logger.Logs()[1].Data["tcp_mapping_creation"]).To(Equal(logData["tcp_mapping_creation"]))
@@ -100,7 +102,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 							HostPort:         60000,
 							TTL:              &maxTTL,
 							IsolationSegment: "some-iso-seg",
-						}}
+						},
+					}
 					tcpMappings := []models.TcpRouteMapping{tcpMapping}
 					request = handlers.NewTestRequest(tcpMappings)
 
@@ -112,11 +115,13 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						"router_group_guid": "router-group-guid-001",
 						"backend_ip":        "1.2.3.4",
 						"backend_port":      float64(60000),
+						"backend_tls_port":  float64(0),
+						"instance_id":       "",
 						"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
 						"ttl":               float64(120),
 						"isolation_segment": "some-iso-seg",
 					}
-					logData := map[string][]interface{}{"tcp_mapping_creation": []interface{}{data}}
+					logData := map[string][]interface{}{"tcp_mapping_creation": {data}}
 
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("request"))
 					Expect(logger.Logs()[0].Data["tcp_mapping_creation"]).To(Equal(logData["tcp_mapping_creation"]))
@@ -143,7 +148,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 							ExternalPort:    52000,
 							HostIP:          "1.2.3.4",
 							HostPort:        60000,
-						}}
+						},
+					}
 					tcpMappings := []models.TcpRouteMapping{tcpMapping}
 					request = handlers.NewTestRequest(tcpMappings)
 
@@ -155,24 +161,24 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						"router_group_guid": "router-group-guid-001",
 						"backend_ip":        "1.2.3.4",
 						"backend_port":      float64(60000),
+						"backend_tls_port":  float64(0),
+						"instance_id":       "",
 						"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
 						"ttl":               float64(maxTTL),
 						"isolation_segment": "",
 					}
-					logData := map[string][]interface{}{"tcp_mapping_creation": []interface{}{data}}
+					logData := map[string][]interface{}{"tcp_mapping_creation": {data}}
 
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("request"))
 					Expect(logger.Logs()[0].Data["tcp_mapping_creation"]).To(Equal(logData["tcp_mapping_creation"]))
-
 				})
-
 			})
 
 			Context("when ttl is present", func() {
 				var tcpMappings []models.TcpRouteMapping
 
 				BeforeEach(func() {
-					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
+					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60001, "instanceId", nil, 60, models.ModificationTag{})
 					tcpMappings = []models.TcpRouteMapping{tcpMapping}
 				})
 
@@ -216,11 +222,13 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 							"router_group_guid": "router-group-guid-001",
 							"backend_ip":        "1.2.3.4",
 							"backend_port":      float64(60000),
+							"backend_tls_port":  float64(60001),
+							"instance_id":       "instanceId",
 							"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
 							"ttl":               float64(60),
 							"isolation_segment": "",
 						}
-						logData := map[string][]interface{}{"tcp_mapping_creation": []interface{}{data}}
+						logData := map[string][]interface{}{"tcp_mapping_creation": {data}}
 
 						Expect(logger.Logs()[0].Message).To(ContainSubstring("request"))
 						Expect(logger.Logs()[0].Data["tcp_mapping_creation"]).To(Equal(logData["tcp_mapping_creation"]))
@@ -271,7 +279,6 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number -1"))
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
-
 				})
 
 				It("blows up when a host port does not fit into a uint16", func() {
@@ -283,7 +290,6 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number 65537"))
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
-
 				})
 			})
 
@@ -309,7 +315,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					tcpMappings  []models.TcpRouteMapping
 				)
 				BeforeEach(func() {
-					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60)
+					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60001, "instanceId", nil, 60, models.ModificationTag{})
 					tcpMappings = []models.TcpRouteMapping{tcpMapping}
 					currentCount = metrics.GetTokenErrors()
 					fakeClient.ValidateTokenReturns(errors.New("Not valid"))
@@ -327,7 +333,6 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 	})
 
 	Describe("List", func() {
-
 		It("checks for routing.routes.read scope", func() {
 			request = handlers.NewTestRequest("")
 
@@ -339,13 +344,11 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 		})
 
 		Context("when db returns tcp route mappings", func() {
-			var (
-				tcpRoutes []models.TcpRouteMapping
-			)
+			var tcpRoutes []models.TcpRouteMapping
 
 			BeforeEach(func() {
-				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 55)
-				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 55)
+				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60002, "instanceId", nil, 55, models.ModificationTag{})
+				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60003, "instanceId", nil, 55, models.ModificationTag{})
 				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
 				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
 			})
@@ -362,6 +365,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52000,
 								"backend_ip": "1.2.3.4",
 								"backend_port": 60000,
+								"backend_tls_port": 60002,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -374,6 +379,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52001,
 								"backend_ip": "1.2.3.5",
 								"backend_port": 60001,
+								"backend_tls_port": 60003,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -386,13 +393,11 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 		})
 
 		Context("when filtering by isolation segments", func() {
-			var (
-				tcpRoutes []models.TcpRouteMapping
-			)
+			var tcpRoutes []models.TcpRouteMapping
 
 			BeforeEach(func() {
-				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 55)
-				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 55)
+				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60002, "instanceId", nil, 55, models.ModificationTag{})
+				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60003, "instanceId", nil, 55, models.ModificationTag{})
 				mapping2.IsolationSegment = "is1"
 				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
 				database.ReadFilteredTcpRouteMappingsReturns(tcpRoutes, nil)
@@ -418,6 +423,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52000,
 								"backend_ip": "1.2.3.4",
 								"backend_port": 60000,
+								"backend_tls_port": 60002,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -430,6 +437,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52001,
 								"backend_ip": "1.2.3.5",
 								"backend_port": 60001,
+								"backend_tls_port": 60003,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -458,6 +467,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52000,
 								"backend_ip": "1.2.3.4",
 								"backend_port": 60000,
+								"backend_tls_port": 60002,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -470,6 +481,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52001,
 								"backend_ip": "1.2.3.5",
 								"backend_port": 60001,
+								"backend_tls_port": 60003,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -482,13 +495,11 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 		})
 
 		Context("when providing unknown params", func() {
-			var (
-				tcpRoutes []models.TcpRouteMapping
-			)
+			var tcpRoutes []models.TcpRouteMapping
 
 			BeforeEach(func() {
-				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 55)
-				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 55)
+				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60002, "instanceId", nil, 55, models.ModificationTag{})
+				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60003, "instanceId", nil, 55, models.ModificationTag{})
 				mapping2.IsolationSegment = "is1"
 				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
 				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
@@ -509,6 +520,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52000,
 								"backend_ip": "1.2.3.4",
 								"backend_port": 60000,
+								"backend_tls_port": 60002,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -521,6 +534,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 								"port": 52001,
 								"backend_ip": "1.2.3.5",
 								"backend_port": 60001,
+								"backend_tls_port": 60003,
+								"instance_id": "instanceId",
 								"modification_tag": {
 									"guid": "",
 									"index": 0
@@ -559,9 +574,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 		})
 
 		Context("when the UAA token is not valid", func() {
-			var (
-				currentCount int64
-			)
+			var currentCount int64
 			BeforeEach(func() {
 				currentCount = metrics.GetTokenErrors()
 				fakeClient.ValidateTokenReturns(errors.New("Not valid"))
@@ -575,7 +588,6 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				Expect(metrics.GetTokenErrors()).To(Equal(currentCount + 1))
 			})
 		})
-
 	})
 
 	Describe("Delete", func() {
@@ -586,7 +598,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			)
 
 			BeforeEach(func() {
-				tcpMapping = models.NewTcpRouteMapping("router-group-guid-002", 52001, "1.2.3.4", 60000, 60)
+				tcpMapping = models.NewTcpRouteMapping("router-group-guid-002", 52001, "1.2.3.4", 60000, 60002, "instanceId", nil, 60, models.ModificationTag{})
 				tcpMappings = []models.TcpRouteMapping{tcpMapping}
 			})
 
@@ -630,11 +642,13 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 						"router_group_guid": "router-group-guid-002",
 						"backend_ip":        "1.2.3.4",
 						"backend_port":      float64(60000),
+						"backend_tls_port":  float64(60002),
+						"instance_id":       "instanceId",
 						"modification_tag":  map[string]interface{}{"guid": "", "index": float64(0)},
 						"ttl":               float64(60),
 						"isolation_segment": "",
 					}
-					logData := map[string][]interface{}{"tcp_mapping_deletion": []interface{}{data}}
+					logData := map[string][]interface{}{"tcp_mapping_deletion": {data}}
 
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("request"))
 					Expect(logger.Logs()[0].Data["tcp_mapping_deletion"]).To(Equal(logData["tcp_mapping_deletion"]))
@@ -667,7 +681,6 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			})
 
 			Context("when there are errors with the input ports", func() {
-
 				It("blows up when a external port is negative", func() {
 					request = handlers.NewTestRequest(`[{"router_group_guid": "tcp-default", "port": -1, "backend_ip": "10.1.1.12", "backend_port": 60000}]`)
 					tcpRouteMappingsHandler.Delete(responseRecorder, request)
@@ -696,7 +709,6 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number -1"))
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
-
 				})
 
 				It("blows up when a host port does not fit into a uint16", func() {
@@ -708,9 +720,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					Expect(responseRecorder.Body.String()).To(ContainSubstring("cannot unmarshal number 65537"))
 					Expect(database.SaveRouteCallCount()).To(Equal(0))
 					Expect(logger.Logs()[0].Message).To(ContainSubstring("error"))
-
 				})
-
 			})
 
 			Context("when validator returns error", func() {
@@ -730,9 +740,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			})
 
 			Context("when the UAA token is not valid", func() {
-				var (
-					currentCount int64
-				)
+				var currentCount int64
 				BeforeEach(func() {
 					currentCount = metrics.GetTokenErrors()
 					fakeClient.ValidateTokenReturns(errors.New("Not valid"))
@@ -748,5 +756,4 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			})
 		})
 	})
-
 })
