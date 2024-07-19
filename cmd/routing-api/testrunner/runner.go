@@ -1,6 +1,7 @@
 package testrunner
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -15,8 +16,6 @@ import (
 	ginkgomon "github.com/tedsuo/ifrit/ginkgomon_v2"
 	yaml "gopkg.in/yaml.v2"
 )
-
-var dbEnv = os.Getenv("DB")
 
 type Args struct {
 	ConfigPath string
@@ -44,8 +43,8 @@ func (args Args) Port() uint16 {
 
 func NewDbAllocator() DbAllocator {
 	var dbAllocator DbAllocator
-	switch dbEnv {
-	case "postgres":
+	switch Database {
+	case Postgres:
 		dbAllocator = NewPostgresAllocator()
 	default:
 		dbAllocator = NewMySQLAllocator()
@@ -116,10 +115,7 @@ func createConfig(
 			LocketClientCertFile: locketConfig.LocketClientCertFile,
 			LocketClientKeyFile:  locketConfig.LocketClientKeyFile,
 		},
-		MetronConfig: config.MetronConfig{
-			Address: "1.2.3.4",
-			Port:    "4567",
-		},
+		MetronConfig: MetronConfig,
 		API: config.APIConfig{
 			ListenPort:         port,
 			HTTPEnabled:        true,
@@ -128,10 +124,10 @@ func createConfig(
 			MTLSServerCertPath: mtlsServerCertPath,
 			MTLSServerKeyPath:  mtlsServerKeyPath,
 		},
-		MetricsReportingIntervalString:  "500ms",
-		StatsdEndpoint:                  "localhost:8125",
-		StatsdClientFlushIntervalString: "10ms",
-		SystemDomain:                    "example.com",
+		MetricsReportingIntervalString:  MetricsReportingIntervalString,
+		StatsdEndpoint:                  fmt.Sprintf("%s:%d", Host, StatsdPort),
+		StatsdClientFlushIntervalString: StatsdClientFlushIntervalString,
+		SystemDomain:                    SystemDomain,
 		AdminPort:                       adminPort,
 		RouterGroups: models.RouterGroups{
 			{
@@ -143,25 +139,25 @@ func createConfig(
 		RetryInterval: 50 * time.Millisecond,
 	}
 
-	switch dbEnv {
-	case "postgres":
+	switch Database {
+	case Postgres:
 		routingAPIConfig.SqlDB = config.SqlDB{
-			Username: "postgres",
-			Password: "",
+			Type:     Postgres,
+			Username: PostgresUsername,
+			Password: PostgresPassword,
 			Schema:   dbId,
-			Port:     5432,
-			Host:     "localhost",
-			Type:     "postgres",
+			Port:     PostgresPort,
+			Host:     Host,
 			CACert:   dbCACert,
 		}
 	default:
 		routingAPIConfig.SqlDB = config.SqlDB{
-			Username: "root",
-			Password: "password",
+			Type:     MySQL,
+			Username: MySQLUserName,
+			Password: MySQLPassword,
 			Schema:   dbId,
-			Port:     3306,
-			Host:     "localhost",
-			Type:     "mysql",
+			Port:     MySQLPort,
+			Host:     Host,
 			CACert:   dbCACert,
 		}
 	}

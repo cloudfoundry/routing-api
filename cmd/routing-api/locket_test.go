@@ -45,19 +45,18 @@ var _ = Describe("Locket", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("locket-test")
 
-		cc := defaultConfig
-		routingAPIConfig = getRoutingAPIConfig(cc)
+		routingAPIConfig = testrunner.GetRoutingAPIConfig(defaultConfig)
 	})
 
 	JustBeforeEach(func() {
-		configFilePath = writeConfigToTempFile(routingAPIConfig)
+		configFilePath = testrunner.WriteConfigToTempFile(routingAPIConfig)
 		args := testrunner.Args{
-			IP:         routingAPIIP,
+			IP:         testrunner.RoutingAPIIP,
 			ConfigPath: configFilePath,
 			DevMode:    true,
 		}
 		args.ConfigPath = configFilePath
-		session = RoutingApi(args.ArgSlice()...)
+		session = testrunner.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
 	})
 
 	AfterEach(func() {
@@ -165,17 +164,17 @@ var _ = Describe("Locket", func() {
 
 			session2Port := uint16(test_helpers.NextAvailPort())
 			session2MTLSPort := uint16(test_helpers.NextAvailPort())
-			apiConfig := getRoutingAPIConfig(defaultConfig)
-			apiConfig.API.ListenPort = int(session2Port)
-			apiConfig.API.MTLSListenPort = int(session2MTLSPort)
-			apiConfig.AdminPort = test_helpers.NextAvailPort()
-			configFilePath := writeConfigToTempFile(apiConfig)
+			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
+			routingAPIConfig.API.ListenPort = int(session2Port)
+			routingAPIConfig.API.MTLSListenPort = int(session2MTLSPort)
+			routingAPIConfig.AdminPort = test_helpers.NextAvailPort()
+			configFilePath := testrunner.WriteConfigToTempFile(routingAPIConfig)
 			session2Args := testrunner.Args{
-				IP:         routingAPIIP,
+				IP:         testrunner.RoutingAPIIP,
 				ConfigPath: configFilePath,
 				DevMode:    true,
 			}
-			session2 := RoutingApi(session2Args.ArgSlice()...)
+			session2 := testrunner.RoutingAPISession(routingAPIBinPath, session2Args.ArgSlice()...)
 
 			defer func() {
 				session2.Interrupt().Wait(10 * time.Second)
@@ -183,7 +182,10 @@ var _ = Describe("Locket", func() {
 			Eventually(session2, 10*time.Second).Should(gbytes.Say("locket-lock.started"))
 			done := make(chan struct{})
 			goRoutineFinished := make(chan struct{})
-			client2 := routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", session2Port), false)
+			client2 := routing_api.NewClient(
+				fmt.Sprintf("http://%s:%d", testrunner.RoutingAPIIP, session2Port),
+				false,
+			)
 
 			go func() {
 				defer GinkgoRecover()

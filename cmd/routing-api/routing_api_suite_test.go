@@ -5,67 +5,58 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
-	"code.cloudfoundry.org/locket"
-	"github.com/tedsuo/ifrit"
-	ginkgomon "github.com/tedsuo/ifrit/ginkgomon_v2"
-
-	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
-	locketconfig "code.cloudfoundry.org/locket/cmd/locket/config"
+	tlsHelpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
 	locketrunner "code.cloudfoundry.org/locket/cmd/locket/testrunner"
-	routing_api "code.cloudfoundry.org/routing-api"
+	routingAPI "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
-	"code.cloudfoundry.org/routing-api/models"
 	"code.cloudfoundry.org/routing-api/test_helpers"
+	"github.com/tedsuo/ifrit"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
 	"google.golang.org/grpc/grpclog"
-	yaml "gopkg.in/yaml.v2"
 )
 
 var (
-	defaultConfig          customConfig
-	client                 routing_api.Client
-	locketBinPath          string
-	routingAPIBinPath      string
-	routingAPIAddress      string
-	routingAPIPort         uint16
-	routingAPIMTLSPort     uint16
-	routingAPIAdminPort    int
-	routingAPIIP           string
-	routingAPISystemDomain string
-	oauthServer            *ghttp.Server
-	oauthServerPort        string
-	locketPort             uint16
-	locketProcess          ifrit.Process
+	defaultConfig       testrunner.RoutingAPITestConfig
+	client              routingAPI.Client
+	locketBinPath       string
+	routingAPIBinPath   string
+	routingAPIPort      uint16
+	routingAPIMTLSPort  uint16
+	routingAPIAdminPort int
+	oAuthServer         *ghttp.Server
+	oAuthServerPort     string
+	locketPort          uint16
+	locketProcess       ifrit.Process
 
-	sqlDBName string
+	databaseName string
 
 	dbAllocator testrunner.DbAllocator
 	sqlDBConfig *config.SqlDB
 
 	uaaCACertsPath string
 
-	mtlsAPIServerKeyPath  string
-	mtlsAPIServerCertPath string
+	mTLSAPIServerKeyPath  string
+	mTLSAPIServerCertPath string
 	apiCAPath             string
-	mtlsAPIClientCert     tls.Certificate
+	mTLSAPIClientCert     tls.Certificate
+	waitGroup             sync.WaitGroup
 )
 
-func TestMain(t *testing.T) {
+func TestRoutingAPI(test *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Main Suite")
+	RunSpecs(test, "Routing API Test Suite")
 }
 
 var _ = SynchronizedBeforeSuite(
@@ -90,11 +81,11 @@ var _ = SynchronizedBeforeSuite(
 		dbAllocator = testrunner.NewDbAllocator()
 
 		var err error
-		sqlDBConfig, err = dbAllocator.Create()
+		sqlDBConfig, err = dbAllocator.Create(&waitGroup)
 		Expect(err).NotTo(HaveOccurred(), "error occurred starting database client, is the database running?")
-		sqlDBName = sqlDBConfig.Schema
+		databaseName = sqlDBConfig.Schema
 
-		caCert, caPrivKey, err := createCA()
+		caCert, caPrivateKey, err := createCA()
 		Expect(err).ToNot(HaveOccurred())
 
 		f, err := os.CreateTemp("", "routing-api-uaa-ca")
@@ -108,12 +99,12 @@ var _ = SynchronizedBeforeSuite(
 		err = f.Close()
 		Expect(err).ToNot(HaveOccurred())
 
-		uaaServerCert, err := createCertificate(caCert, caPrivKey, isCA)
+		uaaServerCert, err := createCertificate(caCert, caPrivateKey, isCA)
 		Expect(err).ToNot(HaveOccurred())
 
-		apiCAPath, mtlsAPIServerCertPath, mtlsAPIServerKeyPath, mtlsAPIClientCert = tls_helpers.GenerateCaAndMutualTlsCerts()
+		apiCAPath, mTLSAPIServerCertPath, mTLSAPIServerKeyPath, mTLSAPIClientCert = tlsHelpers.GenerateCaAndMutualTlsCerts()
 
-		setupOauthServer(uaaServerCert)
+		oAuthServer, oAuthServerPort = testrunner.SetupOauthServer(uaaServerCert)
 	},
 )
 
@@ -121,7 +112,7 @@ var _ = SynchronizedAfterSuite(func() {
 	err := dbAllocator.Delete()
 	Expect(err).NotTo(HaveOccurred())
 
-	oauthServer.Close()
+	oAuthServer.Close()
 
 	err = os.Remove(uaaCACertsPath)
 	Expect(err).NotTo(HaveOccurred())
@@ -133,202 +124,42 @@ var _ = BeforeEach(func() {
 	routingAPIPort = uint16(test_helpers.NextAvailPort())
 	routingAPIMTLSPort = uint16(test_helpers.NextAvailPort())
 
-	client = routingApiClientWithPort(routingAPIPort)
-	err := dbAllocator.Reset()
+	client = testrunner.RoutingApiClientWithPort(routingAPIPort, testrunner.RoutingAPIIP)
+	err := dbAllocator.Reset(&waitGroup)
 	Expect(err).NotTo(HaveOccurred())
 
-	startLocket()
+	waitGroup.Wait()
+	locketPort = uint16(test_helpers.NextAvailPort())
+	locketProcess = testrunner.StartLocket(
+		locketPort,
+		locketBinPath,
+		databaseName,
+		sqlDBConfig.CACert,
+	)
 
-	oauthSrvPort, err := strconv.ParseInt(oauthServerPort, 10, 0)
+	oAuthServerPort, err := strconv.ParseInt(oAuthServerPort, 10, 0)
 	Expect(err).NotTo(HaveOccurred())
 
-	locketAddress := fmt.Sprintf("localhost:%d", locketPort)
+	locketAddress := fmt.Sprintf("%s:%d", testrunner.Host, locketPort)
 	locketConfig := locketrunner.ClientLocketConfig()
 	locketConfig.LocketAddress = locketAddress
 
 	routingAPIAdminPort = test_helpers.NextAvailPort()
-	defaultConfig = customConfig{
-		APIServerHTTPEnabled: true,
-		Port:                 int(routingAPIPort),
-		StatsdPort:           8125 + GinkgoParallelProcess(),
-		AdminPort:            routingAPIAdminPort,
-		UAAPort:              int(oauthSrvPort),
-		CACertsPath:          uaaCACertsPath,
-		Schema:               sqlDBName,
-
-		UseSQL: true,
-
-		LocketConfig: locketConfig,
-
-		// mTLS API
-		APIServerMTLSPort: int(routingAPIMTLSPort),
-		APIServerCertPath: mtlsAPIServerCertPath,
-		APIServerKeyPath:  mtlsAPIServerKeyPath,
-		APICAPath:         apiCAPath,
-	}
+	defaultConfig = testrunner.GetRoutingAPITestConfig(
+		routingAPIPort,
+		routingAPIAdminPort,
+		routingAPIMTLSPort,
+		oAuthServerPort,
+		uaaCACertsPath,
+		databaseName,
+		mTLSAPIServerCertPath,
+		mTLSAPIServerKeyPath,
+		apiCAPath,
+		locketConfig,
+	)
 })
 
 var _ = AfterEach(func() {
-	stopLocket()
+	waitGroup.Wait()
+	testrunner.StopLocket(locketProcess)
 })
-
-type customConfig struct {
-	Port         int
-	StatsdPort   int
-	UAAPort      int
-	AdminPort    int
-	LocketConfig locket.ClientLocketConfig
-	CACertsPath  string
-	Schema       string
-	UseSQL       bool
-
-	APIServerHTTPEnabled bool
-	APIServerMTLSPort    int
-	APIServerCertPath    string
-	APIServerKeyPath     string
-	APICAPath            string
-}
-
-func getRoutingAPIConfig(c customConfig) *config.Config {
-	rapiConfig := &config.Config{
-		API: config.APIConfig{
-			ListenPort:         c.Port,
-			HTTPEnabled:        c.APIServerHTTPEnabled,
-			MTLSListenPort:     c.APIServerMTLSPort,
-			MTLSClientCAPath:   c.APICAPath,
-			MTLSServerCertPath: c.APIServerCertPath,
-			MTLSServerKeyPath:  c.APIServerKeyPath,
-		},
-		AdminPort:    c.AdminPort,
-		DebugAddress: "1.2.3.4:1234",
-		LogGuid:      "my_logs",
-		MetronConfig: config.MetronConfig{
-			Address: "1.2.3.4",
-			Port:    "4567",
-		},
-		SystemDomain:                    "example.com",
-		MetricsReportingIntervalString:  "500ms",
-		StatsdEndpoint:                  fmt.Sprintf("localhost:%d", c.StatsdPort),
-		StatsdClientFlushIntervalString: "10ms",
-		OAuth: config.OAuthConfig{
-			TokenEndpoint:     "127.0.0.1",
-			Port:              c.UAAPort,
-			SkipSSLValidation: false,
-			CACerts:           c.CACertsPath,
-		},
-		RouterGroups: models.RouterGroups{
-			models.RouterGroup{
-				Name:            "default-tcp",
-				Type:            "tcp",
-				ReservablePorts: "1024-65535",
-			},
-		},
-		RetryInterval: 50 * time.Millisecond,
-		UUID:          "fake-uuid",
-		Locket:        c.LocketConfig,
-	}
-	switch os.Getenv("DB") {
-	case "postgres":
-		rapiConfig.SqlDB = config.SqlDB{
-			Host:              "localhost",
-			Port:              5432,
-			Schema:            c.Schema,
-			Type:              "postgres",
-			Username:          "postgres",
-			Password:          "",
-			CACert:            os.Getenv("SQL_SERVER_CA_CERT"),
-			SkipSSLValidation: os.Getenv("DB_SKIP_SSL_VALIDATION") == "true",
-		}
-	default:
-		rapiConfig.SqlDB = config.SqlDB{
-			Host:              "localhost",
-			Port:              3306,
-			Schema:            c.Schema,
-			Type:              "mysql",
-			Username:          "root",
-			Password:          "password",
-			CACert:            os.Getenv("SQL_SERVER_CA_CERT"),
-			SkipSSLValidation: os.Getenv("DB_SKIP_SSL_VALIDATION") == "true",
-		}
-	}
-	return rapiConfig
-}
-
-func writeConfigToTempFile(c *config.Config) string {
-	d, err := yaml.Marshal(c)
-	Expect(err).ToNot(HaveOccurred())
-
-	tmpfile, err := os.CreateTemp("", "routing_api_config.yml")
-	Expect(err).ToNot(HaveOccurred())
-	defer func() {
-		Expect(tmpfile.Close()).To(Succeed())
-	}()
-
-	_, err = tmpfile.Write(d)
-	Expect(err).ToNot(HaveOccurred())
-
-	return tmpfile.Name()
-}
-
-func routingApiClientWithPort(routingAPIPort uint16) routing_api.Client {
-	routingAPIIP = "127.0.0.1"
-	routingAPISystemDomain = "example.com"
-	routingAPIAddress = fmt.Sprintf("%s:%d", routingAPIIP, routingAPIPort)
-
-	routingAPIURL := &url.URL{
-		Scheme: "http",
-		Host:   routingAPIAddress,
-	}
-
-	return routing_api.NewClient(routingAPIURL.String(), false)
-}
-
-func setupOauthServer(uaaServerCert tls.Certificate) {
-	oauthServer = ghttp.NewUnstartedServer()
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{uaaServerCert},
-	}
-	oauthServer.HTTPTestServer.TLS = tlsConfig
-	oauthServer.AllowUnhandledRequests = true
-	oauthServer.UnhandledRequestStatusCode = http.StatusOK
-	oauthServer.HTTPTestServer.StartTLS()
-
-	oauthServerPort = getServerPort(oauthServer.URL())
-}
-
-func startLocket() {
-	locketPort = uint16(test_helpers.NextAvailPort())
-	locketAddress := fmt.Sprintf("localhost:%d", locketPort)
-
-	locketRunner := locketrunner.NewLocketRunner(locketBinPath, func(cfg *locketconfig.LocketConfig) {
-		switch os.Getenv("DB") {
-		case "postgres":
-			cfg.DatabaseConnectionString = "user=postgres password= host=localhost dbname=" + sqlDBName
-			cfg.DatabaseDriver = "postgres"
-		default:
-			connStr := "root:password@/"
-			cfg.DatabaseConnectionString = connStr + sqlDBName
-			cfg.DatabaseDriver = "mysql"
-		}
-		if sqlDBConfig.CACert != "" {
-			caFile, err := os.CreateTemp("", "")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(os.WriteFile(caFile.Name(), []byte(sqlDBConfig.CACert), 0400)).To(Succeed())
-			cfg.SQLCACertFile = caFile.Name()
-		}
-		cfg.ListenAddress = locketAddress
-	})
-	locketProcess = ginkgomon.Invoke(locketRunner)
-}
-
-func stopLocket() {
-	ginkgomon.Interrupt(locketProcess)
-	locketProcess.Wait()
-}
-
-func getServerPort(url string) string {
-	endpoints := strings.Split(url, ":")
-	Expect(endpoints).To(HaveLen(3))
-	return endpoints[2]
-}

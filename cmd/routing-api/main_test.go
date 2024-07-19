@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 	"time"
 
-	routing_api "code.cloudfoundry.org/routing-api"
+	routingAPI "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
@@ -22,8 +21,8 @@ import (
 )
 
 const (
-	TOKEN_KEY_ENDPOINT     = "/token_key"
-	OPENID_CONFIG_ENDPOINT = "/.well-known/openid-configuration"
+	TokenKeyEndpoint       = "/token_key"
+	OpenidConfigEndpoint   = "/.well-known/openid-configuration"
 	DefaultRouterGroupName = "default-tcp"
 )
 
@@ -35,12 +34,12 @@ var _ = Describe("Main", func() {
 	)
 
 	BeforeEach(func() {
-		oauthServer.Reset()
+		oAuthServer.Reset()
 
-		rapiConfig := getRoutingAPIConfig(defaultConfig)
-		configFilePath = writeConfigToTempFile(rapiConfig)
+		routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
+		configFilePath = testrunner.WriteConfigToTempFile(routingAPIConfig)
 		routingAPIArgs = testrunner.Args{
-			IP:         routingAPIIP,
+			IP:         testrunner.RoutingAPIIP,
 			ConfigPath: configFilePath,
 			DevMode:    true,
 		}
@@ -55,101 +54,101 @@ var _ = Describe("Main", func() {
 	})
 
 	It("exits 1 if no config file is provided", func() {
-		session = RoutingApi()
+		session = testrunner.RoutingAPISession(routingAPIBinPath)
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("No configuration file provided"))
 	})
 
 	It("exits 1 if no ip address is provided", func() {
-		session = RoutingApi("-config=../../example_config/example.yml")
+		session = testrunner.RoutingAPISession(routingAPIBinPath, "-config=../../example_config/example.yml")
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("No ip address provided"))
 	})
 
 	It("exits 1 if the uaa verification key is not a valid PEM format", func() {
-		oauthServer.AppendHandlers(
+		oAuthServer.AppendHandlers(
 			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", OPENID_CONFIG_ENDPOINT),
+				ghttp.VerifyRequest("GET", OpenidConfigEndpoint),
 				ghttp.RespondWith(http.StatusOK, `{"issuer": "https://uaa.domain.com"}`),
 			),
 			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", TOKEN_KEY_ENDPOINT),
+				ghttp.VerifyRequest("GET", TokenKeyEndpoint),
 				ghttp.RespondWith(http.StatusOK, `{"alg":"rsa", "value": "Invalid PEM key" }`),
 			),
 		)
 		args := routingAPIArgs
 		args.DevMode = false
-		session = RoutingApi(args.ArgSlice()...)
+		session = testrunner.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("Public uaa token must be PEM encoded"))
 	})
 
 	It("exits 1 if the uaa issuer cannot be fetched on startup and non dev mode", func() {
-		oauthServer.AppendHandlers(
+		oAuthServer.AppendHandlers(
 			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", OPENID_CONFIG_ENDPOINT),
+				ghttp.VerifyRequest("GET", OpenidConfigEndpoint),
 				ghttp.RespondWith(http.StatusInternalServerError, `{}`),
 			),
 		)
 		args := routingAPIArgs
 		args.DevMode = false
-		session = RoutingApi(args.ArgSlice()...)
+		session = testrunner.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("Failed to get issuer configuration from UAA"))
 	})
 
 	It("logs the uaa issuer when successfully fetched on startup and non dev mode", func() {
-		oauthServer.AppendHandlers(
+		oAuthServer.AppendHandlers(
 			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", OPENID_CONFIG_ENDPOINT),
+				ghttp.VerifyRequest("GET", OpenidConfigEndpoint),
 				ghttp.RespondWith(http.StatusOK, `{"issuer": "https://uaa.domain.com"}`),
 			),
 			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", TOKEN_KEY_ENDPOINT),
+				ghttp.VerifyRequest("GET", TokenKeyEndpoint),
 				ghttp.RespondWith(http.StatusInternalServerError, `{}`),
 			),
 		)
 		args := routingAPIArgs
 		args.DevMode = false
-		session = RoutingApi(args.ArgSlice()...)
+		session = testrunner.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
 		Eventually(session).Should(Say("received-issuer"))
 		Eventually(session).Should(Say("https://uaa.domain.com"))
 		Eventually(session).Should(Exit(1))
 	})
 
 	It("exits 1 if the uaa_verification_key cannot be fetched on startup and non dev mode", func() {
-		oauthServer.AppendHandlers(
+		oAuthServer.AppendHandlers(
 			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", OPENID_CONFIG_ENDPOINT),
+				ghttp.VerifyRequest("GET", OpenidConfigEndpoint),
 				ghttp.RespondWith(http.StatusOK, `{"issuer": "https://uaa.domain.com"}`),
 			),
 			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", TOKEN_KEY_ENDPOINT),
+				ghttp.VerifyRequest("GET", TokenKeyEndpoint),
 				ghttp.RespondWith(http.StatusInternalServerError, `{}`),
 			),
 		)
 		args := routingAPIArgs
 		args.DevMode = false
-		session = RoutingApi(args.ArgSlice()...)
+		session = testrunner.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("Failed to get verification key from UAA"))
 	})
 
 	It("exits 1 if the SQL db fails to initialize", func() {
-		session = RoutingApi("-config=../../example_config/example.yml", "-ip='1.1.1.1'")
+		session := testrunner.RoutingAPISession(routingAPIBinPath, "-config=../../example_config/example.yml", "-ip='1.1.1.1'")
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("failed-initialize-sql-connection"))
 	})
 
 	Context("when initialized correctly and db is running", func() {
 		BeforeEach(func() {
-			oauthServer.AppendHandlers(
+			oAuthServer.AppendHandlers(
 				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", OPENID_CONFIG_ENDPOINT),
+					ghttp.VerifyRequest("GET", OpenidConfigEndpoint),
 					ghttp.RespondWith(http.StatusOK, `{"issuer": "https://uaa.domain.com"}`),
 				),
 				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", TOKEN_KEY_ENDPOINT),
+					ghttp.VerifyRequest("GET", TokenKeyEndpoint),
 					ghttp.RespondWith(http.StatusOK, `{"alg":"rsa", "value": "-----BEGIN PUBLIC KEY-----MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDHFr+KICms+tuT1OXJwhCUmR2dKVy7psa8xzElSyzqx7oJyfJ1JZyOzToj9T5SfTIq396agbHJWVfYphNahvZ/7uMXqHxf+ZH9BL1gk9Y6kCnbM5R60gfwjyW1/dQPjOzn9N394zd2FJoFHwdq9Qs0wBugspULZVNRxq7veq/fzwIDAQAB-----END PUBLIC KEY-----" }`),
 				),
 			)
@@ -159,10 +158,10 @@ var _ = Describe("Main", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
 
-			rapiConfig := getRoutingAPIConfig(defaultConfig)
-			connectionString, err := db.ConnectionString(&rapiConfig.SqlDB)
+			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
+			connectionString, err := db.ConnectionString(&routingAPIConfig.SqlDB)
 			Expect(err).NotTo(HaveOccurred())
-			gormDB, err := gorm.Open(rapiConfig.SqlDB.Type, connectionString)
+			gormDB, err := gorm.Open(routingAPIConfig.SqlDB.Type, connectionString)
 			Expect(err).NotTo(HaveOccurred())
 
 			getRoutes := func() string {
@@ -187,7 +186,10 @@ var _ = Describe("Main", func() {
 		It("closes open event streams when the process exits", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
-			client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
+			client = routingAPI.NewClient(
+				fmt.Sprintf("http://%s:%d", testrunner.RoutingAPIIP, routingAPIPort),
+				false,
+			)
 
 			events, err := client.SubscribeToEvents()
 			Expect(err).ToNot(HaveOccurred())
@@ -218,8 +220,8 @@ var _ = Describe("Main", func() {
 			configPath string
 		)
 		BeforeEach(func() {
-			rapiConfig := getRoutingAPIConfig(defaultConfig)
-			rapiConfig.RouterGroups = models.RouterGroups{
+			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
+			routingAPIConfig.RouterGroups = models.RouterGroups{
 				models.RouterGroup{
 					Name:            "default-tcp",
 					Type:            "tcp",
@@ -231,15 +233,15 @@ var _ = Describe("Main", func() {
 					ReservablePorts: "10000-65535",
 				},
 			}
-			configPath = writeConfigToTempFile(rapiConfig)
+			configPath = testrunner.WriteConfigToTempFile(routingAPIConfig)
 			routingAPIArgs = testrunner.Args{
-				IP:         routingAPIIP,
+				IP:         testrunner.RoutingAPIIP,
 				ConfigPath: configPath,
 				DevMode:    true,
 			}
-			connectionString, err := db.ConnectionString(&rapiConfig.SqlDB)
+			connectionString, err := db.ConnectionString(&routingAPIConfig.SqlDB)
 			Expect(err).NotTo(HaveOccurred())
-			gormDB, err = gorm.Open(rapiConfig.SqlDB.Type, connectionString)
+			gormDB, err = gorm.Open(routingAPIConfig.SqlDB.Type, connectionString)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -258,10 +260,3 @@ var _ = Describe("Main", func() {
 		})
 	})
 })
-
-func RoutingApi(args ...string) *Session {
-	session, err := Start(exec.Command(routingAPIBinPath, args...), GinkgoWriter, GinkgoWriter)
-	Expect(err).ToNot(HaveOccurred())
-
-	return session
-}
