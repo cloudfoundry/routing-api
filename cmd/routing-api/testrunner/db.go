@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"code.cloudfoundry.org/routing-api/db"
@@ -16,8 +17,8 @@ import (
 )
 
 type DbAllocator interface {
-	Create() (*config.SqlDB, error)
-	Reset() error
+	Create(waitGroup *sync.WaitGroup) (*config.SqlDB, error)
+	Reset(waitGroup *sync.WaitGroup) error
 	Delete() error
 	minConfig() *config.SqlDB
 }
@@ -42,17 +43,20 @@ func NewPostgresAllocator() DbAllocator {
 
 func (a *postgresAllocator) minConfig() *config.SqlDB {
 	return &config.SqlDB{
-		Username:          "postgres",
-		Password:          "",
-		Host:              "localhost",
-		Port:              5432,
-		Type:              "postgres",
+		Type:              Postgres,
+		Username:          PostgresUsername,
+		Password:          PostgresPassword,
+		Host:              Host,
+		Port:              PostgresPort,
 		CACert:            os.Getenv("SQL_SERVER_CA_CERT"),
 		SkipSSLValidation: os.Getenv("DB_SKIP_SSL_VALIDATION") == "true",
 	}
 }
 
-func (a *postgresAllocator) Create() (*config.SqlDB, error) {
+func (a *postgresAllocator) Create(waitGroup *sync.WaitGroup) (*config.SqlDB, error) {
+	waitGroup.Add(1)
+	defer waitGroup.Done()
+
 	var (
 		err error
 		cfg *config.SqlDB
@@ -95,7 +99,10 @@ func (a *postgresAllocator) Create() (*config.SqlDB, error) {
 	return nil, errors.New("Failed to create unique database ")
 }
 
-func (a *postgresAllocator) Reset() error {
+func (a *postgresAllocator) Reset(waitGroup *sync.WaitGroup) error {
+	waitGroup.Add(1)
+	defer waitGroup.Done()
+
 	_, err := a.sqlDB.Exec(fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity
 	WHERE datname = '%s'`, a.schemaName))
 	if err != nil {
@@ -129,17 +136,20 @@ func NewMySQLAllocator() DbAllocator {
 
 func (a *mysqlAllocator) minConfig() *config.SqlDB {
 	return &config.SqlDB{
-		Username:          "root",
-		Password:          "password",
-		Host:              "localhost",
-		Port:              3306,
-		Type:              "mysql",
+		Type:              MySQL,
+		Username:          MySQLUserName,
+		Password:          MySQLPassword,
+		Host:              Host,
+		Port:              MySQLPort,
 		CACert:            os.Getenv("SQL_SERVER_CA_CERT"),
 		SkipSSLValidation: os.Getenv("DB_SKIP_SSL_VALIDATION") == "true",
 	}
 }
 
-func (a *mysqlAllocator) Create() (*config.SqlDB, error) {
+func (a *mysqlAllocator) Create(waitGroup *sync.WaitGroup) (*config.SqlDB, error) {
+	waitGroup.Add(1)
+	defer waitGroup.Done()
+
 	var (
 		err error
 		cfg *config.SqlDB
@@ -182,7 +192,9 @@ func (a *mysqlAllocator) Create() (*config.SqlDB, error) {
 	return nil, errors.New("Failed to create unique database ")
 }
 
-func (a *mysqlAllocator) Reset() error {
+func (a *mysqlAllocator) Reset(waitGroup *sync.WaitGroup) error {
+	waitGroup.Add(1)
+	defer waitGroup.Done()
 	_, err := a.sqlDB.Exec(fmt.Sprintf("DROP DATABASE %s", a.schemaName))
 	if err != nil {
 		return err

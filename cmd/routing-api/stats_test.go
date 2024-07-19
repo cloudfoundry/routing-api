@@ -29,10 +29,10 @@ var _ = Describe("Routes API", func() {
 	)
 
 	BeforeEach(func() {
-		routingAPIConfig := getRoutingAPIConfig(defaultConfig)
-		configFilePath = writeConfigToTempFile(routingAPIConfig)
+		routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
+		configFilePath = testrunner.WriteConfigToTempFile(routingAPIConfig)
 		routingAPIRunner := testrunner.New(routingAPIBinPath, testrunner.Args{
-			IP:         routingAPIIP,
+			IP:         testrunner.RoutingAPIIP,
 			ConfigPath: configFilePath,
 			DevMode:    true,
 		})

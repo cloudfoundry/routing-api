@@ -52,7 +52,7 @@ var _ = Describe("Routes API", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("returns an eventstream", func() {
+			It("returns an event stream", func() {
 				expectedEvent := routing_api.TcpEvent{
 					Action:          "Upsert",
 					TcpRouteMapping: route1,
@@ -161,7 +161,7 @@ var _ = Describe("Routes API", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("returns an eventstream", func() {
+			It("returns an event stream", func() {
 				expectedEvent := routing_api.Event{
 					Action: "Upsert",
 					Route:  route1,
@@ -262,7 +262,14 @@ var _ = Describe("Routes API", func() {
 			})
 
 			It("fetches all of the routes", func() {
-				routingAPIRoute := models.NewRoute(fmt.Sprintf("api.%s/routing", routingAPISystemDomain), routingAPIPort, routingAPIIP, "my_logs", "", 120)
+				routingAPIRoute := models.NewRoute(
+					fmt.Sprintf("api.%s/routing", testrunner.SystemDomain),
+					routingAPIPort,
+					testrunner.RoutingAPIIP,
+					"my_logs",
+					"",
+					120,
+				)
 				Eventually(func() int {
 					routes, getErr = client.Routes()
 					Expect(getErr).ToNot(HaveOccurred())
@@ -458,7 +465,7 @@ var _ = Describe("Routes API", func() {
 						Expect(resp.Body.Close()).To(Succeed())
 					}
 					BeforeEach(func() {
-						baseURL = fmt.Sprintf("http://127.0.0.1:%d", routingAPIAdminPort)
+						baseURL = fmt.Sprintf("http://%s:%d", testrunner.RoutingAPIIP, routingAPIAdminPort)
 						lockWrites()
 					})
 					AfterEach(func() {
@@ -632,7 +639,7 @@ var _ = Describe("Routes API", func() {
 				_, err := client.RouterGroups()
 				Expect(err).NotTo(HaveOccurred())
 
-				baseURL := fmt.Sprintf("http://127.0.0.1:%d", routingAPIAdminPort)
+				baseURL := fmt.Sprintf("http://%s:%d", testrunner.RoutingAPIIP, routingAPIAdminPort)
 				req, err := http.NewRequest("PUT", baseURL+"/lock_router_group_reads", nil)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -685,16 +692,19 @@ var _ = Describe("Routes API", func() {
 		)
 
 		BeforeEach(func() {
-			rapiConfig := getRoutingAPIConfig(defaultConfig)
-			configFilePath = writeConfigToTempFile(rapiConfig)
+			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
+			configFilePath = testrunner.WriteConfigToTempFile(routingAPIConfig)
 			routingAPIArgs := testrunner.Args{
-				IP:         routingAPIIP,
+				IP:         testrunner.RoutingAPIIP,
 				ConfigPath: configFilePath,
 				DevMode:    true,
 			}
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
-			client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
+			client = routing_api.NewClient(
+				fmt.Sprintf("http://%s:%d", testrunner.RoutingAPIIP, routingAPIPort),
+				false,
+			)
 		})
 
 		AfterEach(func() {
@@ -719,11 +729,11 @@ var _ = Describe("Routes API", func() {
 		)
 
 		BeforeEach(func() {
-			rapiConfig := getRoutingAPIConfig(defaultConfig)
-			rapiConfig.API.HTTPEnabled = false
-			configFilePath = writeConfigToTempFile(rapiConfig)
+			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
+			routingAPIConfig.API.HTTPEnabled = false
+			configFilePath = testrunner.WriteConfigToTempFile(routingAPIConfig)
 			routingAPIArgs := testrunner.Args{
-				IP:         routingAPIIP,
+				IP:         testrunner.RoutingAPIIP,
 				ConfigPath: configFilePath,
 				DevMode:    true,
 			}
@@ -739,7 +749,10 @@ var _ = Describe("Routes API", func() {
 		})
 
 		It("does not listen on HTTP", func() {
-			client = routing_api.NewClient(fmt.Sprintf("http://127.0.0.1:%d", routingAPIPort), false)
+			client = routing_api.NewClient(
+				fmt.Sprintf("http://%s:%d", testrunner.RoutingAPIIP, routingAPIPort),
+				false,
+			)
 
 			_, err := client.RouterGroups()
 			Expect(err).To(HaveOccurred())
@@ -754,10 +767,10 @@ var _ = Describe("Routes API", func() {
 		)
 
 		BeforeEach(func() {
-			rapiConfig := getRoutingAPIConfig(defaultConfig)
-			configFilePath = writeConfigToTempFile(rapiConfig)
+			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
+			configFilePath = testrunner.WriteConfigToTempFile(routingAPIConfig)
 			routingAPIArgs := testrunner.Args{
-				IP:         routingAPIIP,
+				IP:         testrunner.RoutingAPIIP,
 				ConfigPath: configFilePath,
 				DevMode:    true,
 			}
@@ -765,12 +778,15 @@ var _ = Describe("Routes API", func() {
 			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
 			tlsConfig, err := tlsconfig.Build(
 				tlsconfig.WithInternalServiceDefaults(),
-				tlsconfig.WithIdentity(mtlsAPIClientCert),
+				tlsconfig.WithIdentity(mTLSAPIClientCert),
 			).Client(
 				tlsconfig.WithAuthorityFromFile(apiCAPath),
 			)
 			Expect(err).ToNot(HaveOccurred())
-			client = routing_api.NewClientWithTLSConfig(fmt.Sprintf("https://127.0.0.1:%d", routingAPIMTLSPort), tlsConfig)
+			client = routing_api.NewClientWithTLSConfig(
+				fmt.Sprintf("https://%s:%d", testrunner.RoutingAPIIP, routingAPIMTLSPort),
+				tlsConfig,
+			)
 		})
 
 		AfterEach(func() {

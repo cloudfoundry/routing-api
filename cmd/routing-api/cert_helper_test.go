@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -46,7 +47,11 @@ func createCA() (*x509.Certificate, *ecdsa.PrivateKey, error) {
 	return caCert, caPriv, nil
 }
 
-func createCertificate(rootCert *x509.Certificate, caPriv *ecdsa.PrivateKey, certType CertType) (tls.Certificate, error) {
+func createCertificate(
+	rootCert *x509.Certificate,
+	caKey *ecdsa.PrivateKey,
+	certType CertType,
+) (tls.Certificate, error) {
 	certPriv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return tls.Certificate{}, fmt.Errorf("generate key: %s", err)
@@ -57,7 +62,7 @@ func createCertificate(rootCert *x509.Certificate, caPriv *ecdsa.PrivateKey, cer
 		return tls.Certificate{}, fmt.Errorf("create cert template: %s", err)
 	}
 
-	certDER, err := x509.CreateCertificate(rand.Reader, &certTemplate, rootCert, &certPriv.PublicKey, caPriv)
+	certDER, err := x509.CreateCertificate(rand.Reader, &certTemplate, rootCert, &certPriv.PublicKey, caKey)
 	if err != nil {
 		return tls.Certificate{}, fmt.Errorf("x509 create certificate: %s", err)
 	}
@@ -90,26 +95,26 @@ func createCertTemplate(certType CertType) (x509.Certificate, error) {
 		return x509.Certificate{}, fmt.Errorf("random int: %s", err)
 	}
 
-	tmpl := x509.Certificate{
+	certTemplate := x509.Certificate{
 		SerialNumber:          serialNumber,
 		Subject:               pkix.Name{Organization: []string{"TESTING"}},
 		SignatureAlgorithm:    x509.ECDSAWithSHA256,
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(10, 0, 0),
 		BasicConstraintsValid: true,
-		IPAddresses:           []net.IP{net.ParseIP("127.0.0.1")},
+		IPAddresses:           []net.IP{net.ParseIP(testrunner.RoutingAPIIP)},
 	}
 
 	switch certType {
 	case isCA:
-		tmpl.IsCA = true
-		tmpl.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature
-		tmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}
+		certTemplate.IsCA = true
+		certTemplate.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature
+		certTemplate.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}
 	case isServer:
-		tmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
+		certTemplate.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
 	case isClient:
-		tmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
+		certTemplate.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
 	}
 
-	return tmpl, err
+	return certTemplate, err
 }
