@@ -9,7 +9,6 @@ import (
 	"code.cloudfoundry.org/routing-api/migration/fakes"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"sync"
 )
 
 var _ = Describe("Migration", func() {
@@ -22,7 +21,6 @@ var _ = Describe("Migration", func() {
 		lastMigrationVersion  = 10
 		firstMigrationVersion = 1
 		logger                lager.Logger
-		waitGroup             sync.WaitGroup
 	)
 
 	BeforeEach(func() {
@@ -217,7 +215,7 @@ var _ = Describe("Migration", func() {
 	Describe("Test Migrations", func() {
 		BeforeEach(func() {
 			allocator = testrunner.NewDbAllocator()
-			sqlCfg, err := allocator.Create(&waitGroup)
+			sqlCfg, err := allocator.Create()
 			Expect(err).ToNot(HaveOccurred())
 
 			sqlDB, err = db.NewSqlDB(sqlCfg)
@@ -227,7 +225,6 @@ var _ = Describe("Migration", func() {
 		})
 
 		AfterEach(func() {
-			waitGroup.Wait()
 			err := allocator.Delete()
 			Expect(err).ToNot(HaveOccurred())
 		})

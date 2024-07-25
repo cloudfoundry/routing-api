@@ -2,7 +2,6 @@ package migration_test
 
 import (
 	"strings"
-	"sync"
 
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/db"
@@ -17,12 +16,11 @@ var _ = Describe("V2UpdateRgMigration", func() {
 	var (
 		sqlDB       *db.SqlDB
 		dbAllocator testrunner.DbAllocator
-		waitGroup   sync.WaitGroup
 	)
 
 	BeforeEach(func() {
 		dbAllocator = testrunner.NewDbAllocator()
-		sqlCfg, err := dbAllocator.Create(&waitGroup)
+		sqlCfg, err := dbAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
 
 		sqlDB, err = db.NewSqlDB(sqlCfg)
@@ -33,7 +31,6 @@ var _ = Describe("V2UpdateRgMigration", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 	AfterEach(func() {
-		waitGroup.Wait()
 		err := dbAllocator.Delete()
 		Expect(err).ToNot(HaveOccurred())
 	})

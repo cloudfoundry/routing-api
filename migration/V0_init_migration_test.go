@@ -5,7 +5,6 @@ import (
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/models"
-	"sync"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -17,11 +16,10 @@ var _ = Describe("V0InitMigration", func() {
 		dbClient    db.Client
 		sqlDB       *db.SqlDB
 		err         error
-		waitGroup   sync.WaitGroup
 	)
 	BeforeEach(func() {
 		dbAllocator = testrunner.NewDbAllocator()
-		sqlCfg, err := dbAllocator.Create(&waitGroup)
+		sqlCfg, err := dbAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
 
 		sqlDB, err = db.NewSqlDB(sqlCfg)
@@ -30,7 +28,6 @@ var _ = Describe("V0InitMigration", func() {
 	})
 
 	AfterEach(func() {
-		waitGroup.Wait()
 		err := dbAllocator.Delete()
 		Expect(err).ToNot(HaveOccurred())
 	})

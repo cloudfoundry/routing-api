@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"sync"
 	"time"
 
 	"code.cloudfoundry.org/routing-api/db"
@@ -17,8 +16,8 @@ import (
 )
 
 type DbAllocator interface {
-	Create(waitGroup *sync.WaitGroup) (*config.SqlDB, error)
-	Reset(waitGroup *sync.WaitGroup) error
+	Create() (*config.SqlDB, error)
+	Reset() error
 	Delete() error
 	minConfig() *config.SqlDB
 }
@@ -53,10 +52,7 @@ func (a *postgresAllocator) minConfig() *config.SqlDB {
 	}
 }
 
-func (a *postgresAllocator) Create(waitGroup *sync.WaitGroup) (*config.SqlDB, error) {
-	waitGroup.Add(1)
-	defer waitGroup.Done()
-
+func (a *postgresAllocator) Create() (*config.SqlDB, error) {
 	var (
 		err error
 		cfg *config.SqlDB
@@ -99,10 +95,7 @@ func (a *postgresAllocator) Create(waitGroup *sync.WaitGroup) (*config.SqlDB, er
 	return nil, errors.New("Failed to create unique database ")
 }
 
-func (a *postgresAllocator) Reset(waitGroup *sync.WaitGroup) error {
-	waitGroup.Add(1)
-	defer waitGroup.Done()
-
+func (a *postgresAllocator) Reset() error {
 	_, err := a.sqlDB.Exec(fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity
 	WHERE datname = '%s'`, a.schemaName))
 	if err != nil {
@@ -146,10 +139,7 @@ func (a *mysqlAllocator) minConfig() *config.SqlDB {
 	}
 }
 
-func (a *mysqlAllocator) Create(waitGroup *sync.WaitGroup) (*config.SqlDB, error) {
-	waitGroup.Add(1)
-	defer waitGroup.Done()
-
+func (a *mysqlAllocator) Create() (*config.SqlDB, error) {
 	var (
 		err error
 		cfg *config.SqlDB
@@ -192,9 +182,7 @@ func (a *mysqlAllocator) Create(waitGroup *sync.WaitGroup) (*config.SqlDB, error
 	return nil, errors.New("Failed to create unique database ")
 }
 
-func (a *mysqlAllocator) Reset(waitGroup *sync.WaitGroup) error {
-	waitGroup.Add(1)
-	defer waitGroup.Done()
+func (a *mysqlAllocator) Reset() error {
 	_, err := a.sqlDB.Exec(fmt.Sprintf("DROP DATABASE %s", a.schemaName))
 	if err != nil {
 		return err

@@ -1,7 +1,6 @@
 package migration_test
 
 import (
-	"sync"
 	"time"
 
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
@@ -18,12 +17,11 @@ var _ = Describe("V5SniHostnameMigration", func() {
 	var (
 		sqlDB       *db.SqlDB
 		dbAllocator testrunner.DbAllocator
-		waitgroup   sync.WaitGroup
 	)
 
 	BeforeEach(func() {
 		dbAllocator = testrunner.NewDbAllocator()
-		sqlCfg, err := dbAllocator.Create(&waitgroup)
+		sqlCfg, err := dbAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
 
 		sqlDB, err = db.NewSqlDB(sqlCfg)
@@ -31,7 +29,6 @@ var _ = Describe("V5SniHostnameMigration", func() {
 	})
 
 	AfterEach(func() {
-		waitgroup.Wait()
 		err := dbAllocator.Delete()
 		Expect(err).ToNot(HaveOccurred())
 	})
