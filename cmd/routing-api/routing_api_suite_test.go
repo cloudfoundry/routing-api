@@ -8,7 +8,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -28,30 +27,25 @@ import (
 )
 
 var (
-	defaultConfig       testrunner.RoutingAPITestConfig
-	client              routingAPI.Client
-	locketBinPath       string
-	routingAPIBinPath   string
-	routingAPIPort      uint16
-	routingAPIMTLSPort  uint16
-	routingAPIAdminPort int
-	oAuthServer         *ghttp.Server
-	oAuthServerPort     string
-	locketPort          uint16
-	locketProcess       ifrit.Process
-
-	databaseName string
-
-	dbAllocator testrunner.DbAllocator
-	sqlDBConfig *config.SqlDB
-
-	uaaCACertsPath string
-
+	defaultConfig         testrunner.RoutingAPITestConfig
+	client                routingAPI.Client
+	locketBinPath         string
+	routingAPIBinPath     string
+	routingAPIPort        uint16
+	routingAPIMTLSPort    uint16
+	routingAPIAdminPort   int
+	oAuthServer           *ghttp.Server
+	oAuthServerPort       string
+	locketPort            uint16
+	locketProcess         ifrit.Process
+	databaseName          string
+	dbAllocator           testrunner.DbAllocator
+	sqlDBConfig           *config.SqlDB
+	uaaCACertsPath        string
 	mTLSAPIServerKeyPath  string
 	mTLSAPIServerCertPath string
 	apiCAPath             string
 	mTLSAPIClientCert     tls.Certificate
-	waitGroup             sync.WaitGroup
 )
 
 func TestRoutingAPI(test *testing.T) {
@@ -81,7 +75,7 @@ var _ = SynchronizedBeforeSuite(
 		dbAllocator = testrunner.NewDbAllocator()
 
 		var err error
-		sqlDBConfig, err = dbAllocator.Create(&waitGroup)
+		sqlDBConfig, err = dbAllocator.Create()
 		Expect(err).NotTo(HaveOccurred(), "error occurred starting database client, is the database running?")
 		databaseName = sqlDBConfig.Schema
 
@@ -125,10 +119,9 @@ var _ = BeforeEach(func() {
 	routingAPIMTLSPort = uint16(test_helpers.NextAvailPort())
 
 	client = testrunner.RoutingApiClientWithPort(routingAPIPort, testrunner.RoutingAPIIP)
-	err := dbAllocator.Reset(&waitGroup)
+	err := dbAllocator.Reset()
 	Expect(err).NotTo(HaveOccurred())
 
-	waitGroup.Wait()
 	locketPort = uint16(test_helpers.NextAvailPort())
 	locketProcess = testrunner.StartLocket(
 		locketPort,
@@ -160,6 +153,5 @@ var _ = BeforeEach(func() {
 })
 
 var _ = AfterEach(func() {
-	waitGroup.Wait()
 	testrunner.StopLocket(locketProcess)
 })
