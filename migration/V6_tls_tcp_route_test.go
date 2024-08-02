@@ -34,6 +34,20 @@ var _ = Describe("V6TCPTLSRoutes", func() {
 	})
 
 	runTests := func() {
+		Context("during migration", func() {
+			It("allows the migration to occur", func() {
+				v6Migration := migration.NewV6TCPTLSRoutes()
+				err := v6Migration.Run(sqlDB)
+				Expect(err).ToNot(HaveOccurred())
+
+				routes, err := sqlDB.ReadTcpRouteMappings()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(routes).To(HaveLen(1))
+				Expect(routes[0].InstanceId).To(Equal(""))
+				Expect(routes[0].HostTLSPort).To(Equal(0))
+			})
+
+		})
 		Context("After migration", func() {
 			BeforeEach(func() {
 				v6Migration := migration.NewV6TCPTLSRoutes()
@@ -78,7 +92,7 @@ var _ = Describe("V6TCPTLSRoutes", func() {
 
 				routes, err := sqlDB.ReadTcpRouteMappings()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(routes).To(HaveLen(2))
+				Expect(routes).To(HaveLen(3))
 			})
 
 			It("denies adding the same TCP routes with same host TLS ports", func() {
@@ -101,7 +115,7 @@ var _ = Describe("V6TCPTLSRoutes", func() {
 
 				routes, err := sqlDB.ReadTcpRouteMappings()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(routes).To(HaveLen(1))
+				Expect(routes).To(HaveLen(2))
 			})
 
 			It("denies adding the same TCP routes with different instance_ids", func() {
@@ -124,7 +138,7 @@ var _ = Describe("V6TCPTLSRoutes", func() {
 
 				routes, err := sqlDB.ReadTcpRouteMappings()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(routes).To(HaveLen(1))
+				Expect(routes).To(HaveLen(2))
 			})
 		})
 	}
@@ -141,6 +155,23 @@ var _ = Describe("V6TCPTLSRoutes", func() {
 			BeforeEach(func() {
 				err := sqlDB.Client.AutoMigrate(&v5.RouterGroupDB{}, &v5.TcpRouteMapping{}, &v5.Route{})
 				Expect(err).ToNot(HaveOccurred())
+
+				sniHostname1 := "sniHostname1"
+				tcpRoute1 := v5.TcpRouteMapping{
+					Model:     v5.Model{Guid: "guid-0"},
+					ExpiresAt: time.Now().Add(1 * time.Hour),
+					TcpMappingEntity: v5.TcpMappingEntity{
+						RouterGroupGuid: "test0",
+						HostPort:        80,
+						HostIP:          "1.2.3.4",
+						ExternalPort:    80,
+						SniHostname:     &sniHostname1,
+					},
+				}
+
+				_, err = sqlDB.Client.Create(&tcpRoute1)
+				Expect(err).NotTo(HaveOccurred())
+
 				v5Migration := migration.NewV5SniHostnameMigration()
 				err = v5Migration.Run(sqlDB)
 				Expect(err).ToNot(HaveOccurred())
@@ -153,6 +184,22 @@ var _ = Describe("V6TCPTLSRoutes", func() {
 				v0Migration := migration.NewV0InitMigration()
 				err := v0Migration.Run(sqlDB)
 				Expect(err).ToNot(HaveOccurred())
+
+				sniHostname1 := "sniHostname1"
+				tcpRoute1 := v5.TcpRouteMapping{
+					Model:     v5.Model{Guid: "guid-0"},
+					ExpiresAt: time.Now().Add(1 * time.Hour),
+					TcpMappingEntity: v5.TcpMappingEntity{
+						RouterGroupGuid: "test0",
+						HostPort:        80,
+						HostIP:          "1.2.3.4",
+						ExternalPort:    80,
+						SniHostname:     &sniHostname1,
+					},
+				}
+
+				_, err = sqlDB.Client.Create(&tcpRoute1)
+				Expect(err).NotTo(HaveOccurred())
 			})
 			runTests()
 		})
