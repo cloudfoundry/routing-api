@@ -14,11 +14,16 @@ type TcpRouteMapping struct {
 }
 
 type TcpMappingEntity struct {
-	RouterGroupGuid  string  `gorm:"not null; unique_index:idx_tcp_route" json:"router_group_guid"`
-	HostPort         uint16  `gorm:"not null; unique_index:idx_tcp_route; type:int" json:"backend_port"`
-	HostIP           string  `gorm:"not null; unique_index:idx_tcp_route" json:"backend_ip"`
-	SniHostname      *string `gorm:"default:null; unique_index:idx_tcp_route" json:"backend_sni_hostname,omitempty"`
-	ExternalPort     uint16  `gorm:"not null; unique_index:idx_tcp_route; type: int" json:"port"`
+	RouterGroupGuid string  `gorm:"not null; unique_index:idx_tcp_route" json:"router_group_guid"`
+	HostPort        uint16  `gorm:"not null; unique_index:idx_tcp_route; type:int" json:"backend_port"`
+	HostTLSPort     int     `gorm:"default:null; unique_index:idx_tcp_route; type:int" json:"backend_tls_port"`
+	HostIP          string  `gorm:"not null; unique_index:idx_tcp_route" json:"backend_ip"`
+	SniHostname     *string `gorm:"default:null; unique_index:idx_tcp_route" json:"backend_sni_hostname,omitempty"`
+	// We don't add uniqueness on InstanceId so that if a route is attempted to be created with the same detals but
+	// different InstanceId, we fail uniqueness and prevent stale/duplicate routes. If this fails a route, the
+	// TTL on the old record should expire + allow the new route to be created eventually.
+	InstanceId       string `gorm:"default:null;" json:"instance_id"`
+	ExternalPort     uint16 `gorm:"not null; unique_index:idx_tcp_route; type: int" json:"port"`
 	ModificationTag  `json:"modification_tag"`
 	TTL              *int   `json:"ttl,omitempty"`
 	IsolationSegment string `json:"isolation_segment"`
@@ -42,47 +47,30 @@ func NewTcpRouteMappingWithModel(tcpMapping TcpRouteMapping) (TcpRouteMapping, e
 	}, nil
 }
 
-func NewTcpRouteMapping(routerGroupGuid string, externalPort uint16, hostIP string, hostPort uint16, ttl int) TcpRouteMapping {
-	return NewSniTcpRouteMapping(routerGroupGuid, externalPort, nil, hostIP, hostPort, ttl)
-}
-
-func NewSniTcpRouteMapping(routerGroupGuid string, externalPort uint16, sniHostname *string, hostIP string, hostPort uint16, ttl int) TcpRouteMapping {
-	mapping := TcpMappingEntity{
-		RouterGroupGuid: routerGroupGuid,
-		ExternalPort:    externalPort,
-		SniHostname:     sniHostname,
-		HostPort:        hostPort,
-		HostIP:          hostIP,
-		TTL:             &ttl,
-	}
-	return TcpRouteMapping{
-		TcpMappingEntity: mapping,
-	}
-}
-
-func NewTcpRouteMappingWithModificationTag(
+func NewTcpRouteMapping(
 	routerGroupGuid string,
 	externalPort uint16,
 	hostIP string,
 	hostPort uint16,
-	ttl int,
-	modTag ModificationTag,
-) TcpRouteMapping {
-	return NewSniTcpRouteMappingWithModificationTag(routerGroupGuid, externalPort, nil, hostIP, hostPort, ttl, modTag)
-}
-
-func NewSniTcpRouteMappingWithModificationTag(
-	routerGroupGuid string,
-	externalPort uint16,
+	hostTlsPort int,
+	instanceId string,
 	sniHostname *string,
-	hostIP string,
-	hostPort uint16,
 	ttl int,
 	modTag ModificationTag,
 ) TcpRouteMapping {
-	mapping := NewSniTcpRouteMapping(routerGroupGuid, externalPort, sniHostname, hostIP, hostPort, ttl)
-	mapping.ModificationTag = modTag
-
+	mapping := TcpRouteMapping{
+		TcpMappingEntity: TcpMappingEntity{
+			RouterGroupGuid: routerGroupGuid,
+			ExternalPort:    externalPort,
+			SniHostname:     sniHostname,
+			InstanceId:      instanceId,
+			HostPort:        hostPort,
+			HostTLSPort:     hostTlsPort,
+			HostIP:          hostIP,
+			TTL:             &ttl,
+			ModificationTag: modTag,
+		},
+	}
 	return mapping
 }
 
@@ -91,13 +79,31 @@ func (m TcpRouteMapping) String() string {
 }
 
 func (m TcpRouteMapping) Matches(other TcpRouteMapping) bool {
-	return m.RouterGroupGuid == other.RouterGroupGuid &&
-		m.ExternalPort == other.ExternalPort &&
-		m.HostIP == other.HostIP &&
-		m.HostPort == other.HostPort &&
-		*m.TTL == *other.TTL &&
-		((m.SniHostname == other.SniHostname) ||
-			m.SniHostname != nil && *m.SniHostname == *other.SniHostname)
+	sameRouterGroupGuid := m.RouterGroupGuid == other.RouterGroupGuid
+	sameExternalPort := m.ExternalPort == other.ExternalPort
+	sameHostIP := m.HostIP == other.HostIP
+	sameHostPort := m.HostPort == other.HostPort
+	sameInstanceId := m.InstanceId == other.InstanceId
+	sameHostTLSPort := m.HostTLSPort == other.HostTLSPort
+
+	nilTTL := m.TTL == nil && other.TTL == nil
+	sameTTLPointer := m.TTL == other.TTL
+	sameTTLValue := m.TTL != nil && other.TTL != nil && *m.TTL == *other.TTL
+	sameTTL := nilTTL || sameTTLPointer || sameTTLValue
+
+	nilSniHostname := m.SniHostname == nil && other.SniHostname == nil
+	sameSniHostnamePointer := m.SniHostname == other.SniHostname
+	sameSniHostnameValue := m.SniHostname != nil && other.SniHostname != nil && *m.SniHostname == *other.SniHostname
+	sameSniHostname := nilSniHostname || sameSniHostnamePointer || sameSniHostnameValue
+
+	return sameRouterGroupGuid &&
+		sameExternalPort &&
+		sameHostIP &&
+		sameHostPort &&
+		sameInstanceId &&
+		sameTTL &&
+		sameHostTLSPort &&
+		sameSniHostname
 }
 
 func (t *TcpRouteMapping) SetDefaults(maxTTL int) {
