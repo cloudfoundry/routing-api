@@ -227,15 +227,16 @@ func (fake *FakeClient) CreateRouterGroup(arg1 models.RouterGroup) error {
 	fake.createRouterGroupArgsForCall = append(fake.createRouterGroupArgsForCall, struct {
 		arg1 models.RouterGroup
 	}{arg1})
+	stub := fake.CreateRouterGroupStub
+	fakeReturns := fake.createRouterGroupReturns
 	fake.recordInvocation("CreateRouterGroup", []interface{}{arg1})
 	fake.createRouterGroupMutex.Unlock()
-	if fake.CreateRouterGroupStub != nil {
-		return fake.CreateRouterGroupStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.createRouterGroupReturns
 	return fakeReturns.result1
 }
 
@@ -287,15 +288,16 @@ func (fake *FakeClient) DeleteRouterGroup(arg1 models.RouterGroup) error {
 	fake.deleteRouterGroupArgsForCall = append(fake.deleteRouterGroupArgsForCall, struct {
 		arg1 models.RouterGroup
 	}{arg1})
+	stub := fake.DeleteRouterGroupStub
+	fakeReturns := fake.deleteRouterGroupReturns
 	fake.recordInvocation("DeleteRouterGroup", []interface{}{arg1})
 	fake.deleteRouterGroupMutex.Unlock()
-	if fake.DeleteRouterGroupStub != nil {
-		return fake.DeleteRouterGroupStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteRouterGroupReturns
 	return fakeReturns.result1
 }
 
@@ -352,15 +354,16 @@ func (fake *FakeClient) DeleteRoutes(arg1 []models.Route) error {
 	fake.deleteRoutesArgsForCall = append(fake.deleteRoutesArgsForCall, struct {
 		arg1 []models.Route
 	}{arg1Copy})
+	stub := fake.DeleteRoutesStub
+	fakeReturns := fake.deleteRoutesReturns
 	fake.recordInvocation("DeleteRoutes", []interface{}{arg1Copy})
 	fake.deleteRoutesMutex.Unlock()
-	if fake.DeleteRoutesStub != nil {
-		return fake.DeleteRoutesStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteRoutesReturns
 	return fakeReturns.result1
 }
 
@@ -417,15 +420,16 @@ func (fake *FakeClient) DeleteTcpRouteMappings(arg1 []models.TcpRouteMapping) er
 	fake.deleteTcpRouteMappingsArgsForCall = append(fake.deleteTcpRouteMappingsArgsForCall, struct {
 		arg1 []models.TcpRouteMapping
 	}{arg1Copy})
+	stub := fake.DeleteTcpRouteMappingsStub
+	fakeReturns := fake.deleteTcpRouteMappingsReturns
 	fake.recordInvocation("DeleteTcpRouteMappings", []interface{}{arg1Copy})
 	fake.deleteTcpRouteMappingsMutex.Unlock()
-	if fake.DeleteTcpRouteMappingsStub != nil {
-		return fake.DeleteTcpRouteMappingsStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteTcpRouteMappingsReturns
 	return fakeReturns.result1
 }
 
@@ -482,15 +486,16 @@ func (fake *FakeClient) FilteredTcpRouteMappings(arg1 []string) ([]models.TcpRou
 	fake.filteredTcpRouteMappingsArgsForCall = append(fake.filteredTcpRouteMappingsArgsForCall, struct {
 		arg1 []string
 	}{arg1Copy})
+	stub := fake.FilteredTcpRouteMappingsStub
+	fakeReturns := fake.filteredTcpRouteMappingsReturns
 	fake.recordInvocation("FilteredTcpRouteMappings", []interface{}{arg1Copy})
 	fake.filteredTcpRouteMappingsMutex.Unlock()
-	if fake.FilteredTcpRouteMappingsStub != nil {
-		return fake.FilteredTcpRouteMappingsStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.filteredTcpRouteMappingsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -546,15 +551,16 @@ func (fake *FakeClient) ReservePort(arg1 string, arg2 string) (int, error) {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.ReservePortStub
+	fakeReturns := fake.reservePortReturns
 	fake.recordInvocation("ReservePort", []interface{}{arg1, arg2})
 	fake.reservePortMutex.Unlock()
-	if fake.ReservePortStub != nil {
-		return fake.ReservePortStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.reservePortReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -609,15 +615,16 @@ func (fake *FakeClient) RouterGroupWithName(arg1 string) (models.RouterGroup, er
 	fake.routerGroupWithNameArgsForCall = append(fake.routerGroupWithNameArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.RouterGroupWithNameStub
+	fakeReturns := fake.routerGroupWithNameReturns
 	fake.recordInvocation("RouterGroupWithName", []interface{}{arg1})
 	fake.routerGroupWithNameMutex.Unlock()
-	if fake.RouterGroupWithNameStub != nil {
-		return fake.RouterGroupWithNameStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.routerGroupWithNameReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -671,15 +678,16 @@ func (fake *FakeClient) RouterGroups() ([]models.RouterGroup, error) {
 	ret, specificReturn := fake.routerGroupsReturnsOnCall[len(fake.routerGroupsArgsForCall)]
 	fake.routerGroupsArgsForCall = append(fake.routerGroupsArgsForCall, struct {
 	}{})
+	stub := fake.RouterGroupsStub
+	fakeReturns := fake.routerGroupsReturns
 	fake.recordInvocation("RouterGroups", []interface{}{})
 	fake.routerGroupsMutex.Unlock()
-	if fake.RouterGroupsStub != nil {
-		return fake.RouterGroupsStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.routerGroupsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -726,15 +734,16 @@ func (fake *FakeClient) Routes() ([]models.Route, error) {
 	ret, specificReturn := fake.routesReturnsOnCall[len(fake.routesArgsForCall)]
 	fake.routesArgsForCall = append(fake.routesArgsForCall, struct {
 	}{})
+	stub := fake.RoutesStub
+	fakeReturns := fake.routesReturns
 	fake.recordInvocation("Routes", []interface{}{})
 	fake.routesMutex.Unlock()
-	if fake.RoutesStub != nil {
-		return fake.RoutesStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.routesReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -781,9 +790,10 @@ func (fake *FakeClient) SetToken(arg1 string) {
 	fake.setTokenArgsForCall = append(fake.setTokenArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.SetTokenStub
 	fake.recordInvocation("SetToken", []interface{}{arg1})
 	fake.setTokenMutex.Unlock()
-	if fake.SetTokenStub != nil {
+	if stub != nil {
 		fake.SetTokenStub(arg1)
 	}
 }
@@ -812,15 +822,16 @@ func (fake *FakeClient) SubscribeToEvents() (routing_api.EventSource, error) {
 	ret, specificReturn := fake.subscribeToEventsReturnsOnCall[len(fake.subscribeToEventsArgsForCall)]
 	fake.subscribeToEventsArgsForCall = append(fake.subscribeToEventsArgsForCall, struct {
 	}{})
+	stub := fake.SubscribeToEventsStub
+	fakeReturns := fake.subscribeToEventsReturns
 	fake.recordInvocation("SubscribeToEvents", []interface{}{})
 	fake.subscribeToEventsMutex.Unlock()
-	if fake.SubscribeToEventsStub != nil {
-		return fake.SubscribeToEventsStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.subscribeToEventsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -868,15 +879,16 @@ func (fake *FakeClient) SubscribeToEventsWithMaxRetries(arg1 uint16) (routing_ap
 	fake.subscribeToEventsWithMaxRetriesArgsForCall = append(fake.subscribeToEventsWithMaxRetriesArgsForCall, struct {
 		arg1 uint16
 	}{arg1})
+	stub := fake.SubscribeToEventsWithMaxRetriesStub
+	fakeReturns := fake.subscribeToEventsWithMaxRetriesReturns
 	fake.recordInvocation("SubscribeToEventsWithMaxRetries", []interface{}{arg1})
 	fake.subscribeToEventsWithMaxRetriesMutex.Unlock()
-	if fake.SubscribeToEventsWithMaxRetriesStub != nil {
-		return fake.SubscribeToEventsWithMaxRetriesStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.subscribeToEventsWithMaxRetriesReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -930,15 +942,16 @@ func (fake *FakeClient) SubscribeToTcpEvents() (routing_api.TcpEventSource, erro
 	ret, specificReturn := fake.subscribeToTcpEventsReturnsOnCall[len(fake.subscribeToTcpEventsArgsForCall)]
 	fake.subscribeToTcpEventsArgsForCall = append(fake.subscribeToTcpEventsArgsForCall, struct {
 	}{})
+	stub := fake.SubscribeToTcpEventsStub
+	fakeReturns := fake.subscribeToTcpEventsReturns
 	fake.recordInvocation("SubscribeToTcpEvents", []interface{}{})
 	fake.subscribeToTcpEventsMutex.Unlock()
-	if fake.SubscribeToTcpEventsStub != nil {
-		return fake.SubscribeToTcpEventsStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.subscribeToTcpEventsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -986,15 +999,16 @@ func (fake *FakeClient) SubscribeToTcpEventsWithMaxRetries(arg1 uint16) (routing
 	fake.subscribeToTcpEventsWithMaxRetriesArgsForCall = append(fake.subscribeToTcpEventsWithMaxRetriesArgsForCall, struct {
 		arg1 uint16
 	}{arg1})
+	stub := fake.SubscribeToTcpEventsWithMaxRetriesStub
+	fakeReturns := fake.subscribeToTcpEventsWithMaxRetriesReturns
 	fake.recordInvocation("SubscribeToTcpEventsWithMaxRetries", []interface{}{arg1})
 	fake.subscribeToTcpEventsWithMaxRetriesMutex.Unlock()
-	if fake.SubscribeToTcpEventsWithMaxRetriesStub != nil {
-		return fake.SubscribeToTcpEventsWithMaxRetriesStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.subscribeToTcpEventsWithMaxRetriesReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -1048,15 +1062,16 @@ func (fake *FakeClient) TcpRouteMappings() ([]models.TcpRouteMapping, error) {
 	ret, specificReturn := fake.tcpRouteMappingsReturnsOnCall[len(fake.tcpRouteMappingsArgsForCall)]
 	fake.tcpRouteMappingsArgsForCall = append(fake.tcpRouteMappingsArgsForCall, struct {
 	}{})
+	stub := fake.TcpRouteMappingsStub
+	fakeReturns := fake.tcpRouteMappingsReturns
 	fake.recordInvocation("TcpRouteMappings", []interface{}{})
 	fake.tcpRouteMappingsMutex.Unlock()
-	if fake.TcpRouteMappingsStub != nil {
-		return fake.TcpRouteMappingsStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.tcpRouteMappingsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -1104,15 +1119,16 @@ func (fake *FakeClient) UpdateRouterGroup(arg1 models.RouterGroup) error {
 	fake.updateRouterGroupArgsForCall = append(fake.updateRouterGroupArgsForCall, struct {
 		arg1 models.RouterGroup
 	}{arg1})
+	stub := fake.UpdateRouterGroupStub
+	fakeReturns := fake.updateRouterGroupReturns
 	fake.recordInvocation("UpdateRouterGroup", []interface{}{arg1})
 	fake.updateRouterGroupMutex.Unlock()
-	if fake.UpdateRouterGroupStub != nil {
-		return fake.UpdateRouterGroupStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.updateRouterGroupReturns
 	return fakeReturns.result1
 }
 
@@ -1169,15 +1185,16 @@ func (fake *FakeClient) UpsertRoutes(arg1 []models.Route) error {
 	fake.upsertRoutesArgsForCall = append(fake.upsertRoutesArgsForCall, struct {
 		arg1 []models.Route
 	}{arg1Copy})
+	stub := fake.UpsertRoutesStub
+	fakeReturns := fake.upsertRoutesReturns
 	fake.recordInvocation("UpsertRoutes", []interface{}{arg1Copy})
 	fake.upsertRoutesMutex.Unlock()
-	if fake.UpsertRoutesStub != nil {
-		return fake.UpsertRoutesStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.upsertRoutesReturns
 	return fakeReturns.result1
 }
 
@@ -1234,15 +1251,16 @@ func (fake *FakeClient) UpsertTcpRouteMappings(arg1 []models.TcpRouteMapping) er
 	fake.upsertTcpRouteMappingsArgsForCall = append(fake.upsertTcpRouteMappingsArgsForCall, struct {
 		arg1 []models.TcpRouteMapping
 	}{arg1Copy})
+	stub := fake.UpsertTcpRouteMappingsStub
+	fakeReturns := fake.upsertTcpRouteMappingsReturns
 	fake.recordInvocation("UpsertTcpRouteMappings", []interface{}{arg1Copy})
 	fake.upsertTcpRouteMappingsMutex.Unlock()
-	if fake.UpsertTcpRouteMappingsStub != nil {
-		return fake.UpsertTcpRouteMappingsStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.upsertTcpRouteMappingsReturns
 	return fakeReturns.result1
 }
 
