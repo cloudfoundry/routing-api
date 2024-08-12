@@ -22,7 +22,7 @@ type TcpMappingEntity struct {
 	// We don't add uniqueness on InstanceId so that if a route is attempted to be created with the same detals but
 	// different InstanceId, we fail uniqueness and prevent stale/duplicate routes. If this fails a route, the
 	// TTL on the old record should expire + allow the new route to be created eventually.
-	InstanceId       string `gorm:"null; default:null;" json:"instance_id"`
+	InstanceId       string `gorm:"not null;" json:"instance_id"`
 	ExternalPort     uint16 `gorm:"not null; unique_index:idx_tcp_route; type: int" json:"port"`
 	ModificationTag  `json:"modification_tag"`
 	TTL              *int   `json:"ttl,omitempty"`

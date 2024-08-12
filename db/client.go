@@ -27,6 +27,7 @@ type Client interface {
 	Exec(query string, args ...interface{}) int64
 	Rows(tableName string) (*sql.Rows, error)
 	DropColumn(column string) error
+	Dialect() gorm.Dialect
 }
 
 type gormClient struct {
@@ -46,6 +47,10 @@ func (c *gormClient) AddUniqueIndex(indexName string, columns ...string) (Client
 	var newClient gormClient
 	newClient.db = c.db.AddUniqueIndex(indexName, columns...)
 	return &newClient, newClient.db.Error
+}
+
+func (c *gormClient) Dialect() gorm.Dialect {
+	return c.db.Dialect()
 }
 
 func (c *gormClient) RemoveIndex(indexName string) (Client, error) {

@@ -85,6 +85,9 @@ func InitializeMigrations() []Migration {
 	migration = NewV6TCPTLSRoutes()
 	migrations = append(migrations, migration)
 
+	migration = NewV7TCPTLSRoutes()
+	migrations = append(migrations, migration)
+
 	return migrations
 }
 

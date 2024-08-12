@@ -43,7 +43,7 @@ var _ = Describe("Migration", func() {
 				done := make(chan struct{})
 				defer close(done)
 				migrations := migration.InitializeMigrations()
-				Expect(migrations).To(HaveLen(6))
+				Expect(migrations).To(HaveLen(7))
 
 				Expect(migrations[0]).To(BeAssignableToTypeOf(new(migration.V0InitMigration)))
 				Expect(migrations[1]).To(BeAssignableToTypeOf(new(migration.V2UpdateRgMigration)))
@@ -51,6 +51,7 @@ var _ = Describe("Migration", func() {
 				Expect(migrations[3]).To(BeAssignableToTypeOf(new(migration.V4AddRgUniqIdxTCPRoute)))
 				Expect(migrations[4]).To(BeAssignableToTypeOf(new(migration.V5SniHostnameMigration)))
 				Expect(migrations[5]).To(BeAssignableToTypeOf(new(migration.V6TCPTLSRoutes)))
+				Expect(migrations[6]).To(BeAssignableToTypeOf(new(migration.V7TCPTLSRoutes)))
 			})
 		})
 
