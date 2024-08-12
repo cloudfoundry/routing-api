@@ -1,6 +1,8 @@
 package migration_test
 
 import (
+	"fmt"
+
 	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/lager/v3/lagertest"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
@@ -97,45 +99,70 @@ var _ = Describe("Migration", func() {
 				BeforeEach(func() {
 					err := sqlDB.Client.AutoMigrate(&migration.MigrationData{})
 					Expect(err).ToNot(HaveOccurred())
+
 				})
 
 				Context("when a migration is necessary", func() {
-					Context("when another routing-api has already started the migration", func() {
+					Context("when routing-api fails to migrate the db", func() {
 						BeforeEach(func() {
 							migrationData := &migration.MigrationData{
 								MigrationKey:   migration.MigrationKey,
 								CurrentVersion: -1,
-								TargetVersion:  lastMigrationVersion,
+								TargetVersion:  -1,
 							}
 
 							_, err := sqlDB.Client.Create(migrationData)
 							Expect(err).ToNot(HaveOccurred())
-						})
 
-						It("should not update the migration data", func() {
+							fakeLastMigration.RunReturns(fmt.Errorf("migration-failure"))
+						})
+						It("updates migration data to indicate the current successful + target versions", func() {
 							err := migration.RunMigrations(sqlDB, migrations, logger)
-							Expect(err).ToNot(HaveOccurred())
+							Expect(err).To(HaveOccurred())
 
 							var migrationVersions []migration.MigrationData
 							err = sqlDB.Client.Find(&migrationVersions)
 							Expect(err).ToNot(HaveOccurred())
 
+							Expect(fakeMigration.RunCallCount()).To(Equal(1))
+							Expect(fakeLastMigration.RunCallCount()).To(Equal(1))
+
 							Expect(migrationVersions).To(HaveLen(1))
 
 							migrationVersion := migrationVersions[0]
 							Expect(migrationVersion.MigrationKey).To(Equal(migration.MigrationKey))
-							Expect(migrationVersion.CurrentVersion).To(Equal(-1))
+							Expect(migrationVersion.CurrentVersion).To(Equal(firstMigrationVersion))
 							Expect(migrationVersion.TargetVersion).To(Equal(lastMigrationVersion))
 						})
+						Context("and it tries to migrate again after the errors have cleared", func() {
+							BeforeEach(func() {
+								err := migration.RunMigrations(sqlDB, migrations, logger)
+								Expect(err).To(HaveOccurred())
+								Expect(fakeMigration.RunCallCount()).To(Equal(1))
+							})
+							JustBeforeEach(func() {
+								fakeLastMigration.RunReturns(nil)
+							})
 
-						It("should not run any migrations", func() {
-							err := migration.RunMigrations(sqlDB, migrations, logger)
-							Expect(err).ToNot(HaveOccurred())
+							It("migrates successfully based on the last successful state", func() {
+								err := migration.RunMigrations(sqlDB, migrations, logger)
+								Expect(err).ToNot(HaveOccurred())
 
-							Expect(fakeMigration.RunCallCount()).To(BeZero())
+								Expect(fakeMigration.RunCallCount()).To(Equal(1))
+								Expect(fakeLastMigration.RunCallCount()).To(Equal(2))
+
+								var migrationVersions []migration.MigrationData
+								err = sqlDB.Client.Find(&migrationVersions)
+								Expect(err).ToNot(HaveOccurred())
+								Expect(migrationVersions).To(HaveLen(1))
+
+								migrationVersion := migrationVersions[0]
+								Expect(migrationVersion.MigrationKey).To(Equal(migration.MigrationKey))
+								Expect(migrationVersion.CurrentVersion).To(Equal(lastMigrationVersion))
+								Expect(migrationVersion.TargetVersion).To(Equal(lastMigrationVersion))
+							})
 						})
 					})
-
 					Context("when the migration has not been started", func() {
 						BeforeEach(func() {
 							migrationData := &migration.MigrationData{
