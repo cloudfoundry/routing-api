@@ -128,6 +128,7 @@ var _ = Describe("Locket", func() {
 				clock := clock.NewClock()
 				competingRunner := lock.NewLockRunner(logger, locketClient, lockIdentifier, 5, clock, locket.RetryInterval)
 				competingProcess = ginkgomon.Invoke(competingRunner)
+				Eventually(competingProcess.Ready()).Should(BeClosed())
 			})
 
 			AfterEach(func() {
@@ -139,6 +140,9 @@ var _ = Describe("Locket", func() {
 					_, err := client.Routes()
 					return err
 				}).ShouldNot(Succeed())
+			})
+			It("does not migrate the database", func() {
+				Consistently(session, 2*time.Second).ShouldNot(gbytes.Say("routing-api.migration.starting-migration"))
 			})
 
 			Context("and the lock becomes available", func() {
@@ -153,6 +157,10 @@ var _ = Describe("Locket", func() {
 
 				It("grabs the lock and becomes active", func() {
 					routingAPIShouldBeReachable()
+				})
+				It("should migrate the database", func() {
+					Eventually(session).Should(gbytes.Say("routing-api.locket-lock.started"))
+					Eventually(session).Should(gbytes.Say("routing-api.migration.starting-migration"))
 				})
 			})
 		})

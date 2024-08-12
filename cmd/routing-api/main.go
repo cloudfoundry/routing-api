@@ -163,8 +163,8 @@ func main() {
 	}
 
 	members := grouper.Members{
-		grouper.Member{Name: "migration", Runner: migrationProcess},
 		grouper.Member{Name: "lock-acquirer", Runner: lockAcquirer},
+		grouper.Member{Name: "migration", Runner: migrationProcess},
 		grouper.Member{Name: "seed-router-groups", Runner: routerGroupSeeder},
 	}
 

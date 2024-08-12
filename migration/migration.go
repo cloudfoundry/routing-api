@@ -115,6 +115,7 @@ func RunMigrations(sqlDB *db.SqlDB, migrations []Migration, logger lager.Logger)
 		return err
 	}
 
+	// if no migration data found, seed it
 	if err == gorm.ErrRecordNotFound {
 		existingVersion = &MigrationData{
 			MigrationKey:   MigrationKey,
@@ -125,15 +126,19 @@ func RunMigrations(sqlDB *db.SqlDB, migrations []Migration, logger lager.Logger)
 		logger.Info("creating-migration-version", lager.Data{"version": existingVersion})
 		_, err = tx.Create(existingVersion)
 	} else {
-		if existingVersion.TargetVersion >= lastMigrationVersion {
+		// if we're at the latest version, exit all migrations
+		if existingVersion.CurrentVersion >= lastMigrationVersion {
+			logger.Debug("already-at-latest-version", lager.Data{"version": existingVersion})
 			return tx.Commit()
 		}
 
+		// we weren't at the latest version, so lets set the target version.
 		existingVersion.TargetVersion = lastMigrationVersion
 		logger.Info("updating-migration-version", lager.Data{"version": existingVersion})
 		_, err = tx.Save(existingVersion)
 	}
 
+	// if saving the migration info failed, roll it back.
 	if err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
@@ -142,12 +147,14 @@ func RunMigrations(sqlDB *db.SqlDB, migrations []Migration, logger lager.Logger)
 		return err
 	}
 
+	// otherwise commit it
 	err = tx.Commit()
 	if err != nil {
 		logger.Error("commit-error", err)
 		return err
 	}
 
+	// now try to iterate over migrations until we're current.
 	currentVersion := existingVersion.CurrentVersion
 	for _, m := range migrations {
 		if m != nil && m.Version() > currentVersion {
