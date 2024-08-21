@@ -18,8 +18,8 @@ var _ = Describe("Config", func() {
 		Context("when auth is enabled", func() {
 			Context("when the file exists", func() {
 				It("returns a valid Config struct", func() {
-					cfg_file := "../example_config/example.yml"
-					cfg, err := config.NewConfigFromFile(cfg_file, false)
+					cfgFile := "../example_config/example.yml"
+					cfg, err := config.NewConfigFromFile(cfgFile, false)
 
 					Expect(err).NotTo(HaveOccurred())
 					Expect(cfg.API.ListenPort).To(Equal(3000))
@@ -43,7 +43,7 @@ var _ = Describe("Config", func() {
 					Expect(cfg.SqlDB.MaxOpenConns).To(Equal(5))
 					Expect(cfg.SqlDB.ConnMaxLifetime).To(Equal(1200))
 					Expect(cfg.MaxTTL).To(Equal(2 * time.Minute))
-					Expect(cfg.LockResouceKey).To(Equal("my-key"))
+					Expect(cfg.LockResourceKey).To(Equal("my-key"))
 					Expect(cfg.LockTTL).To(Equal(10 * time.Second))
 					Expect(cfg.RetryInterval).To(Equal(5 * time.Second))
 					Expect(cfg.Locket.LocketAddress).To(Equal("http://localhost:5678"))
@@ -61,8 +61,8 @@ var _ = Describe("Config", func() {
 
 				Context("when there is no token endpoint specified", func() {
 					It("returns an error", func() {
-						cfg_file := "../example_config/missing_uaa_url.yml"
-						_, err := config.NewConfigFromFile(cfg_file, false)
+						cfgFile := "../example_config/missing_uaa_url.yml"
+						_, err := config.NewConfigFromFile(cfgFile, false)
 						Expect(err).To(HaveOccurred())
 					})
 				})
@@ -70,8 +70,8 @@ var _ = Describe("Config", func() {
 
 			Context("when the file does not exists", func() {
 				It("returns an error", func() {
-					cfg_file := "notexist"
-					_, err := config.NewConfigFromFile(cfg_file, false)
+					cfgFile := "notexist"
+					_, err := config.NewConfigFromFile(cfgFile, false)
 
 					Expect(err).To(HaveOccurred())
 				})
@@ -81,8 +81,8 @@ var _ = Describe("Config", func() {
 		Context("when auth is disabled", func() {
 			Context("when the file exists", func() {
 				It("returns a valid config", func() {
-					cfg_file := "../example_config/example.yml"
-					cfg, err := config.NewConfigFromFile(cfg_file, true)
+					cfgFile := "../example_config/example.yml"
+					cfg, err := config.NewConfigFromFile(cfgFile, true)
 
 					Expect(err).NotTo(HaveOccurred())
 					Expect(cfg.LogGuid).To(Equal("my_logs"))
@@ -96,8 +96,8 @@ var _ = Describe("Config", func() {
 
 				Context("when there is no token endpoint url", func() {
 					It("returns a valid config", func() {
-						cfg_file := "../example_config/missing_uaa_url.yml"
-						cfg, err := config.NewConfigFromFile(cfg_file, true)
+						cfgFile := "../example_config/missing_uaa_url.yml"
+						cfg, err := config.NewConfigFromFile(cfgFile, true)
 
 						Expect(err).NotTo(HaveOccurred())
 						Expect(cfg.LogGuid).To(Equal("my_logs"))
@@ -253,7 +253,7 @@ var _ = Describe("Config", func() {
 			It("populates the default value for LockResourceKey", func() {
 				cfg, err := config.NewConfigFromBytes(testConfig, true)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(cfg.LockResouceKey).To(Equal(config.DefaultLockResourceKey))
+				Expect(cfg.LockResourceKey).To(Equal(config.DefaultLockResourceKey))
 			})
 
 			It("populates the default value for LockTTL from locket library", func() {

@@ -16,7 +16,7 @@ import (
 	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/locket/lock"
 	locketmodels "code.cloudfoundry.org/locket/models"
-	routing_api "code.cloudfoundry.org/routing-api"
+	routingAPI "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/admin"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/db"
@@ -37,10 +37,7 @@ import (
 	"github.com/tedsuo/rata"
 )
 
-const (
-	sessionName     = "routing_api"
-	pruningInterval = 10 * time.Second
-)
+const pruningInterval = 10 * time.Second
 
 var configPath = flag.String("config", "", "Configuration for routing-api")
 var devMode = flag.Bool("devMode", false, "Disable authentication for easier development iteration")
@@ -125,7 +122,7 @@ func main() {
 	}
 
 	lockIdentifier := &locketmodels.Resource{
-		Key:      cfg.LockResouceKey,
+		Key:      cfg.LockResourceKey,
 		Owner:    cfg.UUID,
 		TypeCode: locketmodels.LOCK,
 	}
@@ -223,7 +220,7 @@ func main() {
 	group := grouper.NewOrdered(os.Interrupt, members)
 	process := ifrit.Invoke(sigmon.New(group))
 
-	// This is used by testrunner to signal ready for tests.
+	// This is used by test_helpers to signal ready for tests.
 	logger.Info("started", lager.Data{"port": cfg.API.ListenPort})
 
 	errChan := process.Wait()
@@ -324,21 +321,21 @@ func apiHandler(cfg config.Config, uaaClient uaaclient.TokenValidator, database 
 	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(uaaClient, validator, database, int(cfg.MaxTTL.Seconds()), logger)
 
 	actions := rata.Handlers{
-		routing_api.UpsertRoute:           route(routesHandler.Upsert),
-		routing_api.DeleteRoute:           route(routesHandler.Delete),
-		routing_api.ListRoute:             route(routesHandler.List),
-		routing_api.EventStreamRoute:      route(eventStreamHandler.EventStream),
-		routing_api.ListRouterGroups:      route(routerGroupsHandler.ListRouterGroups),
-		routing_api.CreateRouterGroup:     route(routerGroupsHandler.CreateRouterGroup),
-		routing_api.UpdateRouterGroup:     route(routerGroupsHandler.UpdateRouterGroup),
-		routing_api.DeleteRouterGroup:     route(routerGroupsHandler.DeleteRouterGroup),
-		routing_api.UpsertTcpRouteMapping: route(tcpMappingsHandler.Upsert),
-		routing_api.DeleteTcpRouteMapping: route(tcpMappingsHandler.Delete),
-		routing_api.ListTcpRouteMapping:   route(tcpMappingsHandler.List),
-		routing_api.EventStreamTcpRoute:   route(eventStreamHandler.TcpEventStream),
+		routingAPI.UpsertRoute:           route(routesHandler.Upsert),
+		routingAPI.DeleteRoute:           route(routesHandler.Delete),
+		routingAPI.ListRoute:             route(routesHandler.List),
+		routingAPI.EventStreamRoute:      route(eventStreamHandler.EventStream),
+		routingAPI.ListRouterGroups:      route(routerGroupsHandler.ListRouterGroups),
+		routingAPI.CreateRouterGroup:     route(routerGroupsHandler.CreateRouterGroup),
+		routingAPI.UpdateRouterGroup:     route(routerGroupsHandler.UpdateRouterGroup),
+		routingAPI.DeleteRouterGroup:     route(routerGroupsHandler.DeleteRouterGroup),
+		routingAPI.UpsertTcpRouteMapping: route(tcpMappingsHandler.Upsert),
+		routingAPI.DeleteTcpRouteMapping: route(tcpMappingsHandler.Delete),
+		routingAPI.ListTcpRouteMapping:   route(tcpMappingsHandler.List),
+		routingAPI.EventStreamTcpRoute:   route(eventStreamHandler.TcpEventStream),
 	}
 
-	handler, err := rata.NewRouter(routing_api.Routes(), actions)
+	handler, err := rata.NewRouter(routingAPI.Routes(), actions)
 	if err != nil {
 		logger.Error("failed to create router", err)
 		os.Exit(1)

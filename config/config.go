@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/routing-api/models"
@@ -78,7 +78,7 @@ type Config struct {
 	SkipSSLValidation               bool                      `yaml:"skip_ssl_validation"`
 	LockTTL                         time.Duration             `yaml:"lock_ttl"`
 	RetryInterval                   time.Duration             `yaml:"retry_interval"`
-	LockResouceKey                  string                    `yaml:"lock_resource_key"`
+	LockResourceKey                 string                    `yaml:"lock_resource_key"`
 }
 
 func NewConfigFromFile(configFile string, authDisabled bool) (Config, error) {
@@ -185,8 +185,8 @@ func (cfg *Config) process() error {
 		cfg.RetryInterval = locket.RetryInterval
 	}
 
-	if cfg.LockResouceKey == "" {
-		cfg.LockResouceKey = DefaultLockResourceKey
+	if cfg.LockResourceKey == "" {
+		cfg.LockResourceKey = DefaultLockResourceKey
 	}
 
 	cfg.SqlDB.SkipSSLValidation = cfg.SkipSSLValidation
