@@ -75,7 +75,13 @@ func NewTcpRouteMapping(
 }
 
 func (m TcpRouteMapping) String() string {
-	return fmt.Sprintf("%s:%d<->%s:%d", m.RouterGroupGuid, m.ExternalPort, m.HostIP, m.HostPort)
+	return fmt.Sprintf(
+		"%s:%d<->%s:%d",
+		m.RouterGroupGuid,
+		m.ExternalPort,
+		m.HostIP,
+		m.HostPort,
+	)
 }
 
 func (m TcpRouteMapping) Matches(other TcpRouteMapping) bool {
@@ -106,11 +112,11 @@ func (m TcpRouteMapping) Matches(other TcpRouteMapping) bool {
 		sameSniHostname
 }
 
-func (t *TcpRouteMapping) SetDefaults(maxTTL int) {
+func (m *TcpRouteMapping) SetDefaults(maxTTL int) {
 	// default ttl if not present
 	// TTL is a pointer to a uint16 so that we can
 	// detect if it's present or not (i.e. nil or 0)
-	if t.TTL == nil {
-		t.TTL = &maxTTL
+	if m.TTL == nil {
+		m.TTL = &maxTTL
 	}
 }
