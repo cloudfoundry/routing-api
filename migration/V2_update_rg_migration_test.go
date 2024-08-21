@@ -1,9 +1,9 @@
 package migration_test
 
 import (
+	testHelpers "code.cloudfoundry.org/routing-api/test_helpers"
 	"strings"
 
-	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/models"
@@ -15,11 +15,11 @@ import (
 var _ = Describe("V2UpdateRgMigration", func() {
 	var (
 		sqlDB       *db.SqlDB
-		dbAllocator testrunner.DbAllocator
+		dbAllocator testHelpers.DbAllocator
 	)
 
 	BeforeEach(func() {
-		dbAllocator = testrunner.NewDbAllocator()
+		dbAllocator = testHelpers.NewDbAllocator()
 		sqlCfg, err := dbAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
 

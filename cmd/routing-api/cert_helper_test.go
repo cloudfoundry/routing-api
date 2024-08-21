@@ -1,7 +1,7 @@
 package main_test
 
 import (
-	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
+	"code.cloudfoundry.org/routing-api/test_helpers"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -102,7 +102,7 @@ func createCertTemplate(certType CertType) (x509.Certificate, error) {
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(10, 0, 0),
 		BasicConstraintsValid: true,
-		IPAddresses:           []net.IP{net.ParseIP(testrunner.RoutingAPIIP)},
+		IPAddresses:           []net.IP{net.ParseIP(test_helpers.RoutingAPIIP)},
 	}
 
 	switch certType {

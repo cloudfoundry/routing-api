@@ -3,12 +3,12 @@ package main_test
 import (
 	"bufio"
 	"bytes"
+	testHelpers "code.cloudfoundry.org/routing-api/test_helpers"
 	"fmt"
 	"net"
 	"os"
 	"time"
 
-	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/models"
 	"github.com/tedsuo/ifrit"
 	ginkgomon "github.com/tedsuo/ifrit/ginkgomon_v2"
@@ -29,10 +29,10 @@ var _ = Describe("Routes API", func() {
 	)
 
 	BeforeEach(func() {
-		routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
-		configFilePath = testrunner.WriteConfigToTempFile(routingAPIConfig)
-		routingAPIRunner := testrunner.New(routingAPIBinPath, testrunner.Args{
-			IP:         testrunner.RoutingAPIIP,
+		routingAPIConfig := testHelpers.GetRoutingAPIConfig(defaultConfig)
+		configFilePath = testHelpers.WriteConfigToTempFile(routingAPIConfig)
+		routingAPIRunner := testHelpers.New(routingAPIBinPath, testHelpers.Args{
+			IP:         testHelpers.RoutingAPIIP,
 			ConfigPath: configFilePath,
 			DevMode:    true,
 		})

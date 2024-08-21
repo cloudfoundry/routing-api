@@ -1,13 +1,13 @@
 package main_test
 
 import (
+	testHelpers "code.cloudfoundry.org/routing-api/test_helpers"
 	"fmt"
 	"net/http"
 	"os"
 	"time"
 
 	routingAPI "code.cloudfoundry.org/routing-api"
-	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/models"
 	"github.com/jinzhu/gorm"
@@ -29,17 +29,17 @@ const (
 var _ = Describe("Main", func() {
 	var (
 		session        *Session
-		routingAPIArgs testrunner.Args
+		routingAPIArgs testHelpers.Args
 		configFilePath string
 	)
 
 	BeforeEach(func() {
 		oAuthServer.Reset()
 
-		routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
-		configFilePath = testrunner.WriteConfigToTempFile(routingAPIConfig)
-		routingAPIArgs = testrunner.Args{
-			IP:         testrunner.RoutingAPIIP,
+		routingAPIConfig := testHelpers.GetRoutingAPIConfig(defaultConfig)
+		configFilePath = testHelpers.WriteConfigToTempFile(routingAPIConfig)
+		routingAPIArgs = testHelpers.Args{
+			IP:         testHelpers.RoutingAPIIP,
 			ConfigPath: configFilePath,
 			DevMode:    true,
 		}
@@ -54,13 +54,13 @@ var _ = Describe("Main", func() {
 	})
 
 	It("exits 1 if no config file is provided", func() {
-		session = testrunner.RoutingAPISession(routingAPIBinPath)
+		session = testHelpers.RoutingAPISession(routingAPIBinPath)
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("No configuration file provided"))
 	})
 
 	It("exits 1 if no ip address is provided", func() {
-		session = testrunner.RoutingAPISession(routingAPIBinPath, "-config=../../example_config/example.yml")
+		session = testHelpers.RoutingAPISession(routingAPIBinPath, "-config=../../example_config/example.yml")
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("No ip address provided"))
 	})
@@ -78,7 +78,7 @@ var _ = Describe("Main", func() {
 		)
 		args := routingAPIArgs
 		args.DevMode = false
-		session = testrunner.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
+		session = testHelpers.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("Public uaa token must be PEM encoded"))
 	})
@@ -92,7 +92,7 @@ var _ = Describe("Main", func() {
 		)
 		args := routingAPIArgs
 		args.DevMode = false
-		session = testrunner.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
+		session = testHelpers.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("Failed to get issuer configuration from UAA"))
 	})
@@ -110,7 +110,7 @@ var _ = Describe("Main", func() {
 		)
 		args := routingAPIArgs
 		args.DevMode = false
-		session = testrunner.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
+		session = testHelpers.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
 		Eventually(session).Should(Say("received-issuer"))
 		Eventually(session).Should(Say("https://uaa.domain.com"))
 		Eventually(session).Should(Exit(1))
@@ -129,13 +129,13 @@ var _ = Describe("Main", func() {
 		)
 		args := routingAPIArgs
 		args.DevMode = false
-		session = testrunner.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
+		session = testHelpers.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("Failed to get verification key from UAA"))
 	})
 
 	It("exits 1 if the SQL db fails to initialize", func() {
-		session := testrunner.RoutingAPISession(routingAPIBinPath, "-config=../../example_config/example.yml", "-ip='1.1.1.1'")
+		session := testHelpers.RoutingAPISession(routingAPIBinPath, "-config=../../example_config/example.yml", "-ip='1.1.1.1'")
 		Eventually(session).Should(Exit(1))
 		Eventually(session).Should(Say("failed-initialize-sql-connection"))
 	})
@@ -155,10 +155,10 @@ var _ = Describe("Main", func() {
 		})
 
 		It("unregisters from the db when the process exits", func() {
-			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			routingAPIRunner := testHelpers.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
 
-			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
+			routingAPIConfig := testHelpers.GetRoutingAPIConfig(defaultConfig)
 			connectionString, err := db.ConnectionString(&routingAPIConfig.SqlDB)
 			Expect(err).NotTo(HaveOccurred())
 			gormDB, err := gorm.Open(routingAPIConfig.SqlDB.Type, connectionString)
@@ -184,10 +184,10 @@ var _ = Describe("Main", func() {
 		})
 
 		It("closes open event streams when the process exits", func() {
-			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			routingAPIRunner := testHelpers.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
 			client = routingAPI.NewClient(
-				fmt.Sprintf("http://%s:%d", testrunner.RoutingAPIIP, routingAPIPort),
+				fmt.Sprintf("http://%s:%d", testHelpers.RoutingAPIIP, routingAPIPort),
 				false,
 			)
 
@@ -220,7 +220,7 @@ var _ = Describe("Main", func() {
 			configPath string
 		)
 		BeforeEach(func() {
-			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
+			routingAPIConfig := testHelpers.GetRoutingAPIConfig(defaultConfig)
 			routingAPIConfig.RouterGroups = models.RouterGroups{
 				models.RouterGroup{
 					Name:            "default-tcp",
@@ -233,9 +233,9 @@ var _ = Describe("Main", func() {
 					ReservablePorts: "10000-65535",
 				},
 			}
-			configPath = testrunner.WriteConfigToTempFile(routingAPIConfig)
-			routingAPIArgs = testrunner.Args{
-				IP:         testrunner.RoutingAPIIP,
+			configPath = testHelpers.WriteConfigToTempFile(routingAPIConfig)
+			routingAPIArgs = testHelpers.Args{
+				IP:         testHelpers.RoutingAPIIP,
 				ConfigPath: configPath,
 				DevMode:    true,
 			}
@@ -249,7 +249,7 @@ var _ = Describe("Main", func() {
 			Expect(os.Remove(configPath)).To(Succeed())
 		})
 		It("should fail with an error", func() {
-			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			routingAPIRunner := testHelpers.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
 
 			db := gormDB.Raw("SHOW TABLES LIKE 'router_groups';")

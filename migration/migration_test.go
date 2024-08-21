@@ -1,11 +1,11 @@
 package migration_test
 
 import (
+	testHelpers "code.cloudfoundry.org/routing-api/test_helpers"
 	"fmt"
 
 	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/lager/v3/lagertest"
-	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/migration/fakes"
@@ -16,7 +16,7 @@ import (
 var _ = Describe("Migration", func() {
 	var (
 		sqlDB                 *db.SqlDB
-		allocator             testrunner.DbAllocator
+		allocator             testHelpers.DbAllocator
 		fakeMigration         *fakes.FakeMigration
 		fakeLastMigration     *fakes.FakeMigration
 		migrations            []migration.Migration
@@ -243,7 +243,7 @@ var _ = Describe("Migration", func() {
 
 	Describe("Test Migrations", func() {
 		BeforeEach(func() {
-			allocator = testrunner.NewDbAllocator()
+			allocator = testHelpers.NewDbAllocator()
 			sqlCfg, err := allocator.Create()
 			Expect(err).ToNot(HaveOccurred())
 

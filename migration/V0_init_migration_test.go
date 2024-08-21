@@ -1,10 +1,10 @@
 package migration_test
 
 import (
-	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/db"
 	"code.cloudfoundry.org/routing-api/migration"
 	"code.cloudfoundry.org/routing-api/models"
+	testHelpers "code.cloudfoundry.org/routing-api/test_helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -12,13 +12,13 @@ import (
 
 var _ = Describe("V0InitMigration", func() {
 	var (
-		dbAllocator testrunner.DbAllocator
+		dbAllocator testHelpers.DbAllocator
 		dbClient    db.Client
 		sqlDB       *db.SqlDB
 		err         error
 	)
 	BeforeEach(func() {
-		dbAllocator = testrunner.NewDbAllocator()
+		dbAllocator = testHelpers.NewDbAllocator()
 		sqlCfg, err := dbAllocator.Create()
 		Expect(err).NotTo(HaveOccurred())
 

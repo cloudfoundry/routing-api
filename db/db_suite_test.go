@@ -1,9 +1,9 @@
 package db_test
 
 import (
+	testHelpers "code.cloudfoundry.org/routing-api/test_helpers"
 	"testing"
 
-	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
 	_ "github.com/lib/pq"
 	. "github.com/onsi/ginkgo/v2"
@@ -12,18 +12,18 @@ import (
 
 var (
 	databaseCfg       *config.SqlDB
-	databaseAllocator testrunner.DbAllocator
+	databaseAllocator testHelpers.DbAllocator
 )
 
-func TestDB(t *testing.T) {
+func TestDB(test *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "DB Suite")
+	RunSpecs(test, "DB Suite")
 }
 
 var _ = BeforeSuite(func() {
 	var err error
 
-	databaseAllocator = testrunner.NewDbAllocator()
+	databaseAllocator = testHelpers.NewDbAllocator()
 	databaseCfg, err = databaseAllocator.Create()
 	Expect(err).ToNot(HaveOccurred(), "error occurred starting database client, is the database running?")
 })

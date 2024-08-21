@@ -1,14 +1,14 @@
 package admin_test
 
 import (
+	"code.cloudfoundry.org/routing-api/test_helpers"
 	"fmt"
 	"net/http"
 	"os"
 
 	"code.cloudfoundry.org/lager/v3/lagertest"
 	"code.cloudfoundry.org/routing-api/admin"
-	fake_db "code.cloudfoundry.org/routing-api/db/fakes"
-	"code.cloudfoundry.org/routing-api/test_helpers"
+	fakeDB "code.cloudfoundry.org/routing-api/db/fakes"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/tedsuo/ifrit"
@@ -18,12 +18,12 @@ import (
 var _ = Describe("AdminServer", func() {
 	var (
 		logger  *lagertest.TestLogger
-		db      *fake_db.FakeDB
+		db      *fakeDB.FakeDB
 		port    int
 		process ifrit.Process
 	)
 	BeforeEach(func() {
-		db = new(fake_db.FakeDB)
+		db = new(fakeDB.FakeDB)
 		logger = lagertest.NewTestLogger("routing-api-test")
 		port = test_helpers.NextAvailPort()
 		server, err := admin.NewServer(port, db, logger)
@@ -38,7 +38,7 @@ var _ = Describe("AdminServer", func() {
 	})
 
 	DescribeTable("testing the admin endpoint",
-		func(endpoint string, callCountFn func(db *fake_db.FakeDB) int) {
+		func(endpoint string, callCountFn func(db *fakeDB.FakeDB) int) {
 			req, _ := http.NewRequest("PUT", fmt.Sprintf("http://127.0.0.1:%d/%s", port, endpoint), nil)
 			resp, err := http.DefaultClient.Do(req)
 			Expect(err).ToNot(HaveOccurred())
@@ -47,16 +47,16 @@ var _ = Describe("AdminServer", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			Expect(callCountFn(db)).To(Equal(1))
 		},
-		Entry(`"lock_router_group_reads"`, "lock_router_group_reads", func(db *fake_db.FakeDB) int {
+		Entry(`"lock_router_group_reads"`, "lock_router_group_reads", func(db *fakeDB.FakeDB) int {
 			return db.LockRouterGroupReadsCallCount()
 		}),
-		Entry(`"unlock_router_group_reads"`, "unlock_router_group_reads", func(db *fake_db.FakeDB) int {
+		Entry(`"unlock_router_group_reads"`, "unlock_router_group_reads", func(db *fakeDB.FakeDB) int {
 			return db.UnlockRouterGroupReadsCallCount()
 		}),
-		Entry(`"lock_router_group_writes"`, "lock_router_group_writes", func(db *fake_db.FakeDB) int {
+		Entry(`"lock_router_group_writes"`, "lock_router_group_writes", func(db *fakeDB.FakeDB) int {
 			return db.LockRouterGroupWritesCallCount()
 		}),
-		Entry(`"unlock_router_group_writes"`, "unlock_router_group_writes", func(db *fake_db.FakeDB) int {
+		Entry(`"unlock_router_group_writes"`, "unlock_router_group_writes", func(db *fakeDB.FakeDB) int {
 			return db.UnlockRouterGroupWritesCallCount()
 		}),
 	)

@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	testHelpers "code.cloudfoundry.org/routing-api/test_helpers"
 	"crypto/tls"
 	"encoding/pem"
 	"fmt"
@@ -14,9 +15,7 @@ import (
 	tlsHelpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
 	locketrunner "code.cloudfoundry.org/locket/cmd/locket/testrunner"
 	routingAPI "code.cloudfoundry.org/routing-api"
-	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
-	"code.cloudfoundry.org/routing-api/test_helpers"
 	"github.com/tedsuo/ifrit"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -27,7 +26,7 @@ import (
 )
 
 var (
-	defaultConfig         testrunner.RoutingAPITestConfig
+	defaultConfig         testHelpers.RoutingAPITestConfig
 	client                routingAPI.Client
 	locketBinPath         string
 	routingAPIBinPath     string
@@ -39,7 +38,7 @@ var (
 	locketPort            uint16
 	locketProcess         ifrit.Process
 	databaseName          string
-	dbAllocator           testrunner.DbAllocator
+	dbAllocator           testHelpers.DbAllocator
 	sqlDBConfig           *config.SqlDB
 	uaaCACertsPath        string
 	mTLSAPIServerKeyPath  string
@@ -72,7 +71,7 @@ var _ = SynchronizedBeforeSuite(
 
 		SetDefaultEventuallyTimeout(15 * time.Second)
 
-		dbAllocator = testrunner.NewDbAllocator()
+		dbAllocator = testHelpers.NewDbAllocator()
 
 		var err error
 		sqlDBConfig, err = dbAllocator.Create()
@@ -98,7 +97,7 @@ var _ = SynchronizedBeforeSuite(
 
 		apiCAPath, mTLSAPIServerCertPath, mTLSAPIServerKeyPath, mTLSAPIClientCert = tlsHelpers.GenerateCaAndMutualTlsCerts()
 
-		oAuthServer, oAuthServerPort = testrunner.SetupOauthServer(uaaServerCert)
+		oAuthServer, oAuthServerPort = testHelpers.SetupOauthServer(uaaServerCert)
 	},
 )
 
@@ -115,15 +114,15 @@ var _ = SynchronizedAfterSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-	routingAPIPort = uint16(test_helpers.NextAvailPort())
-	routingAPIMTLSPort = uint16(test_helpers.NextAvailPort())
+	routingAPIPort = uint16(testHelpers.NextAvailPort())
+	routingAPIMTLSPort = uint16(testHelpers.NextAvailPort())
 
-	client = testrunner.RoutingApiClientWithPort(routingAPIPort, testrunner.RoutingAPIIP)
+	client = testHelpers.RoutingApiClientWithPort(routingAPIPort, testHelpers.RoutingAPIIP)
 	err := dbAllocator.Reset()
 	Expect(err).NotTo(HaveOccurred())
 
-	locketPort = uint16(test_helpers.NextAvailPort())
-	locketProcess = testrunner.StartLocket(
+	locketPort = uint16(testHelpers.NextAvailPort())
+	locketProcess = testHelpers.StartLocket(
 		locketPort,
 		locketBinPath,
 		databaseName,
@@ -133,12 +132,12 @@ var _ = BeforeEach(func() {
 	oAuthServerPort, err := strconv.ParseInt(oAuthServerPort, 10, 0)
 	Expect(err).NotTo(HaveOccurred())
 
-	locketAddress := fmt.Sprintf("%s:%d", testrunner.Host, locketPort)
+	locketAddress := fmt.Sprintf("%s:%d", testHelpers.Host, locketPort)
 	locketConfig := locketrunner.ClientLocketConfig()
 	locketConfig.LocketAddress = locketAddress
 
-	routingAPIAdminPort = test_helpers.NextAvailPort()
-	defaultConfig = testrunner.GetRoutingAPITestConfig(
+	routingAPIAdminPort = testHelpers.NextAvailPort()
+	defaultConfig = testHelpers.GetRoutingAPITestConfig(
 		routingAPIPort,
 		routingAPIAdminPort,
 		routingAPIMTLSPort,
@@ -153,5 +152,5 @@ var _ = BeforeEach(func() {
 })
 
 var _ = AfterEach(func() {
-	testrunner.StopLocket(locketProcess)
+	testHelpers.StopLocket(locketProcess)
 })

@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	testHelpers "code.cloudfoundry.org/routing-api/test_helpers"
 	"fmt"
 	"os"
 	"time"
@@ -11,13 +12,10 @@ import (
 	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/lager/v3/lagertest"
 	"code.cloudfoundry.org/locket"
-	routing_api "code.cloudfoundry.org/routing-api"
-	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
-	"code.cloudfoundry.org/routing-api/config"
-	"code.cloudfoundry.org/routing-api/test_helpers"
-
 	"code.cloudfoundry.org/locket/lock"
 	locketmodels "code.cloudfoundry.org/locket/models"
+	routingAPI "code.cloudfoundry.org/routing-api"
+	"code.cloudfoundry.org/routing-api/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -45,18 +43,18 @@ var _ = Describe("Locket", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("locket-test")
 
-		routingAPIConfig = testrunner.GetRoutingAPIConfig(defaultConfig)
+		routingAPIConfig = testHelpers.GetRoutingAPIConfig(defaultConfig)
 	})
 
 	JustBeforeEach(func() {
-		configFilePath = testrunner.WriteConfigToTempFile(routingAPIConfig)
-		args := testrunner.Args{
-			IP:         testrunner.RoutingAPIIP,
+		configFilePath = testHelpers.WriteConfigToTempFile(routingAPIConfig)
+		args := testHelpers.Args{
+			IP:         testHelpers.RoutingAPIIP,
 			ConfigPath: configFilePath,
 			DevMode:    true,
 		}
 		args.ConfigPath = configFilePath
-		session = testrunner.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
+		session = testHelpers.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
 	})
 
 	AfterEach(func() {
@@ -170,19 +168,19 @@ var _ = Describe("Locket", func() {
 		It("ensures there is no downtime", func() {
 			Eventually(session, 10*time.Second).Should(gbytes.Say("routing-api.started"))
 
-			session2Port := uint16(test_helpers.NextAvailPort())
-			session2MTLSPort := uint16(test_helpers.NextAvailPort())
-			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
+			session2Port := uint16(testHelpers.NextAvailPort())
+			session2MTLSPort := uint16(testHelpers.NextAvailPort())
+			routingAPIConfig := testHelpers.GetRoutingAPIConfig(defaultConfig)
 			routingAPIConfig.API.ListenPort = int(session2Port)
 			routingAPIConfig.API.MTLSListenPort = int(session2MTLSPort)
-			routingAPIConfig.AdminPort = test_helpers.NextAvailPort()
-			configFilePath := testrunner.WriteConfigToTempFile(routingAPIConfig)
-			session2Args := testrunner.Args{
-				IP:         testrunner.RoutingAPIIP,
+			routingAPIConfig.AdminPort = testHelpers.NextAvailPort()
+			configFilePath := testHelpers.WriteConfigToTempFile(routingAPIConfig)
+			session2Args := testHelpers.Args{
+				IP:         testHelpers.RoutingAPIIP,
 				ConfigPath: configFilePath,
 				DevMode:    true,
 			}
-			session2 := testrunner.RoutingAPISession(routingAPIBinPath, session2Args.ArgSlice()...)
+			session2 := testHelpers.RoutingAPISession(routingAPIBinPath, session2Args.ArgSlice()...)
 
 			defer func() {
 				session2.Interrupt().Wait(10 * time.Second)
@@ -190,8 +188,8 @@ var _ = Describe("Locket", func() {
 			Eventually(session2, 10*time.Second).Should(gbytes.Say("locket-lock.started"))
 			done := make(chan struct{})
 			goRoutineFinished := make(chan struct{})
-			client2 := routing_api.NewClient(
-				fmt.Sprintf("http://%s:%d", testrunner.RoutingAPIIP, session2Port),
+			client2 := routingAPI.NewClient(
+				fmt.Sprintf("http://%s:%d", testHelpers.RoutingAPIIP, session2Port),
 				false,
 			)
 

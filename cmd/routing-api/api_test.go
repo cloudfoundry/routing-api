@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	testHelpers "code.cloudfoundry.org/routing-api/test_helpers"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,8 +10,7 @@ import (
 	"github.com/tedsuo/ifrit"
 	ginkgomon "github.com/tedsuo/ifrit/ginkgomon_v2"
 
-	routing_api "code.cloudfoundry.org/routing-api"
-	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
+	routingAPI "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/matchers"
 	"code.cloudfoundry.org/routing-api/models"
 	"code.cloudfoundry.org/tlsconfig"
@@ -34,7 +34,7 @@ var _ = Describe("Routes API", func() {
 		Context("TCP Events", func() {
 			var (
 				routerGroupGuid string
-				eventStream     routing_api.TcpEventSource
+				eventStream     routingAPI.TcpEventSource
 				err             error
 				route1          models.TcpRouteMapping
 			)
@@ -53,7 +53,7 @@ var _ = Describe("Routes API", func() {
 			})
 
 			It("returns an event stream", func() {
-				expectedEvent := routing_api.TcpEvent{
+				expectedEvent := routingAPI.TcpEvent{
 					Action:          "Upsert",
 					TcpRouteMapping: route1,
 				}
@@ -103,7 +103,7 @@ var _ = Describe("Routes API", func() {
 					event, err := eventStream.Next()
 					Expect(err).NotTo(HaveOccurred())
 
-					expectedEvent := routing_api.TcpEvent{
+					expectedEvent := routingAPI.TcpEvent{
 						Action:          "Delete",
 						TcpRouteMapping: route1,
 					}
@@ -126,7 +126,7 @@ var _ = Describe("Routes API", func() {
 				_, err = eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
 
-				expectedEvent := routing_api.TcpEvent{
+				expectedEvent := routingAPI.TcpEvent{
 					Action:          "Delete",
 					TcpRouteMapping: routeExpire,
 				}
@@ -144,7 +144,7 @@ var _ = Describe("Routes API", func() {
 	TestHTTPEvents := func() {
 		Context("HTTP Events", func() {
 			var (
-				eventStream routing_api.EventSource
+				eventStream routingAPI.EventSource
 				err         error
 				route1      models.Route
 			)
@@ -162,7 +162,7 @@ var _ = Describe("Routes API", func() {
 			})
 
 			It("returns an event stream", func() {
-				expectedEvent := routing_api.Event{
+				expectedEvent := routingAPI.Event{
 					Action: "Upsert",
 					Route:  route1,
 				}
@@ -170,7 +170,7 @@ var _ = Describe("Routes API", func() {
 				err := client.UpsertRoutes(routesToInsert)
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(func() routing_api.Event {
+				Eventually(func() routingAPI.Event {
 					event, err := eventStream.Next()
 					Expect(err).NotTo(HaveOccurred())
 					return event
@@ -180,13 +180,13 @@ var _ = Describe("Routes API", func() {
 			It("gets events for updated routes", func() {
 				routeUpdated := models.NewRoute("a.b.c", 33, "1.1.1.1", "potato", "", 85)
 
-				expectedEvent := routing_api.Event{
+				expectedEvent := routingAPI.Event{
 					Action: "Upsert",
 					Route:  route1,
 				}
 				err := client.UpsertRoutes([]models.Route{route1})
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(func() routing_api.Event {
+				Eventually(func() routingAPI.Event {
 					event, err := eventStream.Next()
 					Expect(err).NotTo(HaveOccurred())
 					return event
@@ -195,7 +195,7 @@ var _ = Describe("Routes API", func() {
 				expectedEvent.Route = routeUpdated
 				err = client.UpsertRoutes([]models.Route{routeUpdated})
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(func() routing_api.Event {
+				Eventually(func() routingAPI.Event {
 					event, err := eventStream.Next()
 					Expect(err).NotTo(HaveOccurred())
 					return event
@@ -206,13 +206,13 @@ var _ = Describe("Routes API", func() {
 				err := client.UpsertRoutes([]models.Route{route1})
 				Expect(err).NotTo(HaveOccurred())
 
-				expectedEvent := routing_api.Event{
+				expectedEvent := routingAPI.Event{
 					Action: "Delete",
 					Route:  route1,
 				}
 				err = client.DeleteRoutes([]models.Route{route1})
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(func() routing_api.Event {
+				Eventually(func() routingAPI.Event {
 					event, err := eventStream.Next()
 					Expect(err).NotTo(HaveOccurred())
 					return event
@@ -227,12 +227,12 @@ var _ = Describe("Routes API", func() {
 				_, err = eventStream.Next()
 				Expect(err).NotTo(HaveOccurred())
 
-				expectedEvent := routing_api.Event{
+				expectedEvent := routingAPI.Event{
 					Action: "Delete",
 					Route:  routeExpire,
 				}
 
-				Eventually(func() routing_api.Event {
+				Eventually(func() routingAPI.Event {
 					event, err := eventStream.Next()
 					Expect(err).NotTo(HaveOccurred())
 					return event
@@ -263,9 +263,9 @@ var _ = Describe("Routes API", func() {
 
 			It("fetches all of the routes", func() {
 				routingAPIRoute := models.NewRoute(
-					fmt.Sprintf("api.%s/routing", testrunner.SystemDomain),
+					fmt.Sprintf("api.%s/routing", testHelpers.SystemDomain),
 					routingAPIPort,
-					testrunner.RoutingAPIIP,
+					testHelpers.RoutingAPIIP,
 					"my_logs",
 					"",
 					120,
@@ -465,7 +465,7 @@ var _ = Describe("Routes API", func() {
 						Expect(resp.Body.Close()).To(Succeed())
 					}
 					BeforeEach(func() {
-						baseURL = fmt.Sprintf("http://%s:%d", testrunner.RoutingAPIIP, routingAPIAdminPort)
+						baseURL = fmt.Sprintf("http://%s:%d", testHelpers.RoutingAPIIP, routingAPIAdminPort)
 						lockWrites()
 					})
 					AfterEach(func() {
@@ -639,7 +639,7 @@ var _ = Describe("Routes API", func() {
 				_, err := client.RouterGroups()
 				Expect(err).NotTo(HaveOccurred())
 
-				baseURL := fmt.Sprintf("http://%s:%d", testrunner.RoutingAPIIP, routingAPIAdminPort)
+				baseURL := fmt.Sprintf("http://%s:%d", testHelpers.RoutingAPIIP, routingAPIAdminPort)
 				req, err := http.NewRequest("PUT", baseURL+"/lock_router_group_reads", nil)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -692,17 +692,17 @@ var _ = Describe("Routes API", func() {
 		)
 
 		BeforeEach(func() {
-			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
-			configFilePath = testrunner.WriteConfigToTempFile(routingAPIConfig)
-			routingAPIArgs := testrunner.Args{
-				IP:         testrunner.RoutingAPIIP,
+			routingAPIConfig := testHelpers.GetRoutingAPIConfig(defaultConfig)
+			configFilePath = testHelpers.WriteConfigToTempFile(routingAPIConfig)
+			routingAPIArgs := testHelpers.Args{
+				IP:         testHelpers.RoutingAPIIP,
 				ConfigPath: configFilePath,
 				DevMode:    true,
 			}
-			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			routingAPIRunner := testHelpers.New(routingAPIBinPath, routingAPIArgs)
 			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
-			client = routing_api.NewClient(
-				fmt.Sprintf("http://%s:%d", testrunner.RoutingAPIIP, routingAPIPort),
+			client = routingAPI.NewClient(
+				fmt.Sprintf("http://%s:%d", testHelpers.RoutingAPIIP, routingAPIPort),
 				false,
 			)
 		})
@@ -729,15 +729,15 @@ var _ = Describe("Routes API", func() {
 		)
 
 		BeforeEach(func() {
-			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
+			routingAPIConfig := testHelpers.GetRoutingAPIConfig(defaultConfig)
 			routingAPIConfig.API.HTTPEnabled = false
-			configFilePath = testrunner.WriteConfigToTempFile(routingAPIConfig)
-			routingAPIArgs := testrunner.Args{
-				IP:         testrunner.RoutingAPIIP,
+			configFilePath = testHelpers.WriteConfigToTempFile(routingAPIConfig)
+			routingAPIArgs := testHelpers.Args{
+				IP:         testHelpers.RoutingAPIIP,
 				ConfigPath: configFilePath,
 				DevMode:    true,
 			}
-			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			routingAPIRunner := testHelpers.New(routingAPIBinPath, routingAPIArgs)
 			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
 		})
 
@@ -749,8 +749,8 @@ var _ = Describe("Routes API", func() {
 		})
 
 		It("does not listen on HTTP", func() {
-			client = routing_api.NewClient(
-				fmt.Sprintf("http://%s:%d", testrunner.RoutingAPIIP, routingAPIPort),
+			client = routingAPI.NewClient(
+				fmt.Sprintf("http://%s:%d", testHelpers.RoutingAPIIP, routingAPIPort),
 				false,
 			)
 
@@ -767,14 +767,14 @@ var _ = Describe("Routes API", func() {
 		)
 
 		BeforeEach(func() {
-			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
-			configFilePath = testrunner.WriteConfigToTempFile(routingAPIConfig)
-			routingAPIArgs := testrunner.Args{
-				IP:         testrunner.RoutingAPIIP,
+			routingAPIConfig := testHelpers.GetRoutingAPIConfig(defaultConfig)
+			configFilePath = testHelpers.WriteConfigToTempFile(routingAPIConfig)
+			routingAPIArgs := testHelpers.Args{
+				IP:         testHelpers.RoutingAPIIP,
 				ConfigPath: configFilePath,
 				DevMode:    true,
 			}
-			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
+			routingAPIRunner := testHelpers.New(routingAPIBinPath, routingAPIArgs)
 			routingAPIProcess = ginkgomon.Invoke(routingAPIRunner)
 			tlsConfig, err := tlsconfig.Build(
 				tlsconfig.WithInternalServiceDefaults(),
@@ -783,8 +783,8 @@ var _ = Describe("Routes API", func() {
 				tlsconfig.WithAuthorityFromFile(apiCAPath),
 			)
 			Expect(err).ToNot(HaveOccurred())
-			client = routing_api.NewClientWithTLSConfig(
-				fmt.Sprintf("https://%s:%d", testrunner.RoutingAPIIP, routingAPIMTLSPort),
+			client = routingAPI.NewClientWithTLSConfig(
+				fmt.Sprintf("https://%s:%d", testHelpers.RoutingAPIIP, routingAPIMTLSPort),
 				tlsConfig,
 			)
 		})
