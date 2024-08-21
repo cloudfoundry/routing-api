@@ -39,7 +39,7 @@ func (h *EventStreamHandler) EventStream(w http.ResponseWriter, req *http.Reques
 		}
 	}()
 	log := h.logger.Session("event-stream-handler")
-	h.handleEventStream(log, db.HTTP_WATCH, w, req)
+	h.handleEventStream(log, db.HttpWatch, w, req)
 }
 
 func (h *EventStreamHandler) TcpEventStream(w http.ResponseWriter, req *http.Request) {
@@ -54,7 +54,7 @@ func (h *EventStreamHandler) TcpEventStream(w http.ResponseWriter, req *http.Req
 		}
 	}()
 	log := h.logger.Session("tcp-event-stream-handler")
-	h.handleEventStream(log, db.TCP_WATCH, w, req)
+	h.handleEventStream(log, db.TcpWatch, w, req)
 }
 
 func (h *EventStreamHandler) handleEventStream(log lager.Logger, filterKey string,

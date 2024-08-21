@@ -117,7 +117,7 @@ var _ = Describe("EventsHandler", func() {
 
 					Expect(event).To(Equal(expectedEvent))
 					filterString := database.WatchChangesArgsForCall(0)
-					Expect(filterString).To(Equal(db.HTTP_WATCH))
+					Expect(filterString).To(Equal(db.HttpWatch))
 				})
 
 				It("sets the content-type to text/event-stream", func() {
@@ -274,7 +274,7 @@ var _ = Describe("EventsHandler", func() {
 
 					Expect(event).To(Equal(expectedEvent))
 					filterString := database.WatchChangesArgsForCall(0)
-					Expect(filterString).To(Equal(db.TCP_WATCH))
+					Expect(filterString).To(Equal(db.TcpWatch))
 				})
 			})
 		})

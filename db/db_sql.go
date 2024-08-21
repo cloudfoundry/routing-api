@@ -48,17 +48,12 @@ type DB interface {
 }
 
 const (
-	TCP_MAPPING_BASE_KEY  string = "/v1/tcp_routes/router_groups"
-	HTTP_ROUTE_BASE_KEY   string = "/routes"
-	ROUTER_GROUP_BASE_KEY string = "/v1/router_groups"
-	defaultDialTimeout           = 30 * time.Second
-	maxRetries                   = 3
-	TCP_WATCH             string = "tcp-watch"
-	HTTP_WATCH            string = "http-watch"
-	ROUTER_GROUP_WATCH    string = "router-group-watch"
+	TcpWatch    = "tcp-watch"
+	HttpWatch   = "http-watch"
+	BackupError = "Database unavailable due to backup or restore"
+	MySQL       = "mysql"
+	Postgres    = "postgres"
 )
-
-const backupError = "Database unavailable due to backup or restore"
 
 type rwLocker struct {
 	readLock  uint32
@@ -215,7 +210,7 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 
 func (s *SqlDB) ReadRouterGroups() (models.RouterGroups, error) {
 	if s.locker.isReadLocked() {
-		return models.RouterGroups{}, errors.New(backupError)
+		return models.RouterGroups{}, errors.New(BackupError)
 	}
 	routerGroupsDB := models.RouterGroupsDB{}
 	routerGroups := models.RouterGroups{}
@@ -229,7 +224,7 @@ func (s *SqlDB) ReadRouterGroups() (models.RouterGroups, error) {
 
 func (s *SqlDB) ReadRouterGroup(guid string) (models.RouterGroup, error) {
 	if s.locker.isReadLocked() {
-		return models.RouterGroup{}, errors.New(backupError)
+		return models.RouterGroup{}, errors.New(BackupError)
 	}
 	routerGroupDB := models.RouterGroupDB{}
 	routerGroup := models.RouterGroup{}
@@ -246,7 +241,7 @@ func (s *SqlDB) ReadRouterGroup(guid string) (models.RouterGroup, error) {
 
 func (s *SqlDB) ReadRouterGroupByName(name string) (models.RouterGroup, error) {
 	if s.locker.isReadLocked() {
-		return models.RouterGroup{}, errors.New(backupError)
+		return models.RouterGroup{}, errors.New(BackupError)
 	}
 	routerGroupDB := models.RouterGroupDB{}
 	routerGroup := models.RouterGroup{}
@@ -263,7 +258,7 @@ func (s *SqlDB) ReadRouterGroupByName(name string) (models.RouterGroup, error) {
 
 func (s *SqlDB) SaveRouterGroup(routerGroup models.RouterGroup) error {
 	if s.locker.isWriteLocked() {
-		return errors.New(backupError)
+		return errors.New(BackupError)
 	}
 	existingRouterGroup, err := s.ReadRouterGroup(routerGroup.Guid)
 	if err != nil {
@@ -284,7 +279,7 @@ func (s *SqlDB) SaveRouterGroup(routerGroup models.RouterGroup) error {
 
 func (s *SqlDB) DeleteRouterGroup(guid string) error {
 	if s.locker.isWriteLocked() {
-		return errors.New(backupError)
+		return errors.New(BackupError)
 	}
 	routerGroup, err := s.ReadRouterGroup(guid)
 	if err != nil {
@@ -561,58 +556,58 @@ func (s *SqlDB) WatchChanges(watchType string) (<-chan Event, <-chan error, cont
 		err error
 	)
 	events := make(chan Event)
-	errors := make(chan error, 1)
+	errs := make(chan error, 1)
 	cancelFunc := func() {}
 
 	switch watchType {
-	case TCP_WATCH:
+	case TcpWatch:
 		sub, err = s.tcpEventHub.Subscribe()
 		if err != nil {
-			errors <- err
+			errs <- err
 			close(events)
-			close(errors)
-			return events, errors, cancelFunc
+			close(errs)
+			return events, errs, cancelFunc
 		}
-	case HTTP_WATCH:
+	case HttpWatch:
 		sub, err = s.httpEventHub.Subscribe()
 		if err != nil {
-			errors <- err
+			errs <- err
 			close(events)
-			close(errors)
-			return events, errors, cancelFunc
+			close(errs)
+			return events, errs, cancelFunc
 		}
 	default:
 		err := fmt.Errorf("Invalid watch type: %s", watchType)
-		errors <- err
+		errs <- err
 		close(events)
-		close(errors)
-		return events, errors, cancelFunc
+		close(errs)
+		return events, errs, cancelFunc
 	}
 
 	cancelFunc = func() {
 		_ = sub.Close()
 	}
 
-	go dispatchWatchEvents(sub, events, errors)
+	go dispatchWatchEvents(sub, events, errs)
 
-	return events, errors, cancelFunc
+	return events, errs, cancelFunc
 }
 
-func dispatchWatchEvents(sub eventhub.Source, events chan<- Event, errors chan<- error) {
+func dispatchWatchEvents(sub eventhub.Source, events chan<- Event, errs chan<- error) {
 	defer close(events)
-	defer close(errors)
+	defer close(errs)
 	for {
 		event, err := sub.Next()
 		if err != nil {
-			if err == eventhub.ErrReadFromClosedSource {
+			if errors.Is(err, eventhub.ErrReadFromClosedSource) {
 				return
 			}
-			errors <- err
+			errs <- err
 			return
 		}
 		watchEvent, ok := event.(Event)
 		if !ok {
-			errors <- fmt.Errorf("Incoming event is not a db.Event: %#v", event)
+			errs <- fmt.Errorf("Incoming event is not a db.Event: %#v", event)
 		}
 
 		events <- watchEvent
@@ -620,17 +615,17 @@ func dispatchWatchEvents(sub eventhub.Source, events chan<- Event, errors chan<-
 }
 
 func recordNotFound(err error) bool {
-	return err == gorm.ErrRecordNotFound
+	return errors.Is(err, gorm.ErrRecordNotFound)
 }
 
 func ConnectionString(cfg *config.SqlDB) (string, error) {
 	var connectionString string
 	switch cfg.Type {
-	case "mysql":
+	case MySQL:
 		connStringBuilder := &MySQLConnectionStringBuilder{MySQLAdapter: &MySQLAdapter{}}
 		return connStringBuilder.Build(cfg)
 
-	case "postgres":
+	case Postgres:
 		var queryString string
 		if cfg.CACert == "" {
 			queryString = "?sslmode=disable"
@@ -651,7 +646,8 @@ func ConnectionString(cfg *config.SqlDB) (string, error) {
 			}
 		}
 		connectionString = fmt.Sprintf(
-			"postgres://%s:%s@%s:%d/%s%s",
+			"%s://%s:%s@%s:%d/%s%s",
+			Postgres,
 			cfg.Username,
 			cfg.Password,
 			cfg.Host,
