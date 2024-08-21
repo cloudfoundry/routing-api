@@ -1,4 +1,4 @@
-package testrunner
+package test_helpers
 
 import (
 	"database/sql"

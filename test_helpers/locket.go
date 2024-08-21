@@ -1,4 +1,4 @@
-package testrunner
+package test_helpers
 
 import (
 	"code.cloudfoundry.org/locket/cmd/locket/config"

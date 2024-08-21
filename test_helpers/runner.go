@@ -1,4 +1,4 @@
-package testrunner
+package test_helpers
 
 import (
 	"fmt"
@@ -12,9 +12,8 @@ import (
 	"code.cloudfoundry.org/locket/cmd/locket/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/models"
-	"code.cloudfoundry.org/routing-api/test_helpers"
 	ginkgomon "github.com/tedsuo/ifrit/ginkgomon_v2"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 type Args struct {
@@ -103,7 +102,7 @@ func createConfig(
 	mtlsServerCertPath string,
 	mtlsServerKeyPath string,
 ) (string, error) {
-	adminPort := test_helpers.NextAvailPort()
+	adminPort := NextAvailPort()
 	locketConfig := testrunner.ClientLocketConfig()
 
 	routingAPIConfig := config.Config{

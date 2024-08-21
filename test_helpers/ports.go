@@ -1,9 +1,8 @@
 package test_helpers
 
 import (
-	"sync"
-
 	. "github.com/onsi/ginkgo/v2"
+	"sync"
 )
 
 var (

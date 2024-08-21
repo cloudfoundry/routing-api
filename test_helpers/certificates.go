@@ -23,7 +23,7 @@ const (
 )
 
 func CreateCA() (*x509.Certificate, *ecdsa.PrivateKey, error) {
-	caPriv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, fmt.Errorf("generate key: %s", err)
 	}
@@ -33,7 +33,7 @@ func CreateCA() (*x509.Certificate, *ecdsa.PrivateKey, error) {
 		return nil, nil, fmt.Errorf("create cert template: %s", err)
 	}
 
-	caDER, err := x509.CreateCertificate(rand.Reader, &tmpl, &tmpl, &caPriv.PublicKey, caPriv)
+	caDER, err := x509.CreateCertificate(rand.Reader, &tmpl, &tmpl, &privateKey.PublicKey, privateKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating certificate: %s", err)
 	}
@@ -43,15 +43,15 @@ func CreateCA() (*x509.Certificate, *ecdsa.PrivateKey, error) {
 		return nil, nil, fmt.Errorf("parsing ca cert: %s", err)
 	}
 
-	return caCert, caPriv, nil
+	return caCert, privateKey, nil
 }
 
-func CreateCertificate(rootCert *x509.Certificate, caPriv *ecdsa.PrivateKey, certType CertType) (tls.Certificate, error) {
-	return createCertificateWithTime(rootCert, caPriv, certType, time.Now(), time.Now().AddDate(10, 0, 0))
+func CreateCertificate(rootCert *x509.Certificate, privateKey *ecdsa.PrivateKey, certType CertType) (tls.Certificate, error) {
+	return createCertificateWithTime(rootCert, privateKey, certType, time.Now(), time.Now().AddDate(10, 0, 0))
 }
 
-func CreateExpiredCertificate(rootCert *x509.Certificate, caPriv *ecdsa.PrivateKey, certType CertType) (tls.Certificate, error) {
-	return createCertificateWithTime(rootCert, caPriv, certType, time.Now().AddDate(-1, 0, 0), time.Now().Add(time.Second*-1))
+func CreateExpiredCertificate(rootCert *x509.Certificate, privateKey *ecdsa.PrivateKey, certType CertType) (tls.Certificate, error) {
+	return createCertificateWithTime(rootCert, privateKey, certType, time.Now().AddDate(-1, 0, 0), time.Now().Add(time.Second*-1))
 }
 
 func createCertificateWithTime(rootCert *x509.Certificate, caPriv *ecdsa.PrivateKey, certType CertType, notBefore, notAfter time.Time) (tls.Certificate, error) {
