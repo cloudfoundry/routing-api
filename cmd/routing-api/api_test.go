@@ -379,6 +379,7 @@ var _ = Describe("Routes API", func() {
 								ExternalPort:     52000,
 								HostIP:           "1.2.3.4",
 								HostPort:         60000,
+								HostTLSPort:      60001,
 								TTL:              &maxTTL,
 								IsolationSegment: "some-iso-seg",
 							}}

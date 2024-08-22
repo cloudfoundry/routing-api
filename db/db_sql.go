@@ -458,11 +458,20 @@ func (s *SqlDB) ReadFilteredTcpRouteMappings(columnName string, values []string)
 	return tcpRoutes, nil
 }
 
-func (s *SqlDB) readTcpRouteMapping(tcpMapping models.TcpRouteMapping) (models.TcpRouteMapping, error) {
+func (s *SqlDB) FindExistingTcpRouteMapping(tcpMapping models.TcpRouteMapping) (models.TcpRouteMapping, error) {
 	var routes []models.TcpRouteMapping
 	var tcpRoute models.TcpRouteMapping
-	err := s.Client.Where("router_group_guid = ? and host_ip = ? and host_port = ? and external_port = ?",
-		tcpMapping.RouterGroupGuid, tcpMapping.HostIP, tcpMapping.HostPort, tcpMapping.ExternalPort).Find(&routes)
+	var err error
+
+	// this where clause should represent all fields marked with the unique index on the TcpRouteMapping model,
+	// to ensure it returns the correct record from the database
+	if tcpMapping.SniHostname == nil {
+		err = s.Client.Where("router_group_guid = ? and host_ip = ? and host_port = ? and external_port = ? and host_tls_port = ? and sni_hostname IS NULL",
+			tcpMapping.RouterGroupGuid, tcpMapping.HostIP, tcpMapping.HostPort, tcpMapping.ExternalPort, tcpMapping.HostTLSPort).Find(&routes)
+	} else {
+		err = s.Client.Where("router_group_guid = ? and host_ip = ? and host_port = ? and external_port = ? and host_tls_port = ? and sni_hostname = ?",
+			tcpMapping.RouterGroupGuid, tcpMapping.HostIP, tcpMapping.HostPort, tcpMapping.ExternalPort, tcpMapping.HostTLSPort, tcpMapping.SniHostname).Find(&routes)
+	}
 
 	if err != nil {
 		return tcpRoute, err
@@ -496,7 +505,7 @@ func (s *SqlDB) emitEvent(eventType EventType, obj interface{}) error {
 }
 
 func (s *SqlDB) SaveTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) error {
-	existingTcpRouteMapping, err := s.readTcpRouteMapping(tcpRouteMapping)
+	existingTcpRouteMapping, err := s.FindExistingTcpRouteMapping(tcpRouteMapping)
 	if err != nil {
 		return err
 	}
@@ -530,7 +539,7 @@ func (s *SqlDB) SaveTcpRouteMapping(tcpRouteMapping models.TcpRouteMapping) erro
 }
 
 func (s *SqlDB) DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error {
-	tcpMapping, err := s.readTcpRouteMapping(tcpMapping)
+	tcpMapping, err := s.FindExistingTcpRouteMapping(tcpMapping)
 	if err != nil {
 		return err
 	}

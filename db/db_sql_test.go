@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -733,6 +735,96 @@ var _ = Describe("SqlDB", func() {
 		})
 	}
 
+	FindExistingTcpRouteMapping := func() {
+		Describe("FindExistingTcpRouteMapping", func() {
+			var (
+				routerGroupId string
+				tcpRoute      models.TcpRouteMapping
+				err           error
+			)
+
+			BeforeEach(func() {
+				routerGroupId = newUuid()
+				tcpRoute, err = models.NewTcpRouteMappingWithModel(models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "instance-1", nil, 5, models.ModificationTag{}))
+				Expect(err).NotTo(HaveOccurred())
+			})
+			Context("when the record does not exist", func() {
+				It("returns an empty record", func() {
+					newRoute, err := sqlDB.FindExistingTcpRouteMapping(tcpRoute)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(newRoute).To(Equal(models.TcpRouteMapping{}))
+				})
+			})
+			Context("when the record exists", func() {
+				BeforeEach(func() {
+					models.NewTcpRouteMappingWithModel(tcpRoute)
+					_, err := sqlDB.Client.Create(&tcpRoute)
+					Expect(err).NotTo(HaveOccurred())
+				})
+				AfterEach(func() {
+					_, err = sqlDB.Client.Delete(&tcpRoute)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("returns the record from the database", func() {
+					duplicateRoute := models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "instance-2", nil, 10, models.ModificationTag{Guid: "potatomeow", Index: 42})
+					newRoute, err := sqlDB.FindExistingTcpRouteMapping(duplicateRoute)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(newRoute.Matches(tcpRoute)).To(BeTrue())
+					Expect(tcpRoute.Matches(newRoute)).To(BeTrue())
+				})
+				Context("when a similar record exists, but differs in only one of the unique keys", func() {
+
+					parseAllUniqueFieldsFromTcpMapping := func(tcpRoute models.TcpRouteMapping) []string {
+						var uniqueFields []string
+						v := reflect.TypeOf(tcpRoute.TcpMappingEntity)
+						for i := 0; i < v.NumField(); i++ {
+							if strings.Contains(v.Field(i).Tag.Get("gorm"), "unique_index:idx_tcp_route") {
+								uniqueFields = append(uniqueFields, v.Field(i).Name)
+							}
+						}
+						return uniqueFields
+					}
+
+					It("returns an empty routemapping", func() {
+						By("Finding all the unique fields in a struct")
+						uniqueFields := parseAllUniqueFieldsFromTcpMapping(tcpRoute)
+						Expect(len(uniqueFields)).To(Equal(6))
+
+						for _, field := range uniqueFields {
+							By(fmt.Sprintf("testing when the %s field is different", field))
+
+							routeToTest, err := models.NewTcpRouteMappingWithModel(models.NewTcpRouteMapping(tcpRoute.RouterGroupGuid, tcpRoute.ExternalPort, tcpRoute.HostIP, tcpRoute.HostPort, tcpRoute.HostTLSPort, "instance-2", tcpRoute.SniHostname, 10, models.ModificationTag{Guid: "potatomeow", Index: 42}))
+							Expect(err).NotTo(HaveOccurred())
+
+							switch field {
+							case "RouterGroupGuid":
+								routeToTest.RouterGroupGuid = "new-guid"
+							case "ExternalPort":
+								routeToTest.ExternalPort = 4242
+							case "HostIP":
+								routeToTest.HostIP = "169.169.169.169"
+							case "HostPort":
+								routeToTest.HostPort = 42424
+							case "HostTLSPort":
+								routeToTest.HostTLSPort = 24242
+							case "SniHostname":
+								sniHostname := "new-sni-hostname"
+								routeToTest.SniHostname = &sniHostname
+							default:
+								Fail("unexpected unique field found on models.TcpRouteMapping. Please update this test to account for it")
+							}
+
+							newRoute, err := sqlDB.FindExistingTcpRouteMapping(routeToTest)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(newRoute).To(Equal(models.TcpRouteMapping{}))
+						}
+					})
+				})
+			})
+		})
+	}
+
 	SaveTcpRouteMapping := func() {
 		Describe("SaveTcpRouteMapping", func() {
 			var (
@@ -743,7 +835,7 @@ var _ = Describe("SqlDB", func() {
 
 			BeforeEach(func() {
 				routerGroupId = newUuid()
-				tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "", nil, 5, models.ModificationTag{})
+				tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "instance-id", nil, 5, models.ModificationTag{})
 			})
 
 			AfterEach(func() {
@@ -1894,6 +1986,7 @@ var _ = Describe("SqlDB", func() {
 		DeleteRouterGroup()
 		Connection()
 		FindExpiredRoutes()
+		FindExistingTcpRouteMapping()
 	})
 })
 
