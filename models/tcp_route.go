@@ -13,6 +13,11 @@ type TcpRouteMapping struct {
 	TcpMappingEntity
 }
 
+// IMPORTANT!! when adding a new field here that is part of the unique index for
+//
+//	a tcp route, make sure to update not only the logic for Matches(),
+//	but also the SqlDb.FindExistingTcpRouteMapping() function's custom
+//	WHERE filter to include the new field
 type TcpMappingEntity struct {
 	RouterGroupGuid string  `gorm:"not null; unique_index:idx_tcp_route" json:"router_group_guid"`
 	HostPort        uint16  `gorm:"not null; unique_index:idx_tcp_route; type:int" json:"backend_port"`
