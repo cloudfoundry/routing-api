@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/routing-api/models"
