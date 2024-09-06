@@ -14,7 +14,7 @@ import (
 	"code.cloudfoundry.org/routing-api/models"
 	"code.cloudfoundry.org/routing-api/test_helpers"
 	ginkgomon "github.com/tedsuo/ifrit/ginkgomon_v2"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type Args struct {
