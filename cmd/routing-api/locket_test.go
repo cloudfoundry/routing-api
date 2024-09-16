@@ -122,7 +122,7 @@ var _ = Describe("Locket", func() {
 					Key:      "routing_api_lock",
 					Owner:    "Your worst enemy.",
 					Value:    "Something",
-					TypeCode: locketmodels.LOCK,
+					TypeCode: locketmodels.TypeCode_LOCK,
 				}
 
 				clock := clock.NewClock()
