@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"code.cloudfoundry.org/clock"
@@ -170,7 +169,7 @@ func main() {
 
 	if cfg.API.HTTPEnabled {
 		httpAPIHandler := apiHandler(cfg, uaaClient, database, statsdClient, logger.Session("api-http-server"))
-		httpAPIServer := http_server.New(":"+strconv.Itoa(cfg.API.ListenPort), httpAPIHandler)
+		httpAPIServer := http_server.New(fmt.Sprintf(":%d", cfg.API.ListenPort), httpAPIHandler)
 
 		// As of Dec 2022, the tls route to routing-api is added to
 		// gorouter via route_registrar. This routerRegister is not needed
@@ -203,7 +202,7 @@ func main() {
 	}
 
 	mtlsAPIHandler := apiHandler(cfg, uaaClient, database, statsdClient, logger.Session("api-mtls-server"))
-	mtlsAPIServer := http_server.NewTLSServer(":"+strconv.Itoa(cfg.API.MTLSListenPort), mtlsAPIHandler, config)
+	mtlsAPIServer := http_server.NewTLSServer(fmt.Sprintf(":%d", cfg.API.MTLSListenPort), mtlsAPIHandler, config)
 	members = append(members, grouper.Member{
 		Name: "api-mtls-server", Runner: mtlsAPIServer},
 	)
@@ -300,7 +299,7 @@ func runMigration(database db.DB, logger lager.Logger) ifrit.Runner {
 }
 
 func constructRouteRegister(
-	port int,
+	port uint16,
 	logGuid string,
 	systemDomain string,
 	maxTTL time.Duration,
@@ -308,7 +307,7 @@ func constructRouteRegister(
 	logger lager.Logger,
 ) ifrit.Runner {
 	host := fmt.Sprintf("api.%s/routing", systemDomain)
-	route := models.NewRoute(host, uint16(port), *ip, logGuid, "", int(maxTTL.Seconds()))
+	route := models.NewRoute(host, port, *ip, logGuid, "", int(maxTTL.Seconds()))
 
 	registerInterval := int(maxTTL.Seconds()) / 2
 	ticker := time.NewTicker(time.Duration(registerInterval) * time.Second)

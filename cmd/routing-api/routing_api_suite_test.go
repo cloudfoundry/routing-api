@@ -33,7 +33,7 @@ var (
 	routingAPIBinPath     string
 	routingAPIPort        uint16
 	routingAPIMTLSPort    uint16
-	routingAPIAdminPort   int
+	routingAPIAdminPort   uint16
 	oAuthServer           *ghttp.Server
 	oAuthServerPort       string
 	locketPort            uint16
@@ -130,7 +130,7 @@ var _ = BeforeEach(func() {
 		sqlDBConfig.CACert,
 	)
 
-	oAuthServerPort, err := strconv.ParseInt(oAuthServerPort, 10, 0)
+	oAuthServerPort, err := strconv.ParseUint(oAuthServerPort, 10, 16)
 	Expect(err).NotTo(HaveOccurred())
 
 	locketAddress := fmt.Sprintf("%s:%d", testrunner.Host, locketPort)
@@ -142,7 +142,7 @@ var _ = BeforeEach(func() {
 		routingAPIPort,
 		routingAPIAdminPort,
 		routingAPIMTLSPort,
-		oAuthServerPort,
+		uint16(oAuthServerPort),
 		uaaCACertsPath,
 		databaseName,
 		mTLSAPIServerCertPath,

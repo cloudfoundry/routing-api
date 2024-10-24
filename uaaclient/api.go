@@ -14,7 +14,7 @@ import (
 )
 
 type Config struct {
-	Port              int
+	Port              uint16
 	Protocol          string
 	SkipSSLValidation bool
 	ClientName        string
@@ -25,7 +25,7 @@ type Config struct {
 }
 
 func NewAPI(cfg Config, logger lager.Logger) (*uaa.API, error) {
-	if cfg.Port == -1 {
+	if cfg.Port == 0 {
 		return nil, errors.New("tls-not-enabled: UAA client requires TLS enabled")
 	}
 

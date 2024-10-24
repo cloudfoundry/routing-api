@@ -11,7 +11,7 @@ var InvalidPortError = errors.New("Port must be between 1024 and 65535")
 
 type RouterGroupType string
 
-var ReservedSystemComponentPorts = []int{}
+var ReservedSystemComponentPorts = []uint16{}
 var FailOnRouterPortConflicts = false
 
 const (
@@ -166,7 +166,7 @@ func (p ReservablePorts) Validate() error {
 		for _, r1 := range portRanges {
 			for _, reservedPort := range ReservedSystemComponentPorts {
 
-				if uint64(reservedPort) >= r1.start && uint64(reservedPort) <= r1.end {
+				if reservedPort >= r1.start && reservedPort <= r1.end {
 					errMsg := fmt.Sprintf("Invalid ports. Reservable ports must not include the following reserved system component ports: %v.", ReservedSystemComponentPorts)
 					return errors.New(errMsg)
 				}
@@ -193,16 +193,16 @@ func (p ReservablePorts) Parse() (Ranges, error) {
 }
 
 type Range struct {
-	start uint64 // inclusive
-	end   uint64 // inclusive
+	start uint16 // inclusive
+	end   uint16 // inclusive
 }
 type Ranges []Range
 
-func portIsInRange(port uint64) bool {
-	return port >= 1024 && port <= 65535
+func portIsInRange(port uint16) bool {
+	return port >= 1024
 }
 
-func NewRange(start, end uint64) (Range, error) {
+func NewRange(start, end uint16) (Range, error) {
 	if portIsInRange(start) && portIsInRange(end) {
 		return Range{
 			start: start,
@@ -233,21 +233,21 @@ func (r Range) String() string {
 	return fmt.Sprintf("[%d-%d]", r.start, r.end)
 }
 
-func (r Range) max(other Range) uint64 {
+func (r Range) max(other Range) uint16 {
 	if r.end > other.end {
 		return r.end
 	}
 	return other.end
 }
 
-func (r Range) min(other Range) uint64 {
+func (r Range) min(other Range) uint16 {
 	if r.start < other.start {
 		return r.start
 	}
 	return other.start
 }
 
-func (r Range) Endpoints() (uint64, uint64) {
+func (r Range) Endpoints() (uint16, uint16) {
 	return r.start, r.end
 }
 
@@ -257,18 +257,18 @@ func parseRange(r string) (Range, error) {
 	len := len(endpoints)
 	switch len {
 	case 1:
-		n, err := strconv.ParseUint(endpoints[0], 10, 64)
+		n, err := strconv.ParseUint(endpoints[0], 10, 16)
 		if err != nil {
 			return Range{}, InvalidPortError
 		}
-		return NewRange(n, n)
+		return NewRange(uint16(n), uint16(n))
 	case 2:
-		start, err := strconv.ParseUint(endpoints[0], 10, 64)
+		start, err := strconv.ParseUint(endpoints[0], 10, 16)
 		if err != nil {
 			return Range{}, fmt.Errorf("range (%s) requires a starting port", r)
 		}
 
-		end, err := strconv.ParseUint(endpoints[1], 10, 64)
+		end, err := strconv.ParseUint(endpoints[1], 10, 16)
 		if err != nil {
 			return Range{}, fmt.Errorf("range (%s) requires an ending port", r)
 		}
@@ -277,7 +277,7 @@ func parseRange(r string) (Range, error) {
 			return Range{}, fmt.Errorf("range (%s) must be in ascending numeric order", r)
 		}
 
-		return NewRange(start, end)
+		return NewRange(uint16(start), uint16(end))
 	default:
 		return Range{}, fmt.Errorf("range (%s) has too many '-' separators", r)
 	}
