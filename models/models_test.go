@@ -160,7 +160,7 @@ var _ = Describe("Models", func() {
 
 			Context("when there are reserved system component ports", func() {
 				BeforeEach(func() {
-					ReservedSystemComponentPorts = []int{5555, 6666, 7777}
+					ReservedSystemComponentPorts = []uint16{5555, 6666, 7777}
 				})
 
 				Context("when failOnRouterPortConflicts is true", func() {

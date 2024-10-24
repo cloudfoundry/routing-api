@@ -34,7 +34,7 @@ func AdminRoutes() rata.Routes {
 
 	return routes
 }
-func NewServer(port int, db db.DB, logger lager.Logger) (ifrit.Runner, error) {
+func NewServer(port uint16, db db.DB, logger lager.Logger) (ifrit.Runner, error) {
 	rglHandler := NewRouterGroupLockHandler(db, logger)
 	actions := rata.Handlers{
 		LockRouterGroupReadsRoute:    http.HandlerFunc(rglHandler.LockReads),

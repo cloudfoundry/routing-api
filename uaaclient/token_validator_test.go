@@ -74,13 +74,13 @@ var _ = Describe("UaaClient", func() {
 
 		hostParts := strings.Split(url.Host, ":")
 		Expect(hostParts).To(HaveLen(2))
-		port, err := strconv.Atoi(hostParts[1])
+		port, err := strconv.ParseUint(hostParts[1], 10, 16)
 		Expect(err).NotTo(HaveOccurred())
 
 		cfg = uaaclient.Config{
 			SkipSSLValidation: true,
 			TokenEndpoint:     hostParts[0],
-			Port:              port,
+			Port:              uint16(port),
 			ClientName:        "client-name",
 			ClientSecret:      "client-secret",
 		}
@@ -126,9 +126,9 @@ var _ = Describe("UaaClient", func() {
 			})
 		})
 
-		Context("when OAuth port is -1", func() {
+		Context("when OAuth port is 0", func() {
 			BeforeEach(func() {
-				cfg.Port = -1
+				cfg.Port = 0
 			})
 
 			It("returns an error that UAA client requires TLS", func() {

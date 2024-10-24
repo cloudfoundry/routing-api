@@ -63,10 +63,10 @@ var _ = Describe("TokenFetcher", func() {
 
 		config.TokenEndpoint = addr[0]
 
-		port, err := strconv.Atoi(addr[1])
+		port, err := strconv.ParseUint(addr[1], 10, 16)
 		Expect(err).ToNot(HaveOccurred())
 
-		config.Port = port
+		config.Port = uint16(port)
 
 		serverCertFile, err = os.CreateTemp("", "routing-api-uaa-client-test")
 		Expect(err).NotTo(HaveOccurred())

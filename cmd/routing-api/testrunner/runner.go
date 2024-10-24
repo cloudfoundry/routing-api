@@ -54,8 +54,8 @@ func NewDbAllocator() DbAllocator {
 
 func NewRoutingAPIArgs(
 	ip string,
-	port int,
-	mtlsPort int,
+	port uint16,
+	mtlsPort uint16,
 	dbId string,
 	dbCACert string,
 	locketAddr string,
@@ -94,8 +94,8 @@ func New(binPath string, args Args) *ginkgomon.Runner {
 }
 
 func createConfig(
-	port int,
-	mtlsPort int,
+	port uint16,
+	mtlsPort uint16,
 	dbId string,
 	dbCACert string,
 	locketAddr string,
