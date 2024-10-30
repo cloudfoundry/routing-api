@@ -1,31 +1,32 @@
 package testrunner
 
 import (
-	"code.cloudfoundry.org/locket"
-	routingAPI "code.cloudfoundry.org/routing-api"
-	"code.cloudfoundry.org/routing-api/config"
-	"code.cloudfoundry.org/routing-api/models"
 	"fmt"
-	"github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 	"net/url"
 	"os"
 	"os/exec"
 	"time"
+
+	"code.cloudfoundry.org/locket"
+	routingAPI "code.cloudfoundry.org/routing-api"
+	"code.cloudfoundry.org/routing-api/config"
+	"code.cloudfoundry.org/routing-api/models"
+	"github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
 )
 
 type RoutingAPITestConfig struct {
-	Port                 int
-	StatsdPort           int
-	UAAPort              int
-	AdminPort            int
+	Port                 uint16
+	StatsdPort           uint16
+	UAAPort              uint16
+	AdminPort            uint16
 	LocketConfig         locket.ClientLocketConfig
 	CACertsPath          string
 	Schema               string
 	UseSQL               bool
 	APIServerHTTPEnabled bool
-	APIServerMTLSPort    int
+	APIServerMTLSPort    uint16
 	APIServerCertPath    string
 	APIServerKeyPath     string
 	APICAPath            string
@@ -33,9 +34,9 @@ type RoutingAPITestConfig struct {
 
 func GetRoutingAPITestConfig(
 	routingAPIPort uint16,
-	routingAPIAdminPort int,
+	routingAPIAdminPort uint16,
 	routingAPImTLSPort uint16,
-	oAuthServerPort int64,
+	oAuthServerPort uint16,
 	uaaCACertsPath string,
 	databaseName string,
 	mTLSAPIServerCertPath string,
@@ -45,18 +46,19 @@ func GetRoutingAPITestConfig(
 ) RoutingAPITestConfig {
 	return RoutingAPITestConfig{
 		APIServerHTTPEnabled: true,
-		Port:                 int(routingAPIPort),
-		StatsdPort:           StatsdPort + ginkgo.GinkgoParallelProcess(),
-		AdminPort:            routingAPIAdminPort,
-		UAAPort:              int(oAuthServerPort),
-		CACertsPath:          uaaCACertsPath,
-		Schema:               databaseName,
-		UseSQL:               true,
-		LocketConfig:         locketConfig,
-		APIServerMTLSPort:    int(routingAPImTLSPort),
-		APIServerCertPath:    mTLSAPIServerCertPath,
-		APIServerKeyPath:     mTLSAPIServerKeyPath,
-		APICAPath:            apiCAPath,
+		Port:                 routingAPIPort,
+		// #nosec G115 -if we have negative or >65k parallel processes for testing, we have a serious problem
+		StatsdPort:        StatsdPort + uint16(ginkgo.GinkgoParallelProcess()),
+		AdminPort:         routingAPIAdminPort,
+		UAAPort:           oAuthServerPort,
+		CACertsPath:       uaaCACertsPath,
+		Schema:            databaseName,
+		UseSQL:            true,
+		LocketConfig:      locketConfig,
+		APIServerMTLSPort: routingAPImTLSPort,
+		APIServerCertPath: mTLSAPIServerCertPath,
+		APIServerKeyPath:  mTLSAPIServerKeyPath,
+		APICAPath:         apiCAPath,
 	}
 }
 

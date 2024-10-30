@@ -180,7 +180,7 @@ func (c *client) ReservePort(groupName string, portRange string) (int, error) {
 }
 
 func getNextAvailablePort(groups models.RouterGroups, portRange models.Range) (models.ReservablePorts, error) {
-	portSet := make(map[uint64]bool)
+	portSet := make(map[uint16]bool)
 
 	for _, group := range groups {
 		groupPortRanges, err := group.ReservablePorts.Parse()

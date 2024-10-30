@@ -170,11 +170,11 @@ var _ = Describe("Locket", func() {
 		It("ensures there is no downtime", func() {
 			Eventually(session, 10*time.Second).Should(gbytes.Say("routing-api.started"))
 
-			session2Port := uint16(test_helpers.NextAvailPort())
-			session2MTLSPort := uint16(test_helpers.NextAvailPort())
+			session2Port := test_helpers.NextAvailPort()
+			session2MTLSPort := test_helpers.NextAvailPort()
 			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
-			routingAPIConfig.API.ListenPort = int(session2Port)
-			routingAPIConfig.API.MTLSListenPort = int(session2MTLSPort)
+			routingAPIConfig.API.ListenPort = session2Port
+			routingAPIConfig.API.MTLSListenPort = session2MTLSPort
 			routingAPIConfig.AdminPort = test_helpers.NextAvailPort()
 			configFilePath := testrunner.WriteConfigToTempFile(routingAPIConfig)
 			session2Args := testrunner.Args{

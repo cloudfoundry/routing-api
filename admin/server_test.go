@@ -19,7 +19,7 @@ var _ = Describe("AdminServer", func() {
 	var (
 		logger  *lagertest.TestLogger
 		db      *fake_db.FakeDB
-		port    int
+		port    uint16
 		process ifrit.Process
 	)
 	BeforeEach(func() {

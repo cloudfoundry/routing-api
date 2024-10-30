@@ -7,23 +7,25 @@ import (
 )
 
 var (
-	lastPortUsed int
+	lastPortUsed uint16
 	portLock     sync.Mutex
 	once         sync.Once
 )
 
-func NextAvailPort() int {
+func NextAvailPort() uint16 {
 	portLock.Lock()
 	defer portLock.Unlock()
 
 	if lastPortUsed == 0 {
 		once.Do(func() {
 			const portRangeStart = 24000
-			lastPortUsed = portRangeStart + GinkgoParallelProcess()
+			// #nosec G115 - if we have more than 65k or negative parallel processes, there's a bigger problem
+			lastPortUsed = portRangeStart + uint16(GinkgoParallelProcess())
 		})
 	}
 
 	suiteCfg, _ := GinkgoConfiguration()
-	lastPortUsed += suiteCfg.ParallelTotal
+	// #nosec G115 - if we have more than 65k or negative parallel processes, there's a bigger problem
+	lastPortUsed += uint16(suiteCfg.ParallelTotal)
 	return lastPortUsed
 }

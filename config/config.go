@@ -23,7 +23,7 @@ type MetronConfig struct {
 
 type OAuthConfig struct {
 	TokenEndpoint     string `yaml:"token_endpoint"`
-	Port              int    `yaml:"port"`
+	Port              uint16 `yaml:"port"`
 	SkipSSLValidation bool   `yaml:"-"`
 	ClientName        string `yaml:"client_name"`
 	ClientSecret      string `yaml:"client_secret"`
@@ -32,7 +32,7 @@ type OAuthConfig struct {
 
 type SqlDB struct {
 	Host                   string `yaml:"host"`
-	Port                   int    `yaml:"port"`
+	Port                   uint16 `yaml:"port"`
 	Schema                 string `yaml:"schema"`
 	Type                   string `yaml:"type"`
 	Username               string `yaml:"username"`
@@ -46,10 +46,10 @@ type SqlDB struct {
 }
 
 type APIConfig struct {
-	ListenPort  int  `yaml:"listen_port"`
-	HTTPEnabled bool `yaml:"http_enabled"`
+	ListenPort  uint16 `yaml:"listen_port"`
+	HTTPEnabled bool   `yaml:"http_enabled"`
 
-	MTLSListenPort     int    `yaml:"mtls_listen_port"`
+	MTLSListenPort     uint16 `yaml:"mtls_listen_port"`
 	MTLSClientCAPath   string `yaml:"mtls_client_ca_file"`
 	MTLSServerCertPath string `yaml:"mtls_server_cert_file"`
 	MTLSServerKeyPath  string `yaml:"mtls_server_key_file"`
@@ -57,7 +57,7 @@ type APIConfig struct {
 
 type Config struct {
 	API                             APIConfig                 `yaml:"api"`
-	AdminPort                       int                       `yaml:"admin_port"`
+	AdminPort                       uint16                    `yaml:"admin_port"`
 	DebugAddress                    string                    `yaml:"debug_address"`
 	LogGuid                         string                    `yaml:"log_guid"`
 	MetronConfig                    MetronConfig              `yaml:"metron_config"`
@@ -70,7 +70,7 @@ type Config struct {
 	StatsdClientFlushInterval       time.Duration             `yaml:"-"`
 	OAuth                           OAuthConfig               `yaml:"oauth"`
 	RouterGroups                    models.RouterGroups       `yaml:"router_groups"`
-	ReservedSystemComponentPorts    []int                     `yaml:"reserved_system_component_ports"`
+	ReservedSystemComponentPorts    []uint16                  `yaml:"reserved_system_component_ports"`
 	FailOnRouterPortConflicts       bool                      `yaml:"fail_on_router_port_conflicts"`
 	SqlDB                           SqlDB                     `yaml:"sqldb"`
 	Locket                          locket.ClientLocketConfig `yaml:"locket"`
@@ -122,7 +122,7 @@ func (cfg *Config) validate(authDisabled bool) error {
 		return errors.New("No token endpoint specified")
 	}
 
-	if !authDisabled && cfg.OAuth.TokenEndpoint != "" && cfg.OAuth.Port == -1 {
+	if !authDisabled && cfg.OAuth.TokenEndpoint != "" && cfg.OAuth.Port == 0 {
 		return errors.New("Routing API requires TLS enabled to get OAuth token")
 	}
 
@@ -142,9 +142,6 @@ func (cfg *Config) validate(authDisabled bool) error {
 		return fmt.Errorf("invalid API mTLS listen port: %s", err)
 	}
 
-	if err := validateReservedPorts(cfg.ReservedSystemComponentPorts); err != nil {
-		return err
-	}
 	models.ReservedSystemComponentPorts = cfg.ReservedSystemComponentPorts
 	models.FailOnRouterPortConflicts = cfg.FailOnRouterPortConflicts
 
@@ -159,20 +156,11 @@ func (cfg *Config) validate(authDisabled bool) error {
 	return nil
 }
 
-func validatePort(port int) error {
-	if port < 1 || port > 65535 {
+func validatePort(port uint16) error {
+	if port < 1 {
 		return fmt.Errorf("port number is invalid: %d (1-65535)", port)
 	}
 
-	return nil
-}
-
-func validateReservedPorts(ports []int) error {
-	for _, port := range ports {
-		if port < 0 || port > 65535 {
-			return fmt.Errorf("Invalid reserved system component port '%d'. Ports must be between 0 and 65535.", port)
-		}
-	}
 	return nil
 }
 
