@@ -223,7 +223,7 @@ func (r Range) Overlaps(other Range) bool {
 	// 	minLower: 10  maxUpper: 30
 	//  (30 - 10) <= (20 - 10) + (30 - 15)
 	//         20 <= 25?
-	return maxUpper-minLower <= (r.end-r.start)+(other.end-other.start)
+	return uint64(maxUpper-minLower) <= uint64(r.end-r.start)+uint64(other.end-other.start)
 }
 
 func (r Range) String() string {

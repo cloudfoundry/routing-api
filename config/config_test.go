@@ -22,20 +22,20 @@ var _ = Describe("Config", func() {
 					cfg, err := config.NewConfigFromFile(cfg_file, false)
 
 					Expect(err).NotTo(HaveOccurred())
-					Expect(cfg.API.ListenPort).To(Equal(3000))
-					Expect(cfg.AdminPort).To(Equal(9999))
+					Expect(cfg.API.ListenPort).To(Equal(uint16(3000)))
+					Expect(cfg.AdminPort).To(Equal(uint16(9999)))
 					Expect(cfg.LogGuid).To(Equal("my_logs"))
 					Expect(cfg.MetronConfig.Address).To(Equal("1.2.3.4"))
 					Expect(cfg.MetronConfig.Port).To(Equal("4567"))
 					Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
 					Expect(cfg.OAuth.TokenEndpoint).To(Equal("127.0.0.1"))
-					Expect(cfg.OAuth.Port).To(Equal(8080))
+					Expect(cfg.OAuth.Port).To(Equal(uint16(8080)))
 					Expect(cfg.OAuth.CACerts).To(Equal("some-ca-cert"))
 					Expect(cfg.OAuth.SkipSSLValidation).To(Equal(true))
 					Expect(cfg.SystemDomain).To(Equal("example.com"))
 					Expect(cfg.SqlDB.Username).To(Equal("username"))
 					Expect(cfg.SqlDB.Password).To(Equal("password"))
-					Expect(cfg.SqlDB.Port).To(Equal(1234))
+					Expect(cfg.SqlDB.Port).To(Equal(uint16(1234)))
 					Expect(cfg.SqlDB.CACert).To(Equal("some CA cert"))
 					Expect(cfg.SqlDB.SkipSSLValidation).To(Equal(true))
 					Expect(cfg.SqlDB.SkipHostnameValidation).To(Equal(true))
@@ -51,11 +51,11 @@ var _ = Describe("Config", func() {
 					Expect(cfg.Locket.LocketClientCertFile).To(Equal("some-locket-client-cert"))
 					Expect(cfg.Locket.LocketClientKeyFile).To(Equal("some-locket-client-key"))
 					Expect(cfg.API.HTTPEnabled).To(Equal(false))
-					Expect(cfg.API.MTLSListenPort).To(Equal(3001))
+					Expect(cfg.API.MTLSListenPort).To(Equal(uint16(3001)))
 					Expect(cfg.API.MTLSClientCAPath).To(Equal("client ca file path"))
 					Expect(cfg.API.MTLSServerCertPath).To(Equal("server cert file path"))
 					Expect(cfg.API.MTLSServerKeyPath).To(Equal("server key file path"))
-					Expect(cfg.ReservedSystemComponentPorts).To(Equal([]int{5555, 6666}))
+					Expect(cfg.ReservedSystemComponentPorts).To(Equal([]uint16{5555, 6666}))
 					Expect(cfg.FailOnRouterPortConflicts).To(BeTrue())
 				})
 
@@ -90,7 +90,7 @@ var _ = Describe("Config", func() {
 					Expect(cfg.MetronConfig.Port).To(Equal("4567"))
 					Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
 					Expect(cfg.OAuth.TokenEndpoint).To(Equal("127.0.0.1"))
-					Expect(cfg.OAuth.Port).To(Equal(8080))
+					Expect(cfg.OAuth.Port).To(Equal(uint16(8080)))
 					Expect(cfg.OAuth.CACerts).To(Equal("some-ca-cert"))
 				})
 
@@ -107,7 +107,7 @@ var _ = Describe("Config", func() {
 						Expect(cfg.MaxTTL).To(Equal(2 * time.Minute))
 						Expect(cfg.StatsdClientFlushInterval).To(Equal(10 * time.Millisecond))
 						Expect(cfg.OAuth.TokenEndpoint).To(BeEmpty())
-						Expect(cfg.OAuth.Port).To(Equal(0))
+						Expect(cfg.OAuth.Port).To(Equal(uint16(0)))
 					})
 				})
 			})
@@ -224,7 +224,7 @@ var _ = Describe("Config", func() {
 			It("populates the value", func() {
 				cfg, err := config.NewConfigFromBytes(testConfig, true)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(cfg.AdminPort).To(Equal(9999))
+				Expect(cfg.AdminPort).To(Equal(uint16(9999)))
 			})
 		})
 
@@ -527,7 +527,7 @@ var _ = Describe("Config", func() {
 			It("sets the models.ReservedSystemComponentPorts variable", func() {
 				_, err := config.NewConfigFromBytes(testConfig, true)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(models.ReservedSystemComponentPorts).To(Equal([]int{1234, 5555}))
+				Expect(models.ReservedSystemComponentPorts).To(Equal([]uint16{1234, 5555}))
 
 			})
 
@@ -539,7 +539,7 @@ var _ = Describe("Config", func() {
 				It("returns an error", func() {
 					_, err := config.NewConfigFromBytes(testConfig, true)
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("Invalid reserved system component port '70000'. Ports must be between 0 and 65535."))
+					Expect(err.Error()).To(ContainSubstring("`70000`"))
 				})
 			})
 
@@ -551,7 +551,7 @@ var _ = Describe("Config", func() {
 				It("returns an error", func() {
 					_, err := config.NewConfigFromBytes(testConfig, true)
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("Invalid reserved system component port '-10'. Ports must be between 0 and 65535."))
+					Expect(err.Error()).To(ContainSubstring("`-10`"))
 				})
 			})
 		})
