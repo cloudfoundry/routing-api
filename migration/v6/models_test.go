@@ -259,8 +259,8 @@ var _ = Describe("Models", func() {
 
 				Expect(len(r)).To(Equal(1))
 				start, end := r[0].Endpoints()
-				Expect(start).To(Equal(uint64(9999)))
-				Expect(end).To(Equal(uint64(9999)))
+				Expect(start).To(Equal(uint16(9999)))
+				Expect(end).To(Equal(uint16(9999)))
 			})
 
 			It("validates multiple integers", func() {
@@ -269,7 +269,7 @@ var _ = Describe("Models", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(r)).To(Equal(3))
 
-				expected := []uint64{9999, 1111, 2222}
+				expected := []uint16{9999, 1111, 2222}
 				for i := 0; i < len(r); i++ {
 					start, end := r[i].Endpoints()
 					Expect(start).To(Equal(expected[i]))
@@ -284,8 +284,8 @@ var _ = Describe("Models", func() {
 
 				Expect(len(r)).To(Equal(1))
 				start, end := r[0].Endpoints()
-				Expect(start).To(Equal(uint64(10241)))
-				Expect(end).To(Equal(uint64(10249)))
+				Expect(start).To(Equal(uint16(10241)))
+				Expect(end).To(Equal(uint16(10249)))
 			})
 
 			It("validates a list of ranges and integers", func() {
@@ -294,7 +294,7 @@ var _ = Describe("Models", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(len(r)).To(Equal(4))
-				expected := []uint64{6001, 6010, 6020, 6022, 6045, 6045, 6050, 6060}
+				expected := []uint16{6001, 6010, 6020, 6022, 6045, 6045, 6050, 6060}
 				for i := 0; i < len(r); i++ {
 					start, end := r[i].Endpoints()
 					Expect(start).To(Equal(expected[2*i]))
