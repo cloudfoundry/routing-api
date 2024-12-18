@@ -43,7 +43,7 @@ var _ = Describe("Migration", func() {
 				done := make(chan struct{})
 				defer close(done)
 				migrations := migration.InitializeMigrations()
-				Expect(migrations).To(HaveLen(7))
+				Expect(migrations).To(HaveLen(8))
 
 				Expect(migrations[0]).To(BeAssignableToTypeOf(new(migration.V0InitMigration)))
 				Expect(migrations[1]).To(BeAssignableToTypeOf(new(migration.V2UpdateRgMigration)))
