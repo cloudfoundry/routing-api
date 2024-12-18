@@ -88,6 +88,9 @@ func InitializeMigrations() []Migration {
 	migration = NewV7TCPTLSRoutes()
 	migrations = append(migrations, migration)
 
+	migration = NewV8HostTLSPortTCPDefaultZero()
+	migrations = append(migrations, migration)
+
 	return migrations
 }
 
