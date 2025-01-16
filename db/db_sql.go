@@ -152,6 +152,7 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 		case <-pruningTicker.C:
 			if atomic.CompareAndSwapInt32(&tcpInFlight, 0, 1) {
 				go func() {
+					defer atomic.StoreInt32(&tcpInFlight, 0)
 					var tcpRoutes []models.TcpRouteMapping
 					err := s.FindExpiredRoutes(&tcpRoutes, clock)
 					if err != nil {
@@ -175,12 +176,12 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 					}
 
 					logger.Info("successfully-finished-pruning-tcp-routes", lager.Data{"rowsAffected": rowsAffected})
-					atomic.StoreInt32(&tcpInFlight, 0)
 				}()
 			}
 
 			if atomic.CompareAndSwapInt32(&httpInFlight, 0, 1) {
 				go func() {
+					defer atomic.StoreInt32(&httpInFlight, 0)
 					var httpRoutes []models.Route
 					err := s.FindExpiredRoutes(&httpRoutes, clock)
 					if err != nil {
@@ -204,7 +205,6 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 					}
 
 					logger.Info("successfully-finished-pruning-http-routes", lager.Data{"rowsAffected": rowsAffected})
-					atomic.StoreInt32(&httpInFlight, 0)
 				}()
 			}
 		case <-signals:

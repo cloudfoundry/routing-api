@@ -1893,6 +1893,39 @@ var _ = Describe("SqlDB", func() {
 					Eventually(logger, 2).Should(gbytes.Say(`failed-to-prune-.*-routes","log_level":2,"data":{"error":"sql: database is closed"}`))
 				})
 			})
+
+			Context("when db throws a temporary error", func() {
+				var (
+					fakeClient *fakes.FakeClient
+					count      int32
+				)
+
+				BeforeEach(func() {
+					fakeClient = &fakes.FakeClient{}
+					sqlDB.Client = fakeClient
+					fakeClient.FindReturns(nil)
+					fakeClient.DeleteStub = func(value interface{}, where ...interface{}) (int64, error) {
+						time.Sleep(500 * time.Millisecond)
+						c := atomic.AddInt32(&count, 1)
+						if c > 5 && c < 10 {
+							return 0, errors.New("temp-error")
+						} else if c >= 10 {
+							return 111, nil
+						} else {
+							return 1, nil
+						}
+					}
+				})
+
+				It("eventually resolves the issue", func() {
+					Eventually(logger, 2).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":1}`))
+					Eventually(logger, 2).Should(gbytes.Say(`"prune.successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":1}`))
+					Eventually(logger, 2).Should(gbytes.Say(`failed-to-prune-tcp-routes","log_level":2,"data":{"error":"temp-error"}`))
+					Eventually(logger, 2).Should(gbytes.Say(`failed-to-prune-http-routes","log_level":2,"data":{"error":"temp-error"}`))
+					Eventually(logger, 2).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":111}`))
+					Eventually(logger, 2).Should(gbytes.Say(`"prune.successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":111}`))
+				})
+			})
 		})
 	}
 
