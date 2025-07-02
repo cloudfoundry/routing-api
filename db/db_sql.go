@@ -466,11 +466,11 @@ func (s *SqlDB) FindExistingTcpRouteMapping(tcpMapping models.TcpRouteMapping) (
 	// this where clause should represent all fields marked with the unique index on the TcpRouteMapping model,
 	// to ensure it returns the correct record from the database
 	if tcpMapping.SniHostname == nil {
-		err = s.Client.Where("router_group_guid = ? and host_ip = ? and host_port = ? and external_port = ? and host_tls_port = ? and sni_hostname IS NULL",
-			tcpMapping.RouterGroupGuid, tcpMapping.HostIP, tcpMapping.HostPort, tcpMapping.ExternalPort, tcpMapping.HostTLSPort).Find(&routes)
+		err = s.Client.Where("router_group_guid = ? and host_ip = ? and host_port = ? and external_port = ? and host_tls_port = ? and sni_hostname IS NULL and tls_terminate = ?",
+			tcpMapping.RouterGroupGuid, tcpMapping.HostIP, tcpMapping.HostPort, tcpMapping.ExternalPort, tcpMapping.HostTLSPort, tcpMapping.TerminateFrontendTLS).Find(&routes)
 	} else {
-		err = s.Client.Where("router_group_guid = ? and host_ip = ? and host_port = ? and external_port = ? and host_tls_port = ? and sni_hostname = ?",
-			tcpMapping.RouterGroupGuid, tcpMapping.HostIP, tcpMapping.HostPort, tcpMapping.ExternalPort, tcpMapping.HostTLSPort, tcpMapping.SniHostname).Find(&routes)
+		err = s.Client.Where("router_group_guid = ? and host_ip = ? and host_port = ? and external_port = ? and host_tls_port = ? and sni_hostname = ? and tls_terminate = ?",
+			tcpMapping.RouterGroupGuid, tcpMapping.HostIP, tcpMapping.HostPort, tcpMapping.ExternalPort, tcpMapping.HostTLSPort, tcpMapping.SniHostname, tcpMapping.TerminateFrontendTLS).Find(&routes)
 	}
 
 	if err != nil {
