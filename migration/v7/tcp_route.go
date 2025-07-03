@@ -1,4 +1,4 @@
-package models
+package v7
 
 import (
 	"fmt"
