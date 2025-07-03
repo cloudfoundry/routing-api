@@ -1,4 +1,4 @@
-package models
+package v6
 
 import (
 	"errors"
