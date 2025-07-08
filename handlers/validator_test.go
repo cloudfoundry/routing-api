@@ -221,7 +221,7 @@ var _ = Describe("Validator", func() {
 					ReservablePorts: "1024-65535",
 				},
 			}
-			tcpMapping = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000, 0, "instanceId", nil, 60, models.ModificationTag{})
+			tcpMapping = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000, 0, "instanceId", nil, 60, models.ModificationTag{}, nil, nil)
 		})
 
 		Context("when valid tcp mapping is passed", func() {
@@ -323,7 +323,7 @@ var _ = Describe("Validator", func() {
 		)
 
 		BeforeEach(func() {
-			tcpMapping = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000, 0, "instanceId", nil, 60, models.ModificationTag{})
+			tcpMapping = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 52000, "1.2.3.4", 60000, 0, "instanceId", nil, 60, models.ModificationTag{}, nil, nil)
 		})
 
 		Context("when valid tcp mapping is passed", func() {

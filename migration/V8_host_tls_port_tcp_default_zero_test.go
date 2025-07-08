@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("V8HostTLSPortTCPDefaultZero", func() {
+var _ = Describe("V9TerminateFrontendTLS", func() {
 	var (
 		sqlDB       *db.SqlDB
 		dbAllocator testrunner.DbAllocator
@@ -35,8 +35,8 @@ var _ = Describe("V8HostTLSPortTCPDefaultZero", func() {
 
 	Describe("Version", func() {
 		It("returns 8 for the version", func() {
-			v8Migration := migration.NewV8HostTLSPortTCPDefaultZero()
-			Expect(v8Migration.Version()).To(Equal(8))
+			v9Migration := migration.NewV9TerminateFrontendTLS()
+			Expect(v9Migration.Version()).To(Equal(8))
 		})
 	})
 
@@ -97,7 +97,7 @@ var _ = Describe("V8HostTLSPortTCPDefaultZero", func() {
 
 			It("updates existing records with a NULL value to have a value of 0", func() {
 				By("running the migration")
-				v8Migration := migration.NewV8HostTLSPortTCPDefaultZero()
+				v8Migration := migration.NewV9TerminateFrontendTLS()
 				err := v8Migration.Run(sqlDB)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -196,7 +196,7 @@ var _ = Describe("V8HostTLSPortTCPDefaultZero", func() {
 					Expect([]string{tcpRoutes[0].HostIP, tcpRoutes[1].HostIP}).To(ContainElements("1.1.1.1", "3.3.3.3"))
 
 					By("running the migration")
-					v8Migration := migration.NewV8HostTLSPortTCPDefaultZero()
+					v8Migration := migration.NewV9TerminateFrontendTLS()
 					err = v8Migration.Run(sqlDB)
 					Expect(err).ToNot(HaveOccurred())
 
@@ -254,7 +254,7 @@ var _ = Describe("V8HostTLSPortTCPDefaultZero", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				By("running the migration")
-				v8Migration := migration.NewV8HostTLSPortTCPDefaultZero()
+				v8Migration := migration.NewV9TerminateFrontendTLS()
 				err = v8Migration.Run(sqlDB)
 				Expect(err).ToNot(HaveOccurred())
 			})

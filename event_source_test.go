@@ -175,7 +175,7 @@ var _ = Describe("EventSource", func() {
 							Guid:  "my-guid",
 							Index: 5,
 						}
-						tcpMapping := models.NewTcpRouteMapping("rguid1", 52000, "1.1.1.1", 60000, 60001, "instance-id", nil, 5, modTag)
+						tcpMapping := models.NewTcpRouteMapping("rguid1", 52000, "1.1.1.1", 60000, 60001, "instance-id", nil, 5, modTag, nil, nil)
 						tcpMapping.TTL = nil
 
 						expectedEvent := routing_api.TcpEvent{

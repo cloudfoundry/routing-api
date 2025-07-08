@@ -17,7 +17,7 @@ var _ = Describe("TCP Route", func() {
 		var sniHostNamePtr *string
 
 		JustBeforeEach(func() {
-			tcpRouteMapping = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr, 5, models.ModificationTag{})
+			tcpRouteMapping = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr, 5, models.ModificationTag{}, nil, nil)
 		})
 		Describe("SNI Hostname", func() {
 			Context("when the SNI hostname is nil", func() {
@@ -68,7 +68,7 @@ var _ = Describe("TCP Route", func() {
 			})
 
 			JustBeforeEach(func() {
-				tcpRouteMapping2 = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr2, 5, models.ModificationTag{})
+				tcpRouteMapping2 = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr2, 5, models.ModificationTag{}, nil, nil)
 			})
 
 			Context("when two routes have the same SNIHostName value", func() {
