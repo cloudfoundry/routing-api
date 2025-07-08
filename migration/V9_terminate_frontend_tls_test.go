@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("V7TCPTLSRoutes", func() {
+var _ = Describe("V9TerminateFrontendTLS", func() {
 	var (
 		sqlDB       *db.SqlDB
 		dbAllocator testrunner.DbAllocator
@@ -36,7 +36,7 @@ var _ = Describe("V7TCPTLSRoutes", func() {
 	runTests := func() {
 		Context("during migration", func() {
 			It("allows the migration to occur", func() {
-				v7Migration := migration.NewV7TCPTLSRoutes()
+				v7Migration := migration.NewV9TerminateFrontendTLS()
 				err := v7Migration.Run(sqlDB)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -49,7 +49,7 @@ var _ = Describe("V7TCPTLSRoutes", func() {
 		})
 		Context("After migration", func() {
 			BeforeEach(func() {
-				v7Migration := migration.NewV7TCPTLSRoutes()
+				v7Migration := migration.NewV9TerminateFrontendTLS()
 				err := v7Migration.Run(sqlDB)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -104,7 +104,7 @@ var _ = Describe("V7TCPTLSRoutes", func() {
 
 	Describe("Version", func() {
 		It("returns 7 for the version", func() {
-			v7Migration := migration.NewV7TCPTLSRoutes()
+			v7Migration := migration.NewV9TerminateFrontendTLS()
 			Expect(v7Migration.Version()).To(Equal(7))
 		})
 	})
@@ -131,7 +131,7 @@ var _ = Describe("V7TCPTLSRoutes", func() {
 				_, err = sqlDB.Client.Create(&tcpRoute1)
 				Expect(err).NotTo(HaveOccurred())
 
-				v7Migration := migration.NewV7TCPTLSRoutes()
+				v7Migration := migration.NewV9TerminateFrontendTLS()
 				err = v7Migration.Run(sqlDB)
 				Expect(err).ToNot(HaveOccurred())
 			})
