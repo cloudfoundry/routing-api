@@ -30,10 +30,10 @@ type TcpMappingEntity struct {
 	InstanceId           string `gorm:"null; default:null;" json:"instance_id"`
 	ExternalPort         uint16 `gorm:"not null; unique_index:idx_tcp_route; type: int" json:"port"`
 	ModificationTag      `json:"modification_tag"`
-	TTL                  *int    `json:"ttl,omitempty"`
-	IsolationSegment     string  `json:"isolation_segment"`
-	TerminateFrontendTLS *bool   `gorm:"default:false; unique_index:idx_tcp_route" json:"terminate_frontend_tls"`
-	ALPN                 *string `json:"alpn,omitempty"`
+	TTL                  *int   `json:"ttl,omitempty"`
+	IsolationSegment     string `json:"isolation_segment"`
+	TerminateFrontendTLS bool   `gorm:"default:false" json:"terminate_frontend_tls,omitempty"`
+	ALPN                 string `json:"alpn,omitempty"`
 }
 
 func (TcpRouteMapping) TableName() string {
@@ -54,7 +54,7 @@ func NewTcpRouteMappingWithModel(tcpMapping TcpRouteMapping) (TcpRouteMapping, e
 	}, nil
 }
 
-func NewTcpRouteMapping(routerGroupGuid string, externalPort uint16, hostIP string, hostPort uint16, hostTlsPort int, instanceId string, sniHostname *string, ttl int, modTag ModificationTag, terminateFrontendTLS *bool, alpn *string) TcpRouteMapping {
+func NewTcpRouteMapping(routerGroupGuid string, externalPort uint16, hostIP string, hostPort uint16, hostTlsPort int, instanceId string, sniHostname *string, ttl int, modTag ModificationTag, terminateFrontendTLS bool, alpn string) TcpRouteMapping {
 	mapping := TcpRouteMapping{
 		TcpMappingEntity: TcpMappingEntity{
 			RouterGroupGuid:      routerGroupGuid,

@@ -36,8 +36,8 @@ var _ = Describe("V9TerminateFrontendTLS", func() {
 	runTests := func() {
 		Context("during migration", func() {
 			It("allows the migration to occur", func() {
-				v7Migration := migration.NewV9TerminateFrontendTLS()
-				err := v7Migration.Run(sqlDB)
+				v9Migration := migration.NewV9TerminateFrontendTLS()
+				err := v9Migration.Run(sqlDB)
 				Expect(err).ToNot(HaveOccurred())
 
 				routes, err := sqlDB.ReadTcpRouteMappings()
@@ -49,8 +49,8 @@ var _ = Describe("V9TerminateFrontendTLS", func() {
 		})
 		Context("After migration", func() {
 			BeforeEach(func() {
-				v7Migration := migration.NewV9TerminateFrontendTLS()
-				err := v7Migration.Run(sqlDB)
+				v9Migration := migration.NewV9TerminateFrontendTLS()
+				err := v9Migration.Run(sqlDB)
 				Expect(err).ToNot(HaveOccurred())
 
 				sniHostname1 := "sniHostname1"
@@ -69,43 +69,20 @@ var _ = Describe("V9TerminateFrontendTLS", func() {
 						ModificationTag:      models.ModificationTag{},
 						TTL:                  nil,
 						IsolationSegment:     "",
-						TerminateFrontendTLS: nil,
-						ALPN:                 nil,
+						TerminateFrontendTLS: false,
+						ALPN:                 "",
 					},
 				}
 				_, err = sqlDB.Client.Create(&tcpRoute1)
 				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("allows adding non-tls TCP routes without instance-ids", func() {
-				sniHostname2 := "sniHostname2"
-				tcpRoute2 := models.TcpRouteMapping{
-					Model:     models.Model{Guid: "guid-2"},
-					ExpiresAt: time.Now().Add(1 * time.Hour),
-					TcpMappingEntity: models.TcpMappingEntity{
-						RouterGroupGuid: "test1",
-						HostPort:        80,
-						HostTLSPort:     444,
-						HostIP:          "1.2.3.4",
-						InstanceId:      "instanceId2",
-						ExternalPort:    80,
-						SniHostname:     &sniHostname2,
-					},
-				}
-				_, err := sqlDB.Client.Create(&tcpRoute2)
-				Expect(err).NotTo(HaveOccurred())
-
-				routes, err := sqlDB.ReadTcpRouteMappings()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(routes).To(HaveLen(3))
 			})
 		})
 	}
 
 	Describe("Version", func() {
 		It("returns 7 for the version", func() {
-			v7Migration := migration.NewV9TerminateFrontendTLS()
-			Expect(v7Migration.Version()).To(Equal(7))
+			v9Migration := migration.NewV9TerminateFrontendTLS()
+			Expect(v9Migration.Version()).To(Equal(9))
 		})
 	})
 
@@ -131,8 +108,8 @@ var _ = Describe("V9TerminateFrontendTLS", func() {
 				_, err = sqlDB.Client.Create(&tcpRoute1)
 				Expect(err).NotTo(HaveOccurred())
 
-				v7Migration := migration.NewV9TerminateFrontendTLS()
-				err = v7Migration.Run(sqlDB)
+				v9Migration := migration.NewV9TerminateFrontendTLS()
+				err = v9Migration.Run(sqlDB)
 				Expect(err).ToNot(HaveOccurred())
 			})
 			runTests()
@@ -145,15 +122,22 @@ var _ = Describe("V9TerminateFrontendTLS", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				sniHostname1 := "sniHostname1"
-				tcpRoute1 := v7.TcpRouteMapping{
-					Model:     v7.Model{Guid: "guid-0"},
+				tcpRoute1 := models.TcpRouteMapping{
+					Model:     models.Model{Guid: "guid-0"},
 					ExpiresAt: time.Now().Add(1 * time.Hour),
-					TcpMappingEntity: v7.TcpMappingEntity{
-						RouterGroupGuid: "test0",
-						HostPort:        80,
-						HostIP:          "1.2.3.4",
-						ExternalPort:    80,
-						SniHostname:     &sniHostname1,
+					TcpMappingEntity: models.TcpMappingEntity{
+						RouterGroupGuid:      "test0",
+						HostPort:             80,
+						HostTLSPort:          100,
+						HostIP:               "1.2.3.4",
+						SniHostname:          &sniHostname1,
+						InstanceId:           "",
+						ExternalPort:         80,
+						ModificationTag:      models.ModificationTag{},
+						TTL:                  nil,
+						IsolationSegment:     "",
+						TerminateFrontendTLS: false,
+						ALPN:                 "",
 					},
 				}
 

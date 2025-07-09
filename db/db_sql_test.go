@@ -745,7 +745,7 @@ var _ = Describe("SqlDB", func() {
 
 			BeforeEach(func() {
 				routerGroupId = newUuid()
-				tcpRoute, err = models.NewTcpRouteMappingWithModel(models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "instance-1", nil, 5, models.ModificationTag{}, nil, nil))
+				tcpRoute, err = models.NewTcpRouteMappingWithModel(models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "instance-1", nil, 5, models.ModificationTag{}, false, ""))
 				Expect(err).NotTo(HaveOccurred())
 			})
 			Context("when the record does not exist", func() {
@@ -767,7 +767,7 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				It("returns the record from the database", func() {
-					duplicateRoute := models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "instance-2", nil, 10, models.ModificationTag{Guid: "potatomeow", Index: 42}, nil, nil)
+					duplicateRoute := models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "instance-2", nil, 10, models.ModificationTag{Guid: "potatomeow", Index: 42}, false, "")
 					newRoute, err := sqlDB.FindExistingTcpRouteMapping(duplicateRoute)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(newRoute.Matches(tcpRoute)).To(BeTrue())
@@ -794,7 +794,7 @@ var _ = Describe("SqlDB", func() {
 						for _, field := range uniqueFields {
 							By(fmt.Sprintf("testing when the %s field is different", field))
 
-							routeToTest, err := models.NewTcpRouteMappingWithModel(models.NewTcpRouteMapping(tcpRoute.RouterGroupGuid, tcpRoute.ExternalPort, tcpRoute.HostIP, tcpRoute.HostPort, tcpRoute.HostTLSPort, "instance-2", tcpRoute.SniHostname, 10, models.ModificationTag{Guid: "potatomeow", Index: 42}, nil, nil))
+							routeToTest, err := models.NewTcpRouteMappingWithModel(models.NewTcpRouteMapping(tcpRoute.RouterGroupGuid, tcpRoute.ExternalPort, tcpRoute.HostIP, tcpRoute.HostPort, tcpRoute.HostTLSPort, "instance-2", tcpRoute.SniHostname, 10, models.ModificationTag{Guid: "potatomeow", Index: 42}, false, ""))
 							Expect(err).NotTo(HaveOccurred())
 
 							switch field {
@@ -835,7 +835,7 @@ var _ = Describe("SqlDB", func() {
 
 			BeforeEach(func() {
 				routerGroupId = newUuid()
-				tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "instance-id", nil, 5, models.ModificationTag{}, nil, nil)
+				tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "instance-id", nil, 5, models.ModificationTag{}, false, "")
 			})
 
 			AfterEach(func() {
@@ -891,7 +891,7 @@ var _ = Describe("SqlDB", func() {
 					)
 					BeforeEach(func() {
 						routerGroupId2 = newUuid()
-						tcpRoute2 = models.NewTcpRouteMapping(routerGroupId2, 3056, "127.0.0.1", 2990, 2991, "", nil, 5, models.ModificationTag{}, nil, nil)
+						tcpRoute2 = models.NewTcpRouteMapping(routerGroupId2, 3056, "127.0.0.1", 2990, 2991, "", nil, 5, models.ModificationTag{}, false, "")
 					})
 
 					AfterEach(func() {
@@ -977,7 +977,7 @@ var _ = Describe("SqlDB", func() {
 				BeforeEach(func() {
 					routerGroupId = newUuid()
 					modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
-					tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "", nil, 5, modTag, nil, nil)
+					tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "", nil, 5, modTag, false, "")
 					tcpRoute.ModificationTag = modTag
 					tcpRouteWithModel, err = models.NewTcpRouteMappingWithModel(tcpRoute)
 					Expect(err).NotTo(HaveOccurred())
@@ -1005,7 +1005,7 @@ var _ = Describe("SqlDB", func() {
 
 					BeforeEach(func() {
 						modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
-						expiredTcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "", nil, -9, modTag, nil, nil)
+						expiredTcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "", nil, -9, modTag, false, "")
 						expiredTcpRouteWithModel, err = models.NewTcpRouteMappingWithModel(expiredTcpRoute)
 						Expect(err).NotTo(HaveOccurred())
 						_, err = sqlDB.Client.Create(&expiredTcpRouteWithModel)
@@ -1060,7 +1060,7 @@ var _ = Describe("SqlDB", func() {
 				)
 
 				createTcpRouteWithIsoSeg := func(externalPort uint16, routerGroupID string, ttl int, isoSeg string) {
-					tcpRoute := models.NewTcpRouteMapping(routerGroupID, 3056, "127.0.0.1", 2990, 2991, "", nil, ttl, models.ModificationTag{}, nil, nil)
+					tcpRoute := models.NewTcpRouteMapping(routerGroupID, 3056, "127.0.0.1", 2990, 2991, "", nil, ttl, models.ModificationTag{}, false, "")
 					tcpRoute.IsolationSegment = isoSeg
 					tcpRoute.ModificationTag = models.ModificationTag{Guid: "some-tag", Index: 10}
 					tcpRouteWithModel, err := models.NewTcpRouteMappingWithModel(tcpRoute)
@@ -1143,7 +1143,7 @@ var _ = Describe("SqlDB", func() {
 			BeforeEach(func() {
 				routerGroupId = newUuid()
 				modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
-				tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "instanceId", nil, 5, modTag, nil, nil)
+				tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3056, "127.0.0.1", 2990, 2991, "instanceId", nil, 5, modTag, false, "")
 				tcpRouteWithModel, err = models.NewTcpRouteMappingWithModel(tcpRoute)
 				Expect(err).ToNot(HaveOccurred())
 			})
@@ -1176,7 +1176,7 @@ var _ = Describe("SqlDB", func() {
 
 					BeforeEach(func() {
 						modTag := models.ModificationTag{Guid: "some-tag", Index: 10}
-						tcpRoute2 := models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, 2991, "instanceId", nil, 5, modTag, nil, nil)
+						tcpRoute2 := models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, 2991, "instanceId", nil, 5, modTag, false, "")
 						tcpRouteWithModel2, err = models.NewTcpRouteMappingWithModel(tcpRoute2)
 						Expect(err).ToNot(HaveOccurred())
 						_, err = sqlDB.Client.Create(&tcpRouteWithModel2)
@@ -1499,7 +1499,7 @@ var _ = Describe("SqlDB", func() {
 				var tcpRoute models.TcpRouteMapping
 
 				BeforeEach(func() {
-					tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, 2991, "instanceId", nil, 50, models.ModificationTag{}, nil, nil)
+					tcpRoute = models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, 2991, "instanceId", nil, 50, models.ModificationTag{}, false, "")
 					err = sqlDB.SaveTcpRouteMapping(tcpRoute)
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -1507,7 +1507,7 @@ var _ = Describe("SqlDB", func() {
 				It("should return an update watch event", func() {
 					results, _, _ := sqlDB.WatchChanges(db.TCP_WATCH)
 
-					updatedTcpRoute := models.NewTcpRouteMapping(tcpRoute.RouterGroupGuid, tcpRoute.ExternalPort, tcpRoute.HostIP, tcpRoute.HostPort, tcpRoute.HostTLSPort, tcpRoute.InstanceId, tcpRoute.SniHostname, *tcpRoute.TTL+1, tcpRoute.ModificationTag, nil, nil)
+					updatedTcpRoute := models.NewTcpRouteMapping(tcpRoute.RouterGroupGuid, tcpRoute.ExternalPort, tcpRoute.HostIP, tcpRoute.HostPort, tcpRoute.HostTLSPort, tcpRoute.InstanceId, tcpRoute.SniHostname, *tcpRoute.TTL+1, tcpRoute.ModificationTag, false, "")
 
 					err = sqlDB.SaveTcpRouteMapping(updatedTcpRoute)
 					Expect(err).NotTo(HaveOccurred())
@@ -1524,7 +1524,7 @@ var _ = Describe("SqlDB", func() {
 				It("should return an create watch event", func() {
 					results, _, _ := sqlDB.WatchChanges(db.TCP_WATCH)
 
-					tcpRoute := models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, 2991, "instanceId", nil, 50, models.ModificationTag{}, nil, nil)
+					tcpRoute := models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, 2991, "instanceId", nil, 50, models.ModificationTag{}, false, "")
 					err = sqlDB.SaveTcpRouteMapping(tcpRoute)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -1538,7 +1538,7 @@ var _ = Describe("SqlDB", func() {
 
 			Context("when a route is deleted", func() {
 				It("should return an delete watch event", func() {
-					tcpRoute := models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, 2991, "instanceId", nil, 50, models.ModificationTag{}, nil, nil)
+					tcpRoute := models.NewTcpRouteMapping(routerGroupId, 3057, "127.0.0.1", 2990, 2991, "instanceId", nil, 50, models.ModificationTag{}, false, "")
 					err := sqlDB.SaveTcpRouteMapping(tcpRoute)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -1739,7 +1739,7 @@ var _ = Describe("SqlDB", func() {
 				var tcpRouteModel models.TcpRouteMapping
 
 				BeforeEach(func() {
-					tcpRoute := models.NewTcpRouteMapping("guid", 3555, "127.0.0.1", 7879, 7880, "instanceId", nil, 2, models.ModificationTag{}, nil, nil)
+					tcpRoute := models.NewTcpRouteMapping("guid", 3555, "127.0.0.1", 7879, 7880, "instanceId", nil, 2, models.ModificationTag{}, false, "")
 					var err error
 					tcpRouteModel, err = models.NewTcpRouteMappingWithModel(tcpRoute)
 					Expect(err).ToNot(HaveOccurred())
@@ -1777,7 +1777,7 @@ var _ = Describe("SqlDB", func() {
 						var tcpRoute models.TcpRouteMapping
 
 						BeforeEach(func() {
-							tcpRoute = models.NewTcpRouteMapping("guid", 3556, "127.0.0.1", 7879, 7880, "instanceId", nil, 100, models.ModificationTag{}, nil, nil)
+							tcpRoute = models.NewTcpRouteMapping("guid", 3556, "127.0.0.1", 7879, 7880, "instanceId", nil, 100, models.ModificationTag{}, false, "")
 							err := sqlDB.SaveTcpRouteMapping(tcpRoute)
 							Expect(err).ToNot(HaveOccurred())
 
