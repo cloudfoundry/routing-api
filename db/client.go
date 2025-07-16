@@ -6,7 +6,8 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-//go:generate counterfeiter -o fakes/fake_client.go . Client
+//go:generate go tool counterfeiter -generate
+//counterfeiter:generate -o fakes/fake_client.go . Client
 type Client interface {
 	Close() error
 	Where(query interface{}, args ...interface{}) Client

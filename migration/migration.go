@@ -57,7 +57,8 @@ func RunAllMigration(sqlDB *db.SqlDB, logger lager.Logger) error {
 	return nil
 }
 
-//go:generate counterfeiter -o fakes/fake_migration.go . Migration
+//go:generate go tool counterfeiter -generate
+//counterfeiter:generate -o fakes/fake_migration.go . Migration
 type Migration interface {
 	Run(*db.SqlDB) error
 	Version() int

@@ -11,7 +11,8 @@ import (
 	"code.cloudfoundry.org/routing-api/models"
 )
 
-//go:generate counterfeiter -o fakes/fake_validator.go . RouteValidator
+//go:generate go tool counterfeiter -generate
+//counterfeiter:generate -o fakes/fake_validator.go . RouteValidator
 type RouteValidator interface {
 	ValidateCreate(routes []models.Route, maxTTL int) *routing_api.Error
 	ValidateDelete(routes []models.Route) *routing_api.Error

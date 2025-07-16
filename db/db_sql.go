@@ -21,7 +21,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-//go:generate counterfeiter -o fakes/fake_db.go . DB
+//counterfeiter:generate -o fakes/fake_db.go . DB
 type DB interface {
 	ReadRoutes() ([]models.Route, error)
 	SaveRoute(route models.Route) error

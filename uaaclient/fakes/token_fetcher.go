@@ -165,10 +165,6 @@ func (fake *FakeTokenFetcher) FetchTokenReturnsOnCall(i int, result1 *oauth2.Tok
 func (fake *FakeTokenFetcher) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.fetchKeyMutex.RLock()
-	defer fake.fetchKeyMutex.RUnlock()
-	fake.fetchTokenMutex.RLock()
-	defer fake.fetchTokenMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

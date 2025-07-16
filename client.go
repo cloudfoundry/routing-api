@@ -24,7 +24,8 @@ const (
 	defaultHttpTimeout = 60 * time.Second
 )
 
-//go:generate counterfeiter -o fake_routing_api/fake_client.go . Client
+//go:generate go tool counterfeiter -generate
+//counterfeiter:generate -o fake_routing_api/fake_client.go . Client
 
 type Client interface {
 	SetToken(string)

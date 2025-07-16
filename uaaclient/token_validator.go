@@ -11,7 +11,7 @@ import (
 	jwt "github.com/golang-jwt/jwt/v4"
 )
 
-//go:generate counterfeiter -o fakes/token_validator.go . TokenValidator
+//counterfeiter:generate -o fakes/token_validator.go . TokenValidator
 type TokenValidator interface {
 	ValidateToken(uaaToken string, desiredPermissions ...string) error
 }

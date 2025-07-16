@@ -20,6 +20,9 @@ const (
 	KeyRefreshEvents       = "key_refresh_events"
 )
 
+//go:generate go tool counterfeiter -generate
+//counterfeiter:generate -o ./fakes/fake_partial_statsd_client.go . PartialStatsdClient
+
 type PartialStatsdClient interface {
 	GaugeDelta(stat string, value int64, rate float32) error
 	Gauge(stat string, value int64, rate float32) error

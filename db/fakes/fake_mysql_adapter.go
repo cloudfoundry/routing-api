@@ -88,8 +88,6 @@ func (fake *MySQLAdapter) RegisterTLSConfigReturnsOnCall(i int, result1 error) {
 func (fake *MySQLAdapter) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.registerTLSConfigMutex.RLock()
-	defer fake.registerTLSConfigMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

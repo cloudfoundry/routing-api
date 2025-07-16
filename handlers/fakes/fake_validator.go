@@ -331,14 +331,6 @@ func (fake *FakeRouteValidator) ValidateDeleteTcpRouteMappingReturnsOnCall(i int
 func (fake *FakeRouteValidator) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.validateCreateMutex.RLock()
-	defer fake.validateCreateMutex.RUnlock()
-	fake.validateCreateTcpRouteMappingMutex.RLock()
-	defer fake.validateCreateTcpRouteMappingMutex.RUnlock()
-	fake.validateDeleteMutex.RLock()
-	defer fake.validateDeleteMutex.RUnlock()
-	fake.validateDeleteTcpRouteMappingMutex.RLock()
-	defer fake.validateDeleteTcpRouteMappingMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -11,7 +11,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
-//go:generate counterfeiter -o fakes/token_fetcher.go . TokenFetcher
+//go:generate go tool counterfeiter -generate
+//counterfeiter:generate -o fakes/token_fetcher.go . TokenFetcher
 type TokenFetcher interface {
 	FetchKey() (*uaa.JWK, error)
 	FetchToken(ctx context.Context, forceUpdate bool) (*oauth2.Token, error)

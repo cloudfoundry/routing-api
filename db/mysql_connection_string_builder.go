@@ -9,7 +9,7 @@ import (
 	"code.cloudfoundry.org/routing-api/config"
 )
 
-//go:generate counterfeiter -o fakes/fake_mysql_adapter.go --fake-name MySQLAdapter . mySQLAdapter
+//counterfeiter:generate -o fakes/fake_mysql_adapter.go --fake-name MySQLAdapter . mySQLAdapter
 type mySQLAdapter interface {
 	RegisterTLSConfig(key string, config *tls.Config) error
 }
