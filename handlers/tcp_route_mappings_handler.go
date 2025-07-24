@@ -85,10 +85,23 @@ func (h *TcpRouteMappingsHandler) Upsert(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	apiErr := h.validator.ValidateCreateTcpRouteMapping(tcpMappings, routerGroups, h.maxTTL)
-	if apiErr != nil {
-		handleProcessRequestError(w, apiErr, log)
-		return
+	for _, tcpMapping := range tcpMappings {
+		var sniHostName string
+		if _sniHostname := tcpMapping.SniHostname; _sniHostname != nil {
+			sniHostName = *_sniHostname
+		}
+		externalPort := tcpMapping.ExternalPort
+		similarTcpMappings, err := h.db.FindSimilarTcpRouteMappings(sniHostName, externalPort)
+		if err != nil {
+			handleDBCommunicationError(w, err, log)
+			return
+		}
+
+		apiErr := h.validator.ValidateCreateTcpRouteMapping(tcpMapping, similarTcpMappings, routerGroups, h.maxTTL)
+		if apiErr != nil {
+			handleProcessRequestError(w, apiErr, log)
+			return
+		}
 	}
 
 	for _, tcpMapping := range tcpMappings {

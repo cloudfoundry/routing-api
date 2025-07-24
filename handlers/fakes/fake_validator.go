@@ -22,17 +22,31 @@ type FakeRouteValidator struct {
 	validateCreateReturnsOnCall map[int]struct {
 		result1 *routing_api.Error
 	}
-	ValidateCreateTcpRouteMappingStub        func([]models.TcpRouteMapping, models.RouterGroups, int) *routing_api.Error
+	ValidateCreateTcpRouteMappingStub        func(models.TcpRouteMapping, []models.TcpRouteMapping, models.RouterGroups, int) *routing_api.Error
 	validateCreateTcpRouteMappingMutex       sync.RWMutex
 	validateCreateTcpRouteMappingArgsForCall []struct {
-		arg1 []models.TcpRouteMapping
-		arg2 models.RouterGroups
-		arg3 int
+		arg1 models.TcpRouteMapping
+		arg2 []models.TcpRouteMapping
+		arg3 models.RouterGroups
+		arg4 int
 	}
 	validateCreateTcpRouteMappingReturns struct {
 		result1 *routing_api.Error
 	}
 	validateCreateTcpRouteMappingReturnsOnCall map[int]struct {
+		result1 *routing_api.Error
+	}
+	ValidateCreateTcpRouteMappingsStub        func([]models.TcpRouteMapping, models.RouterGroups, int) *routing_api.Error
+	validateCreateTcpRouteMappingsMutex       sync.RWMutex
+	validateCreateTcpRouteMappingsArgsForCall []struct {
+		arg1 []models.TcpRouteMapping
+		arg2 models.RouterGroups
+		arg3 int
+	}
+	validateCreateTcpRouteMappingsReturns struct {
+		result1 *routing_api.Error
+	}
+	validateCreateTcpRouteMappingsReturnsOnCall map[int]struct {
 		result1 *routing_api.Error
 	}
 	ValidateDeleteStub        func([]models.Route) *routing_api.Error
@@ -128,25 +142,26 @@ func (fake *FakeRouteValidator) ValidateCreateReturnsOnCall(i int, result1 *rout
 	}{result1}
 }
 
-func (fake *FakeRouteValidator) ValidateCreateTcpRouteMapping(arg1 []models.TcpRouteMapping, arg2 models.RouterGroups, arg3 int) *routing_api.Error {
-	var arg1Copy []models.TcpRouteMapping
-	if arg1 != nil {
-		arg1Copy = make([]models.TcpRouteMapping, len(arg1))
-		copy(arg1Copy, arg1)
+func (fake *FakeRouteValidator) ValidateCreateTcpRouteMapping(arg1 models.TcpRouteMapping, arg2 []models.TcpRouteMapping, arg3 models.RouterGroups, arg4 int) *routing_api.Error {
+	var arg2Copy []models.TcpRouteMapping
+	if arg2 != nil {
+		arg2Copy = make([]models.TcpRouteMapping, len(arg2))
+		copy(arg2Copy, arg2)
 	}
 	fake.validateCreateTcpRouteMappingMutex.Lock()
 	ret, specificReturn := fake.validateCreateTcpRouteMappingReturnsOnCall[len(fake.validateCreateTcpRouteMappingArgsForCall)]
 	fake.validateCreateTcpRouteMappingArgsForCall = append(fake.validateCreateTcpRouteMappingArgsForCall, struct {
-		arg1 []models.TcpRouteMapping
-		arg2 models.RouterGroups
-		arg3 int
-	}{arg1Copy, arg2, arg3})
+		arg1 models.TcpRouteMapping
+		arg2 []models.TcpRouteMapping
+		arg3 models.RouterGroups
+		arg4 int
+	}{arg1, arg2Copy, arg3, arg4})
 	stub := fake.ValidateCreateTcpRouteMappingStub
 	fakeReturns := fake.validateCreateTcpRouteMappingReturns
-	fake.recordInvocation("ValidateCreateTcpRouteMapping", []interface{}{arg1Copy, arg2, arg3})
+	fake.recordInvocation("ValidateCreateTcpRouteMapping", []interface{}{arg1, arg2Copy, arg3, arg4})
 	fake.validateCreateTcpRouteMappingMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3)
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1
@@ -160,17 +175,17 @@ func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappingCallCount() int {
 	return len(fake.validateCreateTcpRouteMappingArgsForCall)
 }
 
-func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappingCalls(stub func([]models.TcpRouteMapping, models.RouterGroups, int) *routing_api.Error) {
+func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappingCalls(stub func(models.TcpRouteMapping, []models.TcpRouteMapping, models.RouterGroups, int) *routing_api.Error) {
 	fake.validateCreateTcpRouteMappingMutex.Lock()
 	defer fake.validateCreateTcpRouteMappingMutex.Unlock()
 	fake.ValidateCreateTcpRouteMappingStub = stub
 }
 
-func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappingArgsForCall(i int) ([]models.TcpRouteMapping, models.RouterGroups, int) {
+func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappingArgsForCall(i int) (models.TcpRouteMapping, []models.TcpRouteMapping, models.RouterGroups, int) {
 	fake.validateCreateTcpRouteMappingMutex.RLock()
 	defer fake.validateCreateTcpRouteMappingMutex.RUnlock()
 	argsForCall := fake.validateCreateTcpRouteMappingArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappingReturns(result1 *routing_api.Error) {
@@ -192,6 +207,74 @@ func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappingReturnsOnCall(i int
 		})
 	}
 	fake.validateCreateTcpRouteMappingReturnsOnCall[i] = struct {
+		result1 *routing_api.Error
+	}{result1}
+}
+
+func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappings(arg1 []models.TcpRouteMapping, arg2 models.RouterGroups, arg3 int) *routing_api.Error {
+	var arg1Copy []models.TcpRouteMapping
+	if arg1 != nil {
+		arg1Copy = make([]models.TcpRouteMapping, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.validateCreateTcpRouteMappingsMutex.Lock()
+	ret, specificReturn := fake.validateCreateTcpRouteMappingsReturnsOnCall[len(fake.validateCreateTcpRouteMappingsArgsForCall)]
+	fake.validateCreateTcpRouteMappingsArgsForCall = append(fake.validateCreateTcpRouteMappingsArgsForCall, struct {
+		arg1 []models.TcpRouteMapping
+		arg2 models.RouterGroups
+		arg3 int
+	}{arg1Copy, arg2, arg3})
+	stub := fake.ValidateCreateTcpRouteMappingsStub
+	fakeReturns := fake.validateCreateTcpRouteMappingsReturns
+	fake.recordInvocation("ValidateCreateTcpRouteMappings", []interface{}{arg1Copy, arg2, arg3})
+	fake.validateCreateTcpRouteMappingsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappingsCallCount() int {
+	fake.validateCreateTcpRouteMappingsMutex.RLock()
+	defer fake.validateCreateTcpRouteMappingsMutex.RUnlock()
+	return len(fake.validateCreateTcpRouteMappingsArgsForCall)
+}
+
+func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappingsCalls(stub func([]models.TcpRouteMapping, models.RouterGroups, int) *routing_api.Error) {
+	fake.validateCreateTcpRouteMappingsMutex.Lock()
+	defer fake.validateCreateTcpRouteMappingsMutex.Unlock()
+	fake.ValidateCreateTcpRouteMappingsStub = stub
+}
+
+func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappingsArgsForCall(i int) ([]models.TcpRouteMapping, models.RouterGroups, int) {
+	fake.validateCreateTcpRouteMappingsMutex.RLock()
+	defer fake.validateCreateTcpRouteMappingsMutex.RUnlock()
+	argsForCall := fake.validateCreateTcpRouteMappingsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappingsReturns(result1 *routing_api.Error) {
+	fake.validateCreateTcpRouteMappingsMutex.Lock()
+	defer fake.validateCreateTcpRouteMappingsMutex.Unlock()
+	fake.ValidateCreateTcpRouteMappingsStub = nil
+	fake.validateCreateTcpRouteMappingsReturns = struct {
+		result1 *routing_api.Error
+	}{result1}
+}
+
+func (fake *FakeRouteValidator) ValidateCreateTcpRouteMappingsReturnsOnCall(i int, result1 *routing_api.Error) {
+	fake.validateCreateTcpRouteMappingsMutex.Lock()
+	defer fake.validateCreateTcpRouteMappingsMutex.Unlock()
+	fake.ValidateCreateTcpRouteMappingsStub = nil
+	if fake.validateCreateTcpRouteMappingsReturnsOnCall == nil {
+		fake.validateCreateTcpRouteMappingsReturnsOnCall = make(map[int]struct {
+			result1 *routing_api.Error
+		})
+	}
+	fake.validateCreateTcpRouteMappingsReturnsOnCall[i] = struct {
 		result1 *routing_api.Error
 	}{result1}
 }
@@ -335,6 +418,8 @@ func (fake *FakeRouteValidator) Invocations() map[string][][]interface{} {
 	defer fake.validateCreateMutex.RUnlock()
 	fake.validateCreateTcpRouteMappingMutex.RLock()
 	defer fake.validateCreateTcpRouteMappingMutex.RUnlock()
+	fake.validateCreateTcpRouteMappingsMutex.RLock()
+	defer fake.validateCreateTcpRouteMappingsMutex.RUnlock()
 	fake.validateDeleteMutex.RLock()
 	defer fake.validateDeleteMutex.RUnlock()
 	fake.validateDeleteTcpRouteMappingMutex.RLock()
