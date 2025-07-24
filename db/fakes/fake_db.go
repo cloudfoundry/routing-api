@@ -47,6 +47,20 @@ type FakeDB struct {
 	deleteTcpRouteMappingReturnsOnCall map[int]struct {
 		result1 error
 	}
+	FindSimilarTcpRouteMappingsStub        func(string, uint16) ([]models.TcpRouteMapping, error)
+	findSimilarTcpRouteMappingsMutex       sync.RWMutex
+	findSimilarTcpRouteMappingsArgsForCall []struct {
+		arg1 string
+		arg2 uint16
+	}
+	findSimilarTcpRouteMappingsReturns struct {
+		result1 []models.TcpRouteMapping
+		result2 error
+	}
+	findSimilarTcpRouteMappingsReturnsOnCall map[int]struct {
+		result1 []models.TcpRouteMapping
+		result2 error
+	}
 	LockRouterGroupReadsStub        func()
 	lockRouterGroupReadsMutex       sync.RWMutex
 	lockRouterGroupReadsArgsForCall []struct {
@@ -396,6 +410,71 @@ func (fake *FakeDB) DeleteTcpRouteMappingReturnsOnCall(i int, result1 error) {
 	fake.deleteTcpRouteMappingReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeDB) FindSimilarTcpRouteMappings(arg1 string, arg2 uint16) ([]models.TcpRouteMapping, error) {
+	fake.findSimilarTcpRouteMappingsMutex.Lock()
+	ret, specificReturn := fake.findSimilarTcpRouteMappingsReturnsOnCall[len(fake.findSimilarTcpRouteMappingsArgsForCall)]
+	fake.findSimilarTcpRouteMappingsArgsForCall = append(fake.findSimilarTcpRouteMappingsArgsForCall, struct {
+		arg1 string
+		arg2 uint16
+	}{arg1, arg2})
+	stub := fake.FindSimilarTcpRouteMappingsStub
+	fakeReturns := fake.findSimilarTcpRouteMappingsReturns
+	fake.recordInvocation("FindSimilarTcpRouteMappings", []interface{}{arg1, arg2})
+	fake.findSimilarTcpRouteMappingsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeDB) FindSimilarTcpRouteMappingsCallCount() int {
+	fake.findSimilarTcpRouteMappingsMutex.RLock()
+	defer fake.findSimilarTcpRouteMappingsMutex.RUnlock()
+	return len(fake.findSimilarTcpRouteMappingsArgsForCall)
+}
+
+func (fake *FakeDB) FindSimilarTcpRouteMappingsCalls(stub func(string, uint16) ([]models.TcpRouteMapping, error)) {
+	fake.findSimilarTcpRouteMappingsMutex.Lock()
+	defer fake.findSimilarTcpRouteMappingsMutex.Unlock()
+	fake.FindSimilarTcpRouteMappingsStub = stub
+}
+
+func (fake *FakeDB) FindSimilarTcpRouteMappingsArgsForCall(i int) (string, uint16) {
+	fake.findSimilarTcpRouteMappingsMutex.RLock()
+	defer fake.findSimilarTcpRouteMappingsMutex.RUnlock()
+	argsForCall := fake.findSimilarTcpRouteMappingsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeDB) FindSimilarTcpRouteMappingsReturns(result1 []models.TcpRouteMapping, result2 error) {
+	fake.findSimilarTcpRouteMappingsMutex.Lock()
+	defer fake.findSimilarTcpRouteMappingsMutex.Unlock()
+	fake.FindSimilarTcpRouteMappingsStub = nil
+	fake.findSimilarTcpRouteMappingsReturns = struct {
+		result1 []models.TcpRouteMapping
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeDB) FindSimilarTcpRouteMappingsReturnsOnCall(i int, result1 []models.TcpRouteMapping, result2 error) {
+	fake.findSimilarTcpRouteMappingsMutex.Lock()
+	defer fake.findSimilarTcpRouteMappingsMutex.Unlock()
+	fake.FindSimilarTcpRouteMappingsStub = nil
+	if fake.findSimilarTcpRouteMappingsReturnsOnCall == nil {
+		fake.findSimilarTcpRouteMappingsReturnsOnCall = make(map[int]struct {
+			result1 []models.TcpRouteMapping
+			result2 error
+		})
+	}
+	fake.findSimilarTcpRouteMappingsReturnsOnCall[i] = struct {
+		result1 []models.TcpRouteMapping
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeDB) LockRouterGroupReads() {
@@ -1121,6 +1200,8 @@ func (fake *FakeDB) Invocations() map[string][][]interface{} {
 	defer fake.deleteRouterGroupMutex.RUnlock()
 	fake.deleteTcpRouteMappingMutex.RLock()
 	defer fake.deleteTcpRouteMappingMutex.RUnlock()
+	fake.findSimilarTcpRouteMappingsMutex.RLock()
+	defer fake.findSimilarTcpRouteMappingsMutex.RUnlock()
 	fake.lockRouterGroupReadsMutex.RLock()
 	defer fake.lockRouterGroupReadsMutex.RUnlock()
 	fake.lockRouterGroupWritesMutex.RLock()

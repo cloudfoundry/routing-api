@@ -64,7 +64,7 @@ type Migration interface {
 }
 
 func InitializeMigrations() []Migration {
-	migrations := []Migration{}
+	migrations := make([]Migration, 0)
 	var migration Migration
 
 	migration = NewV0InitMigration()
@@ -89,6 +89,9 @@ func InitializeMigrations() []Migration {
 	migrations = append(migrations, migration)
 
 	migration = NewV8HostTLSPortTCPDefaultZero()
+	migrations = append(migrations, migration)
+
+	migration = NewV9TerminateFrontendTLS()
 	migrations = append(migrations, migration)
 
 	return migrations
