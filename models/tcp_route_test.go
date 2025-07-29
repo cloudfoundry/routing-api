@@ -110,11 +110,12 @@ var _ = Describe("TCP Route", func() {
 				JustBeforeEach(func() {
 					tcpRouteMapping2.SniHostname = tcpRouteMapping.SniHostname
 					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeTrue())
+
+					tcpRouteMapping.TerminateFrontendTLS = false
+					tcpRouteMapping2.TerminateFrontendTLS = true
 				})
 
 				It("matches()", func() {
-					tcpRouteMapping.TerminateFrontendTLS = false
-					tcpRouteMapping2.TerminateFrontendTLS = true
 					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeTrue())
 				})
 			})
@@ -123,11 +124,12 @@ var _ = Describe("TCP Route", func() {
 				JustBeforeEach(func() {
 					tcpRouteMapping2.SniHostname = tcpRouteMapping.SniHostname
 					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeTrue())
+
+					tcpRouteMapping.ALPNs = ""
+					tcpRouteMapping2.ALPNs = "alpn1,alpn2"
 				})
 
 				It("matches()", func() {
-					tcpRouteMapping.ALPNs = ""
-					tcpRouteMapping2.ALPNs = "alpn1,alpn2"
 					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeTrue())
 				})
 			})

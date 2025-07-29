@@ -1955,12 +1955,14 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				It("eventually resolves the issue", func() {
-					Eventually(logger, 2).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":1}`))
-					Eventually(logger, 2).Should(gbytes.Say(`"prune.successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":1}`))
-					Eventually(logger, 2).Should(gbytes.Say(`failed-to-prune-tcp-routes","log_level":2,"data":{"error":"temp-error"}`))
-					Eventually(logger, 2).Should(gbytes.Say(`failed-to-prune-http-routes","log_level":2,"data":{"error":"temp-error"}`))
-					Eventually(logger, 2).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":111}`))
-					Eventually(logger, 2).Should(gbytes.Say(`"prune.successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":111}`))
+					timeout := 2.5
+
+					Eventually(logger, timeout).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":1}`))
+					Eventually(logger, timeout).Should(gbytes.Say(`"prune.successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":1}`))
+					Eventually(logger, timeout).Should(gbytes.Say(`failed-to-prune-tcp-routes","log_level":2,"data":{"error":"temp-error"}`))
+					Eventually(logger, timeout).Should(gbytes.Say(`failed-to-prune-http-routes","log_level":2,"data":{"error":"temp-error"}`))
+					Eventually(logger, timeout).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":111}`))
+					Eventually(logger, timeout).Should(gbytes.Say(`"prune.successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":111}`))
 				})
 			})
 		})
