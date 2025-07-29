@@ -33,7 +33,8 @@ type TcpMappingEntity struct {
 	TTL                  *int   `json:"ttl,omitempty"`
 	IsolationSegment     string `json:"isolation_segment"`
 	TerminateFrontendTLS bool   `gorm:"default:false" json:"terminate_frontend_tls,omitempty"`
-	ALPNs                string `json:"alpns,omitempty"`
+	// alpns is a csv value
+	ALPNs string `json:"alpns,omitempty"`
 }
 
 func (TcpRouteMapping) TableName() string {
