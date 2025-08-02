@@ -17,7 +17,7 @@ var _ = Describe("TCP Route", func() {
 		var sniHostNamePtr *string
 
 		JustBeforeEach(func() {
-			tcpRouteMapping = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr, 5, models.ModificationTag{})
+			tcpRouteMapping = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr, 5, models.ModificationTag{}, false, "")
 		})
 		Describe("SNI Hostname", func() {
 			Context("when the SNI hostname is nil", func() {
@@ -68,7 +68,7 @@ var _ = Describe("TCP Route", func() {
 			})
 
 			JustBeforeEach(func() {
-				tcpRouteMapping2 = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr2, 5, models.ModificationTag{})
+				tcpRouteMapping2 = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr2, 5, models.ModificationTag{}, false, "")
 			})
 
 			Context("when two routes have the same SNIHostName value", func() {
@@ -103,6 +103,32 @@ var _ = Describe("TCP Route", func() {
 				It("doesn't match", func() {
 					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeFalse())
 					Expect(tcpRouteMapping2.Matches(tcpRouteMapping)).To(BeFalse())
+				})
+			})
+
+			Context("when two routes are equal and TerminateFrontendTLS are different", func() {
+				JustBeforeEach(func() {
+					tcpRouteMapping2.SniHostname = tcpRouteMapping.SniHostname
+					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeTrue())
+				})
+
+				It("matches()", func() {
+					tcpRouteMapping.TerminateFrontendTLS = false
+					tcpRouteMapping2.TerminateFrontendTLS = true
+					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeTrue())
+				})
+			})
+
+			Context("when two routes are equal and ALPNs are different", func() {
+				JustBeforeEach(func() {
+					tcpRouteMapping2.SniHostname = tcpRouteMapping.SniHostname
+					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeTrue())
+				})
+
+				It("matches()", func() {
+					tcpRouteMapping.ALPNs = ""
+					tcpRouteMapping2.ALPNs = "alpn1,alpn2"
+					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeTrue())
 				})
 			})
 		})

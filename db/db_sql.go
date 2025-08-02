@@ -29,6 +29,7 @@ type DB interface {
 
 	ReadTcpRouteMappings() ([]models.TcpRouteMapping, error)
 	ReadFilteredTcpRouteMappings(columnName string, values []string) ([]models.TcpRouteMapping, error)
+	FindSimilarTcpRouteMappings(sniHostname string, externalPort uint16) ([]models.TcpRouteMapping, error)
 	SaveTcpRouteMapping(tcpMapping models.TcpRouteMapping) error
 	DeleteTcpRouteMapping(tcpMapping models.TcpRouteMapping) error
 
@@ -452,6 +453,19 @@ func (s *SqlDB) ReadFilteredTcpRouteMappings(columnName string, values []string)
 	var tcpRoutes []models.TcpRouteMapping
 	now := time.Now()
 	err := s.Client.Where(columnName+" in (?)", values).Where("expires_at > ?", now).Find(&tcpRoutes)
+	if err != nil {
+		return nil, err
+	}
+	return tcpRoutes, nil
+}
+
+func (s *SqlDB) FindSimilarTcpRouteMappings(sniHostname string, externalPort uint16) ([]models.TcpRouteMapping, error) {
+	var tcpRoutes []models.TcpRouteMapping
+	now := time.Now()
+	err := s.Client.
+		Where("sni_hostname = ? and external_port = ?", sniHostname, externalPort).
+		Where("expires_at > ?", now).
+		Find(&tcpRoutes)
 	if err != nil {
 		return nil, err
 	}
