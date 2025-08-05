@@ -367,6 +367,8 @@ As routes have a TTL, clients must register routes periodically to keep them act
 | `modification_tag`     | object          | no        | See [Modification Tags](03-modification-tags.md).
 | `isolation_segment`    | string          | no        | Name of the isolation segment for the route.
 | `backend_sni_hostname` | string          | no        | Sni backend hostname used for SNI routing. 
+| `terminate_frontend_tls` | boolean       | no        | When true, the router will terminate TLS before forwarding requests to the backend. Default: false 
+| `alpns`                 | string         | no        | Application Layer Protocol Negotiation strings. 
 
 #### Example Request
 ```bash
@@ -397,6 +399,23 @@ curl -k -vvv -H "Authorization: bearer $uaa_token" -X POST https://api.system-do
   "instance_id": "91860bfe-ecff-480d-8df4-0d1eb0295b04",
   "backend_sni_hostname":"teststst.asd.com",
   "ttl": 120
+}]'
+```
+
+#### Example Request for Terminating TLS at TCP Router
+```bash
+curl -k -vvv -H "Authorization: bearer $uaa_token" -X POST https://api.system-domain.com/routing/v1/tcp_routes/create -d '
+[{
+  "router_group_guid": "ab1481be-d7f0-4390-6666-3e752e9f92ac",
+  "port": 1121,
+  "backend_ip": "10.0.8.5",
+  "backend_port": 8888,
+  "backend_tls_port": 60001,
+  "instance_id": "91860bfe-ecff-480d-8df4-0d1eb0295b04",
+  "backend_sni_hostname":"teststst.asd.com",
+  "ttl": 120,
+  "terminate_frontend_tls": true,
+  "alpns" : "h2,http/1.1"
 }]'
 ```
 
