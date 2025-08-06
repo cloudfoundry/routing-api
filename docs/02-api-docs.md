@@ -368,7 +368,7 @@ As routes have a TTL, clients must register routes periodically to keep them act
 | `isolation_segment`    | string          | no        | Name of the isolation segment for the route.
 | `backend_sni_hostname` | string          | no        | Sni backend hostname used for SNI routing. 
 | `terminate_frontend_tls` | boolean       | no        | When true, the router will terminate TLS before forwarding requests to the backend. Default: false 
-| `alpns`                 | string         | no        | Application Layer Protocol Negotiation strings. 
+| `alpns`                 | string         | no        | [Application Layer Protocol Negotiation](https://www.haproxy.com/documentation/haproxy-configuration-manual/latest/#alpn%20%28Bind%20options%29) csv string. 
 
 #### Example Request
 ```bash
