@@ -23,6 +23,7 @@ import (
 
 //go:generate counterfeiter -o fakes/fake_db.go . DB
 type DB interface {
+	CheckHealth() error
 	ReadRoutes() ([]models.Route, error)
 	SaveRoute(route models.Route) error
 	DeleteRoute(route models.Route) error
@@ -360,6 +361,15 @@ func notImplementedError() error {
 	pc, _, _, _ := runtime.Caller(1)
 	fnName := runtime.FuncForPC(pc).Name()
 	return fmt.Errorf("function not implemented: %s", fnName)
+}
+
+func (s *SqlDB) CheckHealth() error {
+	var routes []models.Route
+	err := s.Client.First(&routes)
+	if err != nil {
+		return fmt.Errorf("checking health error: %v", err)
+	}
+	return nil
 }
 
 func (s *SqlDB) ReadRoutes() ([]models.Route, error) {
