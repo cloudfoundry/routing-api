@@ -139,7 +139,6 @@ var _ = BeforeEach(func() {
 	receiversChan := testIngressServer.Receivers()
 	testIngressServer.Start()
 	metricsPort, _ = testIngressServer.Port()
-	fmt.Println(" metric port :", metricsPort)
 
 	testMetricsChan, signalMetricsChan = testhelpers.TestMetricChan(receiversChan)
 
