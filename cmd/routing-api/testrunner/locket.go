@@ -1,13 +1,15 @@
 package testrunner
 
 import (
+	"fmt"
+	"os"
+
+	loggingclient "code.cloudfoundry.org/diego-logging-client"
 	"code.cloudfoundry.org/locket/cmd/locket/config"
 	locketrunner "code.cloudfoundry.org/locket/cmd/locket/testrunner"
-	"fmt"
 	. "github.com/onsi/gomega"
 	"github.com/tedsuo/ifrit"
 	ginkgomon "github.com/tedsuo/ifrit/ginkgomon_v2"
-	"os"
 )
 
 func StartLocket(
@@ -15,6 +17,7 @@ func StartLocket(
 	locketBinPath string,
 	databaseName string,
 	caCert string,
+	logConfig loggingclient.Config,
 ) ifrit.Process {
 	locketAddress := fmt.Sprintf("localhost:%d", locketPort)
 
@@ -40,6 +43,7 @@ func StartLocket(
 			cfg.SQLCACertFile = caFile.Name()
 		}
 		cfg.ListenAddress = locketAddress
+		cfg.LoggregatorConfig = logConfig
 	})
 
 	return ginkgomon.Invoke(locketRunner)
