@@ -179,7 +179,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				var tcpMappings []models.TcpRouteMapping
 
 				BeforeEach(func() {
-					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60001, "instanceId", nil, 60, models.ModificationTag{}, false, "")
+					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60001, "instanceId", nil, nil, 60, models.ModificationTag{}, false, "")
 					tcpMappings = []models.TcpRouteMapping{tcpMapping}
 				})
 
@@ -251,6 +251,28 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 				})
 			})
 
+			Context("when sniRewriteHostname is present", func() {
+				var tcpMappings []models.TcpRouteMapping
+
+				BeforeEach(func() {
+					sniRewriteHostname := "rewrite.example.com"
+					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60001, "instanceId", nil, &sniRewriteHostname, 60, models.ModificationTag{}, false, "")
+					tcpMappings = []models.TcpRouteMapping{tcpMapping}
+				})
+
+				It("accepts and saves tcp route mapping with sniRewriteHostname", func() {
+					request = handlers.NewTestRequest(tcpMappings)
+
+					tcpRouteMappingsHandler.Upsert(responseRecorder, request)
+					Expect(responseRecorder.Code).To(Equal(http.StatusCreated))
+
+					Expect(database.SaveTcpRouteMappingCallCount()).To(Equal(1))
+					savedMapping := database.SaveTcpRouteMappingArgsForCall(0)
+					Expect(savedMapping.SniRewriteHostname).ToNot(BeNil())
+					Expect(*savedMapping.SniRewriteHostname).To(Equal("rewrite.example.com"))
+				})
+			})
+
 			Context("when there are errors with the input ports", func() {
 				It("blows up when a external port is negative", func() {
 					request = handlers.NewTestRequest(`[{"router_group_guid": "tcp-default", "port": -1, "backend_ip": "10.1.1.12", "backend_port": 60000}]`)
@@ -316,7 +338,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 					tcpMappings  []models.TcpRouteMapping
 				)
 				BeforeEach(func() {
-					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60001, "instanceId", nil, 60, models.ModificationTag{}, false, "")
+					tcpMapping := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60001, "instanceId", nil, nil, 60, models.ModificationTag{}, false, "")
 					tcpMappings = []models.TcpRouteMapping{tcpMapping}
 					currentCount = metrics.GetTokenErrors()
 					fakeClient.ValidateTokenReturns(errors.New("Not valid"))
@@ -348,8 +370,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			var tcpRoutes []models.TcpRouteMapping
 
 			BeforeEach(func() {
-				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60002, "instanceId", nil, 55, models.ModificationTag{}, false, "")
-				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60003, "instanceId", nil, 55, models.ModificationTag{}, true, "alpn1,alpn2")
+				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60002, "instanceId", nil, nil, 55, models.ModificationTag{}, false, "")
+				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60003, "instanceId", nil, nil, 55, models.ModificationTag{}, true, "alpn1,alpn2")
 				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
 				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
 			})
@@ -395,12 +417,48 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			})
 		})
 
+		Context("when db returns tcp route mappings with sniRewriteHostname", func() {
+			var tcpRoutes []models.TcpRouteMapping
+
+			BeforeEach(func() {
+				sniRewriteHostname := "rewrite.example.com"
+				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60002, "instanceId", nil, &sniRewriteHostname, 55, models.ModificationTag{}, false, "")
+				tcpRoutes = []models.TcpRouteMapping{mapping1}
+				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
+			})
+
+			It("returns tcp route mappings with sniRewriteHostname in JSON", func() {
+				request = handlers.NewTestRequest("")
+				tcpRouteMappingsHandler.List(responseRecorder, request)
+
+				Expect(database.ReadTcpRouteMappingsCallCount()).To(Equal(1))
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				expectedJson := `[
+							{
+								"router_group_guid": "router-group-guid-001",
+								"port": 52000,
+								"backend_ip": "1.2.3.4",
+								"backend_port": 60000,
+								"backend_tls_port": 60002,
+								"instance_id": "instanceId",
+								"modification_tag": {
+									"guid": "",
+									"index": 0
+								},
+								"ttl": 55,
+								"isolation_segment": "",
+								"sni_rewrite_hostname": "rewrite.example.com"
+							}]`
+				Expect(responseRecorder.Body.String()).To(MatchJSON(expectedJson))
+			})
+		})
+
 		Context("when filtering by isolation segments", func() {
 			var tcpRoutes []models.TcpRouteMapping
 
 			BeforeEach(func() {
-				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60002, "instanceId", nil, 55, models.ModificationTag{}, false, "")
-				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60003, "instanceId", nil, 55, models.ModificationTag{}, true, "alpn1,alpn2")
+				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60002, "instanceId", nil, nil, 55, models.ModificationTag{}, false, "")
+				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60003, "instanceId", nil, nil, 55, models.ModificationTag{}, true, "alpn1,alpn2")
 				mapping2.IsolationSegment = "is1"
 				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
 				database.ReadFilteredTcpRouteMappingsReturns(tcpRoutes, nil)
@@ -505,8 +563,8 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			var tcpRoutes []models.TcpRouteMapping
 
 			BeforeEach(func() {
-				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60002, "instanceId", nil, 55, models.ModificationTag{}, false, "")
-				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60003, "instanceId", nil, 55, models.ModificationTag{}, true, "alpn1,alpn2")
+				mapping1 := models.NewTcpRouteMapping("router-group-guid-001", 52000, "1.2.3.4", 60000, 60002, "instanceId", nil, nil, 55, models.ModificationTag{}, false, "")
+				mapping2 := models.NewTcpRouteMapping("router-group-guid-001", 52001, "1.2.3.5", 60001, 60003, "instanceId", nil, nil, 55, models.ModificationTag{}, true, "alpn1,alpn2")
 				mapping2.IsolationSegment = "is1"
 				tcpRoutes = []models.TcpRouteMapping{mapping1, mapping2}
 				database.ReadTcpRouteMappingsReturns(tcpRoutes, nil)
@@ -608,7 +666,7 @@ var _ = Describe("TcpRouteMappingsHandler", func() {
 			)
 
 			BeforeEach(func() {
-				tcpMapping = models.NewTcpRouteMapping("router-group-guid-002", 52001, "1.2.3.4", 60000, 60002, "instanceId", nil, 60, models.ModificationTag{}, false, "alpn1,alpn2")
+				tcpMapping = models.NewTcpRouteMapping("router-group-guid-002", 52001, "1.2.3.4", 60000, 60002, "instanceId", nil, nil, 60, models.ModificationTag{}, false, "alpn1,alpn2")
 				tcpMappings = []models.TcpRouteMapping{tcpMapping}
 			})
 

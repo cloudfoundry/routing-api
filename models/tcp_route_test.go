@@ -15,9 +15,10 @@ var _ = Describe("TCP Route", func() {
 	Describe("TcpMappingEntity", func() {
 		var tcpRouteMapping models.TcpRouteMapping
 		var sniHostNamePtr *string
+		var sniRewriteHostnamePtr *string
 
 		JustBeforeEach(func() {
-			tcpRouteMapping = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr, 5, models.ModificationTag{}, false, "")
+			tcpRouteMapping = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr, sniRewriteHostnamePtr, 5, models.ModificationTag{}, false, "")
 		})
 		Describe("SNI Hostname", func() {
 			Context("when the SNI hostname is nil", func() {
@@ -59,16 +60,57 @@ var _ = Describe("TCP Route", func() {
 				})
 			})
 		})
+		Describe("SNI Rewrite Hostname", func() {
+			Context("when the SNI rewrite hostname is nil", func() {
+				BeforeEach(func() {
+					sniRewriteHostnamePtr = nil
+				})
+				It("comes through as nil", func() {
+					Expect(tcpRouteMapping.SniRewriteHostname).To(BeNil())
+				})
+				It("is omitted from JSON  marshaling", func() {
+					j, err := json.Marshal(tcpRouteMapping)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(string(j)).NotTo(ContainSubstring("sni_rewrite_hostname"))
+				})
+			})
+
+			Context("when a valid SNI rewrite hostname is provided", func() {
+				BeforeEach(func() {
+					sniRewriteHostnamePtr = pointertoString("sniRewriteHostname")
+				})
+
+				It("Accepts the value", func() {
+					Expect(*tcpRouteMapping.SniRewriteHostname).To(Equal("sniRewriteHostname"))
+				})
+				It("is provided in the marshaled JSON", func() {
+					j, err := json.Marshal(tcpRouteMapping)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(string(j)).To(ContainSubstring("sni_rewrite_hostname"))
+				})
+			})
+			Context("when the SNI rewrite hostname is empty", func() {
+				BeforeEach(func() {
+					sniRewriteHostnamePtr = pointertoString("")
+				})
+				It("is provided in the marshaled JSON", func() {
+					j, err := json.Marshal(tcpRouteMapping)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(string(j)).To(ContainSubstring("sni_rewrite_hostname"))
+				})
+			})
+		})
 		Describe("Matches()", func() {
 			var tcpRouteMapping2 models.TcpRouteMapping
 			var sniHostNamePtr2 *string
+			var sniRewriteHostnamePtr2 *string
 
 			BeforeEach(func() {
 				sniHostNamePtr = pointertoString("sniHostName")
 			})
 
 			JustBeforeEach(func() {
-				tcpRouteMapping2 = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr2, 5, models.ModificationTag{}, false, "")
+				tcpRouteMapping2 = models.NewTcpRouteMapping("a-guid", 1234, "hostIp", 5678, 8765, "", sniHostNamePtr2, sniRewriteHostnamePtr2, 5, models.ModificationTag{}, false, "")
 			})
 
 			Context("when two routes have the same SNIHostName value", func() {
@@ -105,6 +147,7 @@ var _ = Describe("TCP Route", func() {
 					Expect(tcpRouteMapping2.Matches(tcpRouteMapping)).To(BeFalse())
 				})
 			})
+
 
 			Context("when two routes are equal and TerminateFrontendTLS are different", func() {
 				JustBeforeEach(func() {
