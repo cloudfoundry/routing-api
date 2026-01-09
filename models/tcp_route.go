@@ -19,11 +19,12 @@ type TcpRouteMapping struct {
 //	but also the SqlDb.FindExistingTcpRouteMapping() function's custom
 //	WHERE filter to include the new field
 type TcpMappingEntity struct {
-	RouterGroupGuid string  `gorm:"not null; unique_index:idx_tcp_route" json:"router_group_guid"`
-	HostPort        uint16  `gorm:"not null; unique_index:idx_tcp_route; type:int" json:"backend_port"`
-	HostTLSPort     int     `gorm:"default:null; unique_index:idx_tcp_route; type:int" json:"backend_tls_port"`
-	HostIP          string  `gorm:"not null; unique_index:idx_tcp_route" json:"backend_ip"`
-	SniHostname     *string `gorm:"default:null; unique_index:idx_tcp_route" json:"backend_sni_hostname,omitempty"`
+	RouterGroupGuid    string  `gorm:"not null; unique_index:idx_tcp_route" json:"router_group_guid"`
+	HostPort           uint16  `gorm:"not null; unique_index:idx_tcp_route; type:int" json:"backend_port"`
+	HostTLSPort        int     `gorm:"default:null; unique_index:idx_tcp_route; type:int" json:"backend_tls_port"`
+	HostIP             string  `gorm:"not null; unique_index:idx_tcp_route" json:"backend_ip"`
+	SniHostname        *string `gorm:"default:null; unique_index:idx_tcp_route" json:"backend_sni_hostname,omitempty"`
+	SniRewriteHostname *string `gorm:"default:null" json:"sni_rewrite_hostname,omitempty"`
 	// We don't add uniqueness on InstanceId so that if a route is attempted to be created with the same detals but
 	// different InstanceId, we fail uniqueness and prevent stale/duplicate routes. If this fails a route, the
 	// TTL on the old record should expire + allow the new route to be created eventually.
@@ -63,6 +64,7 @@ func NewTcpRouteMapping(
 	hostTlsPort int,
 	instanceId string,
 	sniHostname *string,
+	sniRewriteHostname *string,
 	ttl int,
 	modTag ModificationTag,
 	terminateFrontendTLS bool,
@@ -73,6 +75,7 @@ func NewTcpRouteMapping(
 			RouterGroupGuid:      routerGroupGuid,
 			ExternalPort:         externalPort,
 			SniHostname:          sniHostname,
+			SniRewriteHostname:   sniRewriteHostname,
 			InstanceId:           instanceId,
 			HostPort:             hostPort,
 			HostTLSPort:          hostTlsPort,

@@ -94,6 +94,9 @@ func InitializeMigrations() []Migration {
 	migration = NewV9TerminateFrontendTLS()
 	migrations = append(migrations, migration)
 
+	migration = NewV10SniRewriteHostname()
+	migrations = append(migrations, migration)
+
 	return migrations
 }
 
