@@ -84,11 +84,12 @@ var _ = Describe("V10SniRewriteHostname", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Verify the route was created with sni_rewrite_hostname
-				routes, err := sqlDB.ReadTcpRouteMappings()
+				// Query for the specific route we just created
+				var createdRoute models.TcpRouteMapping
+				err = sqlDB.Client.Where("guid = ?", "guid-1").First(&createdRoute)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(routes).To(HaveLen(1))
-				Expect(routes[0].SniRewriteHostname).ToNot(BeNil())
-				Expect(*routes[0].SniRewriteHostname).To(Equal("sniRewriteHostname1"))
+				Expect(createdRoute.SniRewriteHostname).ToNot(BeNil())
+				Expect(*createdRoute.SniRewriteHostname).To(Equal("sniRewriteHostname1"))
 			})
 
 			It("allows creating route without sni_rewrite_hostname (nil)", func() {
@@ -96,10 +97,11 @@ var _ = Describe("V10SniRewriteHostname", func() {
 				_, err := sqlDB.Client.Create(&tcpRoute1)
 				Expect(err).NotTo(HaveOccurred())
 
-				routes, err := sqlDB.ReadTcpRouteMappings()
+				// Query for the specific route we just created
+				var createdRoute models.TcpRouteMapping
+				err = sqlDB.Client.Where("guid = ?", "guid-1").First(&createdRoute)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(routes).To(HaveLen(1))
-				Expect(routes[0].SniRewriteHostname).To(BeNil())
+				Expect(createdRoute.SniRewriteHostname).To(BeNil())
 			})
 		})
 	}

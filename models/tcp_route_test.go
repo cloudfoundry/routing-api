@@ -148,7 +148,6 @@ var _ = Describe("TCP Route", func() {
 				})
 			})
 
-
 			Context("when two routes are equal and TerminateFrontendTLS are different", func() {
 				JustBeforeEach(func() {
 					tcpRouteMapping2.SniHostname = tcpRouteMapping.SniHostname

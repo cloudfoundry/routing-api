@@ -854,8 +854,8 @@ var _ = Describe("SqlDB", func() {
 
 			Context("when creating routes with different sniRewriteHostname values", func() {
 				var (
-					tcpRoute1 models.TcpRouteMapping
-					tcpRoute2 models.TcpRouteMapping
+					tcpRoute1           models.TcpRouteMapping
+					tcpRoute2           models.TcpRouteMapping
 					sniRewriteHostname1 string
 					sniRewriteHostname2 string
 				)
