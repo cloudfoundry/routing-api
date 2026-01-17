@@ -334,6 +334,7 @@ func updateTcpRouteMapping(existingTcpRouteMapping models.TcpRouteMapping, curre
 		existingTcpRouteMapping.TTL = currentTcpRouteMapping.TTL
 	}
 	existingTcpRouteMapping.IsolationSegment = currentTcpRouteMapping.IsolationSegment
+	existingTcpRouteMapping.SniRewriteHostname = currentTcpRouteMapping.SniRewriteHostname
 
 	existingTcpRouteMapping.ExpiresAt = time.Now().
 		Add(time.Duration(*existingTcpRouteMapping.TTL) * time.Second)
