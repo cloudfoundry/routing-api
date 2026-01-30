@@ -1,9 +1,9 @@
-package models_test
+package v7_test
 
 import (
 	"encoding/json"
 
-	. "code.cloudfoundry.org/routing-api/models"
+	. "code.cloudfoundry.org/routing-api/migration/v7"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

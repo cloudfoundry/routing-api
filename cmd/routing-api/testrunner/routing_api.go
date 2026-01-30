@@ -97,7 +97,6 @@ func GetRoutingAPIConfig(testConfig RoutingAPITestConfig) *config.Config {
 		UUID:          "fake-uuid",
 		Locket:        testConfig.LocketConfig,
 	}
-
 	switch Database {
 	case Postgres:
 		routingAPIConfig.SqlDB = config.SqlDB{

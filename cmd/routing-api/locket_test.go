@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager/v3"

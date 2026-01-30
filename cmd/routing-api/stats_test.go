@@ -30,6 +30,7 @@ var _ = Describe("Routes API", func() {
 
 	BeforeEach(func() {
 		routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
+		routingAPIConfig.DebugAddress = fmt.Sprintf("0.0.0.0:%d", metricsPort+GinkgoParallelProcess())
 		configFilePath = testrunner.WriteConfigToTempFile(routingAPIConfig)
 		routingAPIRunner := testrunner.New(routingAPIBinPath, testrunner.Args{
 			IP:         testrunner.RoutingAPIIP,

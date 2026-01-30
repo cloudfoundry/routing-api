@@ -1,4 +1,4 @@
-package models_test
+package v7_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
