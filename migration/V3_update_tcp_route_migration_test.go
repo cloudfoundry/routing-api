@@ -48,7 +48,8 @@ var _ = Describe("V3UpdateTcpRouteMigration", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(tcpRoutes).To(HaveLen(1))
 
-		err = sqlDB.Client.Model(&models.TcpRouteMapping{}).DropColumn("isolation_segment")
+		// Use direct SQL instead of GORM DropColumn to work around GORM bug
+		err = sqlDB.Client.ExecWithError("ALTER TABLE tcp_routes DROP COLUMN isolation_segment")
 		Expect(err).ToNot(HaveOccurred())
 
 		rows, err := sqlDB.Client.Rows("tcp_routes")

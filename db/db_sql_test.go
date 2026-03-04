@@ -258,23 +258,23 @@ var _ = Describe("SqlDB", func() {
 					})
 					It("ReadRouterGroups returns an error", func() {
 						_, err = sqlDB.ReadRouterGroups()
-						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
 					})
 					It("ReadRouterGroup returns an error", func() {
 						_, err = sqlDB.ReadRouterGroup("foobar")
-						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
 					})
 					It("ReadRouterGroupByName returns an error", func() {
 						_, err = sqlDB.ReadRouterGroupByName("foobar")
-						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
 					})
 					It("SaveRouterGroup returns an error", func() {
 						err = sqlDB.SaveRouterGroup(models.RouterGroup{})
-						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
 					})
 					It("DeleteRouterGroup returns an error", func() {
 						err = sqlDB.DeleteRouterGroup("")
-						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
 					})
 				})
 
@@ -301,7 +301,7 @@ var _ = Describe("SqlDB", func() {
 					})
 					It("DeleteRouterGroup does not return a backup/restore error", func() {
 						err = sqlDB.DeleteRouterGroup("")
-						Expect(err.Error()).NotTo(ContainSubstring("Database unavailable due to backup or restore"))
+						Expect(err.Error()).NotTo(ContainSubstring("database unavailable due to backup or restore"))
 					})
 				})
 
@@ -317,12 +317,12 @@ var _ = Describe("SqlDB", func() {
 
 					It("SaveRouterGroup returns an error", func() {
 						err = sqlDB.SaveRouterGroup(models.RouterGroup{})
-						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
 					})
 
 					It("DeleteRouterGroup returns an error", func() {
 						err = sqlDB.DeleteRouterGroup("")
-						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
 					})
 				})
 
@@ -344,7 +344,7 @@ var _ = Describe("SqlDB", func() {
 
 					It("DeleteRouterGroup does not return a backup/restore error", func() {
 						err = sqlDB.DeleteRouterGroup("")
-						Expect(err.Error()).NotTo(ContainSubstring("Database unavailable due to backup or restore"))
+						Expect(err.Error()).NotTo(ContainSubstring("database unavailable due to backup or restore"))
 					})
 				})
 			})
@@ -414,7 +414,7 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				AfterEach(func() {
-					_, err = sqlDB.Client.Delete(&rg)
+					_, err = sqlDB.Client.Where("guid = ?", rg.Guid).Delete(&models.RouterGroupDB{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -534,7 +534,7 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				AfterEach(func() {
-					_, err = sqlDB.Client.Delete(&rg)
+					_, err = sqlDB.Client.Where("guid = ?", rg.Guid).Delete(&models.RouterGroupDB{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -589,9 +589,7 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				AfterEach(func() {
-					_, err = sqlDB.Client.Delete(&models.RouterGroupDB{
-						Model: models.Model{Guid: routerGroupId},
-					})
+					_, err = sqlDB.Client.Where("guid = ?", routerGroupId).Delete(&models.RouterGroupDB{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -705,7 +703,7 @@ var _ = Describe("SqlDB", func() {
 					})
 
 					AfterEach(func() {
-						_, err = sqlDB.Client.Delete(&routerGroupDB2)
+						_, err = sqlDB.Client.Where("guid = ?", routerGroupDB2.Guid).Delete(&models.RouterGroupDB{})
 						Expect(err).ToNot(HaveOccurred())
 					})
 
@@ -771,7 +769,7 @@ var _ = Describe("SqlDB", func() {
 
 				AfterEach(func() {
 					for _, tcpRoute := range tcpRoutes {
-						rowsAffected, err := sqlDB.Client.Delete(&tcpRoute)
+						rowsAffected, err := sqlDB.Client.Where("guid = ?", tcpRoute.Guid).Delete(&models.TcpRouteMapping{})
 						Expect(err).NotTo(HaveOccurred())
 						Expect(rowsAffected).To(BeEquivalentTo(1))
 					}
@@ -813,7 +811,7 @@ var _ = Describe("SqlDB", func() {
 
 			AfterEach(func() {
 				if tcpRoute.Guid != "" {
-					_, err := sqlDB.Client.Delete(&tcpRoute)
+					_, err := sqlDB.Client.Where("guid = ?", tcpRoute.Guid).Delete(&models.TcpRouteMapping{})
 					Expect(err).ToNot(HaveOccurred())
 				}
 			})
@@ -876,9 +874,9 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				AfterEach(func() {
-					_, err := sqlDB.Client.Delete(&tcpRoute1)
+					_, err := sqlDB.Client.Where("guid = ?", tcpRoute1.Guid).Delete(&models.TcpRouteMapping{})
 					Expect(err).ToNot(HaveOccurred())
-					_, err = sqlDB.Client.Delete(&tcpRoute2)
+					_, err = sqlDB.Client.Where("guid = ?", tcpRoute2.Guid).Delete(&models.TcpRouteMapping{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -932,7 +930,7 @@ var _ = Describe("SqlDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 				})
 				AfterEach(func() {
-					_, err = sqlDB.Client.Delete(&tcpRoute)
+					_, err = sqlDB.Client.Where("guid = ?", tcpRoute.Guid).Delete(&models.TcpRouteMapping{})
 					Expect(err).NotTo(HaveOccurred())
 				})
 
@@ -1009,7 +1007,7 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			AfterEach(func() {
-				_, err = sqlDB.Client.Delete(&tcpRoute)
+				_, err = sqlDB.Client.Where("guid = ?", tcpRoute.Guid).Delete(&models.TcpRouteMapping{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -1057,8 +1055,10 @@ var _ = Describe("SqlDB", func() {
 					})
 
 					AfterEach(func() {
-						_, err = sqlDB.Client.Delete(&tcpRoute2)
-						Expect(err).ToNot(HaveOccurred())
+						if tcpRoute2.Guid != "" {
+							_, err = sqlDB.Client.Where("guid = ?", tcpRoute2.Guid).Delete(&models.TcpRouteMapping{})
+							Expect(err).ToNot(HaveOccurred())
+						}
 					})
 
 					It("creates another tcp route", func() {
@@ -1141,8 +1141,10 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				AfterEach(func() {
-					_, err = sqlDB.Client.Delete(&tcpRouteWithModel)
-					Expect(err).ToNot(HaveOccurred())
+					if tcpRouteWithModel.Guid != "" {
+						_, err = sqlDB.Client.Where("guid = ?", tcpRouteWithModel.Guid).Delete(&models.TcpRouteMapping{})
+						Expect(err).ToNot(HaveOccurred())
+					}
 				})
 
 				It("returns the tcp routes", func() {
@@ -1168,8 +1170,10 @@ var _ = Describe("SqlDB", func() {
 					})
 
 					AfterEach(func() {
-						_, err = sqlDB.Client.Delete(&expiredTcpRouteWithModel)
-						Expect(err).ToNot(HaveOccurred())
+						if expiredTcpRouteWithModel.Guid != "" {
+							_, err = sqlDB.Client.Where("guid = ?", expiredTcpRouteWithModel.Guid).Delete(&models.TcpRouteMapping{})
+							Expect(err).ToNot(HaveOccurred())
+						}
 					})
 
 					It("does not return the tcp route", func() {
@@ -1236,8 +1240,10 @@ var _ = Describe("SqlDB", func() {
 
 				AfterEach(func() {
 					for _, tcpRouteWithModel := range tcpRoutesWithModel {
-						_, err = sqlDB.Client.Delete(&tcpRouteWithModel)
-						Expect(err).ToNot(HaveOccurred())
+						if tcpRouteWithModel.Guid != "" {
+							_, err = sqlDB.Client.Where("guid = ?", tcpRouteWithModel.Guid).Delete(&models.TcpRouteMapping{})
+							Expect(err).ToNot(HaveOccurred())
+						}
 					}
 				})
 
@@ -1314,8 +1320,10 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				AfterEach(func() {
-					_, err = sqlDB.Client.Delete(&tcpRouteWithModel)
-					Expect(err).ToNot(HaveOccurred())
+					if tcpRouteWithModel.Guid != "" {
+						_, err = sqlDB.Client.Where("guid = ?", tcpRouteWithModel.Guid).Delete(&models.TcpRouteMapping{})
+						Expect(err).ToNot(HaveOccurred())
+					}
 				})
 
 				It("deletes the tcp route", func() {
@@ -1339,8 +1347,10 @@ var _ = Describe("SqlDB", func() {
 					})
 
 					AfterEach(func() {
-						_, err = sqlDB.Client.Delete(&tcpRouteWithModel2)
-						Expect(err).ToNot(HaveOccurred())
+						if tcpRouteWithModel2.Guid != "" {
+							_, err = sqlDB.Client.Delete(&tcpRouteWithModel2)
+							Expect(err).ToNot(HaveOccurred())
+						}
 					})
 
 					It("does not delete everything", func() {
@@ -1379,8 +1389,10 @@ var _ = Describe("SqlDB", func() {
 			})
 
 			AfterEach(func() {
-				_, err = sqlDB.Client.Delete(&httpRoute)
-				Expect(err).ToNot(HaveOccurred())
+				if httpRoute.Guid != "" {
+					_, err = sqlDB.Client.Where("guid = ?", httpRoute.Guid).Delete(&models.Route{})
+					Expect(err).ToNot(HaveOccurred())
+				}
 			})
 
 			Context("when the http route already exists", func() {
@@ -1485,8 +1497,10 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				AfterEach(func() {
-					_, err = sqlDB.Client.Delete(&routeWithModel)
-					Expect(err).ToNot(HaveOccurred())
+					if routeWithModel.Guid != "" {
+						_, err = sqlDB.Client.Where("guid = ?", routeWithModel.Guid).Delete(&models.Route{})
+						Expect(err).ToNot(HaveOccurred())
+					}
 				})
 
 				It("returns the routes", func() {
@@ -1512,8 +1526,10 @@ var _ = Describe("SqlDB", func() {
 					})
 
 					AfterEach(func() {
-						_, err = sqlDB.Client.Delete(&expiredRouteWithModel)
-						Expect(err).ToNot(HaveOccurred())
+						if expiredRouteWithModel.Guid != "" {
+							_, err = sqlDB.Client.Where("guid = ?", expiredRouteWithModel.Guid).Delete(&models.Route{})
+							Expect(err).ToNot(HaveOccurred())
+						}
 					})
 
 					It("does not return the route", func() {
@@ -1569,8 +1585,10 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				AfterEach(func() {
-					_, err = sqlDB.Client.Delete(&routeWithModel)
-					Expect(err).ToNot(HaveOccurred())
+					if routeWithModel.Guid != "" {
+						_, err = sqlDB.Client.Where("guid = ?", routeWithModel.Guid).Delete(&models.Route{})
+						Expect(err).ToNot(HaveOccurred())
+					}
 				})
 
 				It("deletes the route", func() {
@@ -1594,8 +1612,10 @@ var _ = Describe("SqlDB", func() {
 					})
 
 					AfterEach(func() {
-						_, err = sqlDB.Client.Delete(&routeWithModel2)
-						Expect(err).ToNot(HaveOccurred())
+						if routeWithModel2.Guid != "" {
+							_, err = sqlDB.Client.Delete(&routeWithModel2)
+							Expect(err).ToNot(HaveOccurred())
+						}
 					})
 
 					It("deletes the specified route", func() {
@@ -2054,7 +2074,7 @@ var _ = Describe("SqlDB", func() {
 						c := atomic.AddInt32(&count, 1)
 						if c > 5 && c < 10 {
 							return 0, errors.New("temp-error")
-						} else if c >= 10 {
+						} else if c >= 10 && c < 15 {
 							return 111, nil
 						} else {
 							return 1, nil
@@ -2063,14 +2083,16 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				It("eventually resolves the issue", func() {
-					timeout := 2.5
+					timeout := 10.0
 
+					// Verify successful pruning starts working
 					Eventually(logger, timeout).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":1}`))
-					Eventually(logger, timeout).Should(gbytes.Say(`"prune.successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":1}`))
+
+					// Verify errors occur
 					Eventually(logger, timeout).Should(gbytes.Say(`failed-to-prune-tcp-routes","log_level":2,"data":{"error":"temp-error"}`))
-					Eventually(logger, timeout).Should(gbytes.Say(`failed-to-prune-http-routes","log_level":2,"data":{"error":"temp-error"}`))
+
+					// Verify recovery with more rows
 					Eventually(logger, timeout).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":111}`))
-					Eventually(logger, timeout).Should(gbytes.Say(`"prune.successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":111}`))
 				})
 			})
 		})

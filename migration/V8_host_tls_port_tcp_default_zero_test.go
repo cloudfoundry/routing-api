@@ -153,7 +153,7 @@ var _ = Describe("V8HostTLSPortTCPDefaultZero", func() {
 				It("doesnt fail during the migration", func() {
 
 					By("manually updating the default")
-					if sqlDB.Client.Dialect().GetName() == "postgres" {
+					if sqlDB.Client.Dialect().Name() == "postgres" {
 						sqlDB.Client.Exec("ALTER TABLE tcp_routes ALTER COLUMN host_tls_port SET DEFAULT 0")
 					} else {
 						sqlDB.Client.Exec("ALTER TABLE tcp_routes MODIFY COLUMN host_tls_port int DEFAULT 0")

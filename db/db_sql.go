@@ -4,14 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/postgres"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync/atomic"
 	"time"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/eventhub"
@@ -62,7 +62,7 @@ const (
 	ROUTER_GROUP_WATCH    string = "router-group-watch"
 )
 
-const backupError = "Database unavailable due to backup or restore"
+const backupError = "database unavailable due to backup or restore"
 
 type rwLocker struct {
 	readLock  uint32
@@ -105,7 +105,7 @@ var DeleteRouterGroupError = DBError{Type: KeyNotFound, Message: "Delete Fails: 
 
 func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 	if cfg == nil {
-		return nil, errors.New("SQL configuration cannot be nil")
+		return nil, errors.New("the sql configuration cannot be nil")
 	}
 
 	connStr, err := ConnectionString(cfg)
@@ -120,7 +120,7 @@ func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 	case "mysql":
 		dialect = mysql.Open(connStr)
 	default:
-		return &SqlDB{}, errors.New(fmt.Sprintf("Unknown type %s", cfg.Type))
+		return &SqlDB{}, fmt.Errorf("unknown type %s", cfg.Type)
 	}
 
 	db, err := gorm.Open(dialect, &gorm.Config{})
@@ -155,14 +155,14 @@ func (s *SqlDB) FindExpiredRoutes(routes interface{}, c clock.Clock) error {
 	// postgres stores at microsecond precision. we subtract a second from expiry time to give
 	// us an extra second of buffer to account for rounding issues:
 	// if we tell the db to save an expiry of 5.3s, and we query at 5.2s, mysql will think it expired,
-	// as the db will compare 5s against 5.2s.  Oops.
+	// as the db will compare 5s against 5.2s. Oops.
 	return s.Client.Find(routes, "expires_at < ?", c.Now().Add(-1*time.Second))
 }
 
 func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration, signals <-chan os.Signal) {
 	var tcpInFlight, httpInFlight int32
 	pruningTicker := time.NewTicker(pruningInterval)
-	clock := clock.NewClock()
+	clockVar := clock.NewClock()
 	for {
 		select {
 		case <-pruningTicker.C:
@@ -170,7 +170,7 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 				go func() {
 					defer atomic.StoreInt32(&tcpInFlight, 0)
 					var tcpRoutes []models.TcpRouteMapping
-					err := s.FindExpiredRoutes(&tcpRoutes, clock)
+					err := s.FindExpiredRoutes(&tcpRoutes, clockVar)
 					if err != nil {
 						logger.Error("failed-to-prune-tcp-routes", err)
 						return
@@ -199,7 +199,7 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 				go func() {
 					defer atomic.StoreInt32(&httpInFlight, 0)
 					var httpRoutes []models.Route
-					err := s.FindExpiredRoutes(&httpRoutes, clock)
+					err := s.FindExpiredRoutes(&httpRoutes, clockVar)
 					if err != nil {
 						logger.Error("failed-to-prune-http-routes", err)
 						return
@@ -310,7 +310,8 @@ func (s *SqlDB) DeleteRouterGroup(guid string) error {
 		return DeleteRouterGroupError
 	}
 
-	_, err = s.Client.Delete(&routerGroup)
+	// Use WHERE clause to delete the specific router group by guid
+	_, err = s.Client.Where("guid = ?", guid).Delete(&models.RouterGroupDB{})
 	if err != nil {
 		return err
 	}
@@ -398,7 +399,7 @@ func (s *SqlDB) readRoute(route models.Route) (models.Route, error) {
 	}
 	count := len(routes)
 	if count > 1 || count < 0 {
-		return route, errors.New("Have duplicate routes")
+		return route, errors.New("have duplicate routes")
 	}
 	if count == 1 {
 		return routes[0], nil
@@ -508,7 +509,7 @@ func (s *SqlDB) FindExistingTcpRouteMapping(tcpMapping models.TcpRouteMapping) (
 	}
 	count := len(routes)
 	if count > 1 || count < 0 {
-		return tcpRoute, errors.New("Have duplicate tcp route mappings")
+		return tcpRoute, errors.New("have duplicate tcp route mappings")
 	}
 	if count == 1 {
 		tcpRoute = routes[0]
@@ -529,7 +530,7 @@ func (s *SqlDB) emitEvent(eventType EventType, obj interface{}) error {
 	case models.TcpRouteMapping:
 		s.tcpEventHub.Emit(event)
 	default:
-		return errors.New("Unknown event type")
+		return errors.New("unknown event type")
 	}
 	return nil
 }
@@ -600,41 +601,41 @@ func (s *SqlDB) WatchChanges(watchType string) (<-chan Event, <-chan error, cont
 		err error
 	)
 	events := make(chan Event)
-	errors := make(chan error, 1)
+	errorList := make(chan error, 1)
 	cancelFunc := func() {}
 
 	switch watchType {
 	case TCP_WATCH:
 		sub, err = s.tcpEventHub.Subscribe()
 		if err != nil {
-			errors <- err
+			errorList <- err
 			close(events)
-			close(errors)
-			return events, errors, cancelFunc
+			close(errorList)
+			return events, errorList, cancelFunc
 		}
 	case HTTP_WATCH:
 		sub, err = s.httpEventHub.Subscribe()
 		if err != nil {
-			errors <- err
+			errorList <- err
 			close(events)
-			close(errors)
-			return events, errors, cancelFunc
+			close(errorList)
+			return events, errorList, cancelFunc
 		}
 	default:
 		err := fmt.Errorf("Invalid watch type: %s", watchType)
-		errors <- err
+		errorList <- err
 		close(events)
-		close(errors)
-		return events, errors, cancelFunc
+		close(errorList)
+		return events, errorList, cancelFunc
 	}
 
 	cancelFunc = func() {
 		_ = sub.Close()
 	}
 
-	go dispatchWatchEvents(sub, events, errors)
+	go dispatchWatchEvents(sub, events, errorList)
 
-	return events, errors, cancelFunc
+	return events, errorList, cancelFunc
 }
 
 func dispatchWatchEvents(sub eventhub.Source, events chan<- Event, errors chan<- error) {

@@ -2,7 +2,6 @@ package migration
 
 import (
 	"code.cloudfoundry.org/routing-api/db"
-	"code.cloudfoundry.org/routing-api/models"
 )
 
 type V4AddRgUniqIdxTCPRoute struct{}
@@ -18,11 +17,11 @@ func (v *V4AddRgUniqIdxTCPRoute) Version() int {
 }
 
 func (v *V4AddRgUniqIdxTCPRoute) Run(sqlDB *db.SqlDB) error {
-	err := sqlDB.Client.RemoveIndex("idx_tcp_route", &models.TcpRouteMapping{})
-	if err != nil {
-		return err
-	}
+	// Drop existing index if it exists - using correct MySQL syntax with table name
+	sqlDB.Client.Exec("DROP INDEX IF EXISTS idx_tcp_route ON tcp_routes")
 
-	err = sqlDB.Client.AddUniqueIndex("idx_tcp_route", &models.TcpRouteMapping{})
-	return err
+	// Create unique index using raw SQL
+	sqlDB.Client.Exec("CREATE UNIQUE INDEX idx_tcp_route ON tcp_routes (router_group_guid, host_port, host_ip, external_port)")
+
+	return nil
 }

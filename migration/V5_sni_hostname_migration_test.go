@@ -78,6 +78,11 @@ var _ = Describe("V5SniHostnameMigration", func() {
 			})
 
 			It("denies adding the same TCP routes with same SNI hostnames", func() {
+				// Verify that the unique index was created
+				migrator := sqlDB.Client.Migrator()
+				hasIndex := migrator.HasIndex("tcp_routes", "idx_tcp_route")
+				Expect(hasIndex).To(BeTrue(), "Index idx_tcp_route should exist on tcp_routes table")
+
 				sniHostname1 := "sniHostname1"
 				tcpRoute2 := models.TcpRouteMapping{
 					Model:     models.Model{Guid: "guid-2"},

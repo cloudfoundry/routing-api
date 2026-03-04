@@ -18,13 +18,20 @@ func (v *V5SniHostnameMigration) Version() int {
 }
 
 func (v *V5SniHostnameMigration) Run(sqlDB *db.SqlDB) error {
-	err := sqlDB.Client.RemoveIndex("idx_tcp_route", &models.TcpRouteMapping{})
+	err := sqlDB.Client.AutoMigrate(&models.TcpRouteMapping{})
 	if err != nil {
 		return err
 	}
-	_, err = sqlDB.Client.Model(&models.TcpRouteMapping{}).AddUniqueIndex("idx_tcp_route", "router_group_guid", "host_port", "host_ip", "external_port", "sni_hostname")
+
+	// Drop old index if it exists (ignore errors since it might not exist)
+	_ = sqlDB.Client.ExecWithError("DROP INDEX idx_tcp_route ON tcp_routes")
+
+	// Create unique index for SNI hostname constraint with column length specifications
+	// This allows routes with same fingerprint but different SNI hostnames
+	err = sqlDB.Client.ExecWithError("CREATE UNIQUE INDEX idx_tcp_route ON tcp_routes (router_group_guid(191), host_port, host_ip(191), external_port, sni_hostname(191))")
 	if err != nil {
 		return err
 	}
-	return err
+
+	return nil
 }

@@ -13,7 +13,7 @@ type Client interface {
 	Create(value interface{}) (int64, error)
 	Delete(value interface{}, where ...interface{}) (int64, error)
 	Save(value interface{}) (int64, error)
-	Update(attrs ...interface{}) (int64, error)
+	Update(column string, value interface{}) (int64, error)
 	First(out interface{}, where ...interface{}) error
 	Find(out interface{}, where ...interface{}) error
 	AutoMigrate(values ...interface{}) error
@@ -21,13 +21,15 @@ type Client interface {
 	Rollback() error
 	Commit() error
 	HasTable(value interface{}) bool
-	AddUniqueIndex(indexName string, columns ...string) (Client, error)
-	RemoveIndex(indexName string) (Client, error)
+	AddUniqueIndex(indexName string, columns interface{}) error
+	RemoveIndex(indexName string, columns interface{}) error
 	Model(value interface{}) Client
 	Exec(query string, args ...interface{}) int64
+	ExecWithError(query string, args ...interface{}) error
 	Rows(tableName string) (*sql.Rows, error)
 	DropColumn(column string) error
-	Dialect() gorm.Dialect
+	Dialect() gorm.Dialector
+	Migrator() gorm.Migrator
 }
 
 type gormClient struct {
@@ -38,29 +40,25 @@ func NewGormClient(db *gorm.DB) Client {
 	return &gormClient{db: db}
 }
 func (c *gormClient) DropColumn(name string) error {
-	return c.DropColumn(name).Error()
+	return c.db.Migrator().DropColumn(c.db.Statement.Table, name)
 }
 func (c *gormClient) Close() error {
-	return c.db.Close()
-}
-func (c *gormClient) AddUniqueIndex(indexName string, columns ...string) (Client, error) {
-	var newClient gormClient
-	newClient.db, err := c.AddUniqueIndex(indexName, columns...)
+	sqlDB, err := c.db.DB()
 	if err != nil {
-
+		return err
 	}
-
-	return &newClient, newClient.db.Error
+	return sqlDB.Close()
+}
+func (c *gormClient) AddUniqueIndex(indexName string, columns interface{}) error {
+	return c.db.Migrator().CreateIndex(columns, indexName)
 }
 
-func (c *gormClient) Dialect() gorm.Dialect {
-	return c.db.Dialect()
+func (c *gormClient) Dialect() gorm.Dialector {
+	return c.db.Dialector
 }
 
-func (c *gormClient) RemoveIndex(indexName string) (Client, error) {
-	var newClient gormClient
-	newClient.db = c.db.RemoveIndex(indexName)
-	return &newClient, newClient.db.Error
+func (c *gormClient) RemoveIndex(indexName string, columns interface{}) error {
+	return c.db.Migrator().DropIndex(columns, indexName)
 }
 
 func (c *gormClient) Model(value interface{}) Client {
@@ -89,8 +87,8 @@ func (c *gormClient) Save(value interface{}) (int64, error) {
 	return newDb.RowsAffected, newDb.Error
 }
 
-func (c *gormClient) Update(attrs ...interface{}) (int64, error) {
-	newDb := c.db.Update(attrs...)
+func (c *gormClient) Update(column string, value interface{}) (int64, error) {
+	newDb := c.db.Update(column, value)
 	return newDb.RowsAffected, newDb.Error
 }
 
@@ -103,7 +101,7 @@ func (c *gormClient) Find(out interface{}, where ...interface{}) error {
 }
 
 func (c *gormClient) AutoMigrate(values ...interface{}) error {
-	return c.db.AutoMigrate(values...).Error
+	return c.db.AutoMigrate(values...)
 }
 
 func (c *gormClient) Begin() Client {
@@ -121,12 +119,20 @@ func (c *gormClient) Commit() error {
 }
 
 func (c *gormClient) HasTable(value interface{}) bool {
-	return c.db.HasTable(value)
+	return c.db.Migrator().HasTable(value)
 }
 
 func (c *gormClient) Exec(query string, args ...interface{}) int64 {
-	dbClient := c.db.Exec(query, args)
+	dbClient := c.db.Exec(query, args...)
 	return dbClient.RowsAffected
+}
+
+func (c *gormClient) ExecWithError(query string, args ...interface{}) error {
+	return c.db.Exec(query, args...).Error
+}
+
+func (c *gormClient) Migrator() gorm.Migrator {
+	return c.db.Migrator()
 }
 
 func (c *gormClient) Rows(tablename string) (*sql.Rows, error) {
