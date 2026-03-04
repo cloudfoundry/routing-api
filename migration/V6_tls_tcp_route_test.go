@@ -96,6 +96,11 @@ var _ = Describe("V6TCPTLSRoutes", func() {
 			})
 
 			It("denies adding the same TCP routes with same host TLS ports", func() {
+				// Verify that the unique index was created
+				migrator := sqlDB.Client.Migrator()
+				hasIndex := migrator.HasIndex("tcp_routes", "idx_tcp_route")
+				Expect(hasIndex).To(BeTrue(), "Index idx_tcp_route should exist on tcp_routes table")
+
 				sniHostname1 := "sniHostname1"
 				tcpRoute2 := models.TcpRouteMapping{
 					Model:     models.Model{Guid: "guid-2"},
@@ -119,6 +124,11 @@ var _ = Describe("V6TCPTLSRoutes", func() {
 			})
 
 			It("denies adding the same TCP routes with different instance_ids", func() {
+				// Verify that the unique index was created
+				migrator := sqlDB.Client.Migrator()
+				hasIndex := migrator.HasIndex("tcp_routes", "idx_tcp_route")
+				Expect(hasIndex).To(BeTrue(), "Index idx_tcp_route should exist on tcp_routes table")
+
 				sniHostname1 := "sniHostname1"
 				tcpRoute2 := models.TcpRouteMapping{
 					Model:     models.Model{Guid: "guid-2"},

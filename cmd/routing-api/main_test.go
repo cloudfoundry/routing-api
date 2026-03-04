@@ -6,6 +6,9 @@ import (
 	"os"
 	"time"
 
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
+
 	routingAPI "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/routing-api/cmd/routing-api/testrunner"
 	"code.cloudfoundry.org/routing-api/db"
@@ -161,7 +164,7 @@ var _ = Describe("Main", func() {
 			routingAPIConfig := testrunner.GetRoutingAPIConfig(defaultConfig)
 			connectionString, err := db.ConnectionString(&routingAPIConfig.SqlDB)
 			Expect(err).NotTo(HaveOccurred())
-			gormDB, err := gorm.Open(routingAPIConfig.SqlDB.Type, connectionString)
+			gormDB, err := gorm.Open(getGormDialect(routingAPIConfig.SqlDB.Type, connectionString), &gorm.Config{})
 			Expect(err).NotTo(HaveOccurred())
 
 			getRoutes := func() string {
@@ -241,13 +244,13 @@ var _ = Describe("Main", func() {
 			}
 			connectionString, err := db.ConnectionString(&routingAPIConfig.SqlDB)
 			Expect(err).NotTo(HaveOccurred())
-			gormDB, err = gorm.Open(routingAPIConfig.SqlDB.Type, connectionString)
+			gormDB, err = gorm.Open(getGormDialect(routingAPIConfig.SqlDB.Type, connectionString), &gorm.Config{})
 			Expect(err).NotTo(HaveOccurred())
 		})
-		/*		AfterEach(func() {
-				gormDB.AutoMigrate(&models.RouterGroupDB{})
-				Expect(os.Remove(configPath)).To(Succeed())
-			})*/
+		AfterEach(func() {
+			gormDB.AutoMigrate(&models.RouterGroupDB{})
+			Expect(os.Remove(configPath)).To(Succeed())
+		})
 		It("should fail with an error", func() {
 			routingAPIRunner := testrunner.New(routingAPIBinPath, routingAPIArgs)
 			proc := ifrit.Invoke(routingAPIRunner)
@@ -260,3 +263,16 @@ var _ = Describe("Main", func() {
 		})
 	})
 })
+
+func getGormDialect(databaseType string, connectionString string) gorm.Dialector {
+	var dialect gorm.Dialector
+
+	switch databaseType {
+	case "postgres":
+		dialect = postgres.Open(connectionString)
+	case "mysql":
+		dialect = mysql.Open(connectionString)
+	}
+
+	return dialect
+}

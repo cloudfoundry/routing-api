@@ -2,7 +2,6 @@ package migration
 
 import (
 	"code.cloudfoundry.org/routing-api/db"
-	"code.cloudfoundry.org/routing-api/models"
 )
 
 type V7TCPTLSRoutes struct{}
@@ -16,20 +15,20 @@ func (v *V7TCPTLSRoutes) Version() int {
 }
 
 func (v *V7TCPTLSRoutes) Run(sqlDB *db.SqlDB) error {
-	_, err := sqlDB.Client.Model(&models.TcpRouteMapping{}).RemoveIndex("idx_tcp_route")
+	// Update the instance_id column to allow NULL values
+	err := sqlDB.Client.ExecWithError("ALTER TABLE tcp_routes MODIFY COLUMN instance_id varchar(255) DEFAULT NULL")
 	if err != nil {
 		return err
 	}
 
-	if sqlDB.Client.Dialect().GetName() == "postgres" {
-		sqlDB.Client.Exec("ALTER TABLE tcp_routes ALTER COLUMN instance_id DROP NOT NULL")
-	} else {
-		sqlDB.Client.Exec("ALTER TABLE tcp_routes MODIFY COLUMN instance_id varchar(255) DEFAULT NULL")
-	}
+	// Drop existing index if it exists - using correct MySQL syntax with table name
+	_ = sqlDB.Client.ExecWithError("DROP INDEX idx_tcp_route ON tcp_routes")
 
-	_, err = sqlDB.Client.Model(&models.TcpRouteMapping{}).AddUniqueIndex("idx_tcp_route", "router_group_guid", "host_port", "host_ip", "external_port", "sni_hostname", "host_tls_port")
+	// Create unique index using raw SQL with column length specifications
+	err = sqlDB.Client.ExecWithError("CREATE UNIQUE INDEX idx_tcp_route ON tcp_routes (router_group_guid(191), host_port, host_ip(191), external_port, sni_hostname(191), host_tls_port)")
 	if err != nil {
 		return err
 	}
-	return err
+
+	return nil
 }

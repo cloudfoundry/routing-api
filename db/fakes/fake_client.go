@@ -6,23 +6,21 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/routing-api/db"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type FakeClient struct {
-	AddUniqueIndexStub        func(string, ...string) (db.Client, error)
+	AddUniqueIndexStub        func(string, interface{}) error
 	addUniqueIndexMutex       sync.RWMutex
 	addUniqueIndexArgsForCall []struct {
 		arg1 string
-		arg2 []string
+		arg2 interface{}
 	}
 	addUniqueIndexReturns struct {
-		result1 db.Client
-		result2 error
+		result1 error
 	}
 	addUniqueIndexReturnsOnCall map[int]struct {
-		result1 db.Client
-		result2 error
+		result1 error
 	}
 	AutoMigrateStub        func(...interface{}) error
 	autoMigrateMutex       sync.RWMutex
@@ -92,15 +90,15 @@ type FakeClient struct {
 		result1 int64
 		result2 error
 	}
-	DialectStub        func() gorm.Dialect
+	DialectStub        func() gorm.Dialector
 	dialectMutex       sync.RWMutex
 	dialectArgsForCall []struct {
 	}
 	dialectReturns struct {
-		result1 gorm.Dialect
+		result1 gorm.Dialector
 	}
 	dialectReturnsOnCall map[int]struct {
-		result1 gorm.Dialect
+		result1 gorm.Dialector
 	}
 	DropColumnStub        func(string) error
 	dropColumnMutex       sync.RWMutex
@@ -124,6 +122,18 @@ type FakeClient struct {
 	}
 	execReturnsOnCall map[int]struct {
 		result1 int64
+	}
+	ExecWithErrorStub        func(string, ...interface{}) error
+	execWithErrorMutex       sync.RWMutex
+	execWithErrorArgsForCall []struct {
+		arg1 string
+		arg2 []interface{}
+	}
+	execWithErrorReturns struct {
+		result1 error
+	}
+	execWithErrorReturnsOnCall map[int]struct {
+		result1 error
 	}
 	FindStub        func(interface{}, ...interface{}) error
 	findMutex       sync.RWMutex
@@ -171,18 +181,27 @@ type FakeClient struct {
 	modelReturnsOnCall map[int]struct {
 		result1 db.Client
 	}
-	RemoveIndexStub        func(string) (db.Client, error)
+	MigratorStub        func() gorm.Migrator
+	migratorMutex       sync.RWMutex
+	migratorArgsForCall []struct {
+	}
+	migratorReturns struct {
+		result1 gorm.Migrator
+	}
+	migratorReturnsOnCall map[int]struct {
+		result1 gorm.Migrator
+	}
+	RemoveIndexStub        func(string, interface{}) error
 	removeIndexMutex       sync.RWMutex
 	removeIndexArgsForCall []struct {
 		arg1 string
+		arg2 interface{}
 	}
 	removeIndexReturns struct {
-		result1 db.Client
-		result2 error
+		result1 error
 	}
 	removeIndexReturnsOnCall map[int]struct {
-		result1 db.Client
-		result2 error
+		result1 error
 	}
 	RollbackStub        func() error
 	rollbackMutex       sync.RWMutex
@@ -220,10 +239,11 @@ type FakeClient struct {
 		result1 int64
 		result2 error
 	}
-	UpdateStub        func(...interface{}) (int64, error)
+	UpdateStub        func(string, interface{}) (int64, error)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
-		arg1 []interface{}
+		arg1 string
+		arg2 interface{}
 	}
 	updateReturns struct {
 		result1 int64
@@ -249,24 +269,24 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) AddUniqueIndex(arg1 string, arg2 ...string) (db.Client, error) {
+func (fake *FakeClient) AddUniqueIndex(arg1 string, arg2 interface{}) error {
 	fake.addUniqueIndexMutex.Lock()
 	ret, specificReturn := fake.addUniqueIndexReturnsOnCall[len(fake.addUniqueIndexArgsForCall)]
 	fake.addUniqueIndexArgsForCall = append(fake.addUniqueIndexArgsForCall, struct {
 		arg1 string
-		arg2 []string
+		arg2 interface{}
 	}{arg1, arg2})
 	stub := fake.AddUniqueIndexStub
 	fakeReturns := fake.addUniqueIndexReturns
 	fake.recordInvocation("AddUniqueIndex", []interface{}{arg1, arg2})
 	fake.addUniqueIndexMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2...)
+		return fake.AddUniqueIndexStub(arg1, arg2)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
-	return fakeReturns.result1, fakeReturns.result2
+	return fakeReturns.result1
 }
 
 func (fake *FakeClient) AddUniqueIndexCallCount() int {
@@ -275,43 +295,40 @@ func (fake *FakeClient) AddUniqueIndexCallCount() int {
 	return len(fake.addUniqueIndexArgsForCall)
 }
 
-func (fake *FakeClient) AddUniqueIndexCalls(stub func(string, ...string) (db.Client, error)) {
+func (fake *FakeClient) AddUniqueIndexCalls(stub func(string, interface{}) error) {
 	fake.addUniqueIndexMutex.Lock()
 	defer fake.addUniqueIndexMutex.Unlock()
 	fake.AddUniqueIndexStub = stub
 }
 
-func (fake *FakeClient) AddUniqueIndexArgsForCall(i int) (string, []string) {
+func (fake *FakeClient) AddUniqueIndexArgsForCall(i int) (string, interface{}) {
 	fake.addUniqueIndexMutex.RLock()
 	defer fake.addUniqueIndexMutex.RUnlock()
 	argsForCall := fake.addUniqueIndexArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeClient) AddUniqueIndexReturns(result1 db.Client, result2 error) {
+func (fake *FakeClient) AddUniqueIndexReturns(result1 error) {
 	fake.addUniqueIndexMutex.Lock()
 	defer fake.addUniqueIndexMutex.Unlock()
 	fake.AddUniqueIndexStub = nil
 	fake.addUniqueIndexReturns = struct {
-		result1 db.Client
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
-func (fake *FakeClient) AddUniqueIndexReturnsOnCall(i int, result1 db.Client, result2 error) {
+func (fake *FakeClient) AddUniqueIndexReturnsOnCall(i int, result1 error) {
 	fake.addUniqueIndexMutex.Lock()
 	defer fake.addUniqueIndexMutex.Unlock()
 	fake.AddUniqueIndexStub = nil
 	if fake.addUniqueIndexReturnsOnCall == nil {
 		fake.addUniqueIndexReturnsOnCall = make(map[int]struct {
-			result1 db.Client
-			result2 error
+			result1 error
 		})
 	}
 	fake.addUniqueIndexReturnsOnCall[i] = struct {
-		result1 db.Client
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeClient) AutoMigrate(arg1 ...interface{}) error {
@@ -663,7 +680,7 @@ func (fake *FakeClient) DeleteReturnsOnCall(i int, result1 int64, result2 error)
 	}{result1, result2}
 }
 
-func (fake *FakeClient) Dialect() gorm.Dialect {
+func (fake *FakeClient) Dialect() gorm.Dialector {
 	fake.dialectMutex.Lock()
 	ret, specificReturn := fake.dialectReturnsOnCall[len(fake.dialectArgsForCall)]
 	fake.dialectArgsForCall = append(fake.dialectArgsForCall, struct {
@@ -687,32 +704,32 @@ func (fake *FakeClient) DialectCallCount() int {
 	return len(fake.dialectArgsForCall)
 }
 
-func (fake *FakeClient) DialectCalls(stub func() gorm.Dialect) {
+func (fake *FakeClient) DialectCalls(stub func() gorm.Dialector) {
 	fake.dialectMutex.Lock()
 	defer fake.dialectMutex.Unlock()
 	fake.DialectStub = stub
 }
 
-func (fake *FakeClient) DialectReturns(result1 gorm.Dialect) {
+func (fake *FakeClient) DialectReturns(result1 gorm.Dialector) {
 	fake.dialectMutex.Lock()
 	defer fake.dialectMutex.Unlock()
 	fake.DialectStub = nil
 	fake.dialectReturns = struct {
-		result1 gorm.Dialect
+		result1 gorm.Dialector
 	}{result1}
 }
 
-func (fake *FakeClient) DialectReturnsOnCall(i int, result1 gorm.Dialect) {
+func (fake *FakeClient) DialectReturnsOnCall(i int, result1 gorm.Dialector) {
 	fake.dialectMutex.Lock()
 	defer fake.dialectMutex.Unlock()
 	fake.DialectStub = nil
 	if fake.dialectReturnsOnCall == nil {
 		fake.dialectReturnsOnCall = make(map[int]struct {
-			result1 gorm.Dialect
+			result1 gorm.Dialector
 		})
 	}
 	fake.dialectReturnsOnCall[i] = struct {
-		result1 gorm.Dialect
+		result1 gorm.Dialector
 	}{result1}
 }
 
@@ -836,6 +853,68 @@ func (fake *FakeClient) ExecReturnsOnCall(i int, result1 int64) {
 	}
 	fake.execReturnsOnCall[i] = struct {
 		result1 int64
+	}{result1}
+}
+
+func (fake *FakeClient) ExecWithError(arg1 string, arg2 ...interface{}) error {
+	fake.execWithErrorMutex.Lock()
+	ret, specificReturn := fake.execWithErrorReturnsOnCall[len(fake.execWithErrorArgsForCall)]
+	fake.execWithErrorArgsForCall = append(fake.execWithErrorArgsForCall, struct {
+		arg1 string
+		arg2 []interface{}
+	}{arg1, arg2})
+	stub := fake.ExecWithErrorStub
+	fakeReturns := fake.execWithErrorReturns
+	fake.recordInvocation("ExecWithError", []interface{}{arg1, arg2})
+	fake.execWithErrorMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2...)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeClient) ExecWithErrorCallCount() int {
+	fake.execWithErrorMutex.RLock()
+	defer fake.execWithErrorMutex.RUnlock()
+	return len(fake.execWithErrorArgsForCall)
+}
+
+func (fake *FakeClient) ExecWithErrorCalls(stub func(string, ...interface{}) error) {
+	fake.execWithErrorMutex.Lock()
+	defer fake.execWithErrorMutex.Unlock()
+	fake.ExecWithErrorStub = stub
+}
+
+func (fake *FakeClient) ExecWithErrorArgsForCall(i int) (string, []interface{}) {
+	fake.execWithErrorMutex.RLock()
+	defer fake.execWithErrorMutex.RUnlock()
+	argsForCall := fake.execWithErrorArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeClient) ExecWithErrorReturns(result1 error) {
+	fake.execWithErrorMutex.Lock()
+	defer fake.execWithErrorMutex.Unlock()
+	fake.ExecWithErrorStub = nil
+	fake.execWithErrorReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) ExecWithErrorReturnsOnCall(i int, result1 error) {
+	fake.execWithErrorMutex.Lock()
+	defer fake.execWithErrorMutex.Unlock()
+	fake.ExecWithErrorStub = nil
+	if fake.execWithErrorReturnsOnCall == nil {
+		fake.execWithErrorReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.execWithErrorReturnsOnCall[i] = struct {
+		result1 error
 	}{result1}
 }
 
@@ -1085,23 +1164,77 @@ func (fake *FakeClient) ModelReturnsOnCall(i int, result1 db.Client) {
 	}{result1}
 }
 
-func (fake *FakeClient) RemoveIndex(arg1 string) (db.Client, error) {
+func (fake *FakeClient) Migrator() gorm.Migrator {
+	fake.migratorMutex.Lock()
+	ret, specificReturn := fake.migratorReturnsOnCall[len(fake.migratorArgsForCall)]
+	fake.migratorArgsForCall = append(fake.migratorArgsForCall, struct {
+	}{})
+	stub := fake.MigratorStub
+	fakeReturns := fake.migratorReturns
+	fake.recordInvocation("Migrator", []interface{}{})
+	fake.migratorMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeClient) MigratorCallCount() int {
+	fake.migratorMutex.RLock()
+	defer fake.migratorMutex.RUnlock()
+	return len(fake.migratorArgsForCall)
+}
+
+func (fake *FakeClient) MigratorCalls(stub func() gorm.Migrator) {
+	fake.migratorMutex.Lock()
+	defer fake.migratorMutex.Unlock()
+	fake.MigratorStub = stub
+}
+
+func (fake *FakeClient) MigratorReturns(result1 gorm.Migrator) {
+	fake.migratorMutex.Lock()
+	defer fake.migratorMutex.Unlock()
+	fake.MigratorStub = nil
+	fake.migratorReturns = struct {
+		result1 gorm.Migrator
+	}{result1}
+}
+
+func (fake *FakeClient) MigratorReturnsOnCall(i int, result1 gorm.Migrator) {
+	fake.migratorMutex.Lock()
+	defer fake.migratorMutex.Unlock()
+	fake.MigratorStub = nil
+	if fake.migratorReturnsOnCall == nil {
+		fake.migratorReturnsOnCall = make(map[int]struct {
+			result1 gorm.Migrator
+		})
+	}
+	fake.migratorReturnsOnCall[i] = struct {
+		result1 gorm.Migrator
+	}{result1}
+}
+
+func (fake *FakeClient) RemoveIndex(arg1 string, arg2 interface{}) error {
 	fake.removeIndexMutex.Lock()
 	ret, specificReturn := fake.removeIndexReturnsOnCall[len(fake.removeIndexArgsForCall)]
 	fake.removeIndexArgsForCall = append(fake.removeIndexArgsForCall, struct {
 		arg1 string
-	}{arg1})
+		arg2 interface{}
+	}{arg1, arg2})
 	stub := fake.RemoveIndexStub
 	fakeReturns := fake.removeIndexReturns
 	fake.recordInvocation("RemoveIndex", []interface{}{arg1})
 	fake.removeIndexMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return fake.RemoveIndexStub(arg1, arg2)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
-	return fakeReturns.result1, fakeReturns.result2
+	return fakeReturns.result1
 }
 
 func (fake *FakeClient) RemoveIndexCallCount() int {
@@ -1110,7 +1243,7 @@ func (fake *FakeClient) RemoveIndexCallCount() int {
 	return len(fake.removeIndexArgsForCall)
 }
 
-func (fake *FakeClient) RemoveIndexCalls(stub func(string) (db.Client, error)) {
+func (fake *FakeClient) RemoveIndexCalls(stub func(string, interface{}) error) {
 	fake.removeIndexMutex.Lock()
 	defer fake.removeIndexMutex.Unlock()
 	fake.RemoveIndexStub = stub
@@ -1123,30 +1256,27 @@ func (fake *FakeClient) RemoveIndexArgsForCall(i int) string {
 	return argsForCall.arg1
 }
 
-func (fake *FakeClient) RemoveIndexReturns(result1 db.Client, result2 error) {
+func (fake *FakeClient) RemoveIndexReturns(result1 error) {
 	fake.removeIndexMutex.Lock()
 	defer fake.removeIndexMutex.Unlock()
 	fake.RemoveIndexStub = nil
 	fake.removeIndexReturns = struct {
-		result1 db.Client
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
-func (fake *FakeClient) RemoveIndexReturnsOnCall(i int, result1 db.Client, result2 error) {
+func (fake *FakeClient) RemoveIndexReturnsOnCall(i int, result1 error) {
 	fake.removeIndexMutex.Lock()
 	defer fake.removeIndexMutex.Unlock()
 	fake.RemoveIndexStub = nil
 	if fake.removeIndexReturnsOnCall == nil {
 		fake.removeIndexReturnsOnCall = make(map[int]struct {
-			result1 db.Client
-			result2 error
+			result1 error
 		})
 	}
 	fake.removeIndexReturnsOnCall[i] = struct {
-		result1 db.Client
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeClient) Rollback() error {
@@ -1330,18 +1460,20 @@ func (fake *FakeClient) SaveReturnsOnCall(i int, result1 int64, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeClient) Update(arg1 ...interface{}) (int64, error) {
+func (fake *FakeClient) Update(arg1 string, arg2 interface{}) (int64, error) {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
-		arg1 []interface{}
-	}{arg1})
+		arg1 string
+		arg2 interface{}
+	}{arg1, arg2})
+	fake.recordInvocation("Update", []interface{}{arg1, arg2})
 	stub := fake.UpdateStub
 	fakeReturns := fake.updateReturns
 	fake.recordInvocation("Update", []interface{}{arg1})
 	fake.updateMutex.Unlock()
 	if stub != nil {
-		return stub(arg1...)
+		return fake.UpdateStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -1355,17 +1487,17 @@ func (fake *FakeClient) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeClient) UpdateCalls(stub func(...interface{}) (int64, error)) {
+func (fake *FakeClient) UpdateCalls(stub func(string, interface{}) (int64, error)) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakeClient) UpdateArgsForCall(i int) []interface{} {
+func (fake *FakeClient) UpdateArgsForCall(i int) (string, interface{}) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeClient) UpdateReturns(result1 int64, result2 error) {
@@ -1479,6 +1611,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.dropColumnMutex.RUnlock()
 	fake.execMutex.RLock()
 	defer fake.execMutex.RUnlock()
+	fake.execWithErrorMutex.RLock()
+	defer fake.execWithErrorMutex.RUnlock()
 	fake.findMutex.RLock()
 	defer fake.findMutex.RUnlock()
 	fake.firstMutex.RLock()
@@ -1487,6 +1621,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.hasTableMutex.RUnlock()
 	fake.modelMutex.RLock()
 	defer fake.modelMutex.RUnlock()
+	fake.migratorMutex.RLock()
+	defer fake.migratorMutex.RUnlock()
 	fake.removeIndexMutex.RLock()
 	defer fake.removeIndexMutex.RUnlock()
 	fake.rollbackMutex.RLock()
@@ -1519,3 +1655,5 @@ func (fake *FakeClient) recordInvocation(key string, args []interface{}) {
 }
 
 var _ db.Client = new(FakeClient)
+
+// TODO Spec dep adaption inside the BOSH release

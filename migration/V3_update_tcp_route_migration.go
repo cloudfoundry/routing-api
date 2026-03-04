@@ -18,5 +18,5 @@ func (v *V3UpdateTcpRouteMigration) Version() int {
 }
 
 func (v *V3UpdateTcpRouteMigration) Run(sqlDB *db.SqlDB) error {
-	return sqlDB.Client.Model(models.TcpRouteMapping{}).AutoMigrate(models.TcpRouteMapping{})
+	return sqlDB.Client.AutoMigrate(&models.TcpRouteMapping{})
 }
