@@ -1,12 +1,23 @@
 package migration
 
 import (
+	"fmt"
 	"os"
 
 	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/routing-api/db"
 	"gorm.io/gorm"
 )
+
+// dropIndex drops an index by name. MySQL requires "DROP INDEX name ON table",
+// PostgreSQL uses "DROP INDEX IF EXISTS name".
+func dropIndex(sqlDB *db.SqlDB, indexName, tableName string) {
+	if sqlDB.Client.Dialect().Name() == "mysql" {
+		_ = sqlDB.Client.ExecWithError(fmt.Sprintf("DROP INDEX %s ON %s", indexName, tableName))
+	} else {
+		_ = sqlDB.Client.ExecWithError(fmt.Sprintf("DROP INDEX IF EXISTS %s", indexName))
+	}
+}
 
 const MigrationKey = "routing-api-migration"
 

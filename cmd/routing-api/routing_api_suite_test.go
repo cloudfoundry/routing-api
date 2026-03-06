@@ -70,10 +70,7 @@ var _ = SynchronizedBeforeSuite(
 		Expect(err).NotTo(HaveOccurred())
 
 		locketPath, err := gexec.Build("code.cloudfoundry.org/locket/cmd/locket", "-race")
-		if err != nil {
-			// If building locket fails due to missing dependencies, skip the test
-			Skip(fmt.Sprintf("Skipping test suite: locket dependency issue - %v", err))
-		}
+		Expect(err).NotTo(HaveOccurred())
 
 		return []byte(strings.Join([]string{routingAPIBin, locketPath}, ","))
 	},
@@ -82,9 +79,6 @@ var _ = SynchronizedBeforeSuite(
 
 		path := string(binPaths)
 		parts := strings.Split(path, ",")
-		if len(parts) < 2 || parts[1] == "" {
-			Skip("Skipping test suite: locket binary not available")
-		}
 		routingAPIBinPath = parts[0]
 		locketBinPath = parts[1]
 

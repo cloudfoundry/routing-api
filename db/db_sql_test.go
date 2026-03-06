@@ -2085,13 +2085,10 @@ var _ = Describe("SqlDB", func() {
 				It("eventually resolves the issue", func() {
 					timeout := 10.0
 
-					// Verify successful pruning starts working
 					Eventually(logger, timeout).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":1}`))
 
-					// Verify errors occur
 					Eventually(logger, timeout).Should(gbytes.Say(`failed-to-prune-tcp-routes","log_level":2,"data":{"error":"temp-error"}`))
 
-					// Verify recovery with more rows
 					Eventually(logger, timeout).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":111}`))
 				})
 			})

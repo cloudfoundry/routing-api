@@ -1,4 +1,5 @@
 go.mod
+go.sum
 tags
 cmd/routing-api/routing-api
 /routing-api

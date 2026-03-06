@@ -27,7 +27,6 @@ func (v *V2UpdateRgMigration) Run(sqlDB *db.SqlDB) error {
 		return err
 	}
 
-	// Check for duplicates
 	nameMap := make(map[string]int)
 	for _, rg := range rgs {
 		nameMap[rg.Name]++
@@ -39,14 +38,14 @@ func (v *V2UpdateRgMigration) Run(sqlDB *db.SqlDB) error {
 		}
 	}
 
-	// Remove old index if it exists - using correct MySQL syntax with table name
-	_ = sqlDB.Client.ExecWithError("DROP INDEX idx_rg_name ON router_groups")
+	dropIndex(sqlDB, "idx_rg_name", "router_groups")
 
-	// Create unique index using raw SQL with column length specification
-	err = sqlDB.Client.ExecWithError("CREATE UNIQUE INDEX idx_rg_name ON router_groups (name(191))")
-	if err != nil {
-		return err
+	// Create unique index - MySQL requires length prefix for text columns
+	var indexSQL string
+	if sqlDB.Client.Dialect().Name() == "mysql" {
+		indexSQL = "CREATE UNIQUE INDEX idx_rg_name ON router_groups (name(191))"
+	} else {
+		indexSQL = "CREATE UNIQUE INDEX idx_rg_name ON router_groups (name)"
 	}
-
-	return nil
+	return sqlDB.Client.ExecWithError(indexSQL)
 }

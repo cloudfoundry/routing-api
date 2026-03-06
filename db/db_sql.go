@@ -19,8 +19,6 @@ import (
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/models"
 
-	_ "gorm.io/driver/mysql"
-	_ "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -128,7 +126,6 @@ func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 		return nil, err
 	}
 
-	// Use the connection pool and setup it
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, err

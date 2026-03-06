@@ -55,7 +55,6 @@ var _ = Describe("V2UpdateRgMigration", func() {
 			})
 
 			It("does not allow duplicate router group names", func() {
-				// Verify that the unique index was created
 				migrator := sqlDB.Client.Migrator()
 				hasIndex := migrator.HasIndex("router_groups", "idx_rg_name")
 				Expect(hasIndex).To(BeTrue(), "Index idx_rg_name should exist on router_groups table")
