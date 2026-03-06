@@ -1,8 +1,9 @@
 package testrunner
 
 import (
-	"code.cloudfoundry.org/routing-api/config"
 	"os"
+
+	"code.cloudfoundry.org/routing-api/config"
 )
 
 const (

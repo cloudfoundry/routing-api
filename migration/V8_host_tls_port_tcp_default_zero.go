@@ -21,14 +21,14 @@ func (v *V8HostTLSPortTCPDefaultZero) Run(sqlDB *db.SqlDB) error {
 		return err
 	}
 
-	// Try to remove the old index if it exists - using correct MySQL syntax with table name
-	_ = sqlDB.Client.ExecWithError("DROP INDEX IF EXISTS idx_tcp_route ON tcp_routes")
+	// Try to remove the old index if it exists
+	dropIndex(sqlDB, "idx_tcp_route", "tcp_routes")
 
-	// Set the DEFAULT 0 on the host_tls_port column
-	err = sqlDB.Client.ExecWithError("ALTER TABLE tcp_routes MODIFY COLUMN host_tls_port int DEFAULT 0")
-	if err != nil {
-		return err
+	// Set the DEFAULT 0 on the host_tls_port column - syntax differs by database
+	if sqlDB.Client.Dialect().Name() == "mysql" {
+		err = sqlDB.Client.ExecWithError("ALTER TABLE tcp_routes MODIFY COLUMN host_tls_port int DEFAULT 0")
+	} else {
+		err = sqlDB.Client.ExecWithError("ALTER TABLE tcp_routes ALTER COLUMN host_tls_port SET DEFAULT 0")
 	}
-
-	return nil
+	return err
 }

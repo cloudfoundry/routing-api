@@ -63,7 +63,7 @@ func (a *postgresAllocator) Create() (*config.SqlDB, error) {
 	if err != nil {
 		return nil, err
 	}
-	a.sqlDB, err = sql.Open("postgres", connStr)
+	a.sqlDB, err = sql.Open("pgx", connStr)
 	if err != nil {
 		return nil, err
 	}

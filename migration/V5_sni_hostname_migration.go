@@ -24,14 +24,14 @@ func (v *V5SniHostnameMigration) Run(sqlDB *db.SqlDB) error {
 	}
 
 	// Drop old index if it exists (ignore errors since it might not exist)
-	_ = sqlDB.Client.ExecWithError("DROP INDEX idx_tcp_route ON tcp_routes")
+	dropIndex(sqlDB, "idx_tcp_route", "tcp_routes")
 
-	// Create unique index for SNI hostname constraint with column length specifications
-	// This allows routes with same fingerprint but different SNI hostnames
-	err = sqlDB.Client.ExecWithError("CREATE UNIQUE INDEX idx_tcp_route ON tcp_routes (router_group_guid(191), host_port, host_ip(191), external_port, sni_hostname(191))")
-	if err != nil {
-		return err
+	// Create unique index - MySQL requires length prefixes for text columns
+	var indexSQL string
+	if sqlDB.Client.Dialect().Name() == "mysql" {
+		indexSQL = "CREATE UNIQUE INDEX idx_tcp_route ON tcp_routes (router_group_guid(191), host_port, host_ip(191), external_port, sni_hostname(191))"
+	} else {
+		indexSQL = "CREATE UNIQUE INDEX idx_tcp_route ON tcp_routes (router_group_guid, host_port, host_ip, external_port, sni_hostname)"
 	}
-
-	return nil
+	return sqlDB.Client.ExecWithError(indexSQL)
 }

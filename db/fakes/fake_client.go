@@ -1655,5 +1655,3 @@ func (fake *FakeClient) recordInvocation(key string, args []interface{}) {
 }
 
 var _ db.Client = new(FakeClient)
-
-// TODO Spec dep adaption inside the BOSH release

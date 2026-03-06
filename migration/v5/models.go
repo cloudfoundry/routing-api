@@ -27,10 +27,10 @@ func (TcpRouteMapping) TableName() string {
 
 type TcpMappingEntity struct {
 	RouterGroupGuid  string  `gorm:"not null; unique_index:idx_tcp_route" json:"router_group_guid"`
-	HostPort         uint16  `gorm:"not null; unique_index:idx_tcp_route; type:int" json:"backend_port"`
+	HostPort         uint16  `gorm:"not null; unique_index:idx_tcp_route; type:int; size:32" json:"backend_port"`
 	HostIP           string  `gorm:"not null; unique_index:idx_tcp_route" json:"backend_ip"`
 	SniHostname      *string `gorm:"default:null; unique_index:idx_tcp_route" json:"backend_sni_hostname,omitempty"`
-	ExternalPort     uint16  `gorm:"not null; unique_index:idx_tcp_route; type: int" json:"port"`
+	ExternalPort     uint16  `gorm:"not null; unique_index:idx_tcp_route; type:int; size:32" json:"port"`
 	ModificationTag  `json:"modification_tag"`
 	TTL              *int   `json:"ttl,omitempty"`
 	IsolationSegment string `json:"isolation_segment"`

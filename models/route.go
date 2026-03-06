@@ -14,7 +14,7 @@ type Route struct {
 
 type RouteEntity struct {
 	Route           string `gorm:"not null; unique_index:idx_route" json:"route"`
-	Port            uint16 `gorm:"not null; unique_index:idx_route" json:"port"`
+	Port            uint16 `gorm:"not null; unique_index:idx_route; size:32" json:"port"`
 	IP              string `gorm:"not null; unique_index:idx_route" json:"ip"`
 	TTL             *int   `json:"ttl"`
 	LogGuid         string `json:"log_guid"`

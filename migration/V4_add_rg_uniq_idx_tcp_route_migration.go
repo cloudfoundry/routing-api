@@ -17,11 +17,16 @@ func (v *V4AddRgUniqIdxTCPRoute) Version() int {
 }
 
 func (v *V4AddRgUniqIdxTCPRoute) Run(sqlDB *db.SqlDB) error {
-	// Drop existing index if it exists - using correct MySQL syntax with table name
-	sqlDB.Client.Exec("DROP INDEX IF EXISTS idx_tcp_route ON tcp_routes")
+	dropIndex(sqlDB, "idx_tcp_route", "tcp_routes")
 
-	// Create unique index using raw SQL
-	sqlDB.Client.Exec("CREATE UNIQUE INDEX idx_tcp_route ON tcp_routes (router_group_guid, host_port, host_ip, external_port)")
+	// Create unique index - MySQL requires length prefixes for text columns
+	var indexSQL string
+	if sqlDB.Client.Dialect().Name() == "mysql" {
+		indexSQL = "CREATE UNIQUE INDEX idx_tcp_route ON tcp_routes (router_group_guid(191), host_port, host_ip(191), external_port)"
+	} else {
+		indexSQL = "CREATE UNIQUE INDEX idx_tcp_route ON tcp_routes (router_group_guid, host_port, host_ip, external_port)"
+	}
+	sqlDB.Client.Exec(indexSQL)
 
 	return nil
 }
