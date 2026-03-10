@@ -60,7 +60,7 @@ const (
 	ROUTER_GROUP_WATCH    string = "router-group-watch"
 )
 
-const backupError = "database unavailable due to backup or restore"
+const backupError = "Database unavailable due to backup or restore"
 
 type rwLocker struct {
 	readLock  uint32
@@ -103,7 +103,7 @@ var DeleteRouterGroupError = DBError{Type: KeyNotFound, Message: "Delete Fails: 
 
 func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 	if cfg == nil {
-		return nil, errors.New("the sql configuration cannot be nil")
+		return nil, errors.New("Sql configuration cannot be nil")
 	}
 
 	connStr, err := ConnectionString(cfg)
@@ -159,7 +159,7 @@ func (s *SqlDB) FindExpiredRoutes(routes interface{}, c clock.Clock) error {
 func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration, signals <-chan os.Signal) {
 	var tcpInFlight, httpInFlight int32
 	pruningTicker := time.NewTicker(pruningInterval)
-	clockVar := clock.NewClock()
+	clock := clock.NewClock()
 	for {
 		select {
 		case <-pruningTicker.C:
@@ -167,7 +167,7 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 				go func() {
 					defer atomic.StoreInt32(&tcpInFlight, 0)
 					var tcpRoutes []models.TcpRouteMapping
-					err := s.FindExpiredRoutes(&tcpRoutes, clockVar)
+					err := s.FindExpiredRoutes(&tcpRoutes, clock)
 					if err != nil {
 						logger.Error("failed-to-prune-tcp-routes", err)
 						return
@@ -196,7 +196,7 @@ func (s *SqlDB) CleanupRoutes(logger lager.Logger, pruningInterval time.Duration
 				go func() {
 					defer atomic.StoreInt32(&httpInFlight, 0)
 					var httpRoutes []models.Route
-					err := s.FindExpiredRoutes(&httpRoutes, clockVar)
+					err := s.FindExpiredRoutes(&httpRoutes, clock)
 					if err != nil {
 						logger.Error("failed-to-prune-http-routes", err)
 						return
@@ -396,7 +396,7 @@ func (s *SqlDB) readRoute(route models.Route) (models.Route, error) {
 	}
 	count := len(routes)
 	if count > 1 || count < 0 {
-		return route, errors.New("have duplicate routes")
+		return route, errors.New("Have duplicate routes")
 	}
 	if count == 1 {
 		return routes[0], nil
@@ -506,7 +506,7 @@ func (s *SqlDB) FindExistingTcpRouteMapping(tcpMapping models.TcpRouteMapping) (
 	}
 	count := len(routes)
 	if count > 1 || count < 0 {
-		return tcpRoute, errors.New("have duplicate tcp route mappings")
+		return tcpRoute, errors.New("Have duplicate tcp route mappings")
 	}
 	if count == 1 {
 		tcpRoute = routes[0]
@@ -527,7 +527,7 @@ func (s *SqlDB) emitEvent(eventType EventType, obj interface{}) error {
 	case models.TcpRouteMapping:
 		s.tcpEventHub.Emit(event)
 	default:
-		return errors.New("unknown event type")
+		return errors.New("Unknown event type")
 	}
 	return nil
 }
@@ -598,41 +598,41 @@ func (s *SqlDB) WatchChanges(watchType string) (<-chan Event, <-chan error, cont
 		err error
 	)
 	events := make(chan Event)
-	errorList := make(chan error, 1)
+	errors := make(chan error, 1)
 	cancelFunc := func() {}
 
 	switch watchType {
 	case TCP_WATCH:
 		sub, err = s.tcpEventHub.Subscribe()
 		if err != nil {
-			errorList <- err
+			errors <- err
 			close(events)
-			close(errorList)
-			return events, errorList, cancelFunc
+			close(errors)
+			return events, errors, cancelFunc
 		}
 	case HTTP_WATCH:
 		sub, err = s.httpEventHub.Subscribe()
 		if err != nil {
-			errorList <- err
+			errors <- err
 			close(events)
-			close(errorList)
-			return events, errorList, cancelFunc
+			close(errors)
+			return events, errors, cancelFunc
 		}
 	default:
 		err := fmt.Errorf("Invalid watch type: %s", watchType)
-		errorList <- err
+		errors <- err
 		close(events)
-		close(errorList)
-		return events, errorList, cancelFunc
+		close(errors)
+		return events, errors, cancelFunc
 	}
 
 	cancelFunc = func() {
 		_ = sub.Close()
 	}
 
-	go dispatchWatchEvents(sub, events, errorList)
+	go dispatchWatchEvents(sub, events, errors)
 
-	return events, errorList, cancelFunc
+	return events, errors, cancelFunc
 }
 
 func dispatchWatchEvents(sub eventhub.Source, events chan<- Event, errors chan<- error) {

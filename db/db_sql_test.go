@@ -258,23 +258,23 @@ var _ = Describe("SqlDB", func() {
 					})
 					It("ReadRouterGroups returns an error", func() {
 						_, err = sqlDB.ReadRouterGroups()
-						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
 					})
 					It("ReadRouterGroup returns an error", func() {
 						_, err = sqlDB.ReadRouterGroup("foobar")
-						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
 					})
 					It("ReadRouterGroupByName returns an error", func() {
 						_, err = sqlDB.ReadRouterGroupByName("foobar")
-						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
 					})
 					It("SaveRouterGroup returns an error", func() {
 						err = sqlDB.SaveRouterGroup(models.RouterGroup{})
-						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
 					})
 					It("DeleteRouterGroup returns an error", func() {
 						err = sqlDB.DeleteRouterGroup("")
-						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
 					})
 				})
 
@@ -301,7 +301,7 @@ var _ = Describe("SqlDB", func() {
 					})
 					It("DeleteRouterGroup does not return a backup/restore error", func() {
 						err = sqlDB.DeleteRouterGroup("")
-						Expect(err.Error()).NotTo(ContainSubstring("database unavailable due to backup or restore"))
+						Expect(err.Error()).NotTo(ContainSubstring("Database unavailable due to backup or restore"))
 					})
 				})
 
@@ -317,12 +317,12 @@ var _ = Describe("SqlDB", func() {
 
 					It("SaveRouterGroup returns an error", func() {
 						err = sqlDB.SaveRouterGroup(models.RouterGroup{})
-						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
 					})
 
 					It("DeleteRouterGroup returns an error", func() {
 						err = sqlDB.DeleteRouterGroup("")
-						Expect(err.Error()).To(ContainSubstring("database unavailable due to backup or restore"))
+						Expect(err.Error()).To(ContainSubstring("Database unavailable due to backup or restore"))
 					})
 				})
 
@@ -344,7 +344,7 @@ var _ = Describe("SqlDB", func() {
 
 					It("DeleteRouterGroup does not return a backup/restore error", func() {
 						err = sqlDB.DeleteRouterGroup("")
-						Expect(err.Error()).NotTo(ContainSubstring("database unavailable due to backup or restore"))
+						Expect(err.Error()).NotTo(ContainSubstring("Database unavailable due to backup or restore"))
 					})
 				})
 			})
