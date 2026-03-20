@@ -282,6 +282,32 @@ var _ = Describe("Validator", func() {
 					})
 				})
 
+				// We should be validating that TCP route registrations have ports within their
+				// router-group's port. However the current behavior has existed so long that
+				// changing it is pretty risky and could result in TCP routes ceasing to function.
+				// For services using tcp routes this could mean rebinding and restarting apps,
+				// or even deleting and recreating the service + binding + restarting the apps.
+				// There's no easy path to fixing this that won't require a lot of CF developer
+				// pain, so we're codifying the bad behavior now.
+				Context("when external port is not within the router group's reservable ports", func() {
+					BeforeEach(func() {
+						routerGroups = models.RouterGroups{
+							{
+								Guid:            DefaultRouterGroupGuid,
+								Name:            "default-tcp",
+								Type:            "tcp",
+								ReservablePorts: "1024-1032",
+							},
+						}
+						tcpMapping = models.NewTcpRouteMapping(DefaultRouterGroupGuid, 2048, "10.10.10.10", 8080, 0, "", nil, nil, 42, models.ModificationTag{}, false, "")
+					})
+
+					It("does not return an error", func() {
+						err := validator.ValidateCreateTcpRouteMappings([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
+						Expect(err).To(BeNil())
+					})
+				})
+
 				It("blows up when a external port is zero", func() {
 					tcpMapping.ExternalPort = 0
 					err := validator.ValidateCreateTcpRouteMappings([]models.TcpRouteMapping{tcpMapping}, routerGroups, 120)
