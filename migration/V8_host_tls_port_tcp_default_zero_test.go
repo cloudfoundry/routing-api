@@ -154,11 +154,14 @@ var _ = Describe("V8HostTLSPortTCPDefaultZero", func() {
 
 					By("manually updating the default")
 					if sqlDB.Client.Dialect().Name() == "postgres" {
-						sqlDB.Client.Exec("ALTER TABLE tcp_routes ALTER COLUMN host_tls_port SET DEFAULT 0")
+						err := sqlDB.Client.ExecWithError("ALTER TABLE tcp_routes ALTER COLUMN host_tls_port SET DEFAULT 0")
+						Expect(err).ToNot(HaveOccurred())
 					} else {
-						sqlDB.Client.Exec("ALTER TABLE tcp_routes MODIFY COLUMN host_tls_port int DEFAULT 0")
+						err := sqlDB.Client.ExecWithError("ALTER TABLE tcp_routes MODIFY COLUMN host_tls_port int DEFAULT 0")
+						Expect(err).ToNot(HaveOccurred())
 					}
-					sqlDB.Client.Exec("UPDATE tcp_routes SET host_tls_port = 0 WHERE host_tls_port IS NULL")
+					err := sqlDB.Client.ExecWithError("UPDATE tcp_routes SET host_tls_port = 0 WHERE host_tls_port IS NULL")
+					Expect(err).ToNot(HaveOccurred())
 
 					By("validating that there are still 2 tcp routes")
 					tcpRoutes, err := sqlDB.ReadTcpRouteMappings()

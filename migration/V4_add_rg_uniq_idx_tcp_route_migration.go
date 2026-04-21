@@ -26,7 +26,5 @@ func (v *V4AddRgUniqIdxTCPRoute) Run(sqlDB *db.SqlDB) error {
 	} else {
 		indexSQL = "CREATE UNIQUE INDEX idx_tcp_route ON tcp_routes (router_group_guid, host_port, host_ip, external_port)"
 	}
-	sqlDB.Client.Exec(indexSQL)
-
-	return nil
+	return sqlDB.Client.ExecWithError(indexSQL)
 }

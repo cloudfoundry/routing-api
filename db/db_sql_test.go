@@ -1348,7 +1348,7 @@ var _ = Describe("SqlDB", func() {
 
 					AfterEach(func() {
 						if tcpRouteWithModel2.Guid != "" {
-							_, err = sqlDB.Client.Delete(&tcpRouteWithModel2)
+							_, err = sqlDB.Client.Where("guid = ?", tcpRouteWithModel2.Guid).Delete(&tcpRouteWithModel2)
 							Expect(err).ToNot(HaveOccurred())
 						}
 					})
@@ -1613,7 +1613,7 @@ var _ = Describe("SqlDB", func() {
 
 					AfterEach(func() {
 						if routeWithModel2.Guid != "" {
-							_, err = sqlDB.Client.Delete(&routeWithModel2)
+							_, err = sqlDB.Client.Where("guid = ?", routeWithModel2.Guid).Delete(&routeWithModel2)
 							Expect(err).ToNot(HaveOccurred())
 						}
 					})
