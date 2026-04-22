@@ -40,7 +40,7 @@ func NewGormClient(db *gorm.DB) Client {
 	return &gormClient{db: db}
 }
 func (c *gormClient) DropColumn(name string) error {
-	return c.db.Migrator().DropColumn(c.db.Statement.Table, name)
+	return c.db.Migrator().DropColumn(c.db.Statement.Model, name)
 }
 func (c *gormClient) Close() error {
 	sqlDB, err := c.db.DB()
