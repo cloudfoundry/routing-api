@@ -2054,8 +2054,13 @@ var _ = Describe("SqlDB", func() {
 				})
 
 				It("logs error message", func() {
-					Eventually(logger, 2).Should(gbytes.Say(`failed-to-prune-.*-routes","log_level":2,"data":{"error":"sql: database is closed"}`))
-					Eventually(logger, 2).Should(gbytes.Say(`failed-to-prune-.*-routes","log_level":2,"data":{"error":"sql: database is closed"}`))
+					// TCP and HTTP pruning run concurrently; use Buffer().Contents() so we can
+					// assert both messages independently of their ordering.
+					logContents := func() string { return string(logger.(*lagertest.TestLogger).Buffer().Contents()) }
+					Eventually(logContents, 2).Should(And(
+						ContainSubstring(`failed-to-prune-tcp-routes","log_level":2,"data":{"error":"sql: database is closed"}`),
+						ContainSubstring(`failed-to-prune-http-routes","log_level":2,"data":{"error":"sql: database is closed"}`),
+					))
 				})
 			})
 
@@ -2066,6 +2071,7 @@ var _ = Describe("SqlDB", func() {
 				)
 
 				BeforeEach(func() {
+					atomic.StoreInt32(&count, 0)
 					fakeClient = &fakes.FakeClient{}
 					sqlDB.Client = fakeClient
 					fakeClient.FindReturns(nil)
@@ -2085,11 +2091,17 @@ var _ = Describe("SqlDB", func() {
 				It("eventually resolves the issue", func() {
 					timeout := 10.0
 
-					Eventually(logger, timeout).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":1}`))
-
-					Eventually(logger, timeout).Should(gbytes.Say(`failed-to-prune-tcp-routes","log_level":2,"data":{"error":"temp-error"}`))
-
-					Eventually(logger, timeout).Should(gbytes.Say(`"prune.successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":111}`))
+					// TCP and HTTP pruning run concurrently; use Buffer().Contents() so we can
+					// assert both tcp and http messages independently of their ordering.
+					logContents := func() string { return string(logger.(*lagertest.TestLogger).Buffer().Contents()) }
+					Eventually(logContents, timeout).Should(And(
+						ContainSubstring(`successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":1}`),
+						ContainSubstring(`successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":1}`),
+						ContainSubstring(`failed-to-prune-tcp-routes","log_level":2,"data":{"error":"temp-error"}`),
+						ContainSubstring(`failed-to-prune-http-routes","log_level":2,"data":{"error":"temp-error"}`),
+						ContainSubstring(`successfully-finished-pruning-tcp-routes","log_level":1,"data":{"rowsAffected":111}`),
+						ContainSubstring(`successfully-finished-pruning-http-routes","log_level":1,"data":{"rowsAffected":111}`),
+					))
 				})
 			})
 		})
