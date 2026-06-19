@@ -139,7 +139,7 @@ func main() {
 	)})
 
 	if len(locks) == 0 {
-		logger.Fatal("no-locks-configured", errors.New("Lock configuration must be provided"))
+		logger.Fatal("no-locks-configured", errors.New("lock configuration must be provided"))
 	}
 
 	lockGroup := grouper.NewOrdered(os.Interrupt, locks)
@@ -347,11 +347,11 @@ func apiHandler(cfg config.Config, uaaClient uaaclient.TokenValidator, database 
 
 func checkFlags() error {
 	if *configPath == "" {
-		return errors.New("No configuration file provided")
+		return errors.New("no configuration file provided")
 	}
 
 	if *ip == "" {
-		return errors.New("No ip address provided")
+		return errors.New("no ip address provided")
 	}
 
 	return nil

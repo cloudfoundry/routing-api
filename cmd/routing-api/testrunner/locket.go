@@ -7,7 +7,7 @@ import (
 	loggingclient "code.cloudfoundry.org/diego-logging-client"
 	"code.cloudfoundry.org/locket/cmd/locket/config"
 	locketrunner "code.cloudfoundry.org/locket/cmd/locket/testrunner"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 	"github.com/tedsuo/ifrit"
 	ginkgomon "github.com/tedsuo/ifrit/ginkgomon_v2"
 )
@@ -38,8 +38,8 @@ func StartLocket(
 		}
 		if caCert != "" {
 			caFile, err := os.CreateTemp("", "")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(os.WriteFile(caFile.Name(), []byte(caCert), 0400)).To(Succeed())
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
+			gomega.Expect(os.WriteFile(caFile.Name(), []byte(caCert), 0400)).To(gomega.Succeed())
 			cfg.SQLCACertFile = caFile.Name()
 		}
 		cfg.ListenAddress = locketAddress

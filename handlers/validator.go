@@ -117,7 +117,7 @@ func validateRouteServiceUrl(routeService string) *routing_api.Error {
 
 func validateUrl(urlToValidate string) error {
 	if strings.ContainsAny(urlToValidate, "?#") {
-		return errors.New("Url cannot contain any of [?, #]")
+		return errors.New("url cannot contain any of [?, #]")
 	}
 
 	parsedURL, err := url.Parse(urlToValidate)
@@ -127,7 +127,7 @@ func validateUrl(urlToValidate string) error {
 	}
 
 	if parsedURL.String() != urlToValidate {
-		return errors.New("Url cannot contain invalid characters")
+		return errors.New("url cannot contain invalid characters")
 	}
 
 	return nil

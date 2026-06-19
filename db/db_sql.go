@@ -60,7 +60,7 @@ const (
 	ROUTER_GROUP_WATCH    string = "router-group-watch"
 )
 
-const backupError = "Database unavailable due to backup or restore"
+const backupError = "database unavailable due to backup or restore"
 
 type rwLocker struct {
 	readLock  uint32
@@ -103,7 +103,7 @@ var DeleteRouterGroupError = DBError{Type: KeyNotFound, Message: "Delete Fails: 
 
 func NewSqlDB(cfg *config.SqlDB) (*SqlDB, error) {
 	if cfg == nil {
-		return nil, errors.New("Sql configuration cannot be nil")
+		return nil, errors.New("sql configuration cannot be nil")
 	}
 
 	connStr, err := ConnectionString(cfg)
@@ -396,7 +396,7 @@ func (s *SqlDB) readRoute(route models.Route) (models.Route, error) {
 	}
 	count := len(routes)
 	if count > 1 || count < 0 {
-		return route, errors.New("Have duplicate routes")
+		return route, errors.New("have duplicate routes")
 	}
 	if count == 1 {
 		return routes[0], nil
@@ -506,7 +506,7 @@ func (s *SqlDB) FindExistingTcpRouteMapping(tcpMapping models.TcpRouteMapping) (
 	}
 	count := len(routes)
 	if count > 1 || count < 0 {
-		return tcpRoute, errors.New("Have duplicate tcp route mappings")
+		return tcpRoute, errors.New("have duplicate tcp route mappings")
 	}
 	if count == 1 {
 		tcpRoute = routes[0]
@@ -527,7 +527,7 @@ func (s *SqlDB) emitEvent(eventType EventType, obj interface{}) error {
 	case models.TcpRouteMapping:
 		s.tcpEventHub.Emit(event)
 	default:
-		return errors.New("Unknown event type")
+		return errors.New("unknown event type")
 	}
 	return nil
 }
@@ -619,7 +619,7 @@ func (s *SqlDB) WatchChanges(watchType string) (<-chan Event, <-chan error, cont
 			return events, errors, cancelFunc
 		}
 	default:
-		err := fmt.Errorf("Invalid watch type: %s", watchType)
+		err := fmt.Errorf("invalid watch type: %s", watchType)
 		errors <- err
 		close(events)
 		close(errors)
@@ -649,7 +649,7 @@ func dispatchWatchEvents(sub eventhub.Source, events chan<- Event, errors chan<-
 		}
 		watchEvent, ok := event.(Event)
 		if !ok {
-			errors <- fmt.Errorf("Incoming event is not a db.Event: %#v", event)
+			errors <- fmt.Errorf("incoming event is not a db.Event: %#v", event)
 		}
 
 		events <- watchEvent

@@ -33,12 +33,12 @@ func NewAPI(cfg Config, logger lager.Logger) (*uaa.API, error) {
 	if cfg.CACerts != "" {
 		certBytes, err := os.ReadFile(cfg.CACerts)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to read ca cert file: %s", err.Error())
+			return nil, fmt.Errorf("failed to read ca cert file: %s", err.Error())
 		}
 
 		caCertPool := x509.NewCertPool()
 		if ok := caCertPool.AppendCertsFromPEM(certBytes); !ok {
-			return nil, errors.New("Unable to load caCert")
+			return nil, errors.New("unable to load caCert")
 		}
 		tlsConfig.RootCAs = caCertPool
 	}

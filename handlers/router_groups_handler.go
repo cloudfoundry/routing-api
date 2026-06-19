@@ -51,7 +51,7 @@ func (h *RouterGroupsHandler) ListRouterGroups(w http.ResponseWriter, req *http.
 		var rg models.RouterGroup
 		rg, err = h.db.ReadRouterGroupByName(routerGroupName)
 		if rg == (models.RouterGroup{}) {
-			handleNotFoundError(w, fmt.Errorf("Router Group '%s' not found", routerGroupName), log)
+			handleNotFoundError(w, fmt.Errorf("router group '%s' not found", routerGroupName), log)
 			return
 		}
 		routerGroups = []models.RouterGroup{rg}
@@ -112,7 +112,7 @@ func (h *RouterGroupsHandler) UpdateRouterGroup(w http.ResponseWriter, req *http
 	}
 
 	if rg == (models.RouterGroup{}) {
-		handleNotFoundError(w, fmt.Errorf("Router Group '%s' does not exist", guid), log)
+		handleNotFoundError(w, fmt.Errorf("router group '%s' does not exist", guid), log)
 		return
 	}
 

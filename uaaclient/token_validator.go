@@ -56,7 +56,7 @@ func NewTokenValidator(devMode bool, cfg Config, logger lager.Logger) (TokenVali
 func checkPublicKey(key string) error {
 	var block *pem.Block
 	if block, _ = pem.Decode([]byte(key)); block == nil {
-		return errors.New("Public uaa token must be PEM encoded")
+		return errors.New("public uaa token must be PEM encoded")
 	}
 	return nil
 }
@@ -162,7 +162,7 @@ func extractPermissionsFromToken(token *jwt.Token) []string {
 func checkTokenFormat(token string) (string, error) {
 	tokenParts := strings.Split(token, " ")
 	if len(tokenParts) != 2 {
-		return "", errors.New("Invalid token format")
+		return "", errors.New("invalid token format")
 	}
 
 	tokenType, userToken := tokenParts[0], tokenParts[1]

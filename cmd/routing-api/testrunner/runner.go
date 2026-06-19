@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"code.cloudfoundry.org/cf-tcp-router/utils"
 	"code.cloudfoundry.org/locket"
 	"code.cloudfoundry.org/locket/cmd/locket/testrunner"
 	"code.cloudfoundry.org/routing-api/config"
@@ -176,6 +175,6 @@ func createConfig(
 	}
 	configFilePath := configFile.Name()
 
-	err = utils.WriteToFile(routingAPIConfigBytes, configFilePath)
+	err = os.WriteFile(configFilePath, routingAPIConfigBytes, 0644)
 	return configFilePath, err
 }

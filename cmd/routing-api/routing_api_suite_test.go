@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	tlsHelpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
 	loggingclient "code.cloudfoundry.org/diego-logging-client"
+	tlsHelpers "code.cloudfoundry.org/routing-api/test_helpers/tls"
 
 	"code.cloudfoundry.org/diego-logging-client/testhelpers"
 	"code.cloudfoundry.org/go-loggregator/v9/rpc/loggregator_v2"
