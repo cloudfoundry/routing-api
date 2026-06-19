@@ -216,7 +216,7 @@ var _ = Describe("Config", func() {
 			It("populates the value", func() {
 				_, err := config.NewConfigFromBytes(testConfig, true)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(errors.New("No UUID is specified")))
+				Expect(err).To(MatchError(errors.New("no UUID is specified")))
 			})
 		})
 
@@ -352,7 +352,7 @@ var _ = Describe("Config", func() {
 				It("returns error", func() {
 					_, err := config.NewConfigFromBytes(testConfig, true)
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
+					Expect(err.Error()).To(ContainSubstring("port must be between 1024 and 65535"))
 				})
 			})
 
@@ -375,7 +375,7 @@ var _ = Describe("Config", func() {
 				It("returns an error", func() {
 					_, err := config.NewConfigFromBytes(testConfig, true)
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
+					Expect(err.Error()).To(ContainSubstring("port must be between 1024 and 65535"))
 				})
 			})
 
@@ -399,7 +399,7 @@ var _ = Describe("Config", func() {
 				It("returns an error", func() {
 					_, err := config.NewConfigFromBytes(testConfig, true)
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("Port must be between 1024 and 65535"))
+					Expect(err.Error()).To(ContainSubstring("port must be between 1024 and 65535"))
 				})
 			})
 
@@ -469,7 +469,7 @@ var _ = Describe("Config", func() {
 				It("returns an error", func() {
 					_, err := config.NewConfigFromBytes(testConfig, true)
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("Missing reservable_ports in router group:"))
+					Expect(err.Error()).To(ContainSubstring("missing reservable_ports in router group:"))
 				})
 			})
 

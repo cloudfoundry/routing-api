@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 )
 
 func NewTestRequest(body interface{}) *http.Request {
@@ -20,11 +20,11 @@ func NewTestRequest(body interface{}) *http.Request {
 		reader = bytes.NewReader(body)
 	default:
 		jsonBytes, err := json.Marshal(body)
-		Expect(err).ToNot(HaveOccurred())
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		reader = bytes.NewReader(jsonBytes)
 	}
 
 	request, err := http.NewRequest("", "", reader)
-	Expect(err).ToNot(HaveOccurred())
+	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 	return request
 }

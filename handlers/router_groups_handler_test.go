@@ -127,7 +127,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				payload := responseRecorder.Body.String()
 				Expect(payload).To(MatchJSON(`{
 				  "name": "ResourceNotFoundError",
-					"message": "Router Group 'does-not-exist' not found"
+					"message": "router group 'does-not-exist' not found"
 				}`))
 			})
 		})
@@ -333,7 +333,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				Expect(payload).To(MatchJSON(`
 				{
 					"name": "ProcessRequestError",
-					"message": "Cannot process request: Port must be between 1024 and 65535"
+					"message": "Cannot process request: port must be between 1024 and 65535"
 				}`))
 			})
 		})
@@ -383,7 +383,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				Expect(payload).To(MatchJSON(`
 				{
 					"name": "ProcessRequestError",
-					"message": "Cannot process request: Reservable ports are not supported for router groups of type http"
+					"message": "Cannot process request: reservable ports are not supported for router groups of type http"
 				}`))
 			})
 		})
@@ -504,7 +504,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				Expect(payload).To(MatchJSON(`
 				{
 					"name": "ProcessRequestError",
-					"message": "Cannot process request: Missing reservable_ports in router group: default-tcp"
+					"message": "Cannot process request: missing reservable_ports in router group: default-tcp"
 				}`))
 			})
 		})
@@ -587,7 +587,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				payload := responseRecorder.Body.String()
 				Expect(payload).To(MatchJSON(`{
 					"name": "ResourceNotFoundError",
-					"message": "Router Group 'not-exist' does not exist"
+					"message": "router group 'not-exist' does not exist"
 				}`))
 			})
 		})
@@ -882,7 +882,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				})
 				Context("when the scope is routing.router_groups.write", func() {
 					It("returns 200 when re-creating router group with same attributes", func() {
-						createRouterGroup := func() (error, *httptest.ResponseRecorder) {
+						createRouterGroup := func() (*httptest.ResponseRecorder, error) {
 							var err error
 							bodyBytes := []byte(`{"name":"test-group","type":"http"}`)
 							body := bytes.NewReader(bodyBytes)
@@ -893,10 +893,10 @@ var _ = Describe("RouterGroupsHandler", func() {
 							)
 							responseRecorder = httptest.NewRecorder()
 							routerGroupHandler.CreateRouterGroup(responseRecorder, request)
-							return err, responseRecorder
+							return responseRecorder, err
 						}
 
-						err, resp := createRouterGroup()
+						resp, err := createRouterGroup()
 						Expect(err).NotTo(HaveOccurred())
 						Expect(resp.Code).To(Equal(http.StatusCreated))
 
@@ -904,7 +904,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 						fakeRouterGroups := []models.RouterGroup{savedGroup}
 						fakeDb.ReadRouterGroupsReturns(fakeRouterGroups, nil)
 
-						err, resp = createRouterGroup()
+						resp, err = createRouterGroup()
 						Expect(err).NotTo(HaveOccurred())
 						Expect(resp.Code).To(Equal(http.StatusOK))
 						payload := resp.Body.String()
@@ -914,7 +914,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 				})
 				Context("when the scope is NOT routing.router_groups.write", func() {
 					It("returns unauthorized when creating router group with same attributes", func() {
-						createRouterGroup := func() (error, int) {
+						createRouterGroup := func() (int, error) {
 							var err error
 							bodyBytes := []byte(`{"name":"test-group","type":"http"}`)
 							body := bytes.NewReader(bodyBytes)
@@ -925,12 +925,12 @@ var _ = Describe("RouterGroupsHandler", func() {
 							)
 							responseRecorder = httptest.NewRecorder()
 							routerGroupHandler.CreateRouterGroup(responseRecorder, request)
-							return err, responseRecorder.Code
+							return responseRecorder.Code, err
 						}
 
 						fakeClient.ValidateTokenReturns(errors.New("non admin token"))
 
-						err, statusCode := createRouterGroup()
+						statusCode, err := createRouterGroup()
 						Expect(err).ToNot(HaveOccurred())
 						Expect(statusCode).To(Equal(http.StatusUnauthorized))
 					})
@@ -1072,7 +1072,7 @@ var _ = Describe("RouterGroupsHandler", func() {
 						Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
 						responseBody, err := io.ReadAll(responseRecorder.Body)
 						Expect(err).NotTo(HaveOccurred())
-						Expect(responseBody).To(ContainSubstring("Missing reservable_ports in router group: test-group"))
+						Expect(responseBody).To(ContainSubstring("missing reservable_ports in router group: test-group"))
 						Expect(fakeDb.SaveRouterGroupCallCount()).To(Equal(0))
 					})
 				})

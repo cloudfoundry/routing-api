@@ -160,7 +160,7 @@ var _ = Describe("UaaClient", func() {
 					client, err := uaaclient.NewTokenValidator(false, cfg, logger)
 					Expect(client).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("Failed to read ca cert file"))
+					Expect(err.Error()).To(ContainSubstring("failed to read ca cert file"))
 				})
 			})
 
@@ -187,7 +187,7 @@ var _ = Describe("UaaClient", func() {
 					client, err := uaaclient.NewTokenValidator(false, cfg, logger)
 					Expect(client).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("Unable to load caCert"))
+					Expect(err.Error()).To(ContainSubstring("unable to load caCert"))
 				})
 			})
 		})
@@ -248,7 +248,7 @@ var _ = Describe("UaaClient", func() {
 				client, err := uaaclient.NewTokenValidator(false, cfg, logger)
 				Expect(client).To(BeNil())
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("Public uaa token must be PEM encoded"))
+				Expect(err).To(MatchError("public uaa token must be PEM encoded"))
 			})
 		})
 	})
@@ -295,7 +295,7 @@ var _ = Describe("UaaClient", func() {
 		Context("when passed token has invalid format", func() {
 			It("fails", func() {
 				err := uaaClient.ValidateToken("invalid", "some.scope")
-				Expect(err).To(MatchError("Invalid token format"))
+				Expect(err).To(MatchError("invalid token format"))
 			})
 		})
 

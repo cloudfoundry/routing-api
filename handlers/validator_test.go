@@ -76,7 +76,7 @@ var _ = Describe("Validator", func() {
 					err := validator.ValidateCreate(routes, maxTTL)
 					Expect(err).ToNot(BeNil())
 					Expect(err.Type).To(Equal(routing_api.RouteInvalidError))
-					Expect(err.Error()).To(Equal("Url cannot contain invalid characters"))
+					Expect(err.Error()).To(Equal("url cannot contain invalid characters"))
 				})
 
 				It("returns an error if the path is not valid", func() {
@@ -121,7 +121,7 @@ var _ = Describe("Validator", func() {
 					err := validator.ValidateCreate(routes, maxTTL)
 					Expect(err).ToNot(BeNil())
 					Expect(err.Type).To(Equal(routing_api.RouteServiceUrlInvalidError))
-					Expect(err.Error()).To(Equal("Url cannot contain invalid characters"))
+					Expect(err.Error()).To(Equal("url cannot contain invalid characters"))
 				})
 
 				It("returns an error if the route service url host is not valid", func() {

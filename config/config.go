@@ -111,23 +111,23 @@ func NewConfigFromBytes(bytes []byte, authDisabled bool) (Config, error) {
 
 func (cfg *Config) validate(authDisabled bool) error {
 	if cfg.SystemDomain == "" {
-		return errors.New("No system_domain specified")
+		return errors.New("no system_domain specified")
 	}
 
 	if cfg.LogGuid == "" {
-		return errors.New("No log_guid specified")
+		return errors.New("no log_guid specified")
 	}
 
 	if !authDisabled && cfg.OAuth.TokenEndpoint == "" {
-		return errors.New("No token endpoint specified")
+		return errors.New("no token endpoint specified")
 	}
 
 	if !authDisabled && cfg.OAuth.TokenEndpoint != "" && cfg.OAuth.Port == 0 {
-		return errors.New("Routing API requires TLS enabled to get OAuth token")
+		return errors.New("routing API requires TLS enabled to get OAuth token")
 	}
 
 	if cfg.UUID == "" {
-		return errors.New("No UUID is specified")
+		return errors.New("no UUID is specified")
 	}
 
 	if err := validatePort(cfg.AdminPort); err != nil {

@@ -12,7 +12,7 @@ import (
 	"code.cloudfoundry.org/routing-api/config"
 	"code.cloudfoundry.org/routing-api/models"
 	"github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
 
@@ -138,7 +138,7 @@ func RoutingApiClientWithPort(routingAPIPort uint16, routingAPIIP string) routin
 
 func RoutingAPISession(routingAPIBinPath string, args ...string) *gexec.Session {
 	session, err := gexec.Start(exec.Command(routingAPIBinPath, args...), ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
-	Expect(err).ToNot(HaveOccurred())
+	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 	return session
 }

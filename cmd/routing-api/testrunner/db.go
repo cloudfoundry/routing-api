@@ -10,7 +10,7 @@ import (
 	"code.cloudfoundry.org/routing-api/db"
 
 	"code.cloudfoundry.org/routing-api/config"
-	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2"
 	_ "gorm.io/driver/mysql"
 	_ "gorm.io/driver/postgres"
 )
@@ -33,7 +33,7 @@ type postgresAllocator struct {
 }
 
 func randSchemaName() string {
-	return fmt.Sprintf("test%d%d", time.Now().UnixNano(), GinkgoParallelProcess())
+	return fmt.Sprintf("test%d%d", time.Now().UnixNano(), ginkgo.GinkgoParallelProcess())
 }
 
 func NewPostgresAllocator() DbAllocator {
@@ -92,7 +92,7 @@ func (a *postgresAllocator) Create() (*config.SqlDB, error) {
 			a.schemaName = randSchemaName()
 		}
 	}
-	return nil, errors.New("Failed to create unique database ")
+	return nil, errors.New("failed to create unique database ")
 }
 
 func (a *postgresAllocator) Reset() error {
@@ -179,7 +179,7 @@ func (a *mysqlAllocator) Create() (*config.SqlDB, error) {
 			a.schemaName = randSchemaName()
 		}
 	}
-	return nil, errors.New("Failed to create unique database ")
+	return nil, errors.New("failed to create unique database ")
 }
 
 func (a *mysqlAllocator) Reset() error {

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var InvalidPortError = errors.New("Port must be between 1024 and 65535")
+var ErrInvalidPort = errors.New("port must be between 1024 and 65535")
 
 type RouterGroupType string
 
@@ -85,23 +85,23 @@ func (g RouterGroups) Validate() error {
 
 func (g RouterGroup) Validate() error {
 	if g.Name == "" {
-		return errors.New("Missing name in router group")
+		return errors.New("missing name in router group")
 	}
 
 	if g.Type == "" {
-		return errors.New("Missing type in router group")
+		return errors.New("missing type in router group")
 	}
 
 	if g.ReservablePorts == "" {
 		if g.Type == RouterGroup_TCP {
-			return fmt.Errorf("Missing reservable_ports in router group: %s", g.Name)
+			return fmt.Errorf("missing reservable_ports in router group: %s", g.Name)
 		}
 
 		return nil
 	}
 
 	if g.Type == RouterGroup_HTTP {
-		return errors.New("Reservable ports are not supported for router groups of type http")
+		return errors.New("reservable ports are not supported for router groups of type http")
 	}
 
 	return g.ReservablePorts.Validate()
@@ -209,7 +209,7 @@ func NewRange(start, end uint16) (Range, error) {
 			end:   end,
 		}, nil
 	}
-	return Range{}, InvalidPortError
+	return Range{}, ErrInvalidPort
 }
 
 func (r Range) Overlaps(other Range) bool {
@@ -259,7 +259,7 @@ func parseRange(r string) (Range, error) {
 	case 1:
 		n, err := strconv.ParseUint(endpoints[0], 10, 16)
 		if err != nil {
-			return Range{}, InvalidPortError
+			return Range{}, ErrInvalidPort
 		}
 		return NewRange(uint16(n), uint16(n))
 	case 2:

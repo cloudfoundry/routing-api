@@ -59,13 +59,13 @@ var _ = Describe("Main", func() {
 	It("exits 1 if no config file is provided", func() {
 		session = testrunner.RoutingAPISession(routingAPIBinPath)
 		Eventually(session).Should(Exit(1))
-		Eventually(session).Should(Say("No configuration file provided"))
+		Eventually(session).Should(Say("no configuration file provided"))
 	})
 
 	It("exits 1 if no ip address is provided", func() {
 		session = testrunner.RoutingAPISession(routingAPIBinPath, "-config=../../example_config/example.yml")
 		Eventually(session).Should(Exit(1))
-		Eventually(session).Should(Say("No ip address provided"))
+		Eventually(session).Should(Say("no ip address provided"))
 	})
 
 	It("exits 1 if the uaa verification key is not a valid PEM format", func() {
@@ -83,7 +83,7 @@ var _ = Describe("Main", func() {
 		args.DevMode = false
 		session = testrunner.RoutingAPISession(routingAPIBinPath, args.ArgSlice()...)
 		Eventually(session).Should(Exit(1))
-		Eventually(session).Should(Say("Public uaa token must be PEM encoded"))
+		Eventually(session).Should(Say("public uaa token must be PEM encoded"))
 	})
 
 	It("exits 1 if the uaa issuer cannot be fetched on startup and non dev mode", func() {
