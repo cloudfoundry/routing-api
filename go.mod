@@ -12,9 +12,9 @@ require (
 	code.cloudfoundry.org/eventhub v0.77.0
 	code.cloudfoundry.org/go-loggregator/v9 v9.2.1
 	code.cloudfoundry.org/lager/v3 v3.74.0
-	code.cloudfoundry.org/locket v1.0.0
+	code.cloudfoundry.org/locket v1.2.0
 	code.cloudfoundry.org/tlsconfig v0.60.0
-	github.com/cactus/go-statsd-client v0.0.0-00010101000000-000000000000
+	github.com/cactus/go-statsd-client v3.2.1+incompatible
 	github.com/cloudfoundry-community/go-uaa v0.4.0
 	github.com/cloudfoundry/dropsonde v1.1.0
 	github.com/go-sql-driver/mysql v1.10.0

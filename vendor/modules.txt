@@ -38,7 +38,7 @@ code.cloudfoundry.org/lager/v3/internal/truncate
 code.cloudfoundry.org/lager/v3/lagerctx
 code.cloudfoundry.org/lager/v3/lagerflags
 code.cloudfoundry.org/lager/v3/lagertest
-# code.cloudfoundry.org/locket v1.0.0
+# code.cloudfoundry.org/locket v1.2.0
 ## explicit; go 1.26.0
 code.cloudfoundry.org/locket
 code.cloudfoundry.org/locket/cmd/locket
@@ -66,7 +66,7 @@ github.com/Masterminds/semver/v3
 # github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f
 ## explicit
 github.com/bmizerany/pat
-# github.com/cactus/go-statsd-client v0.0.0-00010101000000-000000000000 => github.com/cactus/go-statsd-client v2.0.2-0.20150911070441-6fa055a7b594+incompatible
+# github.com/cactus/go-statsd-client v3.2.1+incompatible => github.com/cactus/go-statsd-client v2.0.2-0.20150911070441-6fa055a7b594+incompatible
 ## explicit
 github.com/cactus/go-statsd-client/statsd
 # github.com/cloudfoundry-community/go-uaa v0.4.0
