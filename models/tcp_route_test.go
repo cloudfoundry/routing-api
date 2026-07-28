@@ -175,6 +175,20 @@ var _ = Describe("TCP Route", func() {
 					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeTrue())
 				})
 			})
+
+			Context("when two routes are equal and EnableBackendMTLS are different", func() {
+				JustBeforeEach(func() {
+					tcpRouteMapping2.SniHostname = tcpRouteMapping.SniHostname
+					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeTrue())
+
+					tcpRouteMapping.EnableBackendMTLS = false
+					tcpRouteMapping2.EnableBackendMTLS = true
+				})
+
+				It("matches()", func() {
+					Expect(tcpRouteMapping.Matches(tcpRouteMapping2)).To(BeTrue())
+				})
+			})
 		})
 	})
 })

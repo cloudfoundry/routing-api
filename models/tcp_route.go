@@ -35,7 +35,8 @@ type TcpMappingEntity struct {
 	IsolationSegment     string `json:"isolation_segment"`
 	TerminateFrontendTLS bool   `gorm:"default:false" json:"terminate_frontend_tls,omitempty"`
 	// alpns is a csv value
-	ALPNs string `json:"alpns,omitempty"`
+	ALPNs             string `json:"alpns,omitempty"`
+	EnableBackendMTLS bool   `gorm:"default:false; unique_index:idx_tcp_route" json:"enable_backend_mtls,omitempty"`
 }
 
 func (TcpRouteMapping) TableName() string {

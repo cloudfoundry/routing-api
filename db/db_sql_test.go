@@ -957,7 +957,7 @@ var _ = Describe("SqlDB", func() {
 					It("returns an empty routemapping", func() {
 						By("Finding all the unique fields in a struct")
 						uniqueFields := parseAllUniqueFieldsFromTcpMapping(tcpRoute)
-						Expect(len(uniqueFields)).To(Equal(6))
+						Expect(len(uniqueFields)).To(Equal(7))
 
 						for _, field := range uniqueFields {
 							By(fmt.Sprintf("testing when the %s field is different", field))
@@ -979,6 +979,8 @@ var _ = Describe("SqlDB", func() {
 							case "SniHostname":
 								sniHostname := "new-sni-hostname"
 								routeToTest.SniHostname = &sniHostname
+							case "EnableBackendMTLS":
+								routeToTest.EnableBackendMTLS = true
 							default:
 								Fail("unexpected unique field found on models.TcpRouteMapping. Please update this test to account for it")
 							}
