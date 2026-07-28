@@ -108,6 +108,9 @@ func InitializeMigrations() []Migration {
 	migration = NewV10SniRewriteHostname()
 	migrations = append(migrations, migration)
 
+	migration = NewV11EnableBackendMTLS()
+	migrations = append(migrations, migration)
+
 	return migrations
 }
 
