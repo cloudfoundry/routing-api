@@ -5,17 +5,17 @@ go 1.26.4
 replace github.com/cactus/go-statsd-client => github.com/cactus/go-statsd-client v2.0.2-0.20150911070441-6fa055a7b594+incompatible
 
 require (
-	code.cloudfoundry.org/cfhttp/v2 v2.87.0
-	code.cloudfoundry.org/clock v1.80.0
-	code.cloudfoundry.org/debugserver v0.107.0
-	code.cloudfoundry.org/diego-logging-client v0.117.0
-	code.cloudfoundry.org/eventhub v0.82.0
+	code.cloudfoundry.org/cfhttp/v2 v2.88.0
+	code.cloudfoundry.org/clock v1.81.0
+	code.cloudfoundry.org/debugserver v0.108.0
+	code.cloudfoundry.org/diego-logging-client v0.118.0
+	code.cloudfoundry.org/eventhub v0.83.0
 	code.cloudfoundry.org/go-loggregator/v9 v9.2.1
-	code.cloudfoundry.org/lager/v3 v3.79.0
+	code.cloudfoundry.org/lager/v3 v3.80.0
 	code.cloudfoundry.org/locket v1.5.0
 	code.cloudfoundry.org/tlsconfig v0.63.0
 	github.com/cactus/go-statsd-client v3.2.1+incompatible
-	github.com/cloudfoundry-community/go-uaa v0.4.1
+	github.com/cloudfoundry-community/go-uaa v0.4.2
 	github.com/cloudfoundry/dropsonde v1.1.0
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/golang-jwt/jwt/v4 v4.5.2
@@ -26,10 +26,10 @@ require (
 	github.com/tedsuo/rata v1.0.0
 	github.com/vito/go-sse v1.1.3
 	golang.org/x/oauth2 v0.36.0
-	google.golang.org/grpc v1.82.1
+	google.golang.org/grpc v1.83.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.6.0
-	gorm.io/driver/postgres v1.6.0
+	gorm.io/driver/postgres v1.6.2
 	gorm.io/gorm v1.31.2
 )
 
@@ -55,8 +55,8 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/square/certstrap v1.3.0 // indirect
-	go.step.sm/crypto v0.85.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.step.sm/crypto v0.87.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
@@ -64,6 +64,6 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260724162435-b2f20204f0df // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260729162451-8efbd57d26e0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
