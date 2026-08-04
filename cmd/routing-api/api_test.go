@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/tedsuo/ifrit"
 	ginkgomon "github.com/tedsuo/ifrit/ginkgomon_v2"
@@ -89,7 +88,7 @@ var _ = Describe("Routes API", func() {
 					Expect(event.Action).To(Equal("Upsert"))
 					Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(routeUpdated))
 				}()
-				Eventually(done, 5*time.Second).Should(BeClosed())
+				Eventually(done).Should(BeClosed())
 			})
 
 			It("gets events for deleted routes", func() {
@@ -115,7 +114,7 @@ var _ = Describe("Routes API", func() {
 					Expect(event.Action).To(Equal(expectedEvent.Action))
 					Expect(event.TcpRouteMapping).To(matchers.MatchTcpRoute(expectedEvent.TcpRouteMapping))
 				}()
-				Eventually(done, 5*time.Second).Should(BeClosed())
+				Eventually(done).Should(BeClosed())
 			})
 
 			It("gets events for expired routes", func() {
@@ -274,7 +273,7 @@ var _ = Describe("Routes API", func() {
 					routes, getErr = client.Routes()
 					Expect(getErr).ToNot(HaveOccurred())
 					return len(routes)
-				}, 2*time.Second).Should(BeNumerically("==", 3))
+				}).Should(BeNumerically("==", 3))
 				Expect(routes).To(ConsistOf(
 					matchers.MatchHttpRoute(route1),
 					matchers.MatchHttpRoute(route2),
