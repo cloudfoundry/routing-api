@@ -135,7 +135,7 @@ func createConfig(
 				ReservablePorts: "1024-65535",
 			},
 		},
-		RetryInterval: 50 * time.Millisecond,
+		RetryInterval: locket.SQLRetryInterval,
 	}
 
 	switch Database {

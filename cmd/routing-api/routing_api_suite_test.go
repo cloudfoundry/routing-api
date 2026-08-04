@@ -82,7 +82,7 @@ var _ = SynchronizedBeforeSuite(
 		routingAPIBinPath = parts[0]
 		locketBinPath = parts[1]
 
-		SetDefaultEventuallyTimeout(15 * time.Second)
+		SetDefaultEventuallyTimeout(25 * time.Second)
 
 		dbAllocator = testrunner.NewDbAllocator()
 

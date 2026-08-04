@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"time"
 
 	"code.cloudfoundry.org/locket"
 	routingAPI "code.cloudfoundry.org/routing-api"
@@ -93,7 +92,7 @@ func GetRoutingAPIConfig(testConfig RoutingAPITestConfig) *config.Config {
 				ReservablePorts: "1024-65535",
 			},
 		},
-		RetryInterval: 50 * time.Millisecond,
+		RetryInterval: locket.SQLRetryInterval,
 		UUID:          "fake-uuid",
 		Locket:        testConfig.LocketConfig,
 	}
