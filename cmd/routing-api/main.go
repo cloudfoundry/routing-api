@@ -135,7 +135,7 @@ func main() {
 		lockIdentifier,
 		locket.DefaultSessionTTLInSeconds,
 		clock,
-		locket.SQLRetryInterval,
+		cfg.RetryInterval,
 	)})
 
 	if len(locks) == 0 {
