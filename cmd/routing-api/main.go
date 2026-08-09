@@ -323,6 +323,7 @@ func apiHandler(cfg config.Config, uaaClient uaaclient.TokenValidator, database 
 	tcpMappingsHandler := handlers.NewTcpRouteMappingsHandler(uaaClient, validator, database, int(cfg.MaxTTL.Seconds()), logger)
 
 	actions := rata.Handlers{
+		routing_api.CheckHealth:           route(routesHandler.Health),
 		routing_api.UpsertRoute:           route(routesHandler.Upsert),
 		routing_api.DeleteRoute:           route(routesHandler.Delete),
 		routing_api.ListRoute:             route(routesHandler.List),
