@@ -5,14 +5,14 @@ go 1.26.4
 replace github.com/cactus/go-statsd-client => github.com/cactus/go-statsd-client v2.0.2-0.20150911070441-6fa055a7b594+incompatible
 
 require (
-	code.cloudfoundry.org/cfhttp/v2 v2.88.0
-	code.cloudfoundry.org/clock v1.82.0
-	code.cloudfoundry.org/debugserver v0.109.0
-	code.cloudfoundry.org/diego-logging-client v0.119.0
-	code.cloudfoundry.org/eventhub v0.83.0
+	code.cloudfoundry.org/cfhttp/v2 v2.90.0
+	code.cloudfoundry.org/clock v1.83.0
+	code.cloudfoundry.org/debugserver v0.110.0
+	code.cloudfoundry.org/diego-logging-client v0.120.0
+	code.cloudfoundry.org/eventhub v0.85.0
 	code.cloudfoundry.org/go-loggregator/v9 v9.2.1
-	code.cloudfoundry.org/lager/v3 v3.80.0
-	code.cloudfoundry.org/locket v1.6.0
+	code.cloudfoundry.org/lager/v3 v3.82.0
+	code.cloudfoundry.org/locket v1.7.0
 	code.cloudfoundry.org/tlsconfig v0.64.0
 	github.com/cactus/go-statsd-client v3.2.1+incompatible
 	github.com/cloudfoundry-community/go-uaa v0.4.2
@@ -20,9 +20,9 @@ require (
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
-	github.com/onsi/ginkgo/v2 v2.32.0
+	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
-	github.com/tedsuo/ifrit v0.0.0-20260418191334-846868129986
+	github.com/tedsuo/ifrit v0.0.0-20260813155221-94822c932811
 	github.com/tedsuo/rata v1.0.0
 	github.com/vito/go-sse v1.1.3
 	golang.org/x/oauth2 v0.36.0
@@ -34,13 +34,14 @@ require (
 )
 
 require (
-	code.cloudfoundry.org/diego-db-helpers v0.8.0 // indirect
-	code.cloudfoundry.org/durationjson v0.82.0 // indirect
+	code.cloudfoundry.org/diego-db-helpers v0.10.0 // indirect
+	code.cloudfoundry.org/durationjson v0.84.0 // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20260720065427-59f65622c841 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f // indirect
 	github.com/cloudfoundry/sonde-go v0.0.0-20260720065356-6728909ed72b // indirect
+	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -55,15 +56,16 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/square/certstrap v1.3.0 // indirect
-	go.step.sm/crypto v0.87.0 // indirect
+	go.step.sm/crypto v0.88.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.54.0 // indirect
-	golang.org/x/mod v0.38.0 // indirect
-	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/mod v0.40.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
-	golang.org/x/tools v0.48.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260807164820-c8921c73eeea // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/tools v0.49.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260810153831-ec0a7760b754 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
+	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 )
