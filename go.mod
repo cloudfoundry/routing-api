@@ -2,6 +2,9 @@ module code.cloudfoundry.org/routing-api
 
 go 1.26.4
 
+// pin ifrit until https://github.com/tedsuo/ifrit/pull/48 is merged
+replace github.com/tedsuo/ifrit => github.com/tedsuo/ifrit v0.0.0-20260418191334-846868129986
+
 replace github.com/cactus/go-statsd-client => github.com/cactus/go-statsd-client v2.0.2-0.20150911070441-6fa055a7b594+incompatible
 
 require (
@@ -22,7 +25,7 @@ require (
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
-	github.com/tedsuo/ifrit v0.0.0-20260813155221-94822c932811
+	github.com/tedsuo/ifrit v0.0.0-20260418191334-846868129986
 	github.com/tedsuo/rata v1.0.0
 	github.com/vito/go-sse v1.1.3
 	golang.org/x/oauth2 v0.36.0
