@@ -8,15 +8,15 @@ replace github.com/tedsuo/ifrit => github.com/tedsuo/ifrit v0.0.0-20260418191334
 replace github.com/cactus/go-statsd-client => github.com/cactus/go-statsd-client v2.0.2-0.20150911070441-6fa055a7b594+incompatible
 
 require (
-	code.cloudfoundry.org/cfhttp/v2 v2.95.0
-	code.cloudfoundry.org/clock v1.88.0
-	code.cloudfoundry.org/debugserver v0.115.0
-	code.cloudfoundry.org/diego-logging-client v0.125.0
-	code.cloudfoundry.org/eventhub v0.90.0
+	code.cloudfoundry.org/cfhttp/v2 v2.96.0
+	code.cloudfoundry.org/clock v1.89.0
+	code.cloudfoundry.org/debugserver v0.116.0
+	code.cloudfoundry.org/diego-logging-client v0.126.0
+	code.cloudfoundry.org/eventhub v0.91.0
 	code.cloudfoundry.org/go-loggregator/v9 v9.2.1
-	code.cloudfoundry.org/lager/v3 v3.87.0
-	code.cloudfoundry.org/locket v1.13.0
-	code.cloudfoundry.org/tlsconfig v0.67.0
+	code.cloudfoundry.org/lager/v3 v3.88.0
+	code.cloudfoundry.org/locket v1.14.0
+	code.cloudfoundry.org/tlsconfig v0.68.0
 	github.com/cactus/go-statsd-client v3.2.1+incompatible
 	github.com/cloudfoundry-community/go-uaa v0.5.0
 	github.com/cloudfoundry/dropsonde v1.1.0
@@ -24,7 +24,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/onsi/ginkgo/v2 v2.33.0
-	github.com/onsi/gomega v1.43.1
+	github.com/onsi/gomega v1.44.0
 	github.com/tedsuo/ifrit v0.0.0-20260908181113-dd353a7daa27
 	github.com/tedsuo/rata v1.0.0
 	github.com/vito/go-sse v1.1.3
@@ -37,9 +37,9 @@ require (
 )
 
 require (
-	code.cloudfoundry.org/diego-db-helpers v0.17.0 // indirect
-	code.cloudfoundry.org/durationjson v0.90.0 // indirect
-	code.cloudfoundry.org/go-diodes v0.0.0-20260914115851-7fd03ae06e34 // indirect
+	code.cloudfoundry.org/diego-db-helpers v0.18.0 // indirect
+	code.cloudfoundry.org/durationjson v0.91.0 // indirect
+	code.cloudfoundry.org/go-diodes v0.0.0-20260921100641-e75e32521ad8 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f // indirect
@@ -49,7 +49,7 @@ require (
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/pprof v0.0.0-20260906184651-6331bc6350fe // indirect
+	github.com/google/pprof v0.0.0-20260926063103-aaccee046517 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.11.0 // indirect
@@ -68,6 +68,6 @@ require (
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/tools v0.50.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260918162117-cecb64721679 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260921155816-b14227669459 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
