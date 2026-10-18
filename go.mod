@@ -8,15 +8,15 @@ replace github.com/tedsuo/ifrit => github.com/tedsuo/ifrit v0.0.0-20260418191334
 replace github.com/cactus/go-statsd-client => github.com/cactus/go-statsd-client v2.0.2-0.20150911070441-6fa055a7b594+incompatible
 
 require (
-	code.cloudfoundry.org/cfhttp/v2 v2.98.0
-	code.cloudfoundry.org/clock v1.91.0
-	code.cloudfoundry.org/debugserver v0.118.0
-	code.cloudfoundry.org/diego-logging-client v0.128.0
-	code.cloudfoundry.org/eventhub v0.93.0
+	code.cloudfoundry.org/cfhttp/v2 v2.99.0
+	code.cloudfoundry.org/clock v1.92.0
+	code.cloudfoundry.org/debugserver v0.119.0
+	code.cloudfoundry.org/diego-logging-client v0.129.0
+	code.cloudfoundry.org/eventhub v0.94.0
 	code.cloudfoundry.org/go-loggregator/v9 v9.2.1
-	code.cloudfoundry.org/lager/v3 v3.90.0
-	code.cloudfoundry.org/locket v1.16.0
-	code.cloudfoundry.org/tlsconfig v0.68.0
+	code.cloudfoundry.org/lager/v3 v3.91.0
+	code.cloudfoundry.org/locket v1.17.0
+	code.cloudfoundry.org/tlsconfig v0.69.0
 	github.com/cactus/go-statsd-client v3.2.1+incompatible
 	github.com/cloudfoundry-community/go-uaa v0.5.1
 	github.com/cloudfoundry/dropsonde v1.1.0
@@ -37,8 +37,8 @@ require (
 )
 
 require (
-	code.cloudfoundry.org/diego-db-helpers v0.20.0 // indirect
-	code.cloudfoundry.org/durationjson v0.93.0 // indirect
+	code.cloudfoundry.org/diego-db-helpers v0.21.0 // indirect
+	code.cloudfoundry.org/durationjson v0.94.0 // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20260928063035-f81ac938b818 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
@@ -49,7 +49,7 @@ require (
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/pprof v0.0.0-20261008003335-7bae8d8c4c9e // indirect
+	github.com/google/pprof v0.0.0-20261016150608-1facf8f91b50 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.11.0 // indirect
@@ -68,6 +68,6 @@ require (
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/tools v0.52.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20261005182115-fad411399dd8 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20261012220534-4341edf3f941 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
