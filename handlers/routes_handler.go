@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/lager/v3"
@@ -28,11 +29,29 @@ func NewRoutesHandler(uaaClient uaaclient.TokenValidator, maxTTL int, validator 
 	}
 }
 
+func (h *RoutesHandler) Health(w http.ResponseWriter, req *http.Request) {
+	log := h.logger.Session("health-check")
+
+	err := h.db.CheckHealth()
+	if err != nil {
+		handleDBCommunicationError(w, err, log)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 func (h *RoutesHandler) List(w http.ResponseWriter, req *http.Request) {
 	log := h.logger.Session("list-routes")
 
-	err := h.uaaClient.ValidateToken(req.Header.Get("Authorization"), RoutingRoutesReadScope)
+	authHeader := req.Header.Get("Authorization")
+	if authHeader == "" {
+		err := fmt.Errorf("authorization header can't be empty (remoteAddr: %s)", req.RemoteAddr)
+		handleUnauthorizedError(w, err, log)
+		return
+	}
+	err := h.uaaClient.ValidateToken(authHeader, RoutingRoutesReadScope)
 	if err != nil {
+		err := fmt.Errorf("%v (remoteAddr: %s)", err, req.RemoteAddr)
 		handleUnauthorizedError(w, err, log)
 		return
 	}

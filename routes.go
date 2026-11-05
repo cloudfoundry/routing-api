@@ -3,6 +3,7 @@ package routing_api
 import "github.com/tedsuo/rata"
 
 const (
+	CheckHealth           = "Health"
 	UpsertRoute           = "UpsertRoute"
 	DeleteRoute           = "Delete"
 	ListRoute             = "List"
@@ -17,7 +18,9 @@ const (
 	EventStreamTcpRoute   = "TcpRouteEventStream"
 )
 
-var RoutesMap = map[string]rata.Route{UpsertRoute: {Path: "/routing/v1/routes", Method: "POST", Name: UpsertRoute},
+var RoutesMap = map[string]rata.Route{
+	CheckHealth:           {Path: "/routing/v1/health", Method: "GET", Name: CheckHealth},
+	UpsertRoute:           {Path: "/routing/v1/routes", Method: "POST", Name: UpsertRoute},
 	DeleteRoute:           {Path: "/routing/v1/routes", Method: "DELETE", Name: DeleteRoute},
 	ListRoute:             {Path: "/routing/v1/routes", Method: "GET", Name: ListRoute},
 	EventStreamRoute:      {Path: "/routing/v1/events", Method: "GET", Name: EventStreamRoute},
