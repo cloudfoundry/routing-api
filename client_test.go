@@ -1218,6 +1218,53 @@ var _ = Describe("Client", func() {
 	})
 
 	Context("ReservePort", func() {
+		DescribeTable("at the uint16 boundary", func(reservedPorts, requestedRange string, expectedPort int) {
+			existingRouterGroup := models.RouterGroup{
+				Name:            "existing-router-group",
+				Type:            "tcp",
+				ReservablePorts: models.ReservablePorts(reservedPorts),
+			}
+			listData, err := json.Marshal([]models.RouterGroup{existingRouterGroup})
+			Expect(err).NotTo(HaveOccurred())
+			server.AppendHandlers(ghttp.CombineHandlers(
+				ghttp.VerifyRequest("GET", ROUTER_GROUPS_API_URL),
+				ghttp.RespondWith(http.StatusOK, listData),
+			))
+
+			if expectedPort != 0 {
+				newRouterGroup := models.RouterGroup{
+					Name:            "new-router-group",
+					Type:            "tcp",
+					ReservablePorts: models.ReservablePorts(fmt.Sprint(expectedPort)),
+				}
+				postData, err := json.Marshal(newRouterGroup)
+				Expect(err).NotTo(HaveOccurred())
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", ROUTER_GROUPS_API_URL, "name=new-router-group"),
+						ghttp.RespondWith(http.StatusNotFound, []byte(`error: router group not found`)),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", ROUTER_GROUPS_API_URL),
+						ghttp.VerifyBody(postData),
+						ghttp.RespondWith(http.StatusCreated, postData),
+					),
+				)
+			}
+
+			port, err := client.ReservePort("new-router-group", requestedRange)
+			if expectedPort == 0 {
+				Expect(err).To(Equal(routing_api.NewError(routing_api.PortRangeExhaustedError, "There are no free ports in range: [65534-65535]")))
+			} else {
+				Expect(err).NotTo(HaveOccurred())
+			}
+			Expect(port).To(Equal(expectedPort))
+		},
+			Entry("allocates when an existing group contains port 65535", "65535", "2000-3000", 2000),
+			Entry("allocates port 65535 when it is the last available port", "65534", "65534-65535", 65535),
+			Entry("reports exhaustion when a reserved range ends at port 65535", "65534-65535", "65534-65535", 0),
+		)
+
 		When("no router groups already exist", func() {
 			BeforeEach(func() {
 				routerGroup := models.RouterGroup{

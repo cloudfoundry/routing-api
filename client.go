@@ -190,16 +190,16 @@ func getNextAvailablePort(groups models.RouterGroups, portRange models.Range) (m
 
 		for _, grp := range groupPortRanges {
 			groupStart, groupEnd := grp.Endpoints()
-			for p := groupStart; p <= groupEnd; p++ {
-				portSet[p] = true
+			for p := int(groupStart); p <= int(groupEnd); p++ {
+				portSet[uint16(p)] = true
 			}
 		}
 	}
 
 	start, end := portRange.Endpoints()
-	for i := start; i <= end; i++ {
-		if _, ok := portSet[i]; !ok {
-			return models.ReservablePorts(strconv.Itoa(int(i))), nil
+	for i := int(start); i <= int(end); i++ {
+		if _, ok := portSet[uint16(i)]; !ok {
+			return models.ReservablePorts(strconv.Itoa(i)), nil
 		}
 	}
 
